@@ -7,6 +7,7 @@ namespace RealmOfAshes.Game
 
         public static bool TryModelPath(string itemId, string bodyKey, out string path)
         {
+            if (RoaOutfitModelCatalog.TryModelPath(itemId, bodyKey, out path)) return true;
             if (RoaSuitModelCatalog.TryModelPath(itemId, bodyKey, out path)) return true;
             path = string.Empty;
             switch (itemId)

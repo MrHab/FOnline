@@ -3799,18 +3799,10 @@ function sanitizeTraits(input = [], fallback = []) {
 
 const CHARACTER_APPEARANCE_SCHEMA = 'realm.character-appearance.v1';
 const SERVER_CHARACTER_SEXES = new Set(['female', 'male']);
-const SERVER_CHARACTER_BODY_TYPES = new Set(['slim', 'medium', 'large']);
+// Телосложение и форма лица не выбираются: у каждого пола одна базовая модель.
 const SERVER_CHARACTER_APPEARANCE_IDS = {
-  female: {
-    faceId: 'female_01',
-    faceIds: new Set(['female_01', 'female_02', 'female_03', 'female_04']),
-    hairId: 'tied_back'
-  },
-  male: {
-    faceId: 'male_01',
-    faceIds: new Set(['male_01', 'male_02', 'male_03', 'male_04']),
-    hairId: 'short_crop'
-  }
+  female: { hairId: 'tied_back' },
+  male: { hairId: 'short_crop' }
 };
 const SERVER_CHARACTER_HAIR_IDS = new Set([
   'shaved',
@@ -3838,11 +3830,7 @@ function sanitizeCharacterAppearance(input = {}, fallback = {}) {
   const base = fallback && typeof fallback === 'object' ? fallback : {};
   const rawSex = String(source.sex || base.sex || 'male').toLowerCase();
   const sex = SERVER_CHARACTER_SEXES.has(rawSex) ? rawSex : 'male';
-  const rawBodyType = String(source.bodyType || base.bodyType || 'medium').toLowerCase();
-  const bodyType = SERVER_CHARACTER_BODY_TYPES.has(rawBodyType) ? rawBodyType : 'medium';
   const defaults = SERVER_CHARACTER_APPEARANCE_IDS[sex];
-  const rawFaceId = String(source.faceId || base.faceId || defaults.faceId).toLowerCase();
-  const faceId = defaults.faceIds.has(rawFaceId) ? rawFaceId : defaults.faceId;
   const rawHairId = String(source.hairId || base.hairId || defaults.hairId).toLowerCase();
   const hairId = SERVER_CHARACTER_HAIR_IDS.has(rawHairId) ? rawHairId : defaults.hairId;
   const rawHairColorId = String(source.hairColorId || base.hairColorId || 'hair_03').toLowerCase();
@@ -3850,8 +3838,6 @@ function sanitizeCharacterAppearance(input = {}, fallback = {}) {
   return {
     schema: CHARACTER_APPEARANCE_SCHEMA,
     sex,
-    bodyType,
-    faceId,
     hairId,
     skinToneId: 'skin_03',
     hairColorId
@@ -9640,14 +9626,11 @@ function newServerCharacterSelectionError(data = {}) {
   data = serverCharacterDraftFromInput(data);
   const rawAppearance = data.appearance;
   const rawSex = String(rawAppearance?.sex || '').toLowerCase();
-  const appearanceIds = SERVER_CHARACTER_APPEARANCE_IDS[rawSex];
   if (!rawAppearance || typeof rawAppearance !== 'object'
     || !SERVER_CHARACTER_SEXES.has(rawSex)
-    || !SERVER_CHARACTER_BODY_TYPES.has(String(rawAppearance.bodyType || '').toLowerCase())
-    || !appearanceIds?.faceIds.has(String(rawAppearance.faceId || '').toLowerCase())
     || !SERVER_CHARACTER_HAIR_IDS.has(String(rawAppearance.hairId || '').toLowerCase())
     || !SERVER_CHARACTER_HAIR_COLOR_IDS.has(String(rawAppearance.hairColorId || '').toLowerCase())) {
-    return 'При создании персонажа выберите пол, телосложение, лицо, причёску и цвет волос.';
+    return 'При создании персонажа выберите пол, причёску и цвет волос.';
   }
   const draft = validateCharacterDraft(data, KROMKA_CHARACTER_PROGRESSION_CATALOG);
   if (!draft.ok) return draft.error;

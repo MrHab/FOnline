@@ -2082,8 +2082,6 @@
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
-          "bodyType": "slim",
-          "faceId": "male_03",
           "hairId": "shaved",
           "skinToneId": "skin_03",
           "hairColorId": "hair_02"

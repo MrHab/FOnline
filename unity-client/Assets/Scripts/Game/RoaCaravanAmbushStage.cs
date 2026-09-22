@@ -154,8 +154,7 @@ namespace RealmOfAshes.Game
             bool female = index == 3 || index == 4;
             await actor.View.Load(baseUrl, new JObject {
                 ["schema"] = "realm.character-appearance.v1",
-                ["sex"] = female ? "female" : "male", ["bodyType"] = "medium",
-                ["faceId"] = female ? "female_02" : "male_03",
+                ["sex"] = female ? "female" : "male",
                 ["hairId"] = female ? "tied_back" : "short_crop",
                 ["skinToneId"] = actor.Role.Raider ? "skin_04" : "skin_03",
                 ["hairColorId"] = "hair_02"

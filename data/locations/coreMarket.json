@@ -117,8 +117,6 @@
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
-          "bodyType": "slim",
-          "faceId": "female_04",
           "hairId": "tied_back",
           "skinToneId": "skin_03",
           "hairColorId": "hair_06"
@@ -173,8 +171,6 @@
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
-          "bodyType": "large",
-          "faceId": "male_03",
           "hairId": "shaved",
           "skinToneId": "skin_03",
           "hairColorId": "hair_02"
@@ -227,8 +223,6 @@
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
-          "bodyType": "medium",
-          "faceId": "female_02",
           "hairId": "shaved",
           "skinToneId": "skin_03",
           "hairColorId": "hair_06"

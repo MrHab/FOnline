@@ -1,4 +1,5 @@
 """Export layered suits without replacing the old reviewed files or approvals."""
+import dataclasses
 import hashlib
 import json
 from pathlib import Path
@@ -19,6 +20,32 @@ from fit_suit_leg_ownership import source_leg_side,leg_weight_sampler
 from suit_surface_metrics import freeze_surface_triangles
 
 ROOT=Path(__file__).resolve().parents[2]
+
+# Броня, которую собирают слоями: цельный донор — торс, штаны и ботинки — сажается
+# на тело с подкладкой вместо открытой кожи, поэтому любая броня идёт с ногами и
+# тело сквозь неё не просвечивает. Общий список rig.SPECS не трогаем: от него
+# зависят прежние торсы и десяток проверок; здесь только слоистые отличия.
+SWAT_TOKENS=('swat_body','swat_legs','swat_feet','soldier_body','soldier_legs','soldier_feet')
+SWAT_HASHES='622B3F36FCAC90539EF8F7121EC1F11B5E1AE603A085019B3FA96EBA20DDDFD3/37112E60AF92FF84D882A34E21F0F78A2AFC14282E950FB0E3652E51D06E0B2D'
+# Пластины прежней брони (одобренный донор) поверх полной формы Swat/Soldier:
+# форма даёт штаны, рукава и обувь, пластины — облик брони.
+PLATED={'source_for_body':rig.source_by_gender('quaternius_male_swat.gltf','quaternius_female_soldier.gltf'),
+    'selected_mesh_tokens':SWAT_TOKENS,'discarded_materials':('skin',),'join_source':True,
+    'join_donor':True,'retained_donor_tokens':('downloaded_shel',),'crop':None,'vertical_offset':0.0,
+    'source_sha256':SWAT_HASHES}
+LAYERED={
+    'hazmatSuit':{},
+    'energySuit':{},
+    'ballisticVest':{'selected_mesh_tokens':SWAT_TOKENS,'join_source':True,'vertical_offset':0.0},
+    'leather':{'selected_mesh_tokens':('punk_body','punk_legs','punk_feet'),'join_source':True,'crop':None},
+    'combatArmor':{**PLATED,'fit_scale':(1.055,1.10,0.99),'surface_clearance':0.018},
+    'heavyArmor':{**PLATED,'fit_scale':(1.06,1.11,0.99),'surface_clearance':0.018},
+    'metalArmor':{**PLATED,'fit_scale':(1.055,1.10,0.99),'surface_clearance':0.018},
+}
+# У доноров Punk/Swat/Soldier шея — часть сетки тела; слоистая сборка делает из
+# неё ткань, и воротник вставал до носа, а шарф тяжёлой брони закрывал лицо.
+# Всё, что выше основания шеи на столько метров в колонке головы, срезается.
+NECK_TRIM={'ballisticVest':.045,'leather':.045,'combatArmor':.045,'heavyArmor':.045,'metalArmor':.045}
 DEST=ROOT/'public/assets/models/equipment/suits-v2'
 REVIEW=ROOT/'unity-client/Temp/LayeredSuitReview'
 SOURCES=ROOT/'Build/SourceDownloads/free-armor-replacements-20260908'
@@ -76,6 +103,70 @@ def fit_upper_contacts(shell,body,armature,points,body_bvh):
             break
         for index,delta in moves.items():shell.data.vertices[index].co+=delta
         shell.data.update()
+
+def drop_stray_islands(equipment):
+    """Куски пластин, за которыми нет ткани формы, убираются.
+
+    Прежняя броня сидела на голом торсе, и её боковые лезвия и кобуры висели в
+    воздухе у бёдер; на полной форме их не на что посадить (луч вдоль y через
+    середину и углы куска не встречает ткань), и в игре они торчали спицами.
+    """
+    from refit_suit_details import islands,surface
+    shell=next(o for o in equipment if 'downloaded_shell' in o.name)
+    cloth=BVHTree.FromPolygons(*surface([shell]))
+    removed=[]
+    for obj in equipment:
+        if obj==shell or 'builtin_foot' in obj.name:continue
+        bm=bmesh.new();bm.from_mesh(obj.data)
+        bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=.00001)
+        bm.to_mesh(obj.data);bm.free()
+        mesh=obj.data;doomed=set()
+        for group in islands(mesh):
+            points=[obj.matrix_world@mesh.vertices[i].co for i in group]
+            low=Vector(tuple(min(p[k] for p in points) for k in range(3)))
+            high=Vector(tuple(max(p[k] for p in points) for k in range(3)))
+            centre=(low+high)*.5;size=high-low
+            probes=[(centre.x,centre.z)]+[(centre.x+size.x*x,centre.z+size.z*z) for x,z in ((-.3,-.3),(.3,-.3),(-.3,.3),(.3,.3))]
+            if any(cloth.ray_cast(Vector((x,2,z)),Vector((0,-1,0)),4)[0] is not None for x,z in probes):continue
+            doomed.update(group);removed.append([round(v,3) for v in centre])
+        if not doomed:continue
+        bm=bmesh.new();bm.from_mesh(mesh);bm.verts.ensure_lookup_table()
+        bmesh.ops.delete(bm,geom=[bm.verts[i] for i in doomed],context='VERTS')
+        bm.to_mesh(mesh);bm.free();mesh.update()
+    return removed
+
+def drop_floating_plates(equipment,limit=.07):
+    """Пластины, отошедшие от формы дальше limit, убираются.
+
+    Посадка деталей ставит каждый остров на ткань по его середине, но шарф и
+    длинные полы прежней брони — не пластины: они вставали жёсткой плитой,
+    торчащей из-за плеча. То, что не прилегает к форме, здесь и отсекается.
+    """
+    from refit_suit_details import islands
+    shell=[o for o in equipment if 'downloaded_shell' in o.name or 'builtin_foot' in o.name]
+    points=[];faces=[]
+    for obj in shell:
+        start=len(points)
+        points.extend(rig.evaluated_points(obj))
+        faces.extend(tuple(start+i for i in f.vertices) for f in obj.data.polygons)
+    cloth=BVHTree.FromPolygons(points,faces)
+    removed=[]
+    for obj in equipment:
+        if obj in shell:continue
+        mesh=rig.bake_rest_mesh(obj)
+        doomed=set()
+        for group in islands(mesh.data):
+            far=max((mesh.data.vertices[i].co-cloth.find_nearest(mesh.data.vertices[i].co)[0]).length
+                for i in group if cloth.find_nearest(mesh.data.vertices[i].co)[0] is not None)
+            if far>limit:
+                doomed.update(group)
+                removed.append(round(far,3))
+        bpy.data.objects.remove(mesh,do_unlink=True)
+        if not doomed:continue
+        bm=bmesh.new();bm.from_mesh(obj.data);bm.verts.ensure_lookup_table()
+        bmesh.ops.delete(bm,geom=[bm.verts[i] for i in doomed],context='VERTS')
+        bm.to_mesh(obj.data);bm.free();obj.data.update()
+    return removed
 
 def refit_lower_suit(equipment,armature,body,refit_upper=False):
     """Keep shin armor above the shoe slot and fit both layers around real skin.
@@ -234,7 +325,8 @@ def main():
     DEST.mkdir(parents=True,exist_ok=True)
     rows=[]
     for spec in rig.SPECS:
-        if spec.item_id not in ('hazmatSuit','energySuit'): continue
+        if spec.item_id not in LAYERED: continue
+        spec=dataclasses.replace(spec,**LAYERED[spec.item_id])
         if selected_item and spec.item_id!=selected_item:continue
         for body in rig.BODY_IDS:
             if selected_body and body!=selected_body:continue
@@ -244,12 +336,30 @@ def main():
                 raise RuntimeError('Unexpected source hash: '+str(source))
             rig.build_variant(ROOT,REVIEW,SOURCES,spec,body,True,split_footwear=True,refit_upper=candidate)
             equipment=[o for o in bpy.context.scene.objects if o.type=='MESH' and o.get('realm_asset_id')==f'{spec.output_prefix}_{body}']
+            # Имя объекта в Blender — не длиннее 63 знаков: у длинных префиксов
+            # (бронежилет) хвост «_builtin_footwear» обрезался, и слой обуви
+            # не находился. Слои называем коротко, по id вещи.
+            for obj in equipment:
+                if 'builtin_foot' in obj.name:obj.name=f'{spec.item_id}_{body}_builtin_footwear'
+                elif 'downloaded_sh' in obj.name:obj.name=f'{spec.item_id}_{body}_downloaded_shell'
             armature=next(m.object for o in equipment for m in o.modifiers if m.type=='ARMATURE')
             body_mesh=next(o for o in bpy.context.scene.objects if o.type=='MESH' and 'body_base' in o.name)
             leg_fit=refit_lower_suit(equipment,armature,body_mesh,refit_upper=candidate)
             glove_fit=refit_gloves(equipment,armature,body_mesh,bpy.data.materials[spec.materials[1]]) if joint_liner else None
+            if spec.item_id in ('combatArmor','heavyArmor','metalArmor'):
+                print('STRAY_ISLANDS_REMOVED',drop_stray_islands(equipment),flush=True)
             detail_fit=fit_retained(equipment,armature,body_mesh) if candidate else []
+            if spec.item_id in ('combatArmor','heavyArmor','metalArmor'):
+                print('FLOATING_PLATES_REMOVED',drop_floating_plates(equipment),flush=True)
             liner_fit=add_joint_liner(equipment,armature,body_mesh,bpy.data.materials[spec.materials[1]]) if joint_liner else None
+            if spec.item_id in NECK_TRIM:
+                neck=(armature.matrix_world@armature.data.bones['neck_01'].head_local).z+NECK_TRIM[spec.item_id]
+                def above_neck(face,_material):
+                    centre=face.calc_center_median()
+                    return centre.z>neck and abs(centre.x)<.14
+                for obj in equipment:
+                    if 'builtin_foot' in obj.name:continue
+                    print('NECK_TRIM',obj.name,rig.delete_faces(obj,above_neck),flush=True)
             for obj in [armature]+equipment:
                 for key in list(obj.keys()):
                     if key in ('realm_review_only','realm_runtime_integration_allowed') or 'approval' in key or 'approved' in key:

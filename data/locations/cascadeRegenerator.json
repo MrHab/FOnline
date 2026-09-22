@@ -2744,8 +2744,6 @@
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
-          "bodyType": "large",
-          "faceId": "female_04",
           "hairId": "tied_back",
           "skinToneId": "skin_03",
           "hairColorId": "hair_06"

@@ -1,0 +1,100 @@
+{
+  "schema": "realm.plated-armor.v1",
+  "version": "1-a5a37b4f",
+  "generator": "tools/blender/build_layered_suit_models.py",
+  "source": {
+    "creator": "Quaternius / Manaos",
+    "license": "CC0-1.0 / CC-BY",
+    "pack": "Ultimate Modular Men / Ultimate Modular Women, Soldier"
+  },
+  "files": [
+    {
+      "itemId": "ballisticVest",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/armor-v3/equipment_ballisticVest_male_medium.glb",
+      "sha256": "723b49685fe76c10a77fb7f8ab31f76a08fcb5407529786a15b38944f7557c91",
+      "bytes": 1325708,
+      "bodyReference": {
+        "file": "public/assets/models/characters/base/character_male_medium.glb",
+        "sha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046"
+      }
+    },
+    {
+      "itemId": "ballisticVest",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/armor-v3/equipment_ballisticVest_female_medium.glb",
+      "sha256": "82fdbec8387a890785565e543508d31360d6a64c266e6d373e9c8f04b2939822",
+      "bytes": 1589896,
+      "bodyReference": {
+        "file": "public/assets/models/characters/base/character_female_medium.glb",
+        "sha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140"
+      }
+    },
+    {
+      "itemId": "combatArmor",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/armor-v3/equipment_combatArmor_male_medium.glb",
+      "sha256": "be7f0b52aeb3b7d1bc3f8abdbbc7b13e8b49fa3b3c92892e1e3f82a9e113209e",
+      "bytes": 1342644,
+      "bodyReference": {
+        "file": "public/assets/models/characters/base/character_male_medium.glb",
+        "sha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046"
+      }
+    },
+    {
+      "itemId": "combatArmor",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/armor-v3/equipment_combatArmor_female_medium.glb",
+      "sha256": "0242110eb6ecfd991711992b902cb7230ecfb57e35b2056a761e860edb3a0675",
+      "bytes": 1705016,
+      "bodyReference": {
+        "file": "public/assets/models/characters/base/character_female_medium.glb",
+        "sha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140"
+      }
+    },
+    {
+      "itemId": "heavyArmor",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/armor-v3/equipment_heavyArmor_male_medium.glb",
+      "sha256": "7c1990c827135bfd92be5400886c3656adbdfda434e9cb9eda3abc660ec4a58b",
+      "bytes": 1577500,
+      "bodyReference": {
+        "file": "public/assets/models/characters/base/character_male_medium.glb",
+        "sha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046"
+      }
+    },
+    {
+      "itemId": "heavyArmor",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/armor-v3/equipment_heavyArmor_female_medium.glb",
+      "sha256": "120f9a84c2192a3023397a47731fa59538ed35688431cd852a2be08c5d2e1c8e",
+      "bytes": 1802236,
+      "bodyReference": {
+        "file": "public/assets/models/characters/base/character_female_medium.glb",
+        "sha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140"
+      }
+    },
+    {
+      "itemId": "metalArmor",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/armor-v3/equipment_metalArmor_male_medium.glb",
+      "sha256": "f242198e0a0ab0ae2ffbddf5e42e38a4ff6abc7d82b255bd301164c044262b3f",
+      "bytes": 1342688,
+      "bodyReference": {
+        "file": "public/assets/models/characters/base/character_male_medium.glb",
+        "sha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046"
+      }
+    },
+    {
+      "itemId": "metalArmor",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/armor-v3/equipment_metalArmor_female_medium.glb",
+      "sha256": "3014d4e3925a3dd2532aef33a978f8649b7bce238634bfcc300f066218d045dc",
+      "bytes": 1572576,
+      "bodyReference": {
+        "file": "public/assets/models/characters/base/character_female_medium.glb",
+        "sha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140"
+      }
+    }
+  ]
+}

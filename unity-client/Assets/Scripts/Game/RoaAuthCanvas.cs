@@ -705,14 +705,11 @@ namespace RealmOfAshes.Game
                 + " · обновлён: " + updated;
         }
 
-        /// <summary>characterAppearanceLabel (04b_character_glb_runtime.js:139) — пол · телосложение.</summary>
+        /// <summary>characterAppearanceLabel — пол персонажа в списке сохранений.</summary>
         private static string AppearanceLabel(Newtonsoft.Json.Linq.JObject appearance)
         {
             if (appearance == null) return string.Empty;
-            string sex = appearance["sex"]?.ToString() == "female" ? "Женский" : "Мужской";
-            string bodyType = appearance["bodyType"]?.ToString();
-            string body = bodyType == "slim" ? "Стройное" : bodyType == "large" ? "Крепкое" : "Среднее";
-            return sex + " · " + body;
+            return appearance["sex"]?.ToString() == "female" ? "Женский" : "Мужской";
         }
 
         // --- Раскладка под экран: общая для шагов аккаунта и создания персонажа ---
@@ -1043,12 +1040,12 @@ namespace RealmOfAshes.Game
             button.GetComponentInChildren<Text>().fontSize = Fs(13f);
         }
 
-        // --- .character-appearance-editor: превью, пять степперов и примечание ---
+        // --- .character-appearance-editor: превью, три степпера и примечание ---
         private void BuildAppearancePage(RectTransform page, float width, float height)
         {
             bool compact = _layout.Compact;
-            string[] titles = { "Пол", "Телосложение", "Лицо", "Причёска", "Цвет волос" };
-            string[] keys = { "sex", "body", "face", "hair", "hairColor" };
+            string[] titles = { "Пол", "Причёска", "Цвет волос" };
+            string[] keys = { "sex", "hair", "hairColor" };
             float rowHeight = U(compact ? 40f : 36f);
             float rowGap = U(6f);
             float steppersHeight = keys.Length * (rowHeight + rowGap) - rowGap;
@@ -1195,8 +1192,6 @@ namespace RealmOfAshes.Game
             switch (key)
             {
                 case "sex": c.CycleSex(offset); break;
-                case "body": c.CycleBody(offset); break;
-                case "face": c.CycleFace(offset); break;
                 case "hair": c.CycleHair(offset); break;
                 default: c.CycleHairColor(offset); break;
             }
@@ -1576,8 +1571,6 @@ namespace RealmOfAshes.Game
             if (_stepperValues.Count == 0 || Bootstrap == null || _readiness == null) return;
             RoaCharacterCreator c = Bootstrap.Creator;
             _stepperValues["sex"].text = c.SexLabelText;
-            _stepperValues["body"].text = c.BodyLabelText;
-            _stepperValues["face"].text = c.FaceLabelText;
             _stepperValues["hair"].text = c.HairLabelText;
             _stepperValues["hairColor"].text = c.HairColorLabelText;
             if (_hairSwatch != null)
@@ -1587,7 +1580,7 @@ namespace RealmOfAshes.Game
                 float valueWidth = _stepperValues["hairColor"].preferredWidth;
                 _hairSwatch.rectTransform.anchoredPosition = new Vector2(-StepperArrowWidth - 10f - valueWidth - U(6f), 0f);
             }
-            _previewSummary.text = c.SexLabelText + " · " + c.BodyLabelText;
+            _previewSummary.text = c.SexLabelText + " · " + c.HairLabelText;
 
             string hint = c.ReadinessHint(Bootstrap.NewCharacterName);
             bool ready = c.Ready(Bootstrap.NewCharacterName) && !Bootstrap.CreatorBusy;

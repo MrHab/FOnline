@@ -34,8 +34,6 @@ namespace RealmOfAshes.EditorTools
                 var appearance = new JObject
                 {
                     ["sex"] = "male",
-                    ["bodyType"] = "medium",
-                    ["faceId"] = "male_04",
                     ["hairId"] = "short_crop",
                     ["hairColorId"] = "hair_08"
                 };

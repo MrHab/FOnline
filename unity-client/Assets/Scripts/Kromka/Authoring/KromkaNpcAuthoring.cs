@@ -9,13 +9,6 @@ namespace Kromka.Authoring
         Female
     }
 
-    public enum KromkaNpcBuild
-    {
-        Slim,
-        Medium,
-        Large
-    }
-
     /// <summary>
     /// Дружелюбный НПС локации в сцене Unity: торговец, служба, квестодатель,
     /// охрана базы. Сцена задаёт, где он стоит, куда смотрит и как выглядит, —
@@ -41,8 +34,6 @@ namespace Kromka.Authoring
 
         [Header("Облик — правится здесь, экспорт пишет в entity.appearance")]
         [SerializeField] private KromkaNpcSex _sex;
-        [SerializeField] private KromkaNpcBuild _build = KromkaNpcBuild.Medium;
-        [SerializeField, Range(1, 4)] private int _face = 1;
         [SerializeField] private string _hairId = "short_crop";
         [SerializeField, Range(1, 8)] private int _hairColor = 3;
 
@@ -73,8 +64,8 @@ namespace Kromka.Authoring
         public string[] Quests => _quests;
 
         public string SexId => _sex == KromkaNpcSex.Female ? "female" : "male";
-        public string BodyTypeId => _build == KromkaNpcBuild.Slim ? "slim" : _build == KromkaNpcBuild.Large ? "large" : "medium";
-        public string FaceId => SexId + "_0" + Mathf.Clamp(_face, 1, 4);
+        /// <summary>У пола одна базовая модель: телосложение и лицо не выбираются.</summary>
+        public string BodyKey => SexId + "_medium";
         public string HairId => string.IsNullOrWhiteSpace(_hairId) ? "short_crop" : _hairId;
         public string HairColorId => "hair_0" + Mathf.Clamp(_hairColor, 1, 8);
 
@@ -95,13 +86,9 @@ namespace Kromka.Authoring
         }
 
         /// <summary>Облик в схеме realm.character-appearance.v1.</summary>
-        public void ConfigureAppearance(string sex, string bodyType, string faceId, string hairId, string hairColorId)
+        public void ConfigureAppearance(string sex, string hairId, string hairColorId)
         {
             _sex = string.Equals(sex, "female", StringComparison.OrdinalIgnoreCase) ? KromkaNpcSex.Female : KromkaNpcSex.Male;
-            _build = string.Equals(bodyType, "slim", StringComparison.OrdinalIgnoreCase) ? KromkaNpcBuild.Slim
-                : string.Equals(bodyType, "large", StringComparison.OrdinalIgnoreCase) ? KromkaNpcBuild.Large
-                : KromkaNpcBuild.Medium;
-            _face = Suffix(faceId, 1, 4);
             _hairId = string.IsNullOrWhiteSpace(hairId) ? "short_crop" : hairId;
             _hairColor = Suffix(hairColorId, 1, 8);
             AppearanceChanged?.Invoke(this);
@@ -135,7 +122,6 @@ namespace Kromka.Authoring
 
         private void OnValidate()
         {
-            _face = Mathf.Clamp(_face, 1, 4);
             _hairColor = Mathf.Clamp(_hairColor, 1, 8);
             AppearanceChanged?.Invoke(this);
         }

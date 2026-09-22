@@ -13,6 +13,8 @@
 | Предметы | `public/assets/models/items/kromka/manifest.json` | 23 модели, включая аптечку, детекторы, пояса и артефакты | `RoaItemModelCatalog.CatalogVersion` |
 | Экипировка | `public/assets/models/equipment/free-v2/manifest.json` | 60 вариантов шлемов, обуви, брони и рюкзака для 6 тел | `RoaEquipmentModelCatalog.CatalogVersion` |
 | Костюмы | `public/assets/models/equipment/suits-v2/manifest.json` | 12 вариантов химзащиты и энергокостюма | `RoaSuitModelCatalog.CatalogVersion` |
+| Одежда | `public/assets/models/equipment/outfits-v1/manifest.json` | кожаная броня полным костюмом на 2 тела | `RoaOutfitModelCatalog.OutfitVersion` |
+| Военная броня | `public/assets/models/equipment/armor-v3/manifest.json` | бронежилет, боевая, тяжёлая и металлическая броня на 2 тела | `RoaOutfitModelCatalog.PlatedVersion` |
 | Носимые устройства | `public/assets/models/equipment/utilities-v1/manifest.json` | 288 вариантов детекторов и поясов для 6 тел и 8 вариантов брони | `RoaWornUtilityCatalog.CatalogVersion` |
 | Наземные предметы | `public/assets/models/items/manifest.json` | одна библиотека `ground_item_library.glb` на 24 предмета | — |
 
@@ -26,6 +28,8 @@
 npm run build:free-items        # предметы, артефакты, детекторы
 npm run build:free-equipment    # шлемы, обувь, броня, рюкзак
 npm run build:layered-suits     # химзащита и энергокостюм
+npm run build:outfits           # кожаная броня из набора Quaternius под наш скелет
+node tools/build-plated-armor-models.js  # военная броня: форма с пластинами поверх
 npm run build:worn-utilities    # детекторы и пояса поверх экипировки
 npm run build:ground-items      # библиотека наземных предметов
 npm run build:models-lite       # облегчённые копии всех GLB

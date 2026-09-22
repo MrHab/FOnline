@@ -363,11 +363,11 @@ namespace RealmOfAshes.EditorTools
             Check(tutorialCase.GetComponentsInChildren<Transform>().Any(t=>t.name=="item_medkit"), "Tutorial still uses procedural case");
             Check(!tutorialCase.GetComponentsInChildren<Transform>().Any(t=>t.name=="MedicalCase"), "Old tutorial cubes remain");
             Object.Destroy(tutorialCase);
-            foreach (string sex in new[] { "male", "female" }) foreach (string body in new[] { "slim", "medium", "large" })
+            foreach (string sex in new[] { "male", "female" }) foreach (string body in new[] { "medium" })
             {
                 var previewHost = new GameObject("MedicalCase:" + sex + "_" + body);
                 var preview = previewHost.AddComponent<RoaCharacterPreview>();
-                preview.Show(Origin, new CharacterAppearance { Sex = sex, BodyType = body, FaceId = sex + "_04", HairId = "short_crop", HairColorId = "hair_08" }, 640, 640);
+                preview.Show(Origin, new CharacterAppearance { Sex = sex, HairId = "short_crop", HairColorId = "hair_08" }, 640, 640);
                 // The production preview hides below the game at y=-10000.
                 // This isolated test scene needs no such separation, and moving
                 // its complete stage to the origin avoids centimetre-scale
@@ -720,13 +720,13 @@ namespace RealmOfAshes.EditorTools
             var sun=new GameObject("CandidateSuitSun").AddComponent<Light>();
             sun.type=LightType.Directional;sun.intensity=2.2f;
             sun.transform.rotation=Quaternion.Euler(45,-20,0);
-            foreach(string sex in new[]{"male","female"}) foreach(string body in new[]{"slim","medium","large"})
+            foreach(string sex in new[]{"male","female"}) foreach(string body in new[]{"medium"})
             {
                 var host=new GameObject("CandidateSuit:"+sex+"_"+body);
                 try
                 {
                     var preview=host.AddComponent<RoaCharacterPreview>();
-                    preview.Show(Origin,new CharacterAppearance { Sex=sex,BodyType=body,FaceId=sex+"_04",
+                    preview.Show(Origin,new CharacterAppearance { Sex=sex,
                         HairId="short_crop",HairColorId="hair_08" },640,640);
                     host.transform.Find("CharacterPreviewScene").position=Vector3.zero;
                     await Until(()=>preview.IsReady,"candidate body "+sex+"_"+body,60000);

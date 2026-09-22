@@ -107,8 +107,6 @@ function writeManifest(outputDirectory, buildReport) {
     },
     defaults: {
       sex: 'male',
-      bodyType: 'medium',
-      faceId: 'male_01',
       hairId: 'short_crop',
       skinToneId: 'skin_03',
       hairColorId: 'hair_03'

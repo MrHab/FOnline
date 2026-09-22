@@ -154,7 +154,7 @@ namespace RealmOfAshes.EditorTools
                 var viewObject = new GameObject("View");
                 viewObject.transform.SetParent(root.transform, false);
                 RoaCharacterView character = viewObject.AddComponent<RoaCharacterView>();
-                await character.Load(BaseUrl, new JObject { ["sex"] = parts[0], ["bodyType"] = parts[1] });
+                await character.Load(BaseUrl, new JObject { ["sex"] = parts[0] });
                 Check(character.Ready, body + ": character did not load");
 
                 GameObject model = UnityEngine.Object.Instantiate(vehicleAsset);

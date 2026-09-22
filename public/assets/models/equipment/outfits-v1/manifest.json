@@ -1,0 +1,77 @@
+{
+  "schema": "realm.ubc-outfits.v1",
+  "version": "1-e832316f",
+  "generator": "tools/blender/build_ubc_outfit_models.py",
+  "files": [
+    {
+      "itemId": "leather",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/outfits-v1/equipment_leather_male_medium.glb",
+      "sha256": "7fea691c97fed416567cf50f86e14da24e702b0f52d9b9065c27ca0e21bfe7ad",
+      "bytes": 1082664,
+      "triangles": 12886,
+      "parts": [
+        "Male_Ranger_Body",
+        "Male_Ranger_Arms",
+        "Male_Ranger_Legs",
+        "Male_Ranger_Feet_Boots",
+        "Male_Ranger_Acc_Pauldron"
+      ],
+      "fit": {
+        "method": "bone-retarget+body-anchored-inflation-v1",
+        "clearanceMetres": 0.01,
+        "movedVertices": 5347,
+        "largestPushMetres": 0.03,
+        "skinPokes": 0,
+        "deepestPokeMetres": 0,
+        "baseBodyHidden": false
+      },
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Modular Character Outfits - Fantasy (Standard)",
+        "page": "https://quaternius.com/packs/modularcharacteroutfitsfantasy.html",
+        "license": "CC0-1.0",
+        "archiveSha256": "c3468b18871cc8c8f05ab14df7712baf22cb9f389cbd870babf130e595187f70"
+      },
+      "bodyReference": {
+        "file": "public/assets/models/characters/base/character_male_medium.glb",
+        "sha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046"
+      }
+    },
+    {
+      "itemId": "leather",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/outfits-v1/equipment_leather_female_medium.glb",
+      "sha256": "fdc93e47ef1672791650b55417ed1e2a01ede20a62332d0fc64c7254afaffc25",
+      "bytes": 1260500,
+      "triangles": 15426,
+      "parts": [
+        "Female_Ranger_Body",
+        "Female_Ranger_Arms",
+        "Female_Ranger_Legs",
+        "Female_Ranger_Feet",
+        "Female_Ranger_Acc_Pauldrons"
+      ],
+      "fit": {
+        "method": "bone-retarget+body-anchored-inflation-v1",
+        "clearanceMetres": 0.01,
+        "movedVertices": 6663,
+        "largestPushMetres": 0.03,
+        "skinPokes": 62,
+        "deepestPokeMetres": 0.0041,
+        "baseBodyHidden": false
+      },
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Modular Character Outfits - Fantasy (Standard)",
+        "page": "https://quaternius.com/packs/modularcharacteroutfitsfantasy.html",
+        "license": "CC0-1.0",
+        "archiveSha256": "c3468b18871cc8c8f05ab14df7712baf22cb9f389cbd870babf130e595187f70"
+      },
+      "bodyReference": {
+        "file": "public/assets/models/characters/base/character_female_medium.glb",
+        "sha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140"
+      }
+    }
+  ]
+}

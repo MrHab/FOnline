@@ -354,7 +354,7 @@ namespace RealmOfAshes.EditorTools
                     Name = i % 2 == 0 ? "Максимилиан Долгий" : "Ива",
                     Level = i % 2 == 0 ? 48 : 1,
                     LocationId = i % 2 == 0 ? "Старая сортировочная станция «Западный узел»" : "settlement",
-                    Appearance = new JObject { ["sex"] = i % 2 == 0 ? "female" : "male", ["bodyType"] = i % 2 == 0 ? "slim" : "large" },
+                    Appearance = new JObject { ["sex"] = i % 2 == 0 ? "female" : "male" },
                     UpdatedAt = 1789000000000L + i * 86400000L
                 });
             var client = new RoaAuthClient("http://127.0.0.1:3000");

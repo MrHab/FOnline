@@ -465,8 +465,6 @@ namespace Kromka.EditorTools
                         {
                             ["schema"] = "realm.character-appearance.v1",
                             ["sex"] = npc.SexId,
-                            ["bodyType"] = npc.BodyTypeId,
-                            ["faceId"] = npc.FaceId,
                             ["hairId"] = npc.HairId,
                             ["skinToneId"] = "skin_03",
                             ["hairColorId"] = npc.HairColorId

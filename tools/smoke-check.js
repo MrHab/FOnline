@@ -1100,8 +1100,6 @@ async function registerSocketTestAccount(index, suffix) {
     appearance: {
       schema: 'realm.character-appearance.v1',
       sex: index % 2 === 0 ? 'male' : 'female',
-      bodyType: ['slim', 'medium', 'large'][(index - 1) % 3],
-      faceId: `${index % 2 === 0 ? 'male' : 'female'}_0${((index - 1) % 4) + 1}`,
       hairId: ['short_crop', 'side_swept', 'mohawk', 'braids', 'tied_back', 'long', 'buns', 'shaved'][(index - 1) % 8],
       skinToneId: 'skin_03',
       hairColorId: `hair_0${((index - 1) % 8) + 1}`
@@ -1249,7 +1247,6 @@ async function assertSocketMultiplayerLifecycle() {
           name: account.name,
           appearance: {
             ...account.appearance,
-            faceId: 'admin_face',
             hairId: 'invisible_hair',
             hairColorId: 'radioactive_green'
           },
@@ -1291,8 +1288,6 @@ async function assertSocketMultiplayerLifecycle() {
         fail('multiplayer join did not preserve tagged skills', JSON.stringify(account.join.self));
       }
       if (account.join.self.appearance?.sex !== account.appearance.sex
-        || account.join.self.appearance?.bodyType !== account.appearance.bodyType
-        || account.join.self.appearance?.faceId !== account.appearance.faceId
         || account.join.self.appearance?.hairId !== account.appearance.hairId
         || account.join.self.appearance?.hairColorId !== account.appearance.hairColorId) {
         fail('multiplayer join did not preserve character appearance', JSON.stringify(account.join.self));
@@ -1666,8 +1661,7 @@ async function assertSocketMultiplayerLifecycle() {
       taggedSkills: ['science', 'repair'],
       appearance: {
         schema: 'realm.character-appearance.v1',
-        sex: 'male',
-        bodyType: 'large'
+        sex: 'female'
       },
       factionId: 'scrap_union',
       worldFactionId: 'scrap_union'
@@ -1701,8 +1695,6 @@ async function assertSocketMultiplayerLifecycle() {
       || JSON.stringify(rejoin.self?.traits || []) !== JSON.stringify(['trainedEye'])
       || JSON.stringify(rejoin.self?.taggedSkills || []) !== JSON.stringify(['lightWeapons'])
       || rejoin.self?.appearance?.sex !== first.appearance.sex
-      || rejoin.self?.appearance?.bodyType !== first.appearance.bodyType
-      || rejoin.self?.appearance?.faceId !== first.appearance.faceId
       || rejoin.self?.appearance?.hairId !== first.appearance.hairId
       || rejoin.self?.appearance?.hairColorId !== first.appearance.hairColorId
       || rejoin.self?.worldFactionId !== ''

@@ -330,8 +330,6 @@ namespace RealmOfAshes.Game
             {
                 Schema = appearance.Schema,
                 Sex = appearance.Sex,
-                BodyType = appearance.BodyType,
-                FaceId = appearance.FaceId,
                 HairId = appearance.HairId,
                 SkinToneId = appearance.SkinToneId,
                 HairColorId = appearance.HairColorId
@@ -343,8 +341,6 @@ namespace RealmOfAshes.Game
             return appearance == null ? string.Empty : string.Join(":", new[]
             {
                 appearance.Sex ?? string.Empty,
-                appearance.BodyType ?? string.Empty,
-                appearance.FaceId ?? string.Empty,
                 appearance.HairId ?? string.Empty,
                 appearance.SkinToneId ?? string.Empty,
                 appearance.HairColorId ?? string.Empty
@@ -360,10 +356,7 @@ namespace RealmOfAshes.Game
         private static string AppearanceLabel(CharacterAppearance appearance)
         {
             if (appearance == null) return string.Empty;
-            string sex = appearance.Sex == "female" ? "Женский" : "Мужской";
-            string body = appearance.BodyType == "slim" ? "стройное"
-                : appearance.BodyType == "large" ? "крепкое" : "среднее";
-            return sex + " · " + body + " телосложение";
+            return appearance.Sex == "female" ? "Женский" : "Мужской";
         }
 
         private static void DisposeObject(UnityEngine.Object value)

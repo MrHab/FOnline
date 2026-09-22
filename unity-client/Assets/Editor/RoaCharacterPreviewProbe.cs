@@ -111,8 +111,6 @@ namespace RealmOfAshes.EditorTools
                 var appearance = new CharacterAppearance
                 {
                     Sex = "male",
-                    BodyType = "medium",
-                    FaceId = "male_04",
                     HairId = "short_crop",
                     HairColorId = "hair_08"
                 };
@@ -148,7 +146,7 @@ namespace RealmOfAshes.EditorTools
 
                 // A same-body edit must reuse the already loaded model and update
                 // visible variants immediately instead of issuing another request.
-                appearance.FaceId = "male_02";
+                appearance.HairColorId = "hair_02";
                 appearance.HairId = "shaved";
                 appearance.HairColorId = "hair_07";
                 preview.Show(BaseUrl, appearance, 320, 360);

@@ -522,8 +522,6 @@ for (const row of unityStatRows) {
 }
 for (const marker of [
   'private static readonly string[] SexIds = { "male", "female" };',
-  'private static readonly string[] BodyIds = { "slim", "medium", "large" };',
-  'private static readonly string[] FaceSuffixes = { "01", "02", "03", "04" };',
   `public static int SpecialTotal { get; private set; } = ${progressionCatalog.special.budget};`,
   `public static int MaxTaggedSkills { get; private set; } = ${progressionCatalog.taggedSkills.max};`,
   `public static int MaxTraits { get; private set; } = ${progressionCatalog.startTraits.max};`,
@@ -551,7 +549,9 @@ for (const marker of [
 const unityAuthCanvas = read('unity-client/Assets/Scripts/Game/RoaAuthCanvas.cs');
 assert(unityCharacterView.includes('public bool ApplyAppearance(CharacterAppearance appearance)')
   && unityAuthCanvas.includes('preview.Show(Bootstrap.AuthServerUrl, Bootstrap.Creator.Appearance,'),
-  'Unity creator must update face/hair variants on the live GLB preview');
+  'Unity creator must update hair variants on the live GLB preview');
+assert(unityAuthCanvas.includes('string[] keys = { "sex", "hair", "hairColor" };'),
+  'the creator offers exactly sex, hairstyle and hair colour');
 
 // Local camera zoom persists between sessions.
 const unityCamera = read('unity-client/Assets/Scripts/Game/RoaCameraRig.cs');

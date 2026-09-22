@@ -137,7 +137,7 @@ namespace RealmOfAshes.Game
                 }
                 _player.ApplyVehicleState(ack["vehicle"] as JObject);
                 if (_player.Mounted)
-                    ShowStatus("B — слезть. Верхом не стреляют; болт — колесо мыши.", 2.8f);
+                    ShowStatus("W — газ, S — тормоз, руль — мышь или A/D. B — слезть.", 3.2f);
             });
         }
 

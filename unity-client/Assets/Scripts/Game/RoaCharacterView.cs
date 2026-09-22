@@ -1296,7 +1296,11 @@ namespace RealmOfAshes.Game
             if (_riding)
             {
                 // Верхом ноги не шагают: клип — покой, а позу даёт седло (LateUpdate).
-                _rideSpeed = actuallyMoving ? speed : 0f;
+                // Мотоцикл смотрит на курсор, а едет по WASD: колёсам нужен ход вдоль
+                // корпуса со знаком — назад они крутятся назад, боком стоят.
+                float yawRad = facingYawDeg * Mathf.Deg2Rad;
+                float along = velocity.x * Mathf.Sin(yawRad) + velocity.z * Mathf.Cos(yawRad);
+                _rideSpeed = actuallyMoving ? along : 0f;
                 _locomoting = false;
                 Turning = false;
                 _turnHold = 0f;
@@ -1520,7 +1524,7 @@ namespace RealmOfAshes.Game
 
             BeginBoneOffsets();
             if (_vehicle.TryGetAnchors(out RoaVehicleView.Anchors anchors))
-                _rider.Apply(anchors, _riderWeight, Mathf.InverseLerp(1f, 11f, speed), _modelRoot);
+                _rider.Apply(anchors, _riderWeight, Mathf.InverseLerp(1f, 11f, Mathf.Abs(speed)), _modelRoot);
             EndBoneOffsets();
             return true;
         }

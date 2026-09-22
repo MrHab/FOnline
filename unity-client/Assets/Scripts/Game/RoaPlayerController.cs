@@ -78,12 +78,20 @@ namespace RealmOfAshes.Game
         /// </summary>
         public const float VehicleSpeedLimit = 16f;
 
-        /// <summary>Разгон и торможение седока, м/с². Ход остаётся игроцким, но у мотоцикла есть инерция.</summary>
+        /// <summary>Разгон, торможение и накат мотоцикла, м/с². Без газа он катится и встаёт сам.</summary>
         public const float RideAcceleration = 22f;
         public const float RideBraking = 30f;
+        public const float RideCoastDrag = 5f;
 
-        /// <summary>Как быстро транспорт разворачивается к курсору или по ходу, град/с.</summary>
-        public const float RideTurnSpeedDeg = 520f;
+        /// <summary>Задний ход медленный: мотоцикл пятится, а не едет спиной вперёд.</summary>
+        public const float RideReverseSpeed = 3.5f;
+
+        /// <summary>
+        /// Разворот носа, град/с: на месте мотоцикл переставляется легко, на полном
+        /// ходу пишет дугу (при 11 м/с и 120°/с радиус около 5 м).
+        /// </summary>
+        public const float RideTurnStillDeg = 220f;
+        public const float RideTurnFullDeg = 120f;
 
         /// <summary>Курсор ближе этого к мотоциклу (м) не поворачивает его: иначе он крутится волчком.</summary>
         public const float VehicleCursorDeadZone = 0.9f;
@@ -127,7 +135,8 @@ namespace RealmOfAshes.Game
         private bool _virtualCrouch;
         private Vector3 _presentationCorrectionOffset;
         private Vector3 _presentationCorrectionVelocity;
-        private Vector3 _rideVelocity;
+        /// <summary>Ход мотоцикла вдоль носа, м/с: минус — задний ход.</summary>
+        private float _rideSpeed;
 
         public bool Moving { get; private set; }
 
@@ -217,7 +226,7 @@ namespace RealmOfAshes.Game
                 _velocity = Vector3.zero;
                 _visualVelocity = Vector3.zero;
                 _requestedVelocity = Vector3.zero;
-                _rideVelocity = Vector3.zero;
+                _rideSpeed = 0f;
                 _colliding = false;
                 _actorContact = false;
                 _collisionNormal = Vector3.zero;
@@ -231,13 +240,8 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            // Верхом оружие убрано, но мотоцикл, как и пеший, поворачивает к курсору;
-            // без мыши (телефон) он смотрит по ходу — это решает ReadInputAndMove.
-            if (Mounted)
-            {
-                View?.SetAim(transform.position, false);
-                if (PointerAimEnabled) SteerVehicleToCursor();
-            }
+            // Верхом оружие убрано, а нос мотоцикла поворачивает руль — см. RideVehicle.
+            if (Mounted) View?.SetAim(transform.position, false);
             else if (PointerAimEnabled) AimAtCursor();
             ReadInputAndMove();
             UpdatePresentationReconciliation();
@@ -298,13 +302,35 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Мотоцикл поворачивает к курсору, как пеший персонаж, но со своей
-        /// скоростью разворота. Над самим мотоциклом курсор направления не задаёт.
+        /// Езда мотоцикла: руль поворачивает нос, газ везёт вдоль носа — боком
+        /// мотоцикл не ездит. Рулит курсор, а пока зажаты A/D (стик вбок) — они;
+        /// на скорости нос поворачивается медленнее, поэтому выходит дуга.
+        /// steerInput: −1 влево … +1 вправо; throttleInput: +1 газ, −1 тормоз и задний ход.
         /// </summary>
-        private void SteerVehicleToCursor()
+        private Vector3 RideVehicle(float steerInput, float throttleInput, float dt)
         {
-            if (TryCursorGroundPoint(out _, out Vector3 point))
-                TurnToward(point, RideTurnSpeedDeg, VehicleCursorDeadZone);
+            float top = Mathf.Min(VehicleSpeed, VehicleSpeedLimit);
+            float pace = Mathf.InverseLerp(0f, Mathf.Max(1f, top), Mathf.Abs(_rideSpeed));
+            float turnRate = Mathf.Lerp(RideTurnStillDeg, RideTurnFullDeg, pace);
+            if (Mathf.Abs(steerInput) > 0.05f)
+                SetYaw(_yawDeg + steerInput * turnRate * dt);
+            else if (PointerAimEnabled && TryCursorGroundPoint(out _, out Vector3 point))
+                TurnToward(point, turnRate, VehicleCursorDeadZone);
+
+            float target = throttleInput > 0.05f ? top : throttleInput < -0.05f ? -RideReverseSpeed : 0f;
+            // Газ разгоняет, тормоз и смена хода — резче, отпущенный газ просто катит.
+            float rate = Mathf.Abs(throttleInput) <= 0.05f ? RideCoastDrag
+                : (target > 0f && _rideSpeed >= 0f) || (target < 0f && _rideSpeed <= 0f)
+                    ? RideAcceleration
+                    : RideBraking;
+            _rideSpeed = Mathf.MoveTowards(_rideSpeed, target, rate * dt);
+            return transform.forward * _rideSpeed;
+        }
+
+        private void SetYaw(float yawDeg)
+        {
+            _yawDeg = Mathf.Repeat(yawDeg, 360f);
+            transform.rotation = Quaternion.Euler(0f, _yawDeg, 0f);
         }
 
         /// <summary>
@@ -409,12 +435,9 @@ namespace RealmOfAshes.Game
             Vector3 requestedVelocity;
             if (Mounted)
             {
-                // Тот же ввод, что пешком (WASD относительно камеры), но транспорт
-                // разгоняется и тормозит, а не меняет скорость мгновенно.
-                Vector3 rideTarget = wish * Mathf.Min(VehicleSpeed, VehicleSpeedLimit);
-                float rate = rideTarget.sqrMagnitude >= _rideVelocity.sqrMagnitude ? RideAcceleration : RideBraking;
-                _rideVelocity = Vector3.MoveTowards(_rideVelocity, rideTarget, rate * frameDt);
-                requestedVelocity = _rideVelocity;
+                // Транспорт едет не как персонаж: руль поворачивает нос, газ везёт
+                // вдоль носа. Ввод тот же: A/D (стик вбок) — руль, W/S — газ и тормоз.
+                requestedVelocity = RideVehicle(x, z, frameDt);
             }
             else
             {
@@ -442,19 +465,10 @@ namespace RealmOfAshes.Game
 
             if (Mounted)
             {
-                // Транспорт катится и без нажатия, пока не остановится; о стену он
-                // теряет ход, а не копит его.
+                // О стену мотоцикл теряет ход, а не скребёт вдоль неё на полном газу.
+                float along = Vector3.Dot(actual, transform.forward);
+                if (_colliding) _rideSpeed = along;
                 Moving = actual.sqrMagnitude > 0.0064f;
-                if (_colliding) _rideVelocity = actual;
-                // С мышью мотоцикл смотрит на курсор (SteerVehicleToCursor), без неё — по ходу.
-                Vector3 heading = PointerAimEnabled ? Vector3.zero
-                    : actual.sqrMagnitude > 0.16f ? actual : (requestedMovement ? wish : Vector3.zero);
-                if (heading.sqrMagnitude > 0.0001f)
-                {
-                    float targetYaw = Mathf.Atan2(heading.x, heading.z) * Mathf.Rad2Deg;
-                    _yawDeg = Mathf.MoveTowardsAngle(_yawDeg, targetYaw, RideTurnSpeedDeg * frameDt);
-                    transform.rotation = Quaternion.Euler(0f, _yawDeg, 0f);
-                }
                 _visualVelocity = actual;
                 return;
             }
@@ -478,8 +492,9 @@ namespace RealmOfAshes.Game
             float speed = vehicle?["speed"]?.ToObject<float?>() ?? 0f;
             bool mounted = !string.IsNullOrEmpty(itemId) && speed > 0f;
             bool changed = mounted != Mounted || (mounted && itemId != VehicleItemId);
-            if (mounted && !Mounted) _rideVelocity = _velocity;
-            if (!mounted) _rideVelocity = Vector3.zero;
+            // В седло садятся с ходу: ход вдоль носа наследует бег, спешиваются — сбрасывают.
+            if (mounted && !Mounted) _rideSpeed = Mathf.Max(0f, Vector3.Dot(_velocity, transform.forward));
+            if (!mounted) _rideSpeed = 0f;
             Mounted = mounted;
             VehicleItemId = mounted ? itemId : string.Empty;
             VehicleSpeed = mounted ? speed : 0f;
@@ -805,7 +820,7 @@ namespace RealmOfAshes.Game
             _collisionNormal = Vector3.zero;
             _collisionPressure = 0f;
             _requestedVelocity = Vector3.zero;
-            _rideVelocity = Vector3.zero;
+            _rideSpeed = 0f;
             _presentationCorrectionOffset = Vector3.zero;
             _presentationCorrectionVelocity = Vector3.zero;
             if (PresentationRoot != null) PresentationRoot.localPosition = Vector3.zero;

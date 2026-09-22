@@ -12,7 +12,8 @@ const accessorHash = accessor => {
   return hash(Buffer.from(array.buffer,array.byteOffset,array.byteLength));
 };
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'public/assets/models/equipment/free-v2/manifest.json')));
-const bodies = ['female_large','female_medium','female_slim','male_large','male_medium','male_slim'];
+// Телосложения больше нет: у каждого пола одна базовая модель.
+const bodies = ['female_medium','male_medium'];
 const families = { backpack:'backpack', helmet:'helmet', tacticalHelmet:'helmet', assaultHelmet:'helmet',
   preWarHelmet:'helmet', weldedHelmet:'helmet', boots:'boots', scoutBoots:'boots', reinforcedBoots:'boots', assaultBoots:'boots' };
 const donors = JSON.parse(fs.readFileSync(path.join(root,'source-assets/equipment/free-gear-v2/sources.json'))).sources;
@@ -90,6 +91,6 @@ async function main() {
       assert(catalog.listNodes().some(n => n.getName().includes(row.itemId==='backpack'?'downloaded_sack':`free_${row.itemId}_${row.bodyId}_downloaded_`)));
     }
   }
-  console.log(`Free equipment PASS: ${manifest.files.length} models, 10 families on all 6 bodies, pinned CC0 sources, 65-bone binding, original/lite geometry and cache version.`);
+  console.log(`Free equipment PASS: ${manifest.files.length} models, 10 families on both bodies, pinned CC0 sources, 65-bone binding, original/lite geometry and cache version.`);
 }
 main().catch(e => { console.error(e); process.exitCode = 1; });

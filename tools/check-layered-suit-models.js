@@ -15,7 +15,8 @@ async function main() {
   assert.equal(manifest.version,version);
   const client=read('unity-client/Assets/Scripts/Game/RoaSuitModelCatalog.cs').toString();
   if(!candidate)assert(client.includes(`CatalogVersion = "${version}"`));
-  const bodies=['male_slim','male_medium','male_large','female_slim','female_medium','female_large'];
+  // Телосложения больше нет: у каждого пола одна базовая модель.
+  const bodies=['male_medium','female_medium'];
   assert.deepEqual(manifest.files.map(r=>r.itemId+'/'+r.bodyId).sort(),['hazmatSuit','energySuit'].flatMap(i=>bodies.map(b=>i+'/'+b)).sort());
   const io=new NodeIO().registerExtensions(ALL_EXTENSIONS);
   for(const row of manifest.files) {
@@ -101,7 +102,7 @@ async function main() {
     }
   }
   console.log(candidate
-    ? `Candidate layered suits PASS: 12 isolated variants, source hashes, 65-bone skins, geometry budgets and version ${version}; not a runtime/lite approval.`
-    : `Layered suits PASS: 12 variants, distinct built-in footwear, source hashes, 65-bone skins, lite geometry and version ${version}.`);
+    ? `Candidate layered suits PASS: ${manifest.files.length} isolated variants, source hashes, 65-bone skins, geometry budgets and version ${version}; not a runtime/lite approval.`
+    : `Layered suits PASS: ${manifest.files.length} variants, distinct built-in footwear, source hashes, 65-bone skins, lite geometry and version ${version}.`);
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

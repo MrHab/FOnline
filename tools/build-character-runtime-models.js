@@ -39,13 +39,10 @@ const BUILDER = path.join(
   'blender',
   'build_character_runtime_models.py'
 );
+// Телосложения больше нет: у каждого пола одна базовая модель.
 const MATRIX = [
-  ['female', 'slim'],
   ['female', 'medium'],
-  ['female', 'large'],
-  ['male', 'slim'],
-  ['male', 'medium'],
-  ['male', 'large']
+  ['male', 'medium']
 ];
 
 function parseArgs(argv) {

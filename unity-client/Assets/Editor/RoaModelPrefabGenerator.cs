@@ -225,9 +225,9 @@ namespace RealmOfAshes.Editor
             {
                 "/assets/models/characters/npc/npc_humanoid_animations.glb"
             };
+            // Телосложения больше нет: у каждого пола одна базовая модель.
             foreach (string sex in new[] { "female", "male" })
-                foreach (string body in new[] { "slim", "medium", "large" })
-                    urls.Add("/assets/models/characters/base/character_" + sex + "_" + body + ".glb");
+                urls.Add("/assets/models/characters/base/character_" + sex + "_medium.glb");
             return urls;
         }
     }

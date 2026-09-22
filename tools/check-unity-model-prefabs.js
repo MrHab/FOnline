@@ -43,16 +43,15 @@ function versionAtLeast(actual, minimum) {
 }
 
 // Resources ships whole in the WebGL build, so the catalog holds only what every
-// player needs at once: the animation library and the six character bodies.
+// player needs at once: the animation library and the two character bodies.
 // Creatures load by URL from /assets/models-lite/ (see check-webgl-payload.js).
 function expectedRuntimeUrls() {
   const urls = [
     '/assets/models/characters/npc/npc_humanoid_animations.glb'
   ];
+  // Телосложения больше нет: у каждого пола одна базовая модель.
   for (const sex of ['female', 'male']) {
-    for (const body of ['large', 'medium', 'slim']) {
-      urls.push(`/assets/models/characters/base/character_${sex}_${body}.glb`);
-    }
+    urls.push(`/assets/models/characters/base/character_${sex}_medium.glb`);
   }
   return urls.sort();
 }

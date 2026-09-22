@@ -6,8 +6,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 import build_free_armor_replacements as rig
 root = Path(__file__).resolve().parents[2]
 for label, file in [('source', root / 'Build/SourceDownloads/free-armor-replacements-20260908/quaternius_male_spacesuit.gltf'),
-                    ('initial', root / 'unity-client/Temp/LayeredSuitReview/docs/art/reviews/unified-equipment-hazmat-suit-v1/suit/equipment_hazmat_suit_unified_v1_female_large.glb'),
-                    ('target', root / 'public/assets/models/characters/base/character_female_large.glb')]:
+                    ('initial', root / 'unity-client/Temp/LayeredSuitReview/docs/art/reviews/unified-equipment-hazmat-suit-v1/suit/equipment_hazmat_suit_unified_v1_female_medium.glb'),
+                    ('target', root / 'public/assets/models/characters/base/character_female_medium.glb')]:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     objects = rig.import_gltf(file)
     arm = next(o for o in objects if o.type == 'ARMATURE')

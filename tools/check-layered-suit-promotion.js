@@ -15,7 +15,8 @@ const write=(file,bytes)=>{const target=path.join(root,file);fs.mkdirSync(path.d
 const json=(file,data)=>write(file,JSON.stringify(data));
 const read=file=>fs.readFileSync(path.join(root,file));
 try {
-  const bodies=['male_slim','male_medium','male_large','female_slim','female_medium','female_large'];
+  // Телосложения больше нет: у каждого пола одна базовая модель.
+  const bodies=['male_medium','female_medium'];
   const boots=['integrated','boots','scoutBoots','reinforcedBoots','assaultBoots'];
   write('references/body.glb','synthetic body reference, not a model');
   write('unity-client/Assets/Scripts/Game/RoaSuitModelCatalog.cs','const string CatalogVersion = "old";');
@@ -26,7 +27,7 @@ try {
     const candidateFile='unity-client/Logs/UpperSuitCandidate/'+filename;
     const file='/assets/models/equipment/suits-v2/'+filename;
     write(candidateFile,bytes);write('public'+file,'old original '+filename);
-    if(bodyId!=='male_slim')write('public'+file.replace('/models/','/models-lite/'),'old lite '+filename);
+    if(bodyId!=='male_medium')write('public'+file.replace('/models/','/models-lite/'),'old lite '+filename);
     return {itemId,bodyId,candidateFile,file,sha256:hash(bytes),bodyReference:reference,
       source:reference,retainedReference:reference,legFit:{sameLegSkinSampling:true},
       gloveFit:{unsealedHandBoundaryEdges:0},jointLiner:{sourceSlitClosure:{closedSourceSlits:bodyId.startsWith('female')?2:0}}};
@@ -79,7 +80,7 @@ try {
   for(const [file,bytes] of oldOriginals)assert(read(file).equals(bytes),'Rollback original');
   for(const row of files) {
     const lite='public'+row.file.replace('/models/','/models-lite/');
-    if(row.bodyId==='male_slim')assert(!fs.existsSync(path.join(root,lite)),'Rollback newly created lite');
+    if(row.bodyId==='male_medium')assert(!fs.existsSync(path.join(root,lite)),'Rollback newly created lite');
     else assert.equal(read(lite).toString(),'old lite '+path.basename(row.file));
   }
   assert(read('unity-client/Assets/Scripts/Game/RoaSuitModelCatalog.cs').equals(oldCatalog));

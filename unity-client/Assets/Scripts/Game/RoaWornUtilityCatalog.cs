@@ -3,7 +3,7 @@ namespace RealmOfAshes.Game
     /// <summary>CC0 item models fitted to the player's body and current armor.</summary>
     public static class RoaWornUtilityCatalog
     {
-        public const string CatalogVersion = "1-75bbf530";
+        public const string CatalogVersion = "1-47011da3";
 
         public static string ArmorFit(string armorId)
         {
@@ -24,12 +24,8 @@ namespace RealmOfAshes.Game
                 case "artifactBelt2": case "artifactBelt3": case "artifactBelt4": break;
                 default: return false;
             }
-            switch (bodyKey)
-            {
-                case "male_slim": case "male_medium": case "male_large":
-                case "female_slim": case "female_medium": case "female_large": break;
-                default: return false;
-            }
+            // Телосложения больше нет: у каждого пола одна базовая модель.
+            if (bodyKey != "male_medium" && bodyKey != "female_medium") return false;
             path = "/assets/models/equipment/utilities-v1/equipment_" + itemId + "_" + bodyKey
                 + "_" + ArmorFit(armorFit) + ".glb?v=worn-utilities-" + CatalogVersion;
             return true;

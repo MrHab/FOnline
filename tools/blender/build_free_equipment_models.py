@@ -18,7 +18,7 @@ import build_free_item_models as items
 import build_free_armor_replacements as rig
 
 ROOT = Path(__file__).resolve().parents[2]
-BODIES = rig.BODY_IDS
+BODIES = rig.RUNTIME_BODY_IDS
 GEAR_DIR = ROOT / 'source-assets/equipment/free-gear-v2'
 GEAR_SOURCES = {r['id']:r for r in json.loads((GEAR_DIR/'sources.json').read_text())['sources']}
 GEAR = {

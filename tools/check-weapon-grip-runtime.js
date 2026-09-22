@@ -6,10 +6,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const BODY_IDS = Object.freeze([
-  'female_slim', 'female_medium', 'female_large',
-  'male_slim', 'male_medium', 'male_large'
-]);
+// Телосложения больше нет: у каждого пола одна базовая модель.
+const BODY_IDS = Object.freeze(['female_medium', 'male_medium']);
 const FIREARMS = Object.freeze({
   pistol: { reloadPart: 'breech_cap', reloadRotation: [0.05, -0.25, -1.0] },
   rifle: { reloadPart: 'cartridge_clip', reloadRotation: [-0.55, 0.05, -0.25] },

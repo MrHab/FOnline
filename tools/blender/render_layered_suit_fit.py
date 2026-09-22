@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--candidate', action='store_true')
-    parser.add_argument('--body', required=True, choices=rig.BODY_IDS)
+    parser.add_argument('--body', required=True, choices=rig.RUNTIME_BODY_IDS)
     parser.add_argument('--item', required=True, choices=['hazmatSuit', 'energySuit'])
     parser.add_argument('--highlight-body', action='store_true')
     parser.add_argument('--initial-fit', action='store_true')

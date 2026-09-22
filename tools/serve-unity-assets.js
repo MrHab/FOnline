@@ -1,7 +1,7 @@
 'use strict';
 
 // Loopback-only static host for Unity editor probes. It deliberately serves
-// public/ assets; an explicit candidate mode overlays only the twelve pinned
+// public/ assets; an explicit candidate mode overlays only the four pinned
 // suit GLBs from Logs. The authoritative game server is never started.
 const fs = require('fs');
 const http = require('http');
@@ -16,10 +16,11 @@ if (process.argv.includes('--suit-candidate')) {
   const workspace = path.resolve(root, '..');
   const candidateRoot = path.join(workspace, 'unity-client', 'Logs', 'UpperSuitCandidate');
   candidateManifest = JSON.parse(fs.readFileSync(path.join(candidateRoot, 'manifest.json'), 'utf8'));
+  // Телосложения больше нет: у каждого пола одна базовая модель.
   const expected = ['hazmatSuit', 'energySuit'].flatMap(item =>
-    ['male_slim','male_medium','male_large','female_slim','female_medium','female_large'].map(body => item+'/'+body)).sort();
+    ['male_medium','female_medium'].map(body => item+'/'+body)).sort();
   if (JSON.stringify(candidateManifest.files.map(row=>row.itemId+'/'+row.bodyId).sort()) !== JSON.stringify(expected))
-    throw new Error('A complete twelve-suit candidate is required');
+    throw new Error(`A complete ${expected.length}-suit candidate is required`);
   for (const row of candidateManifest.files) {
     const file = path.resolve(workspace, row.candidateFile);
     if (!file.startsWith(candidateRoot + path.sep)) throw new Error('Candidate file escapes the suit directory');

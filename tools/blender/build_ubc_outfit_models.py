@@ -63,7 +63,7 @@ OUTFITS = {
         'material': 'outfit_ranger_weathered_leather',
     },
 }
-BODY_IDS = rig.BODY_IDS
+BODY_IDS = rig.RUNTIME_BODY_IDS
 SKIN_MATERIALS = ('mi_regular_male', 'mi_regular_female')
 
 

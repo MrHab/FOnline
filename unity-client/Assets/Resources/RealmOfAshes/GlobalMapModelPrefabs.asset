@@ -13,17 +13,9 @@ MonoBehaviour:
   m_Name: GlobalMapModelPrefabs
   m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.Game.RoaModelPrefabCatalog
   entries:
-  - sourceUrl: /assets/models/characters/base/character_female_large.glb
-    prefab: {fileID: 971036837001020182, guid: d3b4077a5477d634e9e07b4ba0a31ccb, type: 3}
   - sourceUrl: /assets/models/characters/base/character_female_medium.glb
     prefab: {fileID: 1333530274289934723, guid: e91e43d7ec6bf664ab9460abdf200a50, type: 3}
-  - sourceUrl: /assets/models/characters/base/character_female_slim.glb
-    prefab: {fileID: 4282484722595699946, guid: fd933ce5780e45749acc0d0519548d74, type: 3}
-  - sourceUrl: /assets/models/characters/base/character_male_large.glb
-    prefab: {fileID: 8742549109345688677, guid: 67f80ea200aa32b4c8b67b6c5925c5f1, type: 3}
   - sourceUrl: /assets/models/characters/base/character_male_medium.glb
     prefab: {fileID: 2656729991155903506, guid: 27eb01be56bd5354782a3d8b51274d80, type: 3}
-  - sourceUrl: /assets/models/characters/base/character_male_slim.glb
-    prefab: {fileID: 3263121585391160069, guid: b906249dda334074085a99d886fc178a, type: 3}
   - sourceUrl: /assets/models/characters/npc/npc_humanoid_animations.glb
     prefab: {fileID: 9071860110875983437, guid: f3faa7c8b7c783742acef23c07ba6cd3, type: 3}

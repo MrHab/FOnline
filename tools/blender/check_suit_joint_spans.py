@@ -9,7 +9,7 @@ import build_free_armor_replacements as rig
 from build_suit_joint_liner import sleeve_span_bounds,inside_sleeve_span
 
 root=Path(__file__).resolve().parents[2]
-for body_id in rig.BODY_IDS:
+for body_id in rig.RUNTIME_BODY_IDS:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     source=root/f'public/assets/models/characters/base/character_{body_id}.glb'
     digest=hashlib.sha256(source.read_bytes()).hexdigest()

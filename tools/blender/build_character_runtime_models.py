@@ -16,13 +16,11 @@ import bpy
 from mathutils import Vector
 
 
+# The game no longer offers a body build, so only the medium base of each sex
+# is shipped (RoaCharacterView.ModelKey -> "<sex>_medium").
 CHARACTER_MODELS = (
-    ("female", "slim", "body-types/character_female_slim_bc_lod0.glb"),
     ("female", "medium", "character_female_medium_bc_lod0.glb"),
-    ("female", "large", "body-types/character_female_large_bc_lod0.glb"),
-    ("male", "slim", "body-types/character_male_slim_bc_lod0.glb"),
     ("male", "medium", "character_male_medium_bc_lod0.glb"),
-    ("male", "large", "body-types/character_male_large_bc_lod0.glb"),
 )
 
 

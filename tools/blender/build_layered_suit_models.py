@@ -328,7 +328,7 @@ def main():
         if spec.item_id not in LAYERED: continue
         spec=dataclasses.replace(spec,**LAYERED[spec.item_id])
         if selected_item and spec.item_id!=selected_item:continue
-        for body in rig.BODY_IDS:
+        for body in rig.RUNTIME_BODY_IDS:
             if selected_body and body!=selected_body:continue
             source=SOURCES/spec.source_for_body(body)
             actual=hashlib.sha256(source.read_bytes()).hexdigest().upper()

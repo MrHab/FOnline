@@ -126,6 +126,15 @@
         "registrar"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "medium",
+          "faceId": "female_01",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_03"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "tract_league",
@@ -165,6 +174,15 @@
         "auction"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "slim",
+          "faceId": "female_04",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_04"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "tract_league",
@@ -204,6 +222,15 @@
         "medic"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "slim",
+          "faceId": "female_04",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_07"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "tract_league",
@@ -244,6 +271,15 @@
         "trader"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "large",
+          "faceId": "female_03",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_05"
+        },
         "kind": "npc",
         "role": "merchant",
         "faction": "tract_league",
@@ -286,6 +322,15 @@
         "researcher"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "large",
+          "faceId": "male_01",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_04"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "tract_league",
@@ -324,6 +369,15 @@
         "territory-guard"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "slim",
+          "faceId": "female_02",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_05"
+        },
         "kind": "npc",
         "role": "guard",
         "faction": "tract_league",
@@ -363,6 +417,15 @@
         "territory-guard"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "slim",
+          "faceId": "male_01",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_02"
+        },
         "kind": "npc",
         "role": "guard",
         "faction": "tract_league",
@@ -402,6 +465,15 @@
         "territory-guard"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "large",
+          "faceId": "female_03",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_01"
+        },
         "kind": "npc",
         "role": "guard",
         "faction": "tract_league",
@@ -441,6 +513,15 @@
         "territory-guard"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "slim",
+          "faceId": "male_01",
+          "hairId": "short_crop",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_08"
+        },
         "kind": "npc",
         "role": "guard",
         "faction": "tract_league",
@@ -2239,7 +2320,7 @@
       },
       "rotation": {
         "x": 0,
-        "y": 180,
+        "y": 3.142,
         "z": 0
       },
       "scale": {
@@ -2256,6 +2337,15 @@
         "repair"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "medium",
+          "faceId": "female_04",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_03"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "tract_league",

@@ -82,7 +82,9 @@ namespace RealmOfAshes.Game
             // mouseScrollDelta не масштабируется настройками осей Input Manager,
             // а клэмп по щелчкам гарантирует, что один кадр не перепрыгнет ярус
             // детализации карты (границы ярусов дальше ×1.25 друг от друга).
-            float scroll = RoaGameBootstrap.BlocksWorldHud ? 0f : Input.mouseScrollDelta.y;
+            // Над миникартой колесо принадлежит ей: она приближается, камера стоит.
+            float scroll = RoaGameBootstrap.BlocksWorldHud || RoaHudCanvas.PointerOverMinimap
+                ? 0f : Input.mouseScrollDelta.y;
             if (Mathf.Abs(scroll) > 0.0001f)
             {
                 float notches = Mathf.Clamp(scroll, -ZoomMaxNotchesPerFrame, ZoomMaxNotchesPerFrame);

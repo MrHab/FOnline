@@ -1,6 +1,7 @@
 'use strict';
 
-// Рынок Сердцевины: книга ордеров фракции у аукционера базы. Торговля идёт не
+// Книга ордеров рынка; city-auctions.js хранит отдельную книгу каждой столицы.
+// Торговля идёт не
 // ставками, а встречными ордерами — как на бирже. Продавец выставляет ордер на
 // продажу по цене за штуку, покупатель — ордер на выкуп; совпавшие ордера
 // исполняются сразу, частями, по цене того ордера, который стоял в книге
@@ -12,7 +13,8 @@
 // марки. Всё, что пришло, пока торговца не было у стойки, ждёт на его полке.
 // Время инжектируется — проверки без ожидания.
 
-const STORE_VERSION = 3;
+const STORE_VERSION = 4;
+const { normalizeHistory, normalizeActivity, recordActivity, recordTrade, publicHistory, publicActivity } = require('./market-history');
 
 // Категории повторяют каталог предметов (src/server/kromka-items.js), чтобы
 // сервер клал в ордер собственную категорию предмета без отдельной таблицы.
@@ -126,6 +128,7 @@ function sanitizeOrder(input = {}) {
       : {}),
     records: side === 'sell' ? sanitizeRecords(input?.records) : [],
     createdAt,
+    updatedAt: Math.max(0, Math.floor(Number(input?.updatedAt) || 0)),
     durationMs: Math.max(0, Math.floor(Number(input?.durationMs || Math.max(0, expiresAt - createdAt)))),
     expiresAt
   };
@@ -149,10 +152,8 @@ function sanitizeShelf(input = {}) {
 }
 
 /**
- * Книга одна на всю пустошь: ордер, выставленный у аукционера одной столицы,
- * виден и исполняется у любого другого. Прежние хранилища делили её по
- * фракциям — при переезде все ордера, полки и счётчик сливаются в общую книгу,
- * поэтому ничьи марки и товар не теряются.
+ * Нормализация одной книги. Исторический формат фракций объединяется здесь;
+ * city-auctions.js затем переносит его на полки городов без потери имущества.
  */
 function normalizeMarketStore(input = {}) {
   const src = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
@@ -210,7 +211,8 @@ function normalizeMarketStore(input = {}) {
     const tail = Number(String(id).split('_').pop());
     if (Number.isFinite(tail)) counter = Math.max(counter, tail);
   }
-  return { version: STORE_VERSION, orders, shelves, counter };
+  return { version: STORE_VERSION, orders, shelves, counter,
+    history: normalizeHistory(src.history), activity: normalizeActivity(src.activity) };
 }
 
 function ensureBook(store = {}) {
@@ -277,7 +279,7 @@ function validateOrderRequest(store, input = {}, rules = DEFAULT_RULES, now = Da
   const price = Math.floor(Number(input.price || 0));
   const durationMs = Math.floor(Number(input.durationMs || rules.listingLifetimeMs));
   if (!ownerCharacterId) return { ok: false, error: 'Торговец не опознан.' };
-  if (!itemId || qty <= 0) return { ok: false, error: 'Выберите предмет и количество.' };
+  if (!itemId || !Number.isSafeInteger(qty) || qty <= 0) return { ok: false, error: 'Выберите предмет и количество.' };
   if (qty > rules.maxQtyPerOrder) return { ok: false, error: `Не больше ${rules.maxQtyPerOrder} в одном ордере.` };
   if (!Number.isFinite(price) || price < rules.minPrice || price > rules.maxPrice) {
     return { ok: false, error: `Цена за штуку от ${rules.minPrice} до ${rules.maxPrice} марок.` };
@@ -328,6 +330,7 @@ function placeSellOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Dat
     remaining -= take;
     proceeds += value - fillTax;
     tax += fillTax;
+    recordTrade(book, itemId, take, buy.price, buy.ownerCharacterId, ownerCharacterId, fillTax, now);
     fills.push({ orderId: buy.id, buyerCharacterId: buy.ownerCharacterId, qty: take, price: buy.price, tax: fillTax });
   }
   if (fills.length) ensureShelf(store, ownerCharacterId).sales += fills.length;
@@ -340,6 +343,7 @@ function placeSellOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Dat
       itemId,
       category: input.category,
       qty: remaining,
+      filled: qty - remaining,
       price,
       ownerCharacterId,
       ownerName: input.ownerName,
@@ -391,6 +395,7 @@ function placeBuyOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Date
     if (sell.qty <= 0) delete book.orders[sell.id];
     remaining -= take;
     spent += value;
+    recordTrade(book, itemId, take, sell.price, ownerCharacterId, sell.ownerCharacterId, fillTax, now);
     bought.push({ itemId, qty: take, records, price: sell.price });
     fills.push({ orderId: sell.id, sellerCharacterId: sell.ownerCharacterId, qty: take, price: sell.price, tax: fillTax });
   }
@@ -405,6 +410,7 @@ function placeBuyOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Date
       itemId,
       category: input.category,
       qty: remaining,
+      filled: qty - remaining,
       price,
       escrow,
       ownerCharacterId,
@@ -447,6 +453,7 @@ function takeSellOrder(store = {}, orderId = '', buyerCharacterId = '', qty = 0,
   order.filled += take;
   const records = order.qty <= 0 ? order.records : [];
   if (order.qty <= 0) delete store.orders[order.id];
+  recordTrade(store, order.itemId, take, order.price, buyer, order.ownerCharacterId, tax, now);
   return { ok: true, order, qty: take, price: order.price, cost, tax, payout: cost - tax, records };
 }
 
@@ -468,7 +475,44 @@ function takeBuyOrder(store = {}, orderId = '', sellerCharacterId = '', qty = 0,
   order.escrow = Math.max(0, order.escrow - value);
   if (order.qty <= 0) delete store.orders[order.id];
   ensureShelf(store, seller).sales += 1;
+  recordTrade(store, order.itemId, take, order.price, order.ownerCharacterId, seller, tax, now);
   return { ok: true, order, qty: take, price: order.price, value, tax, proceeds: value - tax };
+}
+
+// Edit on an isolated copy: a rejected change must leave the old reservation,
+// goods, history and price/time priority intact. Successful edits lose priority.
+function updateOrder(store, orderId, ownerCharacterId, input, rules = DEFAULT_RULES, now = Date.now()) {
+  const old = store?.orders?.[cleanId(orderId)];
+  if (!old || old.expiresAt <= now) return { ok: false, error: 'Ордер уже снят или истёк.' };
+  if (old.ownerCharacterId !== cleanId(ownerCharacterId, 96)) return { ok: false, error: 'Это не ваш ордер.' };
+  const draft = normalizeMarketStore(JSON.parse(JSON.stringify(store)));
+  delete draft.orders[old.id];
+  const request = { ...old, qty: input.qty, price: input.price,
+    durationMs: input.durationMs || rules.listingLifetimeMs, taxPct: rules.taxPct };
+  const check = validateOrderRequest(draft, request, rules, now);
+  if (!check.ok) return check;
+  if (old.side === 'sell' && check.qty > old.qty) return { ok: false, error: 'Можно уменьшить остаток; дополнительные предметы выставьте новым ордером.' };
+  const fee = setupFeeFor(check.qty, check.price, rules);
+  const available = Number(input.availableSilver);
+  const required = fee + (old.side === 'buy' ? check.qty * check.price - old.escrow : 0);
+  if (!Number.isSafeInteger(available) || available < Math.max(0, required)) return { ok: false, error: 'Не хватает марок на изменение и сбор.' };
+  const result = old.side === 'sell'
+    ? placeSellOrder(draft, request, rules, now) : placeBuyOrder(draft, request, rules, now);
+  if (!result.ok) return result;
+  if (old.side === 'sell' && check.qty < old.qty) creditShelfItems(draft, ownerCharacterId,
+    [{ itemId: old.itemId, qty: old.qty - check.qty, records: [], reason: 'returned' }], now);
+  if (old.side === 'buy' && result.bought.length) creditShelfItems(draft, ownerCharacterId, result.bought, now);
+  if (result.order) {
+    delete draft.orders[result.order.id];
+    result.order.id = old.id;
+    result.order.updatedAt = now;
+    result.order.filled = old.filled + (result.soldQty || result.boughtQty || 0);
+    draft.orders[old.id] = result.order;
+  }
+  recordActivity(draft, ownerCharacterId, 'updated', { ...old, qty: check.qty, price: check.price }, now);
+  Object.assign(store, draft);
+  return { ...result, itemId: old.itemId, side: old.side,
+    balanceDelta: old.side === 'buy' ? old.escrow - result.spent - result.escrow - fee : result.proceeds - fee };
 }
 
 // Отмена: ордер на продажу возвращает товар, ордер на выкуп — удержанные марки.
@@ -481,6 +525,7 @@ function cancelOrder(store = {}, orderId = '', ownerCharacterId = '', now = Date
   const shelf = ensureShelf(store, order.ownerCharacterId);
   if (order.side === 'buy') shelf.silver += order.escrow;
   else shelf.items.push({ itemId: order.itemId, qty: order.qty, records: order.records, reason: 'cancelled', at: Number(now) });
+  recordActivity(store, order.ownerCharacterId, 'cancelled', order, now);
   return { ok: true, order };
 }
 
@@ -495,6 +540,7 @@ function expireOrders(store = {}, rules = DEFAULT_RULES, now = Date.now()) {
     if (order.side === 'buy') shelf.silver += order.escrow;
     else shelf.items.push({ itemId: order.itemId, qty: order.qty, records: order.records, reason: 'expired', at: Number(now) });
     resolved.push({ ...order, resolution: 'expired' });
+    recordActivity(store, order.ownerCharacterId, 'expired', order, now);
   }
   return resolved;
 }
@@ -613,6 +659,11 @@ function publicMarket(store = {}, viewerCharacterId = '', rules = DEFAULT_RULES,
   const orders = activeOrders(store, now)
     .map(row => publicOrder(row, now, viewerCharacterId, projectArtifact));
   const items = marketItems(orders);
+  const listed = new Set(items.map(row => row.itemId));
+  for (const row of options.catalog || []) {
+    if (!listed.has(row.itemId)) items.push({ itemId: row.itemId, category: row.category,
+      sellQty: 0, sellPrice: 0, buyQty: 0, buyPrice: 0, mine: false });
+  }
   const counts = new Map();
   for (const row of items) counts.set(row.category, (counts.get(row.category) || 0) + 1);
   return {
@@ -634,6 +685,9 @@ function publicMarket(store = {}, viewerCharacterId = '', rules = DEFAULT_RULES,
     items,
     orders,
     mineCount: orders.filter(row => row.mine).length,
+    historyItemId: cleanId(options.itemId),
+    history: publicHistory(store, options.itemId, now),
+    activity: publicActivity(store, cleanId(viewerCharacterId, 96)),
     shelf: {
       silver: shelf.silver,
       items: shelf.items.map(row => ({ itemId: row.itemId, qty: row.qty, reason: row.reason, at: row.at })),
@@ -669,5 +723,6 @@ module.exports = {
   setupFeeFor,
   shelfFor,
   takeBuyOrder,
-  takeSellOrder
+  takeSellOrder,
+  updateOrder
 };

@@ -143,6 +143,9 @@ const servicePosition = (locationId, service) => {
     'выставленные патроны вернулись на полку');
 
   // --- ордер столицы виден только в ней -----------------------------------
+  const wornSale = await market('trade', { action: 'sell', itemId: 'leather', qty: 1, price: 100, requestId: 'worn-sale' }, false);
+  assert(/отремонтируйте/.test(wornSale.error));
+  assert.equal(qty(wornSale.self, 'leather'), 1, 'Rejected worn equipment stays with its owner.');
   const listed = await market('trade', { action: 'sell', itemId: 'ammo9', qty: 20, price: 10, durationHours: 720, requestId: 'sell-1' });
   assert.equal(listed.restingQty, 20);
   assert.equal(listed.setupFee, 5, 'сбор 2,5% от 200');
@@ -177,6 +180,36 @@ const servicePosition = (locationId, service) => {
   const claimed = await market('trade', { action: 'claim', requestId: 'claim-1' });
   assert.equal(claimed.claimedSilver, 193);
   assert.equal(qty(claimed.self, 'ammo9'), 45, 'возвращённые патроны общей книги забраны');
+
+  // Editing reserves and receipts is authoritative and idempotent over Socket.IO.
+  const history = await market('trade', { action: 'state', itemId: 'ammo9' });
+  assert.equal(history.auction.history[0].qty, 20);
+  assert.equal(history.auction.history[0].average, 10);
+  assert(history.auction.items.some(row => row.sellQty === 0 && row.buyQty === 0), 'Unlisted catalogue items can be selected.');
+  assert(history.auction.activity.some(row => row.kind === 'sold'));
+  assert.equal((await market('target', { action: 'state', itemId: 'ammo9' })).auction.history[0].qty, 0);
+  const rest = await market('trade', { action: 'sell', itemId: 'ammo9', qty: 10, price: 20, requestId: 'edit-list' });
+  await market('harvest', { action: 'update', orderId: rest.orderId, qty: 5, price: 10, requestId: 'edit-other' }, false);
+  await market('trade', { action: 'update', orderId: rest.orderId, qty: 11, price: 10, requestId: 'edit-extra' }, false);
+  const editRequest = { action: 'update', orderId: rest.orderId, qty: 6, price: 15, expectedPrice: 20, expectedQty: 10, requestId: 'edit-own' };
+  const edit = await market('trade', editRequest);
+  assert.equal(edit.setupFee, 2);
+  assert.equal(qty(edit.self, 'silver'), qty(rest.self, 'silver') - 2);
+  assert.equal(edit.auction.orders.find(row => row.id === rest.orderId).qty, 6);
+  assert.equal(edit.auction.shelf.items.reduce((sum, row) => sum + row.qty, 0), 4);
+  const replay = await market('trade', editRequest);
+  assert.equal(qty(replay.self, 'silver'), qty(edit.self, 'silver'));
+  assert.deepEqual(replay.auction.activity, edit.auction.activity, 'Replayed requests produce no duplicate receipt.');
+  const stale = await market('harvest', { action: 'buyNow', orderId: rest.orderId, qty: 1, expectedPrice: 20, requestId: 'stale-price' }, false);
+  assert(/изменилась/.test(stale.error), 'A confirmation at an old price must not execute at the edited price.');
+  const legacyQuote = await market('harvest', { action: 'buyNow', orderId: rest.orderId, qty: 1, requestId: 'legacy-price' }, false);
+  assert(/Обновите игру/.test(legacyQuote.error), 'Old clients cannot silently accept a new price after an edit.');
+  const demand = await market('harvest', { action: 'buy', itemId: 'ammo9', qty: 4, price: 10, requestId: 'edit-demand' });
+  const fill = await market('harvest', { action: 'update', orderId: demand.orderId, qty: 4, price: 20, requestId: 'edit-cross' });
+  assert.equal(fill.restingQty, 0);
+  assert.equal(fill.balanceDelta, 40 - 60 - 2);
+  assert.equal(fill.auction.shelf.items.reduce((sum, row) => sum + row.qty, 0), 4);
+  await market('trade', { action: 'cancel', orderId: rest.orderId, requestId: 'edit-cleanup' });
 
   // --- торгуют только торговцы-люди -----------------------------------------
   const scrapActors = accounts.target.join.worldState?.enemies || [];

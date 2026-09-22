@@ -11,11 +11,11 @@
 | --- | --- | --- | --- |
 | Оружие | `public/assets/models/weapons/manifest.json` | 16 моделей оружия и инструментов | `RoaModelUrl.WeaponCatalogVersion` |
 | Предметы | `public/assets/models/items/kromka/manifest.json` | 23 модели, включая аптечку, детекторы, пояса и артефакты | `RoaItemModelCatalog.CatalogVersion` |
-| Экипировка | `public/assets/models/equipment/free-v2/manifest.json` | 60 вариантов шлемов, обуви, брони и рюкзака для 6 тел | `RoaEquipmentModelCatalog.CatalogVersion` |
-| Костюмы | `public/assets/models/equipment/suits-v2/manifest.json` | 12 вариантов химзащиты и энергокостюма | `RoaSuitModelCatalog.CatalogVersion` |
+| Экипировка | `public/assets/models/equipment/free-v2/manifest.json` | 20 вариантов шлемов, обуви, брони и рюкзака на 2 тела | `RoaEquipmentModelCatalog.CatalogVersion` |
+| Костюмы | `public/assets/models/equipment/suits-v2/manifest.json` | химзащита и энергокостюм на 2 тела | `RoaSuitModelCatalog.CatalogVersion` |
 | Одежда | `public/assets/models/equipment/outfits-v1/manifest.json` | кожаная броня полным костюмом на 2 тела | `RoaOutfitModelCatalog.OutfitVersion` |
 | Военная броня | `public/assets/models/equipment/armor-v3/manifest.json` | бронежилет, боевая, тяжёлая и металлическая броня на 2 тела | `RoaOutfitModelCatalog.PlatedVersion` |
-| Носимые устройства | `public/assets/models/equipment/utilities-v1/manifest.json` | 288 вариантов детекторов и поясов для 6 тел и 8 вариантов брони | `RoaWornUtilityCatalog.CatalogVersion` |
+| Носимые устройства | `public/assets/models/equipment/utilities-v1/manifest.json` | 96 вариантов детекторов и поясов на 2 тела и 8 вариантов брони | `RoaWornUtilityCatalog.CatalogVersion` |
 | Наземные предметы | `public/assets/models/items/manifest.json` | одна библиотека `ground_item_library.glb` на 24 предмета | — |
 
 Версия каталога — отпечаток содержимого: `1-` плюс начало SHA-256 от склеенных

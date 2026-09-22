@@ -32,10 +32,8 @@ namespace RealmOfAshes.EditorTools
         private const int Layer = 30;
         private const float MaxLimbError = 0.06f;
 
-        private static readonly string[] Bodies =
-        {
-            "male_medium", "male_slim", "male_large", "female_medium", "female_slim", "female_large"
-        };
+        // Телосложения больше нет: у каждого пола одна базовая модель.
+        private static readonly string[] Bodies = { "male_medium", "female_medium" };
 
         private static bool _batchOptionsCaptured;
         private static bool _previousEnterPlayModeOptionsEnabled;
@@ -124,8 +122,7 @@ namespace RealmOfAshes.EditorTools
                 RenderSettings.ambientLight = new Color(0.42f, 0.43f, 0.46f, 1f);
                 Camera camera = BuildRig(rig);
                 foreach (string body in Bodies)
-                    results.Add(await ProbeBody(body, vehicleAsset, camera, captureDirectory,
-                        body == "male_medium" || body == "female_slim"));
+                    results.Add(await ProbeBody(body, vehicleAsset, camera, captureDirectory, true));
             }
             finally
             {

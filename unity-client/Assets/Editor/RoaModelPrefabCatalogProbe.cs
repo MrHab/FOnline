@@ -10,10 +10,10 @@ namespace RealmOfAshes.EditorTools
 {
     public static class RoaModelPrefabCatalogProbe
     {
-        // Шесть тел персонажа и библиотека анимаций: всё, что нужно игроку
-        // сразу. Твари подгружаются по URL, поэтому в каталоге Resources их
-        // больше нет — иначе каждый игрок скачивал бы их вместе со сборкой.
-        private const int ExpectedRuntimeCount = 7;
+        // По одному телу персонажа на пол и библиотека анимаций: всё, что нужно
+        // игроку сразу. Твари подгружаются по URL, поэтому в каталоге Resources
+        // их больше нет — иначе каждый игрок скачивал бы их вместе со сборкой.
+        private const int ExpectedRuntimeCount = 3;
 
         [MenuItem("Realm of Ashes/Models/Check model prefabs")]
         public static void Run()

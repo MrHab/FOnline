@@ -30,14 +30,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--directory', type=Path, required=True)
     parser.add_argument('--render', action='store_true')
-    parser.add_argument('--body', action='append', choices=rig.BODY_IDS)
+    parser.add_argument('--body', action='append', choices=rig.RUNTIME_BODY_IDS)
     parser.add_argument('--report',type=Path)
     args = parser.parse_args(sys.argv[sys.argv.index('--')+1:])
     directory = args.directory.resolve()
     if args.report: args.report=args.report.resolve()
     manifest=json.loads((directory/'manifest.json').read_text(encoding='utf8'))
     rows = []
-    for body_id in args.body or list(rig.BODY_IDS):
+    for body_id in args.body or list(rig.RUNTIME_BODY_IDS):
       for item in ['boots','scoutBoots','reinforcedBoots','assaultBoots']:
         bpy.ops.wm.read_factory_settings(use_empty=True)
         character = rig.import_gltf(ROOT/f'public/assets/models/characters/base/character_{body_id}.glb')

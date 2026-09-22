@@ -1,4 +1,4 @@
-"""All-six-body source seam regression; changes only temporary glove copies."""
+"""Source seam regression on every shipped body; changes only temporary glove copies."""
 import sys,hashlib
 from pathlib import Path
 import bpy,bmesh
@@ -8,7 +8,7 @@ from refit_suit_gloves import hand_groups,seal_hand_boundaries
 from suit_surface_metrics import freeze_surface_triangles
 
 root=Path(__file__).resolve().parents[2]
-for body_id in rig.BODY_IDS:
+for body_id in rig.RUNTIME_BODY_IDS:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     source=root/f'public/assets/models/characters/base/character_{body_id}.glb'
     before=hashlib.sha256(source.read_bytes()).hexdigest()
@@ -32,7 +32,6 @@ for body_id in rig.BODY_IDS:
     assert all(e.is_valid and e.is_boundary for e in cuffs), 'Forearm overlap must remain open'
     assert all(tuple(v.co)==p for v,p in cuff_positions.items()), 'Cuff vertices must not move'
     assert result['unsealedHandBoundaryEdges']==0 and result['maxSourceSlitWeldMetres']<=.0002
-    if body_id=='female_slim':assert result['weldedSourceSlitPairs']>=4, 'Four diagnosed female-slim fingertip slits must be repaired'
     assert all((v.co-p).length==0 for v,p in zip(body.data.vertices,original)), 'Base hand geometry must stay unchanged'
     assert hashlib.sha256(source.read_bytes()).hexdigest()==before, 'Base GLB must stay unchanged'
     bm.normal_update()

@@ -11,7 +11,8 @@ const json = relative => JSON.parse(read(relative));
 const hash = data => crypto.createHash('sha256').update(data).digest('hex');
 const manifest = json('public/assets/models/equipment/utilities-v1/manifest.json');
 const items = json('public/assets/models/items/kromka/manifest.json').files;
-const bodies = ['male_slim','male_medium','male_large','female_slim','female_medium','female_large'];
+// Телосложения больше нет: у каждого пола одна базовая модель.
+const bodies = ['male_medium','female_medium'];
 const armors = ['none','leather','metalArmor','ballisticVest','combatArmor','heavyArmor','hazmatSuit','energySuit'];
 const ids = ['artifactDetectorMk1','artifactDetectorMk2','artifactDetectorMk3','artifactBelt2','artifactBelt3','artifactBelt4'];
 const key = r => `${r.itemId}/${r.bodyId}/${r.armorId}`;
@@ -76,6 +77,6 @@ async function main() {
     }
     bytes += data.length;
   }
-  console.log(`Worn utilities PASS: ${manifest.files.length} models, 6 bodies, 8 armor fits, ${bytes} bytes; source/fitting hashes, rigid pelvis skin and lite geometry verified.`);
+  console.log(`Worn utilities PASS: ${manifest.files.length} models, 2 bodies, 8 armor fits, ${bytes} bytes; source/fitting hashes, rigid pelvis skin and lite geometry verified.`);
 }
 main().catch(error=>{ console.error(error); process.exitCode=1; });

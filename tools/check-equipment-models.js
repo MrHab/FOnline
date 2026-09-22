@@ -9,10 +9,8 @@ const unityEquipmentFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 
 const unityCharacterFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaCharacterView.cs');
 const unityInventoryFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaInventory.cs');
 const unityRemotesFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaRemotePlayers.cs');
-const bodyIds = [
-  'female_slim', 'female_medium', 'female_large',
-  'male_slim', 'male_medium', 'male_large'
-];
+// Телосложения больше нет: у каждого пола одна базовая модель.
+const bodyIds = ['female_medium', 'male_medium'];
 
 function parseGlb(file) {
   const data = fs.readFileSync(file);
@@ -46,14 +44,14 @@ bodyIds.forEach(bodyId => {
 });
 
 assert(!fs.existsSync(legacyModelFile),
-  'obsolete one-size service_scout_boots.glb returned; use the six approved body-fitted GLBs');
+  'obsolete one-size service_scout_boots.glb returned; use the approved body-fitted GLBs');
 
 const unityEquipmentSource = fs.readFileSync(unityEquipmentFile, 'utf8');
 const unityCharacterSource = fs.readFileSync(unityCharacterFile, 'utf8');
 const unityInventorySource = fs.readFileSync(unityInventoryFile, 'utf8');
 const unityRemotesSource = fs.readFileSync(unityRemotesFile, 'utf8');
 // Unity composes /assets/models/equipment/boots/equipment_scout_boots_<body>.glb
-// from this definition, i.e. exactly the six body-fitted GLBs checked above.
+// from this definition, i.e. exactly the body-fitted GLBs checked above.
 [
   '{ "scoutBoots", new Definition("boots", "equipment_scout_boots") }',
   '"/assets/models/equipment/" + slot + "/" + definition.Prefix + "_" + bodyKey + ".glb"'
@@ -86,4 +84,4 @@ assert(!unityInventorySource.includes('Equip(slot, slot == "weapon" ? "fists" : 
 assert(unityRemotesSource.includes('public void CollectCharacterViews('),
   'Unity remote-player equipment inspection path is missing');
 
-console.log(`Equipment models OK: 6 body-fitted scout-boot GLBs, ${totalBytes} bytes total; Unity owner/retry guards present`);
+console.log(`Equipment models OK: ${bodyIds.length} body-fitted scout-boot GLBs, ${totalBytes} bytes total; Unity owner/retry guards present`);

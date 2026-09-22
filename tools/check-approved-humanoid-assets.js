@@ -70,7 +70,7 @@ assert.deepStrictEqual(manifest.approval, {
 });
 assert.strictEqual(
   manifest.files?.length,
-  9 + APPROVED_EQUIPMENT_REVIEWS.length * BODY_IDS.length,
+  3 + BODY_IDS.length + APPROVED_EQUIPMENT_REVIEWS.length * BODY_IDS.length,
   'approved humanoid manifest must contain every runtime body/equipment variant'
 );
 

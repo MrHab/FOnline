@@ -3,7 +3,7 @@ namespace RealmOfAshes.Game
     /// <summary>Downloaded, body-fitted replacements. Unlisted gear keeps its existing model.</summary>
     public static class RoaEquipmentModelCatalog
     {
-        public const string CatalogVersion = "2-a89d04ce";
+        public const string CatalogVersion = "2-e27a3f51";
 
         public static bool TryModelPath(string itemId, string bodyKey, out string path)
         {
@@ -18,12 +18,8 @@ namespace RealmOfAshes.Game
                 case "boots": case "scoutBoots": case "reinforcedBoots": case "assaultBoots": break;
                 default: return false;
             }
-            switch (bodyKey)
-            {
-                case "male_slim": case "male_medium": case "male_large":
-                case "female_slim": case "female_medium": case "female_large": break;
-                default: return false;
-            }
+            // Телосложения больше нет: у каждого пола одна базовая модель.
+            if (bodyKey != "male_medium" && bodyKey != "female_medium") return false;
             path = "/assets/models/equipment/free-v2/equipment_" + itemId + "_" + bodyKey
                 + ".glb?v=free-equipment-" + CatalogVersion;
             return true;

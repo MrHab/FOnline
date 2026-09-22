@@ -5,7 +5,8 @@ const assert=require('assert/strict');
 const fs=require('fs');
 const path=require('path');
 const crypto=require('crypto');
-const bodies=['male_slim','male_medium','male_large','female_slim','female_medium','female_large'];
+// Телосложения больше нет: у каждого пола одна базовая модель.
+const bodies=['male_medium','female_medium'];
 const items=['hazmatSuit','energySuit'];
 const boots=['integrated','boots','scoutBoots','reinforcedBoots','assaultBoots'];
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
@@ -22,7 +23,7 @@ function clientSourceFingerprint(root) {
 
 function validateEvidence(manifest,coverage,native) {
   assert.deepEqual(manifest.files.map(row=>row.itemId+'/'+row.bodyId).sort(),expectedKeys,
-    'A complete twelve-suit candidate is required');
+    `A complete ${expectedKeys.length}-suit candidate is required`);
   assert.equal(manifest.version,'2-'+hash(manifest.files.map(row=>row.sha256).join('')).slice(0,8));
   assert.equal(coverage.version,manifest.version,'Stale candidate coverage');
   assert.equal(coverage.upperBodyIncluded,true);
@@ -30,8 +31,12 @@ function validateEvidence(manifest,coverage,native) {
   assert.equal(coverage.enclosureMethod,'near-surface-layered-rays-v2');
   assert.equal(coverage.surfaceSampling,'face-interior-vertex-edge-exterior-normal-v3');
   assert.deepEqual(coverage.rows.map(row=>row.itemId+'/'+row.bodyId+'/'+row.boots).sort(),
-    expectedKeys.flatMap(key=>boots.map(boot=>key+'/'+boot)).sort(),'All 60 boot configurations are required');
-  assert(coverage.rows.reduce((sum,row)=>sum+row.surfaceSamples,0)>=3800000,'Full surface sampling is required');
+    expectedKeys.flatMap(key=>boots.map(boot=>key+'/'+boot)).sort(),
+    `All ${expectedKeys.length*boots.length} boot configurations are required`);
+  // Порог выражен на конфигурацию (прежние 3 800 000 на 60 строк), чтобы он не
+  // зависел от числа телосложений.
+  assert(coverage.rows.reduce((sum,row)=>sum+row.surfaceSamples,0)>=coverage.rows.length*63333,
+    'Full surface sampling is required');
   const byKey=new Map(manifest.files.map(row=>[row.itemId+'/'+row.bodyId,row]));
   for(const row of coverage.rows) {
     const model=byKey.get(row.itemId+'/'+row.bodyId);

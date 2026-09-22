@@ -10,13 +10,23 @@ const NPC_REVIEW_SHA256 = 'AE9B8CE96AB89C4C3503543C79F71FDE4E1FC8C22110EBE9DD888
 const RIFLE_REVIEW_SHA256 = '322D14E2D07059AB4458C65CB0E6B7019B8F030F3386B05016908E41E6591FC6';
 const BOOTS_FIT_REPORT_SHA256 = '6CA7122CB054A5F585CD190AFB1643F26B44C55DE4A4AF17303356DDA8CF9853';
 const GRIP_RUNTIME_SHA256 = '7B96493E5D26DCF12D10B03526036DCD529A74C26FD031BFE8DCBBA986FD4FE8';
-const BODY_IDS = Object.freeze([
+// The approved review assets under docs/art/reviews were authored for all six
+// body builds and stay that way: they are frozen, hash-pinned inputs that this
+// builder only reads.
+const REVIEW_BODY_IDS = Object.freeze([
   'female_slim',
   'female_medium',
   'female_large',
   'male_slim',
   'male_medium',
   'male_large'
+]);
+// The game no longer offers a body build, so only one base per sex is shipped
+// (RoaCharacterView.ModelKey -> "<sex>_medium"). Runtime GLBs are derived for
+// those two bodies only; the rest was dead weight nothing could ever request.
+const BODY_IDS = Object.freeze([
+  'female_medium',
+  'male_medium'
 ]);
 const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
   {
@@ -330,10 +340,11 @@ function verifyEquipmentReviews() {
     const reportedBodyIds = Array.isArray(fitReport.bodyIds)
       ? fitReport.bodyIds
       : (Array.isArray(fitReport.variants) ? fitReport.variants.map(row => row?.bodyId) : []);
-    if (reportedBodyIds.length !== BODY_IDS.length || BODY_IDS.some(bodyId => !reportedBodyIds.includes(bodyId))) {
+    if (reportedBodyIds.length !== REVIEW_BODY_IDS.length
+      || REVIEW_BODY_IDS.some(bodyId => !reportedBodyIds.includes(bodyId))) {
       throw new Error(`${definition.itemId} fit report does not cover all six body variants`);
     }
-    for (const bodyId of BODY_IDS) {
+    for (const bodyId of REVIEW_BODY_IDS) {
       const filename = `${definition.sourcePrefix}_${bodyId}`;
       const glb = path.join(directory, `${filename}.glb`);
       const reportFile = path.join(directory, `${filename}.report.json`);
@@ -356,6 +367,7 @@ function verifyEquipmentReviews() {
       if (parsed.json.meshes?.length !== definition.meshCount) {
         throw new Error(`${definition.itemId} ${bodyId} mesh count changed`);
       }
+      if (!BODY_IDS.includes(bodyId)) continue;
       variants.push({
         ...definition,
         bodyId,
@@ -397,7 +409,7 @@ function verifyBootReviews() {
   if (sha256(fitReportFile) !== BOOTS_FIT_REPORT_SHA256) {
     throw new Error('Boots fit report differs from the critic-approved bytes');
   }
-  return BODY_IDS.map(bodyId => {
+  return REVIEW_BODY_IDS.map(bodyId => {
     const glb = path.join(directory, `equipment_boots_unified_v21_${bodyId}.glb`);
     const reportFile = path.join(directory, `equipment_boots_unified_v21_${bodyId}-report.json`);
     assertFile(`${bodyId} boots GLB`, glb);
@@ -410,7 +422,7 @@ function verifyBootReviews() {
       throw new Error(`${bodyId} boots rig or topology changed`);
     }
     return { bodyId, glb, approvedReviewSha256: String(report.sha256) };
-  });
+  }).filter(boot => BODY_IDS.includes(boot.bodyId));
 }
 
 function verifyRifleReview() {
@@ -632,6 +644,7 @@ if (require.main === module) {
 
 module.exports = {
   BODY_IDS,
+  REVIEW_BODY_IDS,
   APPROVED_EQUIPMENT_REVIEWS,
   NPC_REVIEW_SHA256,
   RIFLE_REVIEW_SHA256,

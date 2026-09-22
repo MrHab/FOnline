@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import build_free_armor_replacements as rig
 
 root = Path(__file__).resolve().parents[2]
-for body_id in rig.BODY_IDS:
+for body_id in rig.RUNTIME_BODY_IDS:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     objects = rig.import_gltf(root / f'public/assets/models/characters/base/character_{body_id}.glb')
     arm = next(o for o in objects if o.type == 'ARMATURE')

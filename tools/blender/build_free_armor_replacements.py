@@ -24,6 +24,8 @@ from mathutils import Matrix, Vector
 from mathutils.kdtree import KDTree
 
 
+# The approved review assets under docs/art/reviews were authored for all six
+# body builds and stay that way: they are frozen, hash-pinned inputs.
 BODY_IDS = (
     "female_slim",
     "female_medium",
@@ -31,6 +33,12 @@ BODY_IDS = (
     "male_slim",
     "male_medium",
     "male_large",
+)
+# The game no longer offers a body build, so runtime generators fit one base
+# per sex (RoaCharacterView.ModelKey -> "<sex>_medium").
+RUNTIME_BODY_IDS = (
+    "female_medium",
+    "male_medium",
 )
 TRIANGLE_BUDGET = 12_000
 

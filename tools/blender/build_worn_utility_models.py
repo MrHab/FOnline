@@ -138,7 +138,7 @@ def build_body(body_id, destination, review):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--output',type=Path,default=ROOT/'public/assets/models/equipment/utilities-v1')
-    parser.add_argument('--body',choices=rig.BODY_IDS)
+    parser.add_argument('--body',choices=rig.RUNTIME_BODY_IDS)
     parser.add_argument('--review',type=Path)
     args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
     args.output=args.output.resolve()
@@ -146,7 +146,7 @@ def main():
     args.output.mkdir(parents=True,exist_ok=True)
     if args.review: args.review.mkdir(parents=True,exist_ok=True)
     rows=[]
-    for body in [args.body] if args.body else rig.BODY_IDS:
+    for body in [args.body] if args.body else rig.RUNTIME_BODY_IDS:
         rows.extend(build_body(body,args.output,args.review))
     version='1-'+hashlib.sha256(''.join(r['sha256'] for r in rows).encode()).hexdigest()[:8]
     (args.output/'manifest.json').write_text(json.dumps({'schema':'realm.worn-utilities.v1',

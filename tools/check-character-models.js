@@ -9,13 +9,11 @@ const manifestPath = path.join(modelDirectory, 'manifest.json');
 const unityCreatorPath = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaCharacterCreator.cs');
 const unityCharacterViewPath = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaCharacterView.cs');
 const serverPath = path.join(root, 'server.js');
+// Телосложения не выбираются, поэтому база ровно одна на пол: всё остальное
+// было недостижимой загрузкой (RoaCharacterView.ModelKey → "<sex>_medium").
 const expectedKeys = new Set([
-  'female_slim',
   'female_medium',
-  'female_large',
-  'male_slim',
-  'male_medium',
-  'male_large'
+  'male_medium'
 ]);
 const expectedHair = {
   female: ['shaved', 'tied_back'],
@@ -112,6 +110,14 @@ for (const row of manifest.files) {
 }
 assert.deepStrictEqual(actualKeys, expectedKeys);
 
+// Ни одного лишнего тела на диске: вариантов телосложения больше нет, и они не
+// должны вернуться мимо манифеста мёртвым весом для WebGL-сборки.
+assert.deepStrictEqual(
+  fs.readdirSync(modelDirectory).filter(name => name.endsWith('.glb')).sort(),
+  [...expectedKeys].map(key => `character_${key}.glb`).sort(),
+  'unreachable character body GLBs are back in the base directory'
+);
+
 // Unity owns character appearance: RoaCharacterCreator offers the catalog and
 // RoaCharacterView loads the canonical base GLB, hides authored hair and tints it.
 const unityCreator = fs.readFileSync(unityCreatorPath, 'utf8');
@@ -186,7 +192,7 @@ assert(server.includes('const hairColorId = SERVER_CHARACTER_HAIR_COLOR_IDS.has(
 assert(server.includes('appearance: sanitizeCharacterAppearance(p.appearance || {})'));
 
 console.log(
-  'Character models OK: 6 GLB bases in the catalog (the game asks for the two medium ones), '
+  'Character models OK: 2 GLB bases in the catalog (one per sex, exactly what the game asks for), '
   + '2 sex-compatible hairstyles each, 8 hair colors in the Unity creator/view and server '
   + 'allowlist, authored GLB hair visibility/tinting, rig/animations and hashes checked'
 );

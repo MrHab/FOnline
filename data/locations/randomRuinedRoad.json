@@ -1568,8 +1568,6 @@
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
-          "bodyType": "medium",
-          "faceId": "male_01",
           "hairId": "short_crop",
           "skinToneId": "skin_03",
           "hairColorId": "hair_05"
@@ -1632,8 +1630,6 @@
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
-          "bodyType": "medium",
-          "faceId": "female_01",
           "hairId": "shaved",
           "skinToneId": "skin_03",
           "hairColorId": "hair_08"
@@ -1696,8 +1692,6 @@
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
-          "bodyType": "slim",
-          "faceId": "male_04",
           "hairId": "shaved",
           "skinToneId": "skin_03",
           "hairColorId": "hair_01"
@@ -1760,8 +1754,6 @@
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
-          "bodyType": "medium",
-          "faceId": "male_01",
           "hairId": "short_crop",
           "skinToneId": "skin_03",
           "hairColorId": "hair_01"
@@ -1824,8 +1816,6 @@
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
-          "bodyType": "medium",
-          "faceId": "male_04",
           "hairId": "shaved",
           "skinToneId": "skin_03",
           "hairColorId": "hair_05"
@@ -1888,8 +1878,6 @@
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
-          "bodyType": "large",
-          "faceId": "female_03",
           "hairId": "shaved",
           "skinToneId": "skin_03",
           "hairColorId": "hair_01"

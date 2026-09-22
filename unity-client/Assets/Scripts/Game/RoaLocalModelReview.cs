@@ -12,7 +12,7 @@ namespace RealmOfAshes.Game
     [DefaultExecutionOrder(10000)]
     public sealed class RoaLocalModelReview : MonoBehaviour
     {
-        private static readonly string[] Bodies={"male_slim","male_medium","male_large","female_slim","female_medium","female_large"};
+        private static readonly string[] Bodies={"male_medium","female_medium"};
         private static readonly string[] Armors={"none","leather","metalArmor","ballisticVest","combatArmor","heavyArmor","hazmatSuit","energySuit"};
         private static readonly string[] Boots={"none","boots","scoutBoots","reinforcedBoots","assaultBoots"};
         private static readonly string[] Helmets={"none","helmet","tacticalHelmet","assaultHelmet","preWarHelmet","weldedHelmet"};
@@ -66,8 +66,7 @@ namespace RealmOfAshes.Game
             _status="Загрузка моделей…";
             if(_itemRoot!=null) { _itemRoot.SetActive(false); Destroy(_itemRoot); _itemRoot=null; }
             string body=Bodies[_body];
-            string[] parts=body.Split('_');
-            _preview.Show(_origin,new CharacterAppearance { Sex=parts[0],BodyType=parts[1],FaceId=parts[0]+"_04",HairId="short_crop",HairColorId="hair_08" },640,640);
+            _preview.Show(_origin,new CharacterAppearance { Sex=body.Split('_')[0],HairId="short_crop",HairColorId="hair_08" },640,640);
             transform.Find("CharacterPreviewScene").position=Vector3.zero;
             float deadline=Time.realtimeSinceStartup+60;
             while(!_preview.IsReady || _preview.RequestedModelKey!=body)

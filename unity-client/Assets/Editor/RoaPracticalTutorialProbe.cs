@@ -162,7 +162,7 @@ namespace RealmOfAshes.EditorTools
                 var medicObject = new GameObject("AuditPlayerWithMedkit"); medicObject.transform.SetParent(host.transform, false);
                 medicObject.transform.position = RoaCoords.ToUnity(10,8);
                 var medic = medicObject.AddComponent<RoaCharacterView>();
-                await medic.Load("http://127.0.0.1:1", new JObject { ["sex"] = "male", ["bodyType"] = "medium" });
+                await medic.Load("http://127.0.0.1:1", new JObject { ["sex"] = "male" });
                 // Аптечка в руке — настоящая модель предмета с сервера ассетов, как у
                 // остальных проб моделей (ROA_UNITY_PROBE_ORIGIN или локальный :3000).
                 string assetOrigin = Environment.GetEnvironmentVariable("ROA_UNITY_PROBE_ORIGIN") ?? "http://127.0.0.1:3000";

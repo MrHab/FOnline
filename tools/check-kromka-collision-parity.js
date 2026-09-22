@@ -154,7 +154,7 @@ for (const definitionFile of definitionFiles) {
     if (angleGap(placed.yaw, Number(row.rotation?.y || 0)) > 0.02)
       failures.npcs.push(`${file}: ${row.id} faces another way than its row`);
     const look = row.entity.appearance || {};
-    const differs = ['sex', 'bodyType', 'faceId', 'hairId', 'hairColorId'].filter(key => look[key] !== placed.appearance[key]);
+    const differs = ['sex', 'hairId', 'hairColorId'].filter(key => look[key] !== placed.appearance[key]);
     if (differs.length) failures.npcs.push(`${file}: ${row.id} looks different in the scene (${differs.join(', ')})`);
     const outfit = row.entity.equipment || {};
     const worn = ['weapon', 'armor', 'helmet', 'boots', 'backpack']

@@ -11,10 +11,9 @@ namespace RealmOfAshes.Game
     /// <summary>
     /// Визуальная часть персонажа: авторская GLB-модель, локомоция и процедурная поза.
     ///
-    /// Модель выбирается по внешности так же, как в web-клиенте:
-    /// /assets/models/characters/base/character_{sex}_{bodyType}.glb
-    /// (04b_character_glb_runtime.js:167). Шесть утверждённых баз на общем
-    /// 65-костном риге.
+    /// Модель выбирается по полу:
+    /// /assets/models/characters/base/character_{sex}_medium.glb — две
+    /// утверждённые базы на общем 65-костном риге.
     ///
     /// Клипы берутся из общей библиотеки анимаций: Legacy-клип Unity привязывается
     /// к костям по полному пути, а у базы и библиотеки различается имя корневого
@@ -149,9 +148,6 @@ namespace RealmOfAshes.Game
         private int _loadRequest;
         private string _bodyKey = "male_medium";
         private JObject _appearance;
-        private Transform _head;
-        private Vector3 _headBaseScale = Vector3.one;
-        private Vector3 _headScaleFactors = Vector3.one;
         private readonly List<GameObject> _hairObjects = new List<GameObject>();
         private bool _dead;
         private bool _deathFallStarted;
@@ -961,12 +957,9 @@ namespace RealmOfAshes.Game
         public static string ModelKey(JObject appearance)
         {
             string sex = appearance?["sex"]?.ToString();
-            string body = appearance?["bodyType"]?.ToString();
-
             if (sex != "female" && sex != "male") sex = "male";
-            if (body != "slim" && body != "medium" && body != "large") body = "medium";
-
-            return sex + "_" + body;
+            // Телосложение и форма лица не выбираются: у пола одна базовая модель.
+            return sex + "_medium";
         }
 
         /// <summary>
@@ -1091,11 +1084,6 @@ namespace RealmOfAshes.Game
             _hairObjects.Clear();
             foreach (Transform node in GetComponentsInChildren<Transform>(true))
             {
-                if (node.name == "head")
-                {
-                    _head = node;
-                    _headBaseScale = node.localScale;
-                }
                 if (node.name.StartsWith("hair_")) _hairObjects.Add(node.gameObject);
             }
 
@@ -1104,14 +1092,6 @@ namespace RealmOfAshes.Game
 
         private void ReadAppearanceVariants()
         {
-
-            string face = _appearance?["faceId"]?.ToString() ?? string.Empty;
-            string suffix = face.Length >= 2 ? face.Substring(face.Length - 2) : "01";
-            if (suffix == "02") _headScaleFactors = new Vector3(0.88f, 1.018f, 1.05f);
-            else if (suffix == "03") _headScaleFactors = new Vector3(1.13f, 0.985f, 0.96f);
-            else if (suffix == "04") _headScaleFactors = new Vector3(0.98f, 0.982f, 1.09f);
-            else _headScaleFactors = Vector3.one;
-
             Color hair = HairColor(_appearance?["hairColorId"]?.ToString());
             foreach (GameObject hairObject in _hairObjects)
             {
@@ -1148,12 +1128,6 @@ namespace RealmOfAshes.Game
             bool showHair = !covered && hairId != "shaved";
             foreach (GameObject hairObject in _hairObjects)
                 if (hairObject != null && hairObject.activeSelf != showHair) hairObject.SetActive(showHair);
-            ApplyHeadShape();
-        }
-
-        private void ApplyHeadShape()
-        {
-            if (_head != null) _head.localScale = Vector3.Scale(_headBaseScale, _headScaleFactors);
         }
 
         private static Color HairColor(string id)
@@ -1391,7 +1365,6 @@ namespace RealmOfAshes.Game
         {
             if (!Ready || _presentationTier == RoaActorPresentationTier.Hidden) return;
 
-            ApplyHeadShape();
             if (_injuryIndicator != null && _injuryIndicator.gameObject.activeSelf)
             {
                 Vector3 local = _injuryIndicator.localPosition;

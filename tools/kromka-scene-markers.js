@@ -313,8 +313,6 @@ function readNpcPlacements(scenePath, prefabGuid) {
       yaw: Math.atan2(matrix[2], matrix[10]),
       appearance: {
         sex: Number(values._sex || 0) === 1 ? 'female' : 'male',
-        bodyType: ['slim', 'medium', 'large'][values._build !== undefined ? Number(values._build) : 1],
-        faceId: `${Number(values._sex || 0) === 1 ? 'female' : 'male'}_0${number('_face', 1)}`,
         hairId: values._hairId || 'short_crop',
         hairColorId: `hair_0${number('_hairColor', 3)}`
       },

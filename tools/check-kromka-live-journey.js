@@ -287,7 +287,7 @@ async function connect() {
   const joined = assertOk(await ack(socket, 'join', {
     token, deviceId, clientInstanceId, deviceType: 'desktop', controlType: 'keyboard_mouse',
     characterId, name: characterName,
-    appearance: { schema: 'realm.character-appearance.v1', sex: 'male', bodyType: 'medium', faceId: 'male_01', hairId: 'short_crop', skinToneId: 'skin_03', hairColorId: 'hair_01' },
+    appearance: { schema: 'realm.character-appearance.v1', sex: 'male', hairId: 'short_crop', skinToneId: 'skin_03', hairColorId: 'hair_01' },
     special: { str: 5, per: 7, end: 6, cha: 5, int: 5, agi: 7, luck: 5 },
     traits: ['trainedEye', 'scavengerStart'], taggedSkills: ['lightWeapons', 'stealth']
   }), 'create and join QA character');

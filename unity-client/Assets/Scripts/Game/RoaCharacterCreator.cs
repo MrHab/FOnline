@@ -7,18 +7,11 @@ using UnityEngine;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Functional IMGUI port of 08_character_creation_save.js. It owns only the
-    /// draft selection; the Node server still creates and validates the character.
+    /// Черновик персонажа для экрана создания (RoaAuthCanvas): пол, причёска и
+    /// цвет волос, SPECIAL, навыки и перки. Создаёт и проверяет персонажа сервер.
     /// </summary>
     public sealed class RoaCharacterCreator
     {
-        public enum DrawResult
-        {
-            None,
-            Cancel,
-            Create
-        }
-
         public sealed class StatDef
         {
             public readonly string Id;
@@ -217,10 +210,6 @@ namespace RealmOfAshes.Game
 
         private static readonly string[] SexIds = { "male", "female" };
         private static readonly string[] SexLabels = { "Мужской", "Женский" };
-        private static readonly string[] BodyIds = { "slim", "medium", "large" };
-        private static readonly string[] BodyLabels = { "Стройное", "Среднее", "Крепкое" };
-        private static readonly string[] FaceSuffixes = { "01", "02", "03", "04" };
-        private static readonly string[] FaceLabels = { "Угловатое", "Узкое", "Широкое", "Округлое" };
         private static readonly string[] HairColorIds =
         {
             "hair_01", "hair_02", "hair_03", "hair_04",
@@ -242,8 +231,6 @@ namespace RealmOfAshes.Game
         // --- Фасад для канва-экрана создания (RoaAuthCanvas, шаг creator). ---
         public string Notice { get { return _notice; } }
         public string SexLabelText { get { return SexLabel(Appearance.Sex); } }
-        public string BodyLabelText { get { return LabelFor(BodyIds, BodyLabels, Appearance.BodyType); } }
-        public string FaceLabelText { get { return LabelFor(FaceIds(), FaceLabels, Appearance.FaceId); } }
         public string HairLabelText { get { return HairLabel(Appearance.HairId); } }
         public string HairColorLabelText { get { return LabelFor(HairColorIds, HairColorLabels, Appearance.HairColorId); } }
         public bool HasSkill(string id) { return _taggedSkills.Contains(id); }
@@ -361,10 +348,8 @@ namespace RealmOfAshes.Game
         {
             string normalized = sex == "female" ? "female" : "male";
             if (Appearance != null && Appearance.Sex == normalized) return;
-            string body = Appearance != null ? Appearance.BodyType : "medium";
             string color = Appearance != null ? Appearance.HairColorId : "hair_03";
             Appearance = DefaultAppearance(normalized);
-            Appearance.BodyType = body;
             Appearance.HairColorId = color;
         }
 
@@ -423,76 +408,15 @@ namespace RealmOfAshes.Game
             };
         }
 
-        public DrawResult Draw(ref string name, ref Vector2 scroll)
-        {
-            DrawResult result = DrawResult.None;
-            scroll = GUILayout.BeginScrollView(scroll);
-
-            GUILayout.Label("<b>Создание персонажа</b>", RichLabel());
-            GUILayout.Label("Имя (2–18 символов)");
-            name = GUILayout.TextField(name ?? string.Empty, 18);
-            GUILayout.Space(8f);
-
-            GUILayout.Label("<b>Внешность</b>", RichLabel());
-            DrawOption("Пол", SexLabel(Appearance.Sex), () => CycleSex(-1), () => CycleSex(1));
-            DrawOption("Телосложение", LabelFor(BodyIds, BodyLabels, Appearance.BodyType),
-                       () => CycleBody(-1), () => CycleBody(1));
-            DrawOption("Лицо", LabelFor(FaceIds(), FaceLabels, Appearance.FaceId),
-                       () => CycleFace(-1), () => CycleFace(1));
-            DrawOption("Причёска", HairLabel(Appearance.HairId),
-                       () => CycleHair(-1), () => CycleHair(1));
-            DrawOption("Цвет волос", LabelFor(HairColorIds, HairColorLabels, Appearance.HairColorId),
-                       () => CycleHairColor(-1), () => CycleHairColor(1));
-            GUILayout.Space(8f);
-
-            GUILayout.Label("<b>ХАРАКТЕРИСТИКИ — распределите 40 очков</b>", RichLabel());
-            GUILayout.Label("Свободно: " + PointsLeft);
-            foreach (StatDef stat in Stats) DrawStat(stat);
-            GUILayout.Space(8f);
-
-            GUILayout.Label("<b>Профильные навыки: " + _taggedSkills.Count + "/2</b>", RichLabel());
-            DrawSkillGrid();
-            GUILayout.Space(8f);
-
-            GUILayout.Label("<b>Стартовые перки: " + _traits.Count + "/2</b>", RichLabel());
-            DrawTraitGrid();
-            GUILayout.Space(8f);
-
-            DrawDerived();
-            if (!string.IsNullOrEmpty(_notice))
-            {
-                Color previous = GUI.color;
-                GUI.color = new Color(1f, 0.62f, 0.35f);
-                GUILayout.Label(_notice);
-                GUI.color = previous;
-            }
-
-            GUILayout.Space(10f);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Назад", GUILayout.Height(32f))) result = DrawResult.Cancel;
-            bool ready = Ready(name);
-            GUI.enabled = ready;
-            if (GUILayout.Button("Создать и войти", GUILayout.Height(32f))) result = DrawResult.Create;
-            GUI.enabled = true;
-            GUILayout.EndHorizontal();
-            if (!ready) GUILayout.Label(ReadinessHint(name));
-
-            GUILayout.EndScrollView();
-            return result;
-        }
-
         public static bool AppearanceIsValid(CharacterAppearance appearance)
         {
             if (appearance == null) return false;
             bool sex = appearance.Sex == "male" || appearance.Sex == "female";
-            bool body = Array.IndexOf(BodyIds, appearance.BodyType) >= 0;
-            bool face = appearance.FaceId != null && appearance.FaceId.StartsWith(appearance.Sex + "_")
-                        && Array.IndexOf(FaceSuffixes, appearance.FaceId.Substring(appearance.FaceId.Length - 2)) >= 0;
             bool hair = Array.IndexOf(HairIds(appearance.Sex), appearance.HairId) >= 0;
             bool color = Array.IndexOf(HairColorIds, appearance.HairColorId) >= 0;
             return appearance.Schema == "realm.character-appearance.v1"
                 && appearance.SkinToneId == "skin_03"
-                && sex && body && face && hair && color;
+                && sex && hair && color;
         }
 
         public int SkillBasePercent(string id, bool tagged)
@@ -528,81 +452,6 @@ namespace RealmOfAshes.Game
             return Mathf.Min(50, baseValue + (tagged ? 5 : 0));
         }
 
-        private void DrawStat(StatDef stat)
-        {
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(stat.Code, GUILayout.Width(28f));
-            GUILayout.Label(new GUIContent(stat.Name, stat.Description), GUILayout.Width(145f));
-            if (GUILayout.Button("?", GUILayout.Width(26f))) _notice = stat.Description;
-            GUI.enabled = Stat(stat.Id) > SpecialMin;
-            if (GUILayout.Button("−", GUILayout.Width(32f))) AdjustStat(stat.Id, -1);
-            GUI.enabled = true;
-            GUILayout.Label(Stat(stat.Id).ToString(), CenteredLabel(), GUILayout.Width(32f));
-            GUI.enabled = PointsLeft > 0 && Stat(stat.Id) < SpecialMax;
-            if (GUILayout.Button("+", GUILayout.Width(32f))) AdjustStat(stat.Id, 1);
-            GUI.enabled = true;
-            GUILayout.EndHorizontal();
-        }
-
-        private void DrawSkillGrid()
-        {
-            for (int i = 0; i < RoaProgressionData.Skills.Length; i += 2)
-            {
-                GUILayout.BeginHorizontal();
-                DrawSkillButton(RoaProgressionData.Skills[i]);
-                if (i + 1 < RoaProgressionData.Skills.Length)
-                    DrawSkillButton(RoaProgressionData.Skills[i + 1]);
-                GUILayout.EndHorizontal();
-            }
-        }
-
-        private void DrawSkillButton(RoaProgressionData.SkillDef skill)
-        {
-            bool selected = _taggedSkills.Contains(skill.Id);
-            int baseValue = SkillBasePercent(skill.Id, false);
-            string label = (selected ? "✓ " : string.Empty) + skill.Name + "\n"
-                           + skill.Group + " · " + baseValue + "% → " + Mathf.Min(50, baseValue + 5) + "%";
-            DrawSelectionButton(label, selected, () => ToggleSkill(skill.Id));
-        }
-
-        private void DrawTraitGrid()
-        {
-            for (int i = 0; i < Traits.Length; i += 2)
-            {
-                GUILayout.BeginHorizontal();
-                DrawTraitButton(Traits[i]);
-                if (i + 1 < Traits.Length) DrawTraitButton(Traits[i + 1]);
-                GUILayout.EndHorizontal();
-            }
-        }
-
-        private void DrawTraitButton(TraitDef trait)
-        {
-            bool selected = _traits.Contains(trait.Id);
-            string label = (selected ? "✓ " : string.Empty) + trait.Name + "\n" + trait.Description;
-            DrawSelectionButton(label, selected, () => ToggleTrait(trait.Id));
-        }
-
-        private static void DrawSelectionButton(string label, bool selected, Action action)
-        {
-            Color previous = GUI.backgroundColor;
-            if (selected) GUI.backgroundColor = new Color(0.45f, 0.76f, 0.38f);
-            if (GUILayout.Button(label, GUILayout.MinHeight(46f))) action();
-            GUI.backgroundColor = previous;
-        }
-
-        private void DrawDerived()
-        {
-            DerivedStats d = Derived();
-            GUILayout.Label("<b>Производные параметры</b>", RichLabel());
-            GUILayout.Label("ОЗ " + d.MaxHp + " · ОД " + d.MaxAp + " · скорость " + d.Speed.ToString("0.0")
-                            + " · вес " + d.Carry);
-            GUILayout.Label("Меткость " + Signed(d.Hit) + "% · крит " + d.CriticalChance
-                            + "% · обзор " + d.VisionRadius + " кл. · сопротивление " + d.ResistAll + "%");
-            GUILayout.Label("Продажа " + Signed(d.Sell) + "% · доп. ресурс при сборе " + Signed(d.GatherBonus)
-                            + " п.п. · проверки удачи +" + d.LuckChecks + " п.п.");
-        }
-
         public string ReadinessHint(string name)
         {
             if (PointsLeft != 0) return "Распределите ещё " + PointsLeft + " очк. характеристик.";
@@ -618,17 +467,6 @@ namespace RealmOfAshes.Game
             SetSex(SexIds[Wrap(index + offset, SexIds.Length)]);
         }
 
-        public void CycleBody(int offset)
-        {
-            Appearance.BodyType = Cycle(BodyIds, Appearance.BodyType, offset);
-        }
-
-        public void CycleFace(int offset)
-        {
-            string[] ids = FaceIds();
-            Appearance.FaceId = Cycle(ids, Appearance.FaceId, offset);
-        }
-
         public void CycleHair(int offset)
         {
             string[] ids = HairIds(Appearance.Sex);
@@ -640,35 +478,15 @@ namespace RealmOfAshes.Game
             Appearance.HairColorId = Cycle(HairColorIds, Appearance.HairColorId, offset);
         }
 
-        private static void DrawOption(string label, string value, Action previous, Action next)
-        {
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(145f));
-            if (GUILayout.Button("←", GUILayout.Width(34f))) previous();
-            GUILayout.Label(value, CenteredLabel(), GUILayout.MinWidth(170f));
-            if (GUILayout.Button("→", GUILayout.Width(34f))) next();
-            GUILayout.EndHorizontal();
-        }
-
         private static CharacterAppearance DefaultAppearance(string sex)
         {
             bool female = sex == "female";
             return new CharacterAppearance
             {
                 Sex = female ? "female" : "male",
-                BodyType = "medium",
-                FaceId = female ? "female_01" : "male_01",
                 HairId = female ? "tied_back" : "short_crop",
                 HairColorId = "hair_03"
             };
-        }
-
-        private string[] FaceIds()
-        {
-            string prefix = Appearance.Sex == "female" ? "female_" : "male_";
-            string[] ids = new string[FaceSuffixes.Length];
-            for (int i = 0; i < ids.Length; i++) ids[i] = prefix + FaceSuffixes[i];
-            return ids;
         }
 
         private static string[] HairIds(string sex)
@@ -688,11 +506,6 @@ namespace RealmOfAshes.Game
         private static string SexLabel(string id)
         {
             return LabelFor(SexIds, SexLabels, id);
-        }
-
-        private static string Signed(int value)
-        {
-            return value >= 0 ? "+" + value : value.ToString();
         }
 
         private static string LabelFor(string[] ids, string[] labels, string id)
@@ -724,16 +537,5 @@ namespace RealmOfAshes.Game
             return Mathf.FloorToInt(value + 0.5f);
         }
 
-        private static GUIStyle RichLabel()
-        {
-            var style = new GUIStyle(GUI.skin.label) { richText = true };
-            return style;
-        }
-
-        private static GUIStyle CenteredLabel()
-        {
-            var style = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter };
-            return style;
-        }
     }
 }

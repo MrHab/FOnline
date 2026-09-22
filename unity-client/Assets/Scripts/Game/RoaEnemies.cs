@@ -1379,7 +1379,6 @@ namespace RealmOfAshes.Game
             }
 
             string sex = (hash & 1u) == 0u ? "female" : "male";
-            string[] bodies = { "slim", "medium", "large" };
             string[] hairs = { "shaved", "short_crop", "tied_back" };
             string hair = hairs[(int)((hash >> 7) % (uint)hairs.Length)];
             if (sex == "female" && hair == "short_crop") hair = "tied_back";
@@ -1389,8 +1388,6 @@ namespace RealmOfAshes.Game
             {
                 ["schema"] = "realm.character-appearance.v1",
                 ["sex"] = sex,
-                ["bodyType"] = bodies[(int)((hash >> 1) % (uint)bodies.Length)],
-                ["faceId"] = sex + "_0" + (1 + ((hash >> 4) % 4u)),
                 ["hairId"] = hair,
                 ["skinToneId"] = "skin_03",
                 ["hairColorId"] = "hair_0" + (1 + ((hash >> 11) % 8u))

@@ -32,8 +32,6 @@ namespace RealmOfAshes.EditorTools
             public string Key;
             public GameObject Animated;
             public AnimationClip Idle;
-            public Transform Head;
-            public Vector3 HeadScale;
             public float Phase;
         }
 
@@ -87,7 +85,7 @@ namespace RealmOfAshes.EditorTools
 
         private static string KeyOf(KromkaNpcAuthoring npc)
         {
-            return npc.SexId + "|" + npc.BodyTypeId + "|" + npc.FaceId + "|" + npc.HairId + "|" + npc.HairColorId
+            return npc.SexId + "|" + npc.HairId + "|" + npc.HairColorId
                 + "|" + npc.Weapon + "|" + npc.Armor + "|" + npc.Helmet + "|" + npc.Boots + "|" + npc.Backpack;
         }
 
@@ -104,7 +102,7 @@ namespace RealmOfAshes.EditorTools
             var preview = new Preview { Holder = holder, Key = KeyOf(npc), Phase = Mathf.Abs(npc.NpcId.GetHashCode() % 1000) / 1000f };
             Previews[npc] = preview;
 
-            string bodyUrl = BodyUrlPrefix + npc.SexId + "_" + npc.BodyTypeId + ".glb";
+            string bodyUrl = BodyUrlPrefix + npc.BodyKey + ".glb";
             if (!RoaModelPrefabCatalog.TryInstantiate(bodyUrl, holder.transform, out GameObject body))
             {
                 if (Reported.Add(bodyUrl))
@@ -135,12 +133,6 @@ namespace RealmOfAshes.EditorTools
             var block = new MaterialPropertyBlock();
             foreach (Transform node in body.GetComponentsInChildren<Transform>(true))
             {
-                if (node.name == "head")
-                {
-                    preview.Head = node;
-                    preview.HeadScale = Vector3.Scale(node.localScale, HeadFactors(npc.FaceId));
-                    node.localScale = preview.HeadScale;
-                }
                 if (!node.name.StartsWith("hair_")) continue;
                 node.gameObject.SetActive(showHair);
                 // Цвет — блоком свойств: общий материал модели трогать нельзя.
@@ -165,7 +157,7 @@ namespace RealmOfAshes.EditorTools
             var bones = new Dictionary<string, Transform>();
             foreach (Transform node in body.GetComponentsInChildren<Transform>(true))
                 if (!bones.ContainsKey(node.name)) bones[node.name] = node;
-            string bodyKey = npc.SexId + "_" + npc.BodyTypeId;
+            string bodyKey = npc.BodyKey;
 
             var worn = new Dictionary<string, GameObject>();
             foreach ((string slot, string itemId) in new[]
@@ -239,14 +231,6 @@ namespace RealmOfAshes.EditorTools
             if (Reported.Add(message)) Debug.LogWarning(message);
         }
 
-        private static Vector3 HeadFactors(string faceId)
-        {
-            string suffix = faceId.Length >= 2 ? faceId.Substring(faceId.Length - 2) : "01";
-            if (suffix == "02") return new Vector3(0.88f, 1.018f, 1.05f);
-            if (suffix == "03") return new Vector3(1.13f, 0.985f, 0.96f);
-            if (suffix == "04") return new Vector3(0.98f, 0.982f, 1.09f);
-            return Vector3.one;
-        }
 
         private static Color HairColor(string id)
         {
@@ -293,8 +277,6 @@ namespace RealmOfAshes.EditorTools
             float length = Mathf.Max(0.01f, preview.Idle.length);
             float time = (float)((now + preview.Phase * length) % length);
             preview.Idle.SampleAnimation(preview.Animated, time);
-            // Клип мог тронуть голову: форма лица накладывается поверх, как у клиента.
-            if (preview.Head != null) preview.Head.localScale = preview.HeadScale;
         }
 
         private static void ClearAll()

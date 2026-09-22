@@ -17,10 +17,6 @@ const expectedKeys = new Set([
   'male_medium',
   'male_large'
 ]);
-const expectedFaces = {
-  female: ['female_01', 'female_02', 'female_03', 'female_04'],
-  male: ['male_01', 'male_02', 'male_03', 'male_04']
-};
 const expectedHair = {
   female: ['shaved', 'tied_back'],
   male: ['shaved', 'short_crop']
@@ -144,9 +140,11 @@ function unityHairHex(source, declaration) {
   return id => hexes.get(id) || fallback;
 }
 
-assert(unityCreator.includes('string prefix = Appearance.Sex == "female" ? "female_" : "male_";'),
-  'Unity creator no longer derives face ids from the selected sex');
-const unityFaceSuffixes = unityStringList(unityCreator, 'FaceSuffixes =');
+// Телосложение и форма лица не выбираются: игра запрашивает одну базу на пол.
+assert(unityCharacterView.includes('return sex + "_medium";'),
+  'Unity must load one base model per sex');
+assert(!unityCreator.includes('BodyIds') && !unityCreator.includes('FaceSuffixes'),
+  'the creator must not offer body builds or face shapes again');
 const unityHair = unityCreator
   .slice(unityCreator.indexOf('private static string[] HairIds(string sex)'))
   .match(/sex == "female"\s*\?\s*new\[\]\s*\{([^}]*)\}\s*:\s*new\[\]\s*\{([^}]*)\}/);
@@ -156,8 +154,6 @@ const unityHairBySex = {
   male: Array.from(unityHair[2].matchAll(/"([^"]+)"/g), match => match[1])
 };
 for (const sex of ['female', 'male']) {
-  assert.deepStrictEqual(unityFaceSuffixes.map(suffix => `${sex}_${suffix}`), expectedFaces[sex],
-    `${sex}: face catalog drifted`);
   assert.deepStrictEqual(unityHairBySex[sex], expectedHair[sex],
     `${sex}: sex-compatible hairstyle catalog drifted`);
 }
@@ -177,22 +173,20 @@ for (const [id, hex] of expectedHairColors) {
 
 const server = fs.readFileSync(serverPath, 'utf8');
 assert(server.includes("const SERVER_CHARACTER_SEXES = new Set(['female', 'male'])"));
-assert(server.includes("const SERVER_CHARACTER_BODY_TYPES = new Set(['slim', 'medium', 'large'])"));
+assert(!server.includes('SERVER_CHARACTER_BODY_TYPES') && !server.includes('faceIds'),
+  'the server must not validate body builds or face shapes again');
 for (const id of [
-  ...expectedFaces.female,
-  ...expectedFaces.male,
   ...legacyServerHair,
   ...expectedHairColors.map(([id]) => id)
 ]) {
   assert(server.includes(`'${id}'`), `server appearance allowlist is missing: ${id}`);
 }
-assert(server.includes('const faceId = defaults.faceIds.has(rawFaceId) ? rawFaceId : defaults.faceId;'));
 assert(server.includes('const hairId = SERVER_CHARACTER_HAIR_IDS.has(rawHairId) ? rawHairId : defaults.hairId;'));
 assert(server.includes('const hairColorId = SERVER_CHARACTER_HAIR_COLOR_IDS.has(rawHairColorId) ? rawHairColorId'));
 assert(server.includes('appearance: sanitizeCharacterAppearance(p.appearance || {})'));
 
 console.log(
-  'Character models OK: 6 GLB bases, 8 faces, 2 sex-compatible hairstyles each, 8 hair colors '
-  + 'in the Unity creator/view and server allowlist, authored GLB hair visibility/tinting, '
-  + 'rig/animations and hashes checked'
+  'Character models OK: 6 GLB bases in the catalog (the game asks for the two medium ones), '
+  + '2 sex-compatible hairstyles each, 8 hair colors in the Unity creator/view and server '
+  + 'allowlist, authored GLB hair visibility/tinting, rig/animations and hashes checked'
 );

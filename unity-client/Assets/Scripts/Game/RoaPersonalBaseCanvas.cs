@@ -421,8 +421,6 @@ namespace RealmOfAshes.Game
             var appearance = new JObject
             {
                 ["sex"] = female ? "female" : "male",
-                ["bodyType"] = index % 4 == 0 ? "slim" : "medium",
-                ["faceId"] = female ? "female_01" : "male_01",
                 ["hairId"] = female ? "tied_back" : (index % 2 == 0 ? "short_crop" : "shaved"),
                 ["skinToneId"] = "skin_03",
                 ["hairColorId"] = index % 2 == 0 ? "hair_02" : "hair_03"

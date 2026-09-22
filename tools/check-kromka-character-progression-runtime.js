@@ -153,8 +153,8 @@ function ack(socket, event, payload = {}) {
 
 function appearance() {
   return {
-    schema: 'realm.character-appearance.v1', sex: 'male', bodyType: 'medium',
-    faceId: 'male_01', hairId: 'short_crop', skinToneId: 'skin_03', hairColorId: 'hair_03'
+    schema: 'realm.character-appearance.v1', sex: 'male',
+    hairId: 'short_crop', skinToneId: 'skin_03', hairColorId: 'hair_03'
   };
 }
 

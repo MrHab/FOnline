@@ -95,17 +95,15 @@ namespace RealmOfAshes.Net
 
     /// <summary>
     /// Внешность нового персонажа. Допустимые значения жёстко заданы на сервере:
-    /// schema — realm.character-appearance.v1; sex — female/male; bodyType —
-    /// slim/medium/large; faceId — female_01..04 или male_01..04; hairId и
+    /// schema — realm.character-appearance.v1; sex — female/male; hairId и
     /// hairColorId — из SERVER_CHARACTER_HAIR_IDS и SERVER_CHARACTER_HAIR_COLOR_IDS.
-    /// skinToneId сейчас зафиксирован сервером как skin_03.
+    /// skinToneId сейчас зафиксирован сервером как skin_03. Телосложение и форма
+    /// лица не выбираются: у каждого пола одна базовая модель.
     /// </summary>
     public sealed class CharacterAppearance
     {
         [JsonProperty("schema")] public string Schema = "realm.character-appearance.v1";
         [JsonProperty("sex")] public string Sex = "male";
-        [JsonProperty("bodyType")] public string BodyType = "medium";
-        [JsonProperty("faceId")] public string FaceId = "male_01";
         [JsonProperty("hairId")] public string HairId = "short_crop";
         [JsonProperty("skinToneId")] public string SkinToneId = "skin_03";
         [JsonProperty("hairColorId")] public string HairColorId = "hair_01";

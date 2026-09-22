@@ -139,8 +139,6 @@ namespace RealmOfAshes.EditorTools
                 preview.Show(BaseUrl, new CharacterAppearance
                 {
                     Sex = "male",
-                    BodyType = "medium",
-                    FaceId = "male_04",
                     HairId = "short_crop",
                     HairColorId = "hair_08"
                 }, 720, 640);

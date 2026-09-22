@@ -147,8 +147,8 @@ namespace RealmOfAshes.EditorTools
                     (entity["quests"] as JArray)?.Select(quest => quest.ToString()).ToArray() ?? Array.Empty<string>());
                 if (entity["appearance"] is JObject appearance)
                 {
-                    npc.ConfigureAppearance(Text(appearance, "sex"), Text(appearance, "bodyType"),
-                        Text(appearance, "faceId"), Text(appearance, "hairId"), Text(appearance, "hairColorId"));
+                    npc.ConfigureAppearance(Text(appearance, "sex"), Text(appearance, "hairId"),
+                        Text(appearance, "hairColorId"));
                 }
                 if (entity["equipment"] is JObject equipment)
                 {

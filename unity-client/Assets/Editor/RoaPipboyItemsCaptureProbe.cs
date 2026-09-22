@@ -106,7 +106,8 @@ namespace RealmOfAshes.EditorTools
                     ["boots"] = "scoutBoots",
                     ["backpack"] = "backpack",
                     ["detector"] = string.Empty,
-                    ["artifactBelt"] = string.Empty
+                    ["artifactBelt"] = string.Empty,
+                    ["vehicle"] = "motorcycle"
                 },
                 ["itemConditions"] = new JObject
                 {

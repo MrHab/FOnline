@@ -13,6 +13,7 @@ const MANIFEST_FILE = path.join(RUNTIME_DIR, 'manifest.json');
 const CATALOG_MODEL_DIR = path.join(RUNTIME_DIR, 'kromka');
 const KROMKA_ITEMS_FILE = path.join(ROOT, 'data', 'kromka', 'items.json');
 const UNITY_ITEM_CATALOG_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaItemModelCatalog.cs');
+const UNITY_VEHICLE_CATALOG_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaVehicleCatalog.cs');
 const UNITY_GROUND_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaGroundItems.cs');
 const UNITY_OVERLAY_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaWorldOverlayCanvas.cs');
 const UNITY_INTERACTION_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaInteraction.cs');
@@ -144,12 +145,18 @@ for (const [itemId, url] of unityEquipmentModels) {
 const unityCatalogIds = unityList(fs.readFileSync(UNITY_ITEM_CATALOG_SOURCE, 'utf8'), 'HashSet<string> Items =');
 unityCatalogIds.forEach(id => assert(fs.existsSync(path.join(CATALOG_MODEL_DIR, `item_${id}.glb`)),
   `Нет GLB каталога предметов item_${id}.glb`));
+// Транспорт лежит на земле своей рантайм-моделью в натуральную величину.
+const unityVehicleModels = unityPairs(fs.readFileSync(UNITY_VEHICLE_CATALOG_SOURCE, 'utf8'), 'Models =');
+assert(unityVehicleModels.size > 0, 'Unity не знает ни одной модели транспорта');
+for (const [itemId, url] of unityVehicleModels) {
+  assert(fs.existsSync(path.join(ROOT, 'public', url.replace(/^\//, ''))), `${itemId}: нет GLB транспорта ${url}`);
+}
 
 const kromkaItems = JSON.parse(fs.readFileSync(KROMKA_ITEMS_FILE, 'utf8')).items || [];
 const authoredIds = kromkaItems.map(item => String(item?.id || ''));
 const covered = new Set([
   ...EXPECTED_LIBRARY_IDS, ...WEAPON_IDS, ...EQUIPMENT_IDS, 'fists',
-  ...unityLibraryAliases.keys(), ...unityCatalogIds
+  ...unityLibraryAliases.keys(), ...unityCatalogIds, ...unityVehicleModels.keys()
 ]);
 assert.deepStrictEqual(
   [...new Set(authoredIds)].filter(id => !covered.has(id)),

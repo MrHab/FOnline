@@ -182,6 +182,58 @@ namespace RealmOfAshes.Game
             return true;
         }
 
+        /// <summary>Заднее колесо транспорта стоит за точкой седока (модель мотоцикла, м).</summary>
+        public const float RearWheelOffset = 0.72f;
+
+        /// <summary>
+        /// Пыль из-под заднего колеса седока вместо шагов: тот же пул частиц, без
+        /// звука шагов. position — земля под седоком. true — пыль выпущена.
+        /// </summary>
+        public bool TrackWheels(ref ActorStepState state, Vector3 position, Vector3 velocity,
+                                bool moving, bool visible, Vector3 observerPosition)
+        {
+            velocity.y = 0f;
+            float speed = velocity.magnitude;
+            float now = Time.unscaledTime;
+            bool active = visible && moving && speed > 1.2f
+                && IsActorFxInRange(position, observerPosition, Application.isMobilePlatform);
+            if (!active || now < state.NextStepAt) return false;
+            state.NextStepAt = now + Mathf.Lerp(0.16f, 0.07f, Mathf.InverseLerp(1.2f, 11f, speed));
+            EmitWheelDust(position, velocity);
+            return true;
+        }
+
+        public void EmitWheelDust(Vector3 position, Vector3 velocity)
+        {
+            if (!isActiveAndEnabled) return;
+            EnsureSystems();
+            if (!Ready) return;
+            velocity.y = 0f;
+            float speed = velocity.magnitude;
+            Vector3 forward = speed > 0.01f ? velocity / speed : Vector3.forward;
+            Vector3 side = Vector3.Cross(Vector3.up, forward).normalized;
+            float pace = Mathf.InverseLerp(1.2f, 11f, speed);
+            Vector3 origin = position - forward * RearWheelOffset + Vector3.up * 0.02f;
+            int count = Application.isMobilePlatform ? 1 : 2;
+            for (int i = 0; i < count; i++)
+            {
+                float alpha = Mathf.Lerp(0.30f, 0.52f, pace);
+                var emit = new ParticleSystem.EmitParams
+                {
+                    position = origin + side * SignedRandom() * 0.08f,
+                    velocity = -forward * Mathf.Lerp(0.4f, 1.6f, pace) * Next01()
+                        + side * SignedRandom() * 0.3f
+                        + Vector3.up * Mathf.Lerp(0.2f, 0.6f, Next01()),
+                    startLifetime = Mathf.Lerp(0.5f, 0.95f, pace) * Mathf.Lerp(0.8f, 1.2f, Next01()),
+                    startSize = Mathf.Lerp(0.22f, 0.42f, pace) * Mathf.Lerp(0.8f, 1.2f, Next01()),
+                    rotation = SignedRandom() * 180f,
+                    startColor = Color.Lerp(new Color(0.60f, 0.48f, 0.34f, alpha),
+                        new Color(0.86f, 0.70f, 0.47f, alpha * 0.9f), Next01())
+                };
+                _puffs.Emit(emit, 1);
+            }
+        }
+
         /// <summary>Reuses the single audio and particle pools for every visible actor.</summary>
         public void EmitActorStep(RoaAudio.FootstepCue cue)
         {

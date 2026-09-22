@@ -88,6 +88,14 @@ const {
   publicItemCatalog
 } = require('./src/server/kromka-items');
 const {
+  normalizeVehicleCatalog,
+  vehicleForItem,
+  vehicleMountRefusal,
+  publicMountedVehicle,
+  mountedVehicleState,
+  normalizeDismountReason
+} = require('./src/server/vehicles');
+const {
   beginInventoryMutation,
   commitInventoryMutation,
   sanitizeInventoryMutationLedger
@@ -810,6 +818,7 @@ const KROMKA_WORLD_SIMULATION_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'worl
 const KROMKA_CHARACTER_PROGRESSION_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'character-progression.json');
 const KROMKA_ITEMS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'items.json');
 const KROMKA_FIELD_RECIPES_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'field-recipes.json');
+const KROMKA_VEHICLES_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'vehicles.json');
 const WASTELAND_SIM_FILE = path.join(DATA_DIR, 'wasteland-sim.json');
 const TRADER_PROFILES_FILE = path.join(DATA_DIR, 'traders.json');
 const NPC_ROUTINES_FILE = path.join(DATA_DIR, 'npc-routines.json');
@@ -877,6 +886,8 @@ const KROMKA_FIELD_RECIPE_CATALOG = normalizeFieldRecipeCatalog(
   KROMKA_ITEM_CATALOG
 );
 const KROMKA_FIELD_RECIPE_INDEXES = fieldRecipeCatalogIndexes(KROMKA_FIELD_RECIPE_CATALOG);
+// Транспорт: скорость и пауза стартера для каждого предмета слота «vehicle».
+const KROMKA_VEHICLE_CATALOG = normalizeVehicleCatalog(readJson(KROMKA_VEHICLES_FILE, { vehicles: [] }), KROMKA_ITEM_CATALOG);
 
 function sameFilePath(left, right) {
   const normalize = value => {
@@ -3659,13 +3670,15 @@ function removeDeletedCharacterSocialReferences(characterId = '') {
 }
 
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-function clampPlayerVelocity(v) {
+function clampPlayerVelocity(v, vehicleSpeed = 0) {
   const n = Number(v || 0);
   if (!Number.isFinite(n)) return 0;
   // Клиентские vx/vz используются только для визуального сглаживания других игроков.
   // Ограничиваем их примерно игровой скоростью, чтобы пакет скорости не мог вызвать
-  // визуальный рывок/телепорт на принимающей стороне.
-  return clamp(n, -PLAYER_SPEED * 1.35, PLAYER_SPEED * 1.35);
+  // визуальный рывок/телепорт на принимающей стороне. Седок едет быстрее пешего:
+  // его предел — скорость транспорта.
+  const speed = Number(vehicleSpeed) > 0 ? Number(vehicleSpeed) : PLAYER_SPEED;
+  return clamp(n, -speed * 1.35, speed * 1.35);
 }
 function expireLegacyPlayerInput(p, now = Date.now()) {
   if (!p || !p.input || typeof p.input !== 'object') return false;
@@ -3707,7 +3720,8 @@ const VALID_EQUIPMENT = {
   boots: serverCatalogItemIdsForSlot('boots', true),
   backpack: serverCatalogItemIdsForSlot('backpack', true),
   detector: serverCatalogItemIdsForSlot('detector', true),
-  artifactBelt: serverCatalogItemIdsForSlot('artifactBelt', true)
+  artifactBelt: serverCatalogItemIdsForSlot('artifactBelt', true),
+  vehicle: serverCatalogItemIdsForSlot('vehicle', true)
 };
 
 function sanitizeEquipment(input = {}, fallback = {}) {
@@ -3721,7 +3735,8 @@ function sanitizeEquipment(input = {}, fallback = {}) {
     boots: serverBaseItemId(src.boots ?? base.boots ?? ''),
     backpack: serverBaseItemId(src.backpack ?? base.backpack ?? ''),
     detector: serverBaseItemId(src.detector ?? base.detector ?? ''),
-    artifactBelt: serverBaseItemId(src.artifactBelt ?? base.artifactBelt ?? '')
+    artifactBelt: serverBaseItemId(src.artifactBelt ?? base.artifactBelt ?? ''),
+    vehicle: serverBaseItemId(src.vehicle ?? base.vehicle ?? '')
   };
   Object.keys(out).forEach(slot => {
     if (!VALID_EQUIPMENT[slot] || !VALID_EQUIPMENT[slot].has(out[slot])) out[slot] = slot === 'weapon' ? 'fists' : '';
@@ -10246,6 +10261,68 @@ function serverApplyEmergencyMovementTransition(player = {}, data = {}) {
   return changed;
 }
 
+// --- Транспорт ---------------------------------------------------------------
+// Седло — состояние сессии, а не сохранения: после входа в игру все пешком.
+// Пока игрок едет, p.mountedVehicle держит скорость транспорта, и её же берут
+// бюджет движения и предел ретранслируемой скорости.
+const VEHICLE_DISMOUNT_GRACE_MS = 800;
+
+function serverEquippedVehicle(p = {}) {
+  return vehicleForItem(KROMKA_VEHICLE_CATALOG, serverBaseItemId(p.equipment?.vehicle || ''));
+}
+
+function serverEmitPlayerVehicle(p = {}, reason = '') {
+  if (!p?.id || !p.roomId) return;
+  // Всей комнате, включая самого седока: спешить его может и сервер (удар, оглушение).
+  io.to(p.roomId).emit('playerVehicle', {
+    id: p.id,
+    characterId: p.characterId || '',
+    roomId: p.roomId,
+    vehicle: publicMountedVehicle(p.mountedVehicle),
+    reason: reason ? normalizeDismountReason(reason) : '',
+    t: Date.now()
+  });
+}
+
+function serverMountVehicle(p = {}, vehicle = {}, now = Date.now()) {
+  p.mountedVehicle = mountedVehicleState(vehicle, now);
+  p.vehicleToggledAt = now;
+  p.vehicleGraceUntil = 0;
+  p.crouching = false;
+  serverEmitPlayerVehicle(p, '');
+}
+
+// Спешить игрока. true — он действительно сидел в седле.
+function serverDismountVehicle(p = {}, reason = 'request', now = Date.now()) {
+  if (!p?.mountedVehicle) return false;
+  // Клиент узнаёт о спешивании через RTT и ещё успевает прислать пару пакетов
+  // верхом: короткая отсрочка не даёт серверу откинуть его поправкой назад.
+  p.vehicleGraceSpeed = Number(p.mountedVehicle.speed || 0);
+  p.vehicleGraceUntil = now + VEHICLE_DISMOUNT_GRACE_MS;
+  p.mountedVehicle = null;
+  p.vehicleToggledAt = now;
+  serverEmitPlayerVehicle(p, reason);
+  return true;
+}
+
+// Ездить уже нельзя: без сознания, мёртв, оглушён или транспорт больше не надет.
+function serverSettleMountedVehicle(p = {}, now = Date.now()) {
+  if (!p?.mountedVehicle) return false;
+  if (p.downed) return serverDismountVehicle(p, 'downed', now);
+  if (p.dead || Number(p.hp || 0) <= 0) return serverDismountVehicle(p, 'death', now);
+  if (isArtifactStunned(p, now)) return serverDismountVehicle(p, 'stunned', now);
+  const equipped = serverEquippedVehicle(p);
+  if (!equipped || equipped.itemId !== p.mountedVehicle.itemId) return serverDismountVehicle(p, 'unequipped', now);
+  return false;
+}
+
+// Прямой удар выбивает из седла. Кровотечение и заражение по седоку не бьют:
+// с ними ездить можно, иначе раненый не добрался бы до врача.
+function serverVehicleHitDismount(p = {}, damage = 0, now = Date.now()) {
+  if (!p?.mountedVehicle || !(Number(damage) > 0)) return false;
+  return serverDismountVehicle(p, 'hit', now);
+}
+
 function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
   if (player.dead || player.downed || isArtifactStunned(player, now)) return { accepted: false, corrected: true };
   const proposedX = Number(data.x);
@@ -10274,8 +10351,14 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
   const dx = clamp(proposedX, -worldExtent, worldExtent) - fromX;
   const dz = clamp(proposedZ, -worldExtent, worldExtent) - fromZ;
   const distance = Math.hypot(dx, dz);
-  const artifactSpeed = 1 + serverArtifactEffects(player).speedPct;
-  const maxDistance = PLAYER_SPEED * artifactSpeed * elapsed * 1.35 + 0.22;
+  // Седок едет со скоростью транспорта; бонус артефактов к ней не прибавляется.
+  // Только что спешенный ещё короткое время укладывается в тот же бюджет.
+  const mountedSpeed = Number(player.mountedVehicle?.speed || 0)
+    || (Number(player.vehicleGraceUntil || 0) > now ? Number(player.vehicleGraceSpeed || 0) : 0);
+  const speedLimit = mountedSpeed > 0
+    ? mountedSpeed
+    : PLAYER_SPEED * (1 + serverArtifactEffects(player).speedPct);
+  const maxDistance = speedLimit * elapsed * 1.35 + 0.22;
   const scale = distance > maxDistance && distance > 0 ? maxDistance / distance : 1;
   const moveAllowed = (toX, toZ) => !room || (
     (!closedBounds || serverPointInsideClosedLocationBounds(toX, toZ, closedBounds))
@@ -12099,7 +12182,11 @@ function serverCombatAcksForPlayer(p = {}, now = Date.now()) {
   return [serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p), p, '', slot), now, slot)];
 }
 
+// Руки седока держат руль: верхом не стреляют и не бьют.
+const VEHICLE_ATTACK_REFUSAL = 'Верхом не стреляют: B — слезть с мотоцикла.';
+
 function serverResolvePlayerAttackPlan(p = {}, data = {}, now = Date.now()) {
+  if (p.mountedVehicle) return { ok: false, error: VEHICLE_ATTACK_REFUSAL };
   const requestedMode = String(data.mode || data.combat?.mode || 'single');
   const pair = serverDualWieldPistolPair(p);
   if (requestedMode === 'dual') {
@@ -20989,6 +21076,7 @@ function serverApplyWorldBossPulse(room, state, event, now = Date.now()) {
     p.hp = Math.max(0, Number(p.hp || p.maxHp || 1) - mitigation.damage);
     const newInjuries = serverApplyInjuriesFromHit(p, mitigation.damage, 'anomalous', 'Импульс Хранителя');
     p.lastServerDamageAt = now;
+    serverVehicleHitDismount(p, mitigation.damage, now);
     const downed = Number(p.hp || 0) <= 0 && serverTryDownWorldActivityPlayer(p, room, now);
     io.to(p.id).emit('playerStatusEffect', {
       effect: 'worldBossPulse',
@@ -21442,6 +21530,7 @@ function serverApplyPublicEventStrike(room, area, now = Date.now()) {
     p.hp = Math.max(0, Number(p.hp || p.maxHp || 1) - mitigation.damage);
     const newInjuries = serverApplyInjuriesFromHit(p, mitigation.damage, 'explosive', String(area.displayName || 'Удар события'));
     p.lastServerDamageAt = now;
+    serverVehicleHitDismount(p, mitigation.damage, now);
     const downed = Number(p.hp || 0) <= 0 && serverTryDownWorldActivityPlayer(p, room, now);
     io.to(p.id).emit('playerStatusEffect', {
       effect: 'publicEventStrike',
@@ -23669,6 +23758,7 @@ function serverTryRespawnSiegePlayer(p, room, cause = {}, now = Date.now()) {
 
 function serverRespawnPlayer(p, oldRoom, cause = {}) {
   if (!p || !p.id) return;
+  serverDismountVehicle(p, 'death');
   p.artifactRuntime = sanitizeArtifactRuntime();
   p.lastArtifactRuntimeAt = Date.now();
   p.artifactBloodkinHealingUntil = 0;
@@ -25641,6 +25731,7 @@ function updateServerEnemies(room, dt, opts = {}) {
             effectChance: attackProfile.effectChance
           });
           target.lastServerDamageAt = now;
+          serverVehicleHitDismount(target, damage, now);
           serverApplyArtifactImpact(target, room, enemy, damageType, damageType === 'explosive' ? 1.5 : 0, now);
           const downed = !secondChance && Number(target.hp || 0) <= 0
             && serverTryDownWorldActivityPlayer(target, room, now);
@@ -26886,12 +26977,14 @@ function publicPlayer(p) {
     worldPartyId: worldTransferId(p.attachedPartyId || ''),
     x: Number(p.x.toFixed(3)),
     z: Number(p.z.toFixed(3)),
-    vx: Number(clampPlayerVelocity(p.vx || 0).toFixed(3)),
-    vz: Number(clampPlayerVelocity(p.vz || 0).toFixed(3)),
+    vx: Number(clampPlayerVelocity(p.vx || 0, p.mountedVehicle?.speed).toFixed(3)),
+    vz: Number(clampPlayerVelocity(p.vz || 0, p.mountedVehicle?.speed).toFixed(3)),
     angle: Number(p.angle.toFixed(4)),
     crouching: !!p.crouching,
     moving: !!p.moving,
     turning: !!p.turning,
+    // На чём игрок едет; пешком — null. Остальные клиенты сажают его в седло.
+    vehicle: publicMountedVehicle(p.mountedVehicle),
     hp: Math.round(Number(p.hp || 0)),
     maxHp: Math.round(Number(p.maxHp || 100)),
     maxAp: Math.round(Number(p.maxAp || 0)),
@@ -27544,8 +27637,8 @@ function publicPlayerMovement(p) {
     seq: Number(p.movementSeq || 0),
     x: Number(p.x.toFixed(3)),
     z: Number(p.z.toFixed(3)),
-    vx: Number(clampPlayerVelocity(p.vx || 0).toFixed(3)),
-    vz: Number(clampPlayerVelocity(p.vz || 0).toFixed(3)),
+    vx: Number(clampPlayerVelocity(p.vx || 0, p.mountedVehicle?.speed).toFixed(3)),
+    vz: Number(clampPlayerVelocity(p.vz || 0, p.mountedVehicle?.speed).toFixed(3)),
     angle: Number(p.angle.toFixed(4)),
     crouching: !!p.crouching,
     moving: !!p.moving,
@@ -28074,8 +28167,10 @@ io.on('connection', (socket) => {
       if (typeof data.moving !== 'undefined') p.moving = !!data.moving && !p.dead && !p.downed && !isArtifactStunned(p, stateReceivedAt);
       if (typeof data.turning !== 'undefined') p.turning = !!data.turning;
       else p.turning = false;
-      p.vx = p.moving ? clampPlayerVelocity(data.vx) : 0;
-      p.vz = p.moving ? clampPlayerVelocity(data.vz) : 0;
+      // Верхом не приседают: седло держит седока в одной позе.
+      if (p.mountedVehicle) p.crouching = false;
+      p.vx = p.moving ? clampPlayerVelocity(data.vx, p.mountedVehicle?.speed) : 0;
+      p.vz = p.moving ? clampPlayerVelocity(data.vz, p.mountedVehicle?.speed) : 0;
       if (hasMovementSeq) {
         p.lastAcceptedMovementSeq = incomingMovementSeq;
         p.movementSeq = incomingMovementSeq;
@@ -28212,7 +28307,41 @@ io.on('connection', (socket) => {
       serverApplyDerivedVitals(p);
       emitServerArtifactState(p, 'equipment');
     }
+    // Снятый или заменённый транспорт ссаживает седока сразу, а не на тике.
+    if (result.ok) serverSettleMountedVehicle(p, Date.now());
     respond(result);
+  });
+
+  // Транспорт (клавиша B). Сесть можно с надетым транспортом, в сознании и без
+  // оглушения; слезть — всегда. Комната узнаёт об этом событием playerVehicle.
+  socket.on('vehicleAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const reply = payload => {
+      if (typeof ack === 'function') ack({ ...payload, self: p ? publicAuthoritativePlayerState(p) : null });
+    };
+    if (!p) return reply({ ok: false, error: 'Персонаж не находится в игре.' });
+    const now = Date.now();
+    serverSettleMountedVehicle(p, now);
+    const requested = String(data.action || 'toggle');
+    const mount = requested === 'mount' || (requested !== 'dismount' && !p.mountedVehicle);
+    if (!mount) {
+      serverDismountVehicle(p, 'request', now);
+      return reply({ ok: true, mounted: false, vehicle: null });
+    }
+    if (p.mountedVehicle) return reply({ ok: true, mounted: true, vehicle: publicMountedVehicle(p.mountedVehicle) });
+    const vehicle = serverEquippedVehicle(p);
+    const refusal = vehicleMountRefusal({
+      vehicle,
+      dead: !!p.dead || Number(p.hp || 0) <= 0,
+      downed: !!p.downed,
+      stunned: isArtifactStunned(p, now),
+      inRoom: !!p.roomId && !p.onGlobalMap,
+      lastToggleAt: p.vehicleToggledAt,
+      now
+    });
+    if (refusal) return reply({ ok: false, error: refusal, mounted: false, vehicle: null });
+    serverMountVehicle(p, vehicle, now);
+    reply({ ok: true, mounted: true, vehicle: publicMountedVehicle(p.mountedVehicle) });
   });
 
   socket.on('input', (data = {}) => {
@@ -30630,7 +30759,7 @@ io.on('connection', (socket) => {
 
   socket.on('shoot', (data = {}) => {
     const p = players.get(socket.id);
-    if (!p || !p.roomId) return;
+    if (!p || !p.roomId || p.mountedVehicle) return;
     const room = rooms.get(p.roomId);
     if (!room) return;
     if (!serverAllowCosmeticRelay(p)) return;
@@ -30672,7 +30801,7 @@ io.on('connection', (socket) => {
 
   socket.on('melee', (data = {}) => {
     const p = players.get(socket.id);
-    if (!p || !p.roomId) return;
+    if (!p || !p.roomId || p.mountedVehicle) return;
     const room = rooms.get(p.roomId);
     if (!room) return;
     if (!serverAllowCosmeticRelay(p)) return;
@@ -30806,6 +30935,7 @@ io.on('connection', (socket) => {
     }
     if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не экипировано.', currentCombat());
     if (weapon.id !== 'rocketLauncher') return fail('Это действие доступно только для ракетницы.', currentCombat());
+    if (p.mountedVehicle) return fail(VEHICLE_ATTACK_REFUSAL, currentCombat());
     const modeInfo = serverWeaponModeInfo(p, weapon, String(data.mode || 'single'));
     const attackToken = serverCombatToken(data.attackToken || data.combat?.token || '');
     if (!attackToken) return fail('Сервер: отсутствует токен выстрела.', currentCombat());
@@ -30899,6 +31029,7 @@ io.on('connection', (socket) => {
       if (!secondChance) target.hp = Math.max(0, serverCurrentHp(target) - dmgInfo.damage);
       const newInjuries = serverApplyInjuriesFromHit(target, dmgInfo.damage, 'explosive', isSelf ? 'self explosion' : (p.name || 'rocket explosion'), { selfDamage: isSelf });
       target.lastServerDamageAt = now;
+      serverVehicleHitDismount(target, dmgInfo.damage, now);
       if (!isSelf) serverNotePvpExchange(p, target, now);
       serverApplyArtifactImpact(target, room, { x: impactX, z: impactZ }, 'explosive', 2 * falloff, now);
       const downed = !secondChance && Number(target.hp || 0) <= 0
@@ -31320,6 +31451,7 @@ io.on('connection', (socket) => {
     const absorbed = hits.reduce((sum, row) => sum + Number(row.absorbed || 0), 0);
     const secondChance = hits.some(row => row.secondChance);
     target.lastServerDamageAt = now;
+    if (anyHit) serverVehicleHitDismount(target, damage, now);
     serverNotePvpExchange(attacker, target, now);
     if (anyHit) serverApplyArtifactImpact(target, room, attacker,
       hits.some(row => row.hit && row.damageType === 'electric') ? 'electric' : '', 0, now);
@@ -32717,6 +32849,7 @@ setInterval(() => {
   // 1) Сначала двигаем игроков.
   for (const p of players.values()) {
     const playerTickNow = Date.now();
+    serverSettleMountedVehicle(p, playerTickNow);
     if (p.downed) {
       p.input = { forward: 0, right: 0 };
       p.vx = 0;
@@ -32812,6 +32945,7 @@ setInterval(() => {
         anomalyHit.anomalyName || 'Аномалия'
       );
       p.lastServerDamageAt = playerTickNow;
+      serverVehicleHitDismount(p, mitigation.damage, playerTickNow);
       serverApplyArtifactImpact(p, anomalyRoom, { x: anomalyHit.sourceX, z: anomalyHit.sourceZ },
         anomalyHit.damageType, anomalyHit.anomalyType === 'pull' ? -0.8 : anomalyHit.anomalyType === 'carousel' ? 0.8 : 0, playerTickNow);
       const downed = !secondChance && Number(p.hp || 0) <= 0

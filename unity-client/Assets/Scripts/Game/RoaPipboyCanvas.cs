@@ -14,8 +14,8 @@ namespace RealmOfAshes.Game
     /// (#inventory-window в index.html:55): латунная рамка, фосфорный экран,
     /// сводка WG/HP/AP/DT/Caps/СИЛА, страницы и ряд вкладок снизу.
     ///
-    /// Клавиши повторяют web: TAB — статус, I — инвентарь, B — навыки/перки,
-    /// P — крафт. Данные и действия остаются в RoaInventory и RoaPipboy —
+    /// Клавиши: TAB и I — персонаж и инвентарь, K — навыки, P — крафт
+    /// (B — транспорт, его ведёт RoaVehicleController). Данные и действия остаются в RoaInventory и RoaPipboy —
     /// этот класс только рисует их в новом виде; старые IMGUI-окна выключены
     /// флагом CanvasDriven, как это уже сделано с HUD.
     ///
@@ -170,8 +170,8 @@ namespace RealmOfAshes.Game
             if (TypingInInputField()) return;
 
             // Tab и I — экран персонажа, K — навыки, P — крафт. Повторное нажатие
-            // своей клавиши закрывает. Клавишу B занимает болт (RoaBoltThrower), и
-            // обучение прямо просит нажать её, чтобы достать щуп.
+            // своей клавиши закрывает. Клавишу B занимает транспорт (RoaVehicleController),
+            // болт бросают нажатием колеса мыши.
             if (Input.GetKeyDown(KeyCode.Tab)) TogglePage(Page.Items);
             else if (Input.GetKeyDown(KeyCode.I)) TogglePage(Page.Items);
             else if (Input.GetKeyDown(KeyCode.K)) TogglePage(Page.Skills);
@@ -639,17 +639,17 @@ namespace RealmOfAshes.Game
             RectTransform lattice = Child("Lattice", panel);
             Place_(lattice, 0f, 0f, 0f, 1f, new Vector2(6f, 32f), new Vector2(306f, -30f));
 
-            // Порядок и подписи неприкосновенны: их посимвольно требует
-            // tools/check-unity-kromka-artifacts.js:23-28.
             string[] leftSlots = { "weapon", "armor", "boots", "detector" };
             string[] rightSlots = { "offhand", "helmet", "backpack", "artifactBelt" };
             string[] leftTitles = { "Правая рука", "Корпус", "Ноги", "Детектор" };
             string[] rightTitles = { "Левая рука", "Голова", "Спина", "Арт-пояс" };
 
-            // Геометрия решётки 3x5 в шаге 100: оружие и вторая рука во всю ширину,
-            // корпус крупным квадратом 2x2, остальное — обычные ячейки.
+            // Геометрия решётки 3x5 в шаге 100: оружие во всю ширину, вторая рука
+            // на две клетки, рядом с ней транспорт; корпус крупным квадратом 2x2,
+            // остальное — обычные ячейки.
             BuildEquipCell(lattice, leftSlots[0], leftTitles[0], 0, 0, 3, 1);
-            BuildEquipCell(lattice, rightSlots[0], rightTitles[0], 0, 1, 3, 1);
+            BuildEquipCell(lattice, rightSlots[0], rightTitles[0], 0, 1, 2, 1);
+            BuildEquipCell(lattice, RoaVehicleCatalog.Slot, "Транспорт", 2, 1, 1, 1);
             BuildEquipCell(lattice, leftSlots[1], leftTitles[1], 0, 2, 2, 2);
             BuildEquipCell(lattice, rightSlots[1], rightTitles[1], 2, 2, 1, 1);
             BuildEquipCell(lattice, leftSlots[2], leftTitles[2], 2, 3, 1, 1);
@@ -1423,7 +1423,7 @@ namespace RealmOfAshes.Game
                 cell.Button.GetComponent<Outline>().effectColor = highlight ? AccentWarm
                     : has ? EquippedSlotBorder : SlotBorder;
             }
-            _itemsPanelSlots.text = filled + "/8 СЛОТОВ";
+            _itemsPanelSlots.text = filled + "/" + RoaInventory.SlotCount + " СЛОТОВ";
 
             int power = RoaGearData.PowerTotal(Inventory.EquipmentSlots,
                 itemId => Mathf.RoundToInt(Inventory.ConditionOf(itemId)));

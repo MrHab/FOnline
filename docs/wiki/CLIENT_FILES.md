@@ -102,6 +102,14 @@ partial-части того же класса):
 `RoaSettlementLifePresentation`, `RoaActorNameplates` (раскладка плашек — см.
 [плашки и подписи](NAMEPLATES_AND_LABELS.md)).
 
+**Транспорт** — `RoaVehicleController` (клавиша `B` и кнопка «МОТО»,
+`vehicleAction`, событие `playerVehicle` для своего седла, пыль из-под колеса и
+звук мотора), `RoaVehicleView` (модель мотоцикла, колёса, руль, крен, появление и
+уход), `RoaRiderPose` (посадка седока: таз в седло, IK рук и ног к рукоятям и
+подножкам), `RoaVehicleCatalog` (модель предмета слота «Транспорт»). Седло
+поверх клипа держит `RoaCharacterView`; редакторская проба —
+`RoaRiderPoseProbe` (все шесть тел, снимки седока).
+
 **Бой** — `RoaCombat`, `RoaCombatPreview` (шанс/урон без изменения
 авторитетного состояния), `RoaCombatFx` (пулы трассеров/вспышек, взрывы, речь
 NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,

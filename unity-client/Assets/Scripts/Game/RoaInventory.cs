@@ -50,10 +50,14 @@ namespace RealmOfAshes.Game
                 { "boots", new HashSet<string>(new[] { "boots", "scoutBoots", "reinforcedBoots", "assaultBoots" }) },
                 { "backpack", new HashSet<string>(new[] { "backpack" }) },
                 { "detector", new HashSet<string>(new[] { "artifactDetectorMk1", "artifactDetectorMk2", "artifactDetectorMk3" }) },
-                { "artifactBelt", new HashSet<string>(new[] { "artifactBelt2", "artifactBelt3", "artifactBelt4" }) }
+                { "artifactBelt", new HashSet<string>(new[] { "artifactBelt2", "artifactBelt3", "artifactBelt4" }) },
+                { "vehicle", new HashSet<string>(new[] { "motorcycle" }) }
             };
 
-        private static readonly string[] SlotOrder = { "weapon", "offhand", "armor", "helmet", "boots", "backpack", "detector", "artifactBelt" };
+        private static readonly string[] SlotOrder = { "weapon", "offhand", "armor", "helmet", "boots", "backpack", "detector", "artifactBelt", "vehicle" };
+
+        /// <summary>Сколько слотов экипировки у персонажа (шапка «N/9 СЛОТОВ»).</summary>
+        public static int SlotCount { get { return SlotOrder.Length; } }
 
         private static readonly HashSet<string> MedicalItems = new HashSet<string>(new[]
         {
@@ -812,6 +816,7 @@ namespace RealmOfAshes.Game
             if (slot == "backpack") return "рюкзак";
             if (slot == "detector") return "детектор";
             if (slot == "artifactBelt") return "арт-пояс";
+            if (slot == "vehicle") return "транспорт";
             return slot;
         }
 

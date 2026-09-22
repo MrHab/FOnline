@@ -7,11 +7,17 @@ const vm = require('node:vm');
 const { canonicalKromkaFactionId } = require('../src/server/kromka-faction-contracts');
 const { ZONE_MODE_SET, normalizeZoneMode, zoneModeAllowsPvp } = require('../src/server/zone-rules');
 const { deathLootPolicy } = require('../src/server/kromka-death-loot');
+const { publicMountedVehicle, normalizeDismountReason } = require('../src/server/vehicles');
 const source = fs.readFileSync(path.join(__dirname, '../server.js'), 'utf8');
 function functionSource(name) {
   const start = source.indexOf(`function ${name}(`);
   assert(start >= 0, name);
   return source.slice(start, source.indexOf('\n}', start) + 2);
+}
+function constSource(name) {
+  const start = source.indexOf(`const ${name} = `);
+  assert(start >= 0, name);
+  return source.slice(start, source.indexOf(';', start) + 1);
 }
 function handlerSource(event) {
   const start = source.indexOf(`  socket.on('${event}',`);
@@ -94,8 +100,11 @@ function fixture(mode = 'pvp') {
     serverFinishEnemyKilledByPlayer: () => false, refreshRoomWorldState: () => {},
     livePlayersInRoom: () => [...players.values()], sanitizeInjuries: value => value,
     normalizeDeviceType: () => 'desktop', normalizeControlType: () => 'keyboard_mouse',
-    sanitizeEquipment: value => value
+    sanitizeEquipment: value => value,
+    publicMountedVehicle, normalizeDismountReason
   });
+  // Седок: попадание выбивает из седла, верхом не стреляют.
+  for (const name of ['VEHICLE_DISMOUNT_GRACE_MS', 'VEHICLE_ATTACK_REFUSAL']) vm.runInContext(constSource(name), context);
   for (const name of [
     'normalizeLocationPvpMode', 'capitalLocationId', 'locationIsFactionCapital',
     'locationPvpMode', 'locationAllowsPvp', 'locationAllowsNpcCombat', 'roomAllowsNpcCombat', 'zoneModeDropsInventory',
@@ -109,7 +118,8 @@ function fixture(mode = 'pvp') {
     'serverPvpBlockLabel', 'serverNpcBlockLabel',
     // Учёт попаданий по токену, безопасное чтение здоровья и лимит косметических
     // событий: обработчики боя зовут их напрямую, заглушки здесь не годятся.
-    'serverMarkAttackTargetHit', 'serverCurrentHp', 'serverAllowCosmeticRelay'
+    'serverMarkAttackTargetHit', 'serverCurrentHp', 'serverAllowCosmeticRelay',
+    'serverEmitPlayerVehicle', 'serverDismountVehicle', 'serverVehicleHitDismount'
   ]) vm.runInContext(functionSource(name), context);
   for (const event of ['shoot', 'melee', 'combatAttack', 'enemyHit', 'playerHit', 'explosionAttack'])
     vm.runInContext(handlerSource(event), context);
@@ -232,4 +242,34 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
     'A peaceful zone names itself');
 }
 
-console.log('Friendly fire OK: peaceful/capital shooting, normal spending, ally protection for direct/cone/blast attacks, hostile splash damage and no protected-target side effects.');
+// --- седок --------------------------------------------------------------------
+// Защищённого друга взрыв не спешивает, задетого противника — выбивает из седла,
+// а верхом ракетница не стреляет вовсе.
+{
+  const f = fixture('pvp');
+  const ride = () => ({ itemId: 'motorcycle', kind: 'motorcycle', speed: 11, since: 0 });
+  f.weapon.id = 'rocketLauncher';
+  f.p.socialState = { friends: [{ id: f.target.characterId }] };
+  f.target.mountedVehicle = ride();
+  const opponent = { ...f.target, id: 'opponent', characterId: 'opponent-char', mountedVehicle: ride() };
+  f.context.players.set(opponent.id, opponent);
+  const blast = f.attack('explosionAttack', { impactX: 10, impactZ: 0 });
+  assert(blast.ok && opponent.hp < 100, 'The blast reaches the hostile rider');
+  assert(f.target.mountedVehicle, 'A protected friend stays in the saddle');
+  assert.equal(opponent.mountedVehicle, null, 'Splash damage knocks the rider off');
+  const dismounts = f.events.filter(row => row.event === 'playerVehicle');
+  assert.equal(dismounts.length, 1);
+  assert.equal(dismounts[0].payload.id, opponent.id);
+  assert.equal(dismounts[0].payload.vehicle, null);
+  assert.equal(dismounts[0].payload.reason, 'hit');
+  assert(opponent.vehicleGraceUntil > Date.now(), 'The fallen rider keeps a short speed grace');
+
+  f.p.mountedVehicle = ride();
+  const spent = f.spends();
+  const refused = f.attack('explosionAttack', { impactX: 10, impactZ: 0 });
+  assert(refused && refused.ok === false && /Верхом/.test(refused.error), 'A rider cannot fire a rocket');
+  assert.equal(f.spends(), spent, 'A refused rocket spends nothing');
+  assert(f.p.mountedVehicle, 'Refusal leaves the rider in the saddle');
+}
+
+console.log('Friendly fire OK: peaceful/capital shooting, normal spending, ally protection for direct/cone/blast attacks, hostile splash damage, no protected-target side effects, riders fall only from landed hits and never fire rockets.');

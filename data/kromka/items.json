@@ -78,6 +78,7 @@
     { "id": "artifactBelt3", "name": "Пояс-контейнер на 3", "weight": 1.5, "basePrice": 320, "category": "tools", "stackLimit": 12, "slot": "artifactBelt", "compatibleSlots": ["artifactBelt"], "conditionMode": "shared", "acquisition": ["quest", "craft"] },
     { "id": "artifactBelt4", "name": "Пояс-контейнер на 4", "weight": 1.8, "basePrice": 680, "category": "tools", "stackLimit": 12, "slot": "artifactBelt", "compatibleSlots": ["artifactBelt"], "conditionMode": "shared", "acquisition": ["quest", "craft"] },
     { "id": "artifactContainer", "name": "Свинцовый контейнер", "weight": 2.0, "basePrice": 45, "category": "tools", "stackLimit": 12, "conditionMode": "shared", "acquisition": ["quest", "craft"] },
+    { "id": "motorcycle", "name": "Армейский мотоцикл", "weight": 0.0, "basePrice": 900, "category": "tools", "stackLimit": 2, "slot": "vehicle", "compatibleSlots": ["vehicle"], "conditionMode": "none", "acquisition": ["trade"] },
 
     { "id": "artifactSpring", "name": "Артефакт «Пружина»", "weight": 0.45, "basePrice": 0, "category": "artifacts", "stackLimit": 12, "slot": "artifact", "compatibleSlots": ["artifactBelt"], "conditionMode": "none", "acquisition": ["anomaly"] },
     { "id": "artifactVein", "name": "Артефакт «Жила»", "weight": 0.6, "basePrice": 0, "category": "artifacts", "stackLimit": 12, "slot": "artifact", "compatibleSlots": ["artifactBelt"], "conditionMode": "none", "acquisition": ["anomaly"] },

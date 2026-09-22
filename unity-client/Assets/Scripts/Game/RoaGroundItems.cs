@@ -414,6 +414,12 @@ namespace RealmOfAshes.Game
                 kind = "equipment";
                 return path;
             }
+            if (RoaVehicleCatalog.Contains(itemId))
+            {
+                // Выброшенный мотоцикл стоит на земле в натуральную величину.
+                kind = "vehicle";
+                return RoaVehicleCatalog.ModelPath(itemId);
+            }
             return string.Empty;
         }
 
@@ -467,7 +473,7 @@ namespace RealmOfAshes.Game
             if (kind == "equipment") holder.transform.localRotation = Quaternion.Euler(-90f, 0f, 10f);
             else if (kind == "weapon") holder.transform.localRotation = Quaternion.Euler(0f, 14f, 2.3f);
 
-            bool nativeScale = kind == "catalog" || kind == "equipment-catalog";
+            bool nativeScale = kind == "catalog" || kind == "equipment-catalog" || kind == "vehicle";
             if (nativeScale)
             {
                 // Loading-marker scale must not flatten the authored metre-scale item.

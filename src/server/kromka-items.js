@@ -6,7 +6,7 @@ const ALLOWED_CATEGORIES = new Set([
 ]);
 const ALLOWED_SLOTS = new Set([
   '', 'weapon', 'offhand', 'armor', 'helmet', 'boots', 'backpack',
-  'detector', 'artifactBelt', 'artifact'
+  'detector', 'artifactBelt', 'artifact', 'vehicle'
 ]);
 const ALLOWED_CONDITION_MODES = new Set(['none', 'shared', 'runtime']);
 const ALLOWED_ACQUISITION = new Set([

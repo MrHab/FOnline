@@ -100,6 +100,8 @@ function fixture(mode = 'pvpFullDrop', targetHp = 5) {
     serverTrySecondChance: () => false,
     serverApplyInjuriesFromHit: () => [],
     serverApplyArtifactImpact: () => {},
+    // Спешивание от удара проверяет check-friendly-fire; здесь все пешком.
+    serverVehicleHitDismount: () => false,
     serverTryDownWorldActivityPlayer: () => false,
     // Воронка выпадения: единственное, что проверяется поведением.
     serverDropPvpLootForMode: (dropRoom, dropTarget, killer, dropLoc, now) => {

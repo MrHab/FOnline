@@ -24,6 +24,9 @@ namespace RealmOfAshes.Game
             public bool Crouching;
             public bool PingAvailable;
             public bool BoltAiming;
+            /// <summary>В слоте «Транспорт» есть мотоцикл: кнопка «МОТО» имеет смысл.</summary>
+            public bool VehicleAvailable;
+            public bool Mounted;
             public string FireMode;
             public bool JoystickActive;
             public Vector2 JoystickBase;
@@ -46,6 +49,7 @@ namespace RealmOfAshes.Game
             public Rect Mode;
             public Rect Player;
             public Rect Bolt;
+            public Rect Vehicle;
 
             public Rect Action(int index)
             {
@@ -58,6 +62,7 @@ namespace RealmOfAshes.Game
                     case 5: return Mode;
                     case 6: return Player;
                     case 7: return Bolt;
+                    case 8: return Vehicle;
                     default: return default;
                 }
             }
@@ -86,6 +91,10 @@ namespace RealmOfAshes.Game
 
         public RoaMobileControls Controls;
         public RoaBoltThrower BoltThrower;
+        public RoaVehicleController Vehicles;
+
+        /// <summary>Кнопок всего: четыре на левой рейке, огонь и восемь действий справа.</summary>
+        public const int TotalButtons = 13;
 
         private Canvas _canvas;
         private CanvasScaler _scaler;
@@ -127,7 +136,7 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                if (_raycaster == null || _buttons.Count != 12) return false;
+                if (_raycaster == null || _buttons.Count != TotalButtons) return false;
                 foreach (ButtonView view in _buttons.Values)
                 {
                     if (!view.Back.raycastTarget || view.Icon.raycastTarget
@@ -161,10 +170,12 @@ namespace RealmOfAshes.Game
             PresentFromControls();
         }
 
-        public void Configure(RoaMobileControls controls, RoaBoltThrower boltThrower = null)
+        public void Configure(RoaMobileControls controls, RoaBoltThrower boltThrower = null,
+                              RoaVehicleController vehicles = null)
         {
             Controls = controls;
             BoltThrower = boltThrower;
+            Vehicles = vehicles;
             EnsureCanvas();
             PresentFromControls();
         }
@@ -208,6 +219,10 @@ namespace RealmOfAshes.Game
             SetVisible("Mode", _gameplayButtonsVisible);
             SetVisible("Player", _gameplayButtonsVisible);
             SetVisible("Bolt", _gameplayButtonsVisible);
+            // Кнопку транспорта показываем, только когда он надет: пустая кнопка лишь путала бы.
+            SetVisible("Vehicle", _gameplayButtonsVisible && (state.VehicleAvailable || state.Mounted));
+            SetSelected("Vehicle", state.Mounted, false);
+            SetLabel("Vehicle", state.Mounted ? "СЛЕЗТЬ" : "МОТО");
             SetSelected("Target", state.TargetSelected, false);
             // Галки U+2713 нет во вложенном Noto Sans, а в WebGL нет системных
             // шрифтов, которые бы её подставили; точка U+2022 в шрифте есть.
@@ -247,6 +262,7 @@ namespace RealmOfAshes.Game
                 case "Mode": rect = _layout.Mode; return true;
                 case "Player": rect = _layout.Player; return true;
                 case "Bolt": rect = _layout.Bolt; return true;
+                case "Vehicle": rect = _layout.Vehicle; return true;
                 default: return false;
             }
         }
@@ -313,7 +329,8 @@ namespace RealmOfAshes.Game
                 Inventory = Rail(0), Map = Rail(1), Pipboy = Rail(2), Menu = Rail(3),
                 Fire = fire,
                 Interact = Action(1), Target = Action(2), Crouch = Action(3),
-                Reload = Action(4), Mode = Action(5), Player = Action(6), Bolt = Action(7)
+                Reload = Action(4), Mode = Action(5), Player = Action(6), Bolt = Action(7),
+                Vehicle = Action(8)
             };
         }
 
@@ -356,6 +373,8 @@ namespace RealmOfAshes.Game
                 Crouching = Controls.Crouching,
                 PingAvailable = Controls.PingAvailable,
                 BoltAiming = BoltThrower != null && BoltThrower.IsAiming,
+                VehicleAvailable = Vehicles != null && Vehicles.HasVehicleEquipped,
+                Mounted = Vehicles != null && Vehicles.Mounted,
                 FireMode = Controls.CurrentFireMode,
                 JoystickActive = joystick,
                 JoystickBase = new Vector2(guiBase.x, Screen.height - guiBase.y),
@@ -426,6 +445,8 @@ namespace RealmOfAshes.Game
                 () => Controls?.TriggerPlayerOrPing());
             CreateButton("Bolt", "БОЛТ", "RealmUi/mobile/right/bolt",
                 () => BoltThrower?.ToggleAim());
+            CreateButton("Vehicle", "МОТО", "RealmUi/mobile/right/vehicle",
+                () => Vehicles?.Toggle());
             CreateJoystick();
             Hide();
         }
@@ -531,6 +552,7 @@ namespace RealmOfAshes.Game
             SetScreenRect("Mode", _layout.Mode, width, height);
             SetScreenRect("Player", _layout.Player, width, height);
             SetScreenRect("Bolt", _layout.Bolt, width, height);
+            SetScreenRect("Vehicle", _layout.Vehicle, width, height);
             foreach (ButtonView view in _buttons.Values) FitLabel(view);
         }
 

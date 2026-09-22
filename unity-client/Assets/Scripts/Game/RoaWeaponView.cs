@@ -344,6 +344,15 @@ namespace RealmOfAshes.Game
             ClearWeapon();
         }
 
+        /// <summary>Оружие спрятано, но не снято: руки седока держат руль.</summary>
+        public bool Stowed { get; private set; }
+
+        public void SetStowed(bool stowed)
+        {
+            Stowed = stowed;
+            if (_weapon != null && _weapon.gameObject.activeSelf == stowed) _weapon.gameObject.SetActive(!stowed);
+        }
+
         private void ClearWeapon()
         {
             if (_weapon != null) { _weapon.gameObject.SetActive(false); Object.Destroy(_weapon.gameObject); }
@@ -409,7 +418,7 @@ namespace RealmOfAshes.Game
                 _socketGrip = RoaItemModelCatalog.FindSocket(_weapon, "socket_grip_r");
                 RoaVisibilityGate medicalGate = characterRoot.GetComponentInParent<RoaVisibilityGate>();
                 if (medicalGate != null) { medicalGate.Invalidate(); medicalGate.SetVisible(medicalGate.IsVisible); }
-                medical.SetActive(true);
+                medical.SetActive(!Stowed);
                 WeaponId = weaponId;
                 Ready = true;
                 return;
@@ -527,6 +536,7 @@ namespace RealmOfAshes.Game
 
             WeaponId = weaponId;
             Ready = true;
+            if (Stowed) holder.SetActive(false);
             Debug.Log("[ROA] Оружие " + weaponId + " подключено.");
         }
 
@@ -578,7 +588,7 @@ namespace RealmOfAshes.Game
         /// <summary>Дешёвый дальний LOD: оружие следует за кистью без IK и physics-проб.</summary>
         public void ApplyReduced()
         {
-            if (!Ready || _weapon == null || _hand == null) return;
+            if (!Ready || Stowed || _weapon == null || _hand == null) return;
             if (WeaponId == "medkit") return;
             Mount();
         }
@@ -591,7 +601,7 @@ namespace RealmOfAshes.Game
         /// <param name="aimPoint">Точка прицеливания в мире (курсор на земле).</param>
         public void Apply(Vector3 aimPoint, bool hasAim)
         {
-            if (!Ready) return;
+            if (!Ready || Stowed) return;
             if (WeaponId == "medkit") return;
 
             TorsoResidual = 0f;

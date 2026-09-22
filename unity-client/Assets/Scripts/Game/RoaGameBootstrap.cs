@@ -77,6 +77,7 @@ namespace RealmOfAshes.Game
         public RoaAnomalyFieldRenderer Anomalies;
         public RoaSettlementLifePresentation SettlementLifePresentation;
         public RoaBoltThrower BoltThrower;
+        public RoaVehicleController Vehicles;
         public RoaKromkaShiftAndDetector ShiftAndDetector;
         public RoaPersonalBaseCanvas PersonalBaseCanvas;
         public RoaKromkaSiegePresentation SiegePresentation;
@@ -328,6 +329,10 @@ namespace RealmOfAshes.Game
             if (BoltThrower == null) BoltThrower = GetComponent<RoaBoltThrower>();
             if (BoltThrower == null) BoltThrower = gameObject.AddComponent<RoaBoltThrower>();
             BoltThrower.Configure(Socket, movementFxCamera, MobileControls);
+            if (Vehicles == null) Vehicles = GetComponent<RoaVehicleController>();
+            if (Vehicles == null) Vehicles = gameObject.AddComponent<RoaVehicleController>();
+            Vehicles.Configure(Socket, Inventory, BaseUrl);
+            Vehicles.ConfigurePresentation(MovementFx, Audio, movementFxCamera);
             if (ShiftAndDetector == null) ShiftAndDetector = GetComponent<RoaKromkaShiftAndDetector>();
             if (ShiftAndDetector == null) ShiftAndDetector = gameObject.AddComponent<RoaKromkaShiftAndDetector>();
             ShiftAndDetector.Configure(this, Socket);
@@ -346,7 +351,7 @@ namespace RealmOfAshes.Game
 
             var mobileCanvas = GetComponent<RoaMobileControlsCanvas>();
             if (mobileCanvas == null) mobileCanvas = gameObject.AddComponent<RoaMobileControlsCanvas>();
-            mobileCanvas.Configure(MobileControls, BoltThrower);
+            mobileCanvas.Configure(MobileControls, BoltThrower, Vehicles);
             MobileControls.CanvasDriven = true;
 
             if (Quickbar == null) Quickbar = GetComponent<RoaQuickbar>();
@@ -1879,6 +1884,11 @@ namespace RealmOfAshes.Game
             if (ActorNameplates != null) ActorNameplates.SetPlayer(_controller);
             if (Minimap != null) Minimap.SetPlayer(_controller);
             if (Enemies != null) Enemies.SetLocalPlayer(_controller);
+            if (Vehicles != null)
+            {
+                Vehicles.SetBaseUrl(BaseUrl);
+                Vehicles.SetPlayer(_controller);
+            }
 
             // Скорость зависит от SPECIAL: без этого персонаж бежал бы со скоростью
             // по умолчанию, и походка разошлась бы с web-клиентом.

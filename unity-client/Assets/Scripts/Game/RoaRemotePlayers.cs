@@ -91,6 +91,7 @@ namespace RealmOfAshes.Game
             Socket.OnPlayerRespawned += HandlePlayerRespawned;
             Socket.OnPlayerDamaged += HandlePlayerDamaged;
             Socket.OnPlayerHealed += HandlePlayerHealed;
+            Socket.OnPlayerVehicle += HandlePlayerVehicle;
         }
 
         private void OnDisable()
@@ -107,6 +108,27 @@ namespace RealmOfAshes.Game
             Socket.OnPlayerRespawned -= HandlePlayerRespawned;
             Socket.OnPlayerDamaged -= HandlePlayerDamaged;
             Socket.OnPlayerHealed -= HandlePlayerHealed;
+            Socket.OnPlayerVehicle -= HandlePlayerVehicle;
+        }
+
+        /// <summary>Другой игрок сел на транспорт или спешился (событие playerVehicle).</summary>
+        private void HandlePlayerVehicle(JObject payload)
+        {
+            string id = payload?["id"]?.ToString();
+            if (string.IsNullOrEmpty(id) || !_remotes.TryGetValue(id, out Remote remote) || remote.Player == null) return;
+            remote.Player.Vehicle = payload["vehicle"] as JObject;
+            ApplyRemoteVehicle(remote);
+        }
+
+        private void ApplyRemoteVehicle(Remote remote)
+        {
+            if (remote?.View == null) return;
+            remote.View.SetVehicle(BaseUrl, RemoteVehicleItemId(remote));
+        }
+
+        private static string RemoteVehicleItemId(Remote remote)
+        {
+            return remote?.Player?.Vehicle?["itemId"]?.ToString() ?? string.Empty;
         }
 
         /// <summary>
@@ -200,6 +222,7 @@ namespace RealmOfAshes.Game
                 + "; в комнате: " + _remotes.Count);
             _ = LoadRemoteVisuals(remote);
             if (player.Downed) view.SetDead(true);
+            else ApplyRemoteVehicle(remote);
             if (player.Dead || player.Hp <= 0) BeginRemoteDeath(player.Id, Time.unscaledTime);
         }
 
@@ -219,6 +242,7 @@ namespace RealmOfAshes.Game
                     remote.Player = player;
                     if (remote.View != null) remote.View.SetDead(player.Downed);
                     if (remote.View != null) remote.View.SetInjuries(player.Injuries);
+                    if (!player.Downed) ApplyRemoteVehicle(remote);
                     if (remote.View != null && remote.View.Ready) _ = ApplyRemoteEquipment(remote);
                 }
             }
@@ -440,6 +464,7 @@ namespace RealmOfAshes.Game
             remote.Player = player;
             if (remote.View != null) remote.View.SetDead(player.Downed);
             if (remote.View != null) remote.View.SetInjuries(player.Injuries);
+            if (!player.Downed) ApplyRemoteVehicle(remote);
             if (remote.View != null && remote.View.Ready) _ = ApplyRemoteEquipment(remote);
             if (player.Dead || player.Hp <= 0) BeginRemoteDeath(player.Id, Time.unscaledTime);
         }
@@ -659,10 +684,12 @@ namespace RealmOfAshes.Game
                     + RoaNetworkActorMotion.OneWayLatencySeconds(
                         Socket != null ? Socket.PingMs : -1f, MaxExtrapolationSeconds);
                 Transform t = remote.Root.transform;
+                bool riding = !string.IsNullOrEmpty(RemoteVehicleItemId(remote));
                 RoaNetworkActorMotion.Sample motion = RoaNetworkActorMotion.Step(
                     t.position, remote.TargetPosition, remote.Velocity, remote.Moving,
                     sincePacket, Time.deltaTime, SmoothTime,
-                    MaxExtrapolationSeconds, SnapDistance, ref remote.SmoothVelocity);
+                    MaxExtrapolationSeconds, SnapDistance, ref remote.SmoothVelocity,
+                    riding ? RoaNetworkActorMotion.RidingSpeedCeiling : RoaNetworkActorMotion.WalkingSpeedCeiling);
                 t.position = motion.Position;
                 remote.PresentationVelocity = motion.VisualVelocity;
                 remote.PresentationMoving = motion.Moving;
@@ -693,7 +720,13 @@ namespace RealmOfAshes.Game
                     remote.View.SetPresentationLod(RoaActorPresentationLod.Select(
                         t.position, observer, presentationVisible, Application.isMobilePlatform,
                         remote.View.PresentationTier));
-                if (_movementFx != null)
+                // Седок не шагает: вместо шагов пыль из-под колёс — без звука шагов.
+                if (_movementFx != null && riding)
+                {
+                    _movementFx.TrackWheels(ref remote.StepFx, t.position, remote.PresentationVelocity,
+                        remote.PresentationMoving, presentationVisible, observer);
+                }
+                else if (_movementFx != null)
                 {
                     _movementFx.TrackActor(ref remote.StepFx, t.position, remote.PresentationVelocity,
                         remote.PresentationMoving, presentationVisible, remote.Crouching, observer,

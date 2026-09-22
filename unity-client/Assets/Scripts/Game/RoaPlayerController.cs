@@ -72,6 +72,19 @@ namespace RealmOfAshes.Game
         /// <summary>Множитель приседа. 09_update_fog_movement_ai.js:1284.</summary>
         public const float CrouchSpeedFactorValue = 0.62f;
 
+        /// <summary>
+        /// Верхом скорость задаёт транспорт (self.vehicle.speed, data/kromka/vehicles.json),
+        /// а не SPECIAL. Потолок — защита от кривого пакета: сервер режет быстрее.
+        /// </summary>
+        public const float VehicleSpeedLimit = 16f;
+
+        /// <summary>Разгон и торможение седока, м/с². Ход остаётся игроцким, но у мотоцикла есть инерция.</summary>
+        public const float RideAcceleration = 22f;
+        public const float RideBraking = 30f;
+
+        /// <summary>Как быстро транспорт разворачивается по ходу, град/с.</summary>
+        public const float RideTurnSpeedDeg = 520f;
+
         [Header("Движение")]
         [Tooltip("Скорость из характеристик. Пересчитывается по авторитетному состоянию, вручную не задавать.")]
         public float Speed = DefaultSpeed;
@@ -111,8 +124,25 @@ namespace RealmOfAshes.Game
         private bool _virtualCrouch;
         private Vector3 _presentationCorrectionOffset;
         private Vector3 _presentationCorrectionVelocity;
+        private Vector3 _rideVelocity;
 
         public bool Moving { get; private set; }
+
+        /// <summary>Скорость, которую разрешили коллизии, м/с (её же видит сервер).</summary>
+        public Vector3 Velocity { get { return _velocity; } }
+
+        /// <summary>Игрок сидит на транспорте — так решил сервер (self.vehicle).</summary>
+        public bool Mounted { get; private set; }
+
+        /// <summary>Id транспорта под игроком; пешком — пусто.</summary>
+        public string VehicleItemId { get; private set; } = string.Empty;
+
+        /// <summary>Скорость транспорта по серверу, м/с.</summary>
+        public float VehicleSpeed { get; private set; }
+
+        /// <summary>Сменилось «верхом/пешком» или сам транспорт.</summary>
+        public event System.Action MountChanged;
+
         public bool Colliding { get { return _colliding; } }
         public Vector3 CollisionNormal { get { return _collisionNormal; } }
         public float CollisionPressure { get { return _collisionPressure; } }
@@ -184,6 +214,7 @@ namespace RealmOfAshes.Game
                 _velocity = Vector3.zero;
                 _visualVelocity = Vector3.zero;
                 _requestedVelocity = Vector3.zero;
+                _rideVelocity = Vector3.zero;
                 _colliding = false;
                 _actorContact = false;
                 _collisionNormal = Vector3.zero;
@@ -197,12 +228,15 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            if (PointerAimEnabled) AimAtCursor();
+            // Верхом корпус смотрит по ходу транспорта, а не на курсор.
+            if (Mounted) View?.SetAim(transform.position, false);
+            else if (PointerAimEnabled) AimAtCursor();
             ReadInputAndMove();
             UpdatePresentationReconciliation();
             Vector3 footPosition = transform.position;
             footPosition.y = FeetY() + 0.025f;
-            Audio?.SetLocomotion(_visualVelocity, footPosition, _controller.isGrounded, _crouching, Moving);
+            if (Mounted) Audio?.StopLocomotion();
+            else Audio?.SetLocomotion(_visualVelocity, footPosition, _controller.isGrounded, _crouching, Moving);
 
             if (View != null)
                 View.UpdateLocomotion(_visualVelocity, _yawDeg, Moving, _crouching,
@@ -312,6 +346,8 @@ namespace RealmOfAshes.Game
         /// <summary>Face a world target supplied by the mobile auto-target UI.</summary>
         public void AimAtWorld(Vector3 target)
         {
+            // Верхом корпус смотрит по ходу: автоприцел не разворачивает мотоцикл.
+            if (Mounted) return;
             Vector3 delta = target - transform.position;
             delta.y = 0f;
             if (delta.sqrMagnitude < 0.0004f) return;
@@ -329,7 +365,8 @@ namespace RealmOfAshes.Game
             bool virtualActive = _virtualMove.sqrMagnitude > 0.0001f;
             float x = virtualActive ? _virtualMove.x : Input.GetAxisRaw("Horizontal");
             float z = virtualActive ? _virtualMove.y : Input.GetAxisRaw("Vertical");
-            _crouching = _virtualCrouch || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C);
+            // В седле не приседают: сервер тоже держит седока в полный рост.
+            _crouching = !Mounted && (_virtualCrouch || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C));
 
             Vector3 wish = Camera != null
                 ? Camera.PlanarRight() * x + Camera.PlanarForward() * z
@@ -340,11 +377,24 @@ namespace RealmOfAshes.Game
             if (wish.sqrMagnitude > 1f) wish.Normalize();
 
             bool requestedMovement = wish.sqrMagnitude > 0.0001f;
-
-            float speed = Mathf.Min(Speed, ServerSpeedLimit) * (_crouching ? CrouchSpeedFactorValue : 1f);
-            Vector3 requestedVelocity = wish * speed;
-            _requestedVelocity = requestedVelocity;
             float frameDt = Mathf.Max(0.001f, Time.deltaTime);
+
+            Vector3 requestedVelocity;
+            if (Mounted)
+            {
+                // Тот же ввод, что пешком (WASD относительно камеры), но транспорт
+                // разгоняется и тормозит, а не меняет скорость мгновенно.
+                Vector3 rideTarget = wish * Mathf.Min(VehicleSpeed, VehicleSpeedLimit);
+                float rate = rideTarget.sqrMagnitude >= _rideVelocity.sqrMagnitude ? RideAcceleration : RideBraking;
+                _rideVelocity = Vector3.MoveTowards(_rideVelocity, rideTarget, rate * frameDt);
+                requestedVelocity = _rideVelocity;
+            }
+            else
+            {
+                float speed = Mathf.Min(Speed, ServerSpeedLimit) * (_crouching ? CrouchSpeedFactorValue : 1f);
+                requestedVelocity = wish * speed;
+            }
+            _requestedVelocity = requestedVelocity;
             Vector3 before = transform.position;
             _colliding = false;
             _actorContact = false;
@@ -362,6 +412,24 @@ namespace RealmOfAshes.Game
             Vector3 actual = (transform.position - before) / frameDt;
             actual.y = 0f;
             _velocity = actual;
+
+            if (Mounted)
+            {
+                // Транспорт катится и без нажатия, пока не остановится; о стену он
+                // теряет ход, а не копит его.
+                Moving = actual.sqrMagnitude > 0.0064f;
+                if (_colliding) _rideVelocity = actual;
+                Vector3 heading = actual.sqrMagnitude > 0.16f ? actual : (requestedMovement ? wish : Vector3.zero);
+                if (heading.sqrMagnitude > 0.0001f)
+                {
+                    float targetYaw = Mathf.Atan2(heading.x, heading.z) * Mathf.Rad2Deg;
+                    _yawDeg = Mathf.MoveTowardsAngle(_yawDeg, targetYaw, RideTurnSpeedDeg * frameDt);
+                    transform.rotation = Quaternion.Euler(0f, _yawDeg, 0f);
+                }
+                _visualVelocity = actual;
+                return;
+            }
+
             Moving = requestedMovement && actual.sqrMagnitude > 0.0064f;
 
             Vector3 presentationVelocity = RoaLocomotionPresentation.ResolveCollisionVelocity(
@@ -369,6 +437,24 @@ namespace RealmOfAshes.Game
             _visualVelocity = RoaLocomotionPresentation.SmoothVisualVelocity(
                 _visualVelocity, presentationVelocity,
                 VisualAcceleration, VisualDeceleration, frameDt);
+        }
+
+        /// <summary>
+        /// Состояние седла из сервера: self.vehicle или событие playerVehicle.
+        /// null — пешком. Скорость транспорта приходит оттуда же.
+        /// </summary>
+        public void ApplyVehicleState(JObject vehicle)
+        {
+            string itemId = vehicle?["itemId"]?.ToString() ?? string.Empty;
+            float speed = vehicle?["speed"]?.ToObject<float?>() ?? 0f;
+            bool mounted = !string.IsNullOrEmpty(itemId) && speed > 0f;
+            bool changed = mounted != Mounted || (mounted && itemId != VehicleItemId);
+            if (mounted && !Mounted) _rideVelocity = _velocity;
+            if (!mounted) _rideVelocity = Vector3.zero;
+            Mounted = mounted;
+            VehicleItemId = mounted ? itemId : string.Empty;
+            VehicleSpeed = mounted ? speed : 0f;
+            if (changed) MountChanged?.Invoke();
         }
 
         /// <summary>
@@ -397,6 +483,10 @@ namespace RealmOfAshes.Game
                 Downed = downed;
                 if (View != null) View.SetDead(Downed);
             }
+
+            // Поле есть в каждом полном состоянии: null — пешком. Частичные пакеты
+            // без поля седло не трогают.
+            if (self.TryGetValue("vehicle", out JToken vehicleToken)) ApplyVehicleState(vehicleToken as JObject);
 
             JObject special = self["special"] as JObject;
             var ranks = self["talentRanks"] as JObject;
@@ -686,6 +776,7 @@ namespace RealmOfAshes.Game
             _collisionNormal = Vector3.zero;
             _collisionPressure = 0f;
             _requestedVelocity = Vector3.zero;
+            _rideVelocity = Vector3.zero;
             _presentationCorrectionOffset = Vector3.zero;
             _presentationCorrectionVelocity = Vector3.zero;
             if (PresentationRoot != null) PresentationRoot.localPosition = Vector3.zero;

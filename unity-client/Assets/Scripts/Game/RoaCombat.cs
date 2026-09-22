@@ -574,9 +574,11 @@ namespace RealmOfAshes.Game
         /// round trip. They must be checked before recoil, muzzle flash, audio and
         /// the volatile shoot/melee relay are started.
         /// </summary>
-        public static string ForbiddenAttackReason(bool downed, LocationDefinition location)
+        public static string ForbiddenAttackReason(bool downed, LocationDefinition location, bool mounted = false)
         {
             if (downed) return "Вы без сознания и не можете атаковать.";
+            // Сервер отказывает седоку тем же текстом: руки держат руль.
+            if (mounted) return "Верхом не стреляют: B — слезть с мотоцикла.";
             return string.Empty;
         }
 
@@ -686,7 +688,7 @@ namespace RealmOfAshes.Game
             LocationDefinition location = Bootstrap?.Loader?.Current;
             if (location == null && Bootstrap?.Loader != null)
                 location = Bootstrap.Loader.GetDefinition(Socket?.Session?.LocationId);
-            return ForbiddenAttackReason(downed, location);
+            return ForbiddenAttackReason(downed, location, Player != null && Player.Mounted);
         }
 
         private bool BlockForbiddenAttack()

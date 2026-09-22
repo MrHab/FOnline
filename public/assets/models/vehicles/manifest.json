@@ -1,0 +1,25 @@
+{
+  "schema": "realm.vehicle-model-manifest.v1",
+  "version": "vehicles-1-202bece3",
+  "models": [
+    {
+      "id": "motorcycle",
+      "itemId": "motorcycle",
+      "file": "vehicle_motorcycle.glb",
+      "sha256": "174156BEEED87044A5D59D21EB84E047C578A4D62E908DCC7677C89AC86D2A29",
+      "triangles": 2868,
+      "wheelRadius": 0.3235,
+      "source": {
+        "title": "Military Motorbike",
+        "creator": "Zsky",
+        "page": "https://poly.pizza/m/9SwnIlPjNv",
+        "url": "https://static.poly.pizza/b61993ed-4bd4-4439-89c0-933ad42384c7.glb",
+        "file": "military_motorbike_zsky.glb",
+        "sha256": "CD49EA6E852B313B6C6F6F0448F5EFDD1E464C97D2F1AE8F716046606B3ADA0E",
+        "license": "CC-BY 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+        "attribution": "“Military Motorbike” by Zsky, downloaded from Poly Pizza, licensed under Creative Commons Attribution 3.0."
+      }
+    }
+  ]
+}

@@ -64,7 +64,12 @@ namespace RealmOfAshes.Game
         private AudioSource _ambience;
         private AudioSource _ui;
         private AudioSource _feet;
+        private AudioSource _engine;
         private AudioClip _wind;
+        private AudioClip _engineLoop;
+        private bool _engineRunning;
+        private float _engineLoad;
+        private float _engineStartedAt = -100f;
         private AudioClip _pistol;
         private AudioClip _rifle;
         private AudioClip _shotgun;
@@ -191,6 +196,46 @@ namespace RealmOfAshes.Game
 
             PollUiClick();
             UpdateFootsteps(inGame && !panelOpen);
+            UpdateEngine(dt, inGame);
+        }
+
+        public bool EngineCueReady { get { return _engineLoop != null && _engine != null; } }
+        public bool EngineAudible { get { return _engine != null && _engine.isPlaying && _engine.volume > 0.001f; } }
+
+        /// <summary>
+        /// Мотор своего транспорта. Вызывать каждый кадр: running — седок в седле,
+        /// load 0..1 — насколько быстро едет (выше обороты и громче).
+        /// </summary>
+        public void SetEngine(bool running, float load, Vector3 position)
+        {
+            if (running && !_engineRunning) _engineStartedAt = Time.unscaledTime;
+            _engineRunning = running;
+            _engineLoad = Mathf.Clamp01(load);
+            if (_engine != null) _engine.transform.position = position;
+        }
+
+        private void UpdateEngine(float dt, bool inGame)
+        {
+            if (_engine == null || _engineLoop == null) return;
+            bool running = _engineRunning && inGame;
+            // Заводится с перегазовкой: первые полсекунды обороты выше холостых.
+            float rev = Mathf.Clamp01(1f - (Time.unscaledTime - _engineStartedAt) / 0.55f);
+            float load = Mathf.Max(_engineLoad, rev * 0.55f);
+            float targetVolume = running ? Mathf.Lerp(0.11f, 0.24f, load) : 0f;
+            float targetPitch = Mathf.Lerp(0.82f, 1.85f, load);
+            _engine.volume = Mathf.MoveTowards(_engine.volume, targetVolume, dt * (running ? 0.9f : 0.6f));
+            _engine.pitch = Mathf.MoveTowards(_engine.pitch, targetPitch, dt * 1.6f);
+            if (running && !_engine.isPlaying)
+            {
+                _engine.clip = _engineLoop;
+                _engine.loop = true;
+                _engine.pitch = 0.82f;
+                _engine.Play();
+            }
+            else if (!running && _engine.isPlaying && _engine.volume <= 0.001f)
+            {
+                _engine.Stop();
+            }
         }
 
         public void SetLocomotion(Vector3 velocity, Vector3 worldPosition,
@@ -542,6 +587,11 @@ namespace RealmOfAshes.Game
             _feet.minDistance = 2f;
             _feet.maxDistance = 18f;
             _feet.rolloffMode = AudioRolloffMode.Linear;
+            _engine = Source("LocalEngine", 0.5f);
+            _engine.minDistance = 3f;
+            _engine.maxDistance = 28f;
+            _engine.rolloffMode = AudioRolloffMode.Linear;
+            _engine.volume = 0f;
             for (int i = 0; i < WorldVoiceCount; i++)
             {
                 AudioSource source = Source("WorldVoice" + i, 0.78f);
@@ -566,6 +616,7 @@ namespace RealmOfAshes.Game
         private void BuildClips()
         {
             _wind = BuildWind();
+            _engineLoop = BuildEngineLoop();
             _pistol = BuildGunshot("Pistol", 0.18f, 105f, 0.72f, 0.44f, 0x1173u);
             _rifle = BuildGunshot("Rifle", 0.24f, 78f, 0.88f, 0.56f, 0x23a9u);
             _shotgun = BuildGunshot("Shotgun", 0.34f, 54f, 1f, 0.72f, 0x918bu);
@@ -675,6 +726,29 @@ namespace RealmOfAshes.Game
                 data[tail * 2 + 1] = Mathf.Lerp(data[tail * 2 + 1], data[i * 2 + 1], mix);
             }
             return Store(AudioClip.Create("WastelandWind", frames, 2, SampleRate, false), data);
+        }
+
+        /// <summary>
+        /// Холостой ход двухцилиндрового мотора: основной тон вспышек 38 Гц с
+        /// гармониками и хлопками выхлопа. Все частоты целые, поэтому секунда
+        /// зацикливается без щелчка; обороты задаёт pitch источника.
+        /// </summary>
+        private AudioClip BuildEngineLoop()
+        {
+            uint state = 0x3e71c2a9u;
+            float rumble = 0f;
+            return Mono("EngineLoop", 1f, (sample, time, progress) =>
+            {
+                const float firing = 38f;
+                float phase = Mathf.PI * 2f * firing * time;
+                float body = Mathf.Sin(phase) * 0.36f
+                    + Mathf.Sin(phase * 2f + 0.6f) * 0.2f
+                    + Mathf.Sin(phase * 3f + 1.1f) * 0.1f
+                    + Mathf.Sin(Mathf.PI * 2f * 19f * time) * 0.12f;
+                rumble = Mathf.Lerp(rumble, Noise(ref state), 0.18f);
+                float pop = Mathf.Pow(0.5f + 0.5f * Mathf.Sin(phase), 6f);
+                return Mathf.Clamp(body * 0.72f + rumble * pop * 0.9f, -0.9f, 0.9f);
+            });
         }
 
         private AudioClip BuildGunshot(string name, float seconds, float bodyHz,

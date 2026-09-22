@@ -32,6 +32,7 @@ assert.strictEqual(indexes.byId.silver.name, 'Марки Тракта');
 assert.strictEqual(indexes.byId.blue.weight, 0.4);
 assert.strictEqual(indexes.byId.artifactDetectorMk1.slot, 'detector');
 assert.strictEqual(indexes.byId.artifactBelt2.slot, 'artifactBelt');
+assert.strictEqual(indexes.byId.motorcycle.slot, 'vehicle');
 assert.strictEqual(indexes.byId.fists.stackLimit, 0);
 
 for (const item of catalog.items) {
@@ -101,4 +102,4 @@ assert(bootstrap.includes('StartCoroutine(FetchItemCatalog())')
   'Unity does not load both item and recipe catalogs');
 assert(quickbar.includes('public const int SlotCount = 8;'), 'Unity quickbar is not fixed to eight reference slots');
 
-console.log(`KRM-17 item authority OK: ${catalog.items.length} items, ${recipes.recipes.length} field recipes, 8 equipment slots and 8 quick slots.`);
+console.log(`KRM-17 item authority OK: ${catalog.items.length} items, ${recipes.recipes.length} field recipes, 9 equipment slots and 8 quick slots.`);

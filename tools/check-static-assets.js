@@ -147,7 +147,7 @@ function shouldCheckManifestRef(url) {
 
 function collectManifestRefs(node, key = '', sourceProvenance = '') {
   const refs = [];
-  if (['realm.free-equipment-catalog.v2', 'realm.layered-suits.v2'].includes(node?.schema)) {
+  if (['realm.free-equipment-catalog.v2', 'realm.layered-suits.v2', 'realm.vehicle-model-manifest.v1'].includes(node?.schema)) {
     sourceProvenance = node.schema;
   }
   if (Array.isArray(node)) {

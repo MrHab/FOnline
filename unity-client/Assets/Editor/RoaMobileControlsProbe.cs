@@ -210,7 +210,7 @@ namespace RealmOfAshes.EditorTools
             {
                 layout.Inventory, layout.Map, layout.Pipboy, layout.Menu,
                 layout.Fire, layout.Interact, layout.Target, layout.Crouch,
-                layout.Reload, layout.Mode, layout.Player, layout.Bolt
+                layout.Reload, layout.Mode, layout.Player, layout.Bolt, layout.Vehicle
             };
             for (int i = 0; i < rects.Length; i++)
             {
@@ -243,6 +243,8 @@ namespace RealmOfAshes.EditorTools
                     Crouching = true,
                     PingAvailable = true,
                     BoltAiming = true,
+                    VehicleAvailable = true,
+                    Mounted = true,
                     FireMode = "single",
                     JoystickActive = true,
                     JoystickBase = new Vector2(220f, 108f),
@@ -251,11 +253,12 @@ namespace RealmOfAshes.EditorTools
                 };
                 canvas.PresentNow(state, width, height, safe);
                 Require(canvas.CanvasReady && canvas.InputReady
-                        && canvas.ButtonCount == 12 && canvas.ActiveButtonCount == 12
+                        && canvas.ButtonCount == RoaMobileControlsCanvas.TotalButtons
+                        && canvas.ActiveButtonCount == RoaMobileControlsCanvas.TotalButtons
                         && canvas.GameplayButtonsVisible && canvas.JoystickVisible,
                         "mobile uGUI Canvas, touch targets or joystick visual is incomplete");
                 foreach (string id in new[] { "Inventory", "Map", "Pipboy", "Menu", "Fire", "Interact",
-                                              "Target", "Crouch", "Reload", "Mode", "Player", "Bolt" })
+                                              "Target", "Crouch", "Reload", "Mode", "Player", "Bolt", "Vehicle" })
                     Require(canvas.ButtonHasIcon(id),
                             "mobile Canvas button " + id + " has no icon sprite in Resources/RealmUi/mobile");
                 Require(canvas.ButtonLabel("Pipboy") == "ПУТНИК",
@@ -264,8 +267,9 @@ namespace RealmOfAshes.EditorTools
                         && canvas.ButtonLabel("Crouch") == "ВСТАТЬ"
                         && canvas.ButtonLabel("Mode") == "ОДИН."
                         && canvas.ButtonLabel("Player") == "МЕТКА"
-                        && canvas.ButtonLabel("Bolt") == "ОТМЕНА",
-                        "mobile Canvas does not reflect live target, stance, ping or fire mode");
+                        && canvas.ButtonLabel("Bolt") == "ОТМЕНА"
+                        && canvas.ButtonLabel("Vehicle") == "СЛЕЗТЬ",
+                        "mobile Canvas does not reflect live target, stance, ping, fire mode or the saddle");
                 VerifyFireModeLabels();
                 Require(canvas.TryGetButtonScreenRect("Fire", out Rect fireRect)
                         && RectNear(fireRect, layout.Fire),

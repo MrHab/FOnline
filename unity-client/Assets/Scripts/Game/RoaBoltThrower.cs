@@ -127,11 +127,12 @@ namespace RealmOfAshes.Game
                     RoaGameBootstrap.Active?.Anomalies?.ApplyAnomalyState(anomalies);
                 if (ack?["hit"]?.Value<bool?>() == true)
                 {
-                    string name = ack?["anomaly"]?["displayName"]?.ToString() ?? "Аномалия";
-                    long until = ack?["anomaly"]?["dischargedUntil"]?.Value<long?>() ?? 0L;
-                    long now = ack?["anomalies"]?["serverNow"]?.Value<long?>() ?? System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    JObject anomaly = ack?["anomaly"] as JObject;
+                    string name = anomaly?["displayName"]?.ToString() ?? "Аномалия";
+                    long until = anomaly?["dischargedUntil"]?.Value<long?>() ?? 0L;
+                    long now = (ack?["anomalies"] as JObject)?["serverNow"]?.Value<long?>() ?? System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                     int seconds = Mathf.Max(1, Mathf.CeilToInt((until - now) / 1000f));
-                    ShowStatus(ack?["anomaly"]?["permanentlyDischarged"]?.Value<bool?>() == true
+                    ShowStatus(anomaly?["permanentlyDischarged"]?.Value<bool?>() == true
                         ? name + " разряжена навсегда."
                         : name + " разряжена примерно на " + seconds + " с.", 2.8f);
                 }
@@ -146,7 +147,9 @@ namespace RealmOfAshes.Game
                 Value(payload["from"] as JObject, "z"));
             Vector3 to = RoaCoords.ToUnity(Value(payload["to"] as JObject, "x"),
                 Value(payload["to"] as JObject, "z"));
-            if (payload["anomaly"]?["contact"] is JObject contact)
+            // При промахе сервер шлёт anomaly: null — это JValue, а не C#-null: «?.» его
+            // пропускает, индексатор бросал исключение, и полёт болта не проигрывался.
+            if ((payload["anomaly"] as JObject)?["contact"] is JObject contact)
                 to = RoaCoords.ToUnity(Value(contact, "x"), Value(contact, "z"));
             to.y = 0.13f;
             string playerId = payload["playerId"]?.ToString();

@@ -1156,7 +1156,14 @@ namespace RealmOfAshes.Game
             enemy.Moving = !resolvedDead && ReadBoolean(row["moving"]);
             enemy.Dead = resolvedDead;
             enemy.LastPacketTime = Time.time;
-            enemy.ActivityRevision = row["activityRevision"]?.ToObject<int>() ?? enemy.ActivityRevision;
+            int snapshotRevision = row["activityRevision"]?.ToObject<int>() ?? enemy.ActivityRevision;
+            // Взгляд из полного снимка: пакет активности с той же ревизией клиент
+            // уже не примет, и НПС, повёрнутый в сцене к своей стойке, у вошедшего
+            // позже игрока смотрел бы куда попало. Берём его один раз — на новой ревизии.
+            if (snapshotRevision > enemy.ActivityRevision && row["activityFacing"] is JValue snapshotFacing
+                && snapshotFacing.Type != JTokenType.Null)
+                enemy.TargetYawDeg = RoaCoords.AngleToYawDeg(snapshotFacing.ToObject<float>());
+            enemy.ActivityRevision = snapshotRevision;
             enemy.Hp = resolvedDead ? 0 : nextHp;
             enemy.Snapshot = (JObject)row.DeepClone();
             // Сервер присылает speechMs — сколько реплике осталось висеть, и делает

@@ -260,10 +260,74 @@ function readMarkerColliders(scenePath) {
   return byMarker;
 }
 
+// Дружелюбные НПС сцены — экземпляры префаба KromkaNpc. Всё, что у них своё,
+// лежит в переопределениях экземпляра: id якоря (_spawnId), место и поворот
+// корня, облик. Мир — через родителя экземпляра (Npcs_EDITABLE и выше).
+function readNpcPlacements(scenePath, prefabGuid) {
+  const documents = sceneDocuments(scenePath);
+  const transforms = new Map();
+  for (const document of documents) {
+    if (document.classId !== CLASS_TRANSFORM || document.stripped) continue;
+    const field = fieldReader(document.text);
+    transforms.set(document.fileId, {
+      position: inlineVector(field('m_LocalPosition'), ['x', 'y', 'z']),
+      rotation: inlineVector(field('m_LocalRotation'), ['x', 'y', 'z', 'w']),
+      scale: inlineVector(field('m_LocalScale'), ['x', 'y', 'z']),
+      father: reference(field('m_Father'))
+    });
+  }
+  const worldCache = new Map();
+  function world(fileId) {
+    if (!fileId || fileId === '0') return IDENTITY;
+    if (worldCache.has(fileId)) return worldCache.get(fileId);
+    const transform = transforms.get(fileId);
+    if (!transform) throw new Error(`${scenePath}: an NPC hangs under transform ${fileId} this reader cannot place`);
+    const matrix = multiply(world(transform.father), trsMatrix(transform.position, transform.rotation, transform.scale));
+    worldCache.set(fileId, matrix);
+    return matrix;
+  }
+
+  const source = `guid: ${prefabGuid}`;
+  const placements = [];
+  for (const document of documents) {
+    if (document.classId !== CLASS_PREFAB_INSTANCE) continue;
+    const sourceLine = (document.text.match(/^  m_SourcePrefab:[ \t]*(.*?)\r?$/m) || [])[1] || '';
+    if (!sourceLine.includes(source)) continue;
+    const parent = reference((document.text.match(/^    m_TransformParent:[ \t]*(.*?)\r?$/m) || [])[1]);
+    const values = {};
+    const pattern = /- target: \{fileID: -?\d+, guid: [0-9a-f]+, type: \d+\}\r?\n\s+propertyPath: (\S+)\r?\n\s+value: ?(.*?)\r?$/gm;
+    for (const match of document.text.matchAll(pattern)) values[match[1]] = unquote(match[2].trim());
+    const number = (key, fallback) => (values[key] !== undefined && values[key] !== '' ? Number(values[key]) : fallback);
+    const local = trsMatrix(
+      { x: number('m_LocalPosition.x', 0), y: number('m_LocalPosition.y', 0), z: number('m_LocalPosition.z', 0) },
+      { x: number('m_LocalRotation.x', 0), y: number('m_LocalRotation.y', 0), z: number('m_LocalRotation.z', 0),
+        w: number('m_LocalRotation.w', 1) },
+      { x: number('m_LocalScale.x', 1), y: number('m_LocalScale.y', 1), z: number('m_LocalScale.z', 1) });
+    const matrix = multiply(world(parent), local);
+    const position = transformPoint(matrix, [0, 0, 0]);
+    placements.push({
+      id: values._spawnId || '',
+      x: position[0],
+      z: position[2],
+      // Поворот вокруг вертикали — как его пишет экспорт: eulerAngles.y в радианах.
+      yaw: Math.atan2(matrix[2], matrix[10]),
+      appearance: {
+        sex: Number(values._sex || 0) === 1 ? 'female' : 'male',
+        bodyType: ['slim', 'medium', 'large'][values._build !== undefined ? Number(values._build) : 1],
+        faceId: `${Number(values._sex || 0) === 1 ? 'female' : 'male'}_0${number('_face', 1)}`,
+        hairId: values._hairId || 'short_crop',
+        hairColorId: `hair_0${number('_hairColor', 3)}`
+      }
+    });
+  }
+  return placements;
+}
+
 module.exports = {
   PLACED_OBJECT_SCRIPT_GUID,
   collisionBlocksMovement,
   locationScenePath,
   readMarkerColliders,
+  readNpcPlacements,
   readPlacedObjectMarkers
 };

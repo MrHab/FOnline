@@ -455,6 +455,24 @@ namespace Kromka.EditorTools
                     };
                     actor["unityAuthored"] = true;
                     actor["worldRevision"] = KromkaLocationAuthoring.CurrentWorldRevision;
+                    // Облик НПС правят в инспекторе префаба: сервер отдаёт его клиенту
+                    // как есть, и в игре НПС выглядит так же, как в сцене.
+                    KromkaNpcAuthoring npc = spawn.GetComponent<KromkaNpcAuthoring>();
+                    if (npc != null)
+                    {
+                        JObject entity = actor["entity"] as JObject ?? new JObject();
+                        entity["appearance"] = new JObject
+                        {
+                            ["schema"] = "realm.character-appearance.v1",
+                            ["sex"] = npc.SexId,
+                            ["bodyType"] = npc.BodyTypeId,
+                            ["faceId"] = npc.FaceId,
+                            ["hairId"] = npc.HairId,
+                            ["skinToneId"] = "skin_03",
+                            ["hairColorId"] = npc.HairColorId
+                        };
+                        actor["entity"] = entity;
+                    }
                 }
                 else if (spawn.Kind == KromkaSpawnKind.Exit)
                 {

@@ -110,6 +110,15 @@
         }
       },
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "slim",
+          "faceId": "male_02",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_07"
+        },
         "kind": "npc",
         "role": "merchant",
         "faction": "tract_league",
@@ -154,7 +163,7 @@
       },
       "rotation": {
         "x": 0,
-        "y": 180,
+        "y": 3.142,
         "z": 0
       },
       "scale": {
@@ -173,6 +182,15 @@
         "city-bank"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "large",
+          "faceId": "male_04",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_02"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "neutral",
@@ -193,7 +211,7 @@
       },
       "rotation": {
         "x": 0,
-        "y": 180,
+        "y": 3.142,
         "z": 0
       },
       "scale": {
@@ -212,6 +230,15 @@
         "city-plaza"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "medium",
+          "faceId": "female_01",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_05"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "neutral",
@@ -232,7 +259,7 @@
       },
       "rotation": {
         "x": 0,
-        "y": 180,
+        "y": 3.142,
         "z": 0
       },
       "scale": {
@@ -251,6 +278,15 @@
         "city-workshop"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "slim",
+          "faceId": "male_01",
+          "hairId": "short_crop",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_03"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "neutral",

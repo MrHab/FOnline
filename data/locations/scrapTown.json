@@ -109,6 +109,15 @@
         }
       },
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "medium",
+          "faceId": "male_02",
+          "hairId": "short_crop",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_08"
+        },
         "kind": "npc",
         "role": "merchant",
         "faction": "scrap_union",
@@ -143,7 +152,7 @@
       },
       "rotation": {
         "x": 0,
-        "y": 180,
+        "y": 3.142,
         "z": 0
       },
       "scale": {
@@ -162,6 +171,15 @@
         "city-bank"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "medium",
+          "faceId": "female_03",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_06"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "free_artels",
@@ -184,7 +202,7 @@
       },
       "rotation": {
         "x": 0,
-        "y": 180,
+        "y": 3.142,
         "z": 0
       },
       "scale": {
@@ -203,6 +221,15 @@
         "city-plaza"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "large",
+          "faceId": "female_02",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_08"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "free_artels",
@@ -225,7 +252,7 @@
       },
       "rotation": {
         "x": 0,
-        "y": 180,
+        "y": 3.142,
         "z": 0
       },
       "scale": {
@@ -244,6 +271,15 @@
         "city-workshop"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "large",
+          "faceId": "female_01",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_04"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "free_artels",

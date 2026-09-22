@@ -145,7 +145,7 @@ const {
   routineInterruptBlocksService,
   selectRoutinePackage
 } = require('./src/server/npc-routines');
-const { mergeAuthoredGlobalMap } = require('./src/server/global-map-merge');
+const { resolveGlobalMapFile } = require('./src/server/global-map-merge');
 const { migrateSavedStateToKromka } = require('./src/server/kromka-save-migration');
 const {
   CHARACTER_PROGRESSION_MODEL_VERSION,
@@ -904,13 +904,22 @@ function readAuthoredDataJson(file, fallback) {
   return readJson(file, bundledValue);
 }
 
-function readAuthoredGlobalMapJson(file, fallback) {
+// Возвращает авторскую карту (без нормализации) и переписывает копию DATA_DIR,
+// когда слияние с поставкой её меняет. Файл поставки не переписывается.
+function loadAuthoredGlobalMap(file, fallback) {
   const bundledFile = path.join(BUNDLED_DATA_DIR, path.basename(file));
-  const bundledValue = readJson(bundledFile, fallback);
-  if (sameFilePath(file, bundledFile)) return bundledValue;
-  const storedValue = readJson(file, null);
-  if (!storedValue) return bundledValue;
-  return mergeAuthoredGlobalMap(storedValue, bundledValue);
+  const isBundledFile = sameFilePath(file, bundledFile);
+  const { map, persist } = resolveGlobalMapFile({
+    bundled: readJson(bundledFile, fallback),
+    stored: isBundledFile ? null : readJson(file, null),
+    isBundledFile
+  });
+  if (persist) {
+    try { writeJsonAtomic(file, persist, { pretty: true }); } catch (err) {
+      console.error('Failed to persist global map file:', err);
+    }
+  }
+  return map;
 }
 
 function writeJsonAtomic(file, data, options = {}) {
@@ -1259,15 +1268,11 @@ function normalizeGlobalMapConfig(raw = {}) {
       locationId: safeLocationFileId(node?.locationId || node?.id || ''),
       capital: node?.capital === true,
       capitalFaction: String(node?.capitalFaction || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32),
-      // Authored nodes may deliberately sit on a road. Keep the explicit flag
-      // when the server normalizes and persists the map, otherwise a restart
-      // turns valid junctions into world-data overlap errors.
+      // Authored nodes may deliberately sit on a road; keep the explicit flag.
       roadAccess: node?.roadAccess === true,
       // Скрытый узел остаётся точкой мира для сервера (выход из локации, сайты
       // симуляции), но не уходит клиентам и не рисуется на карте: так базы
       // фракций перестали быть отдельными метками после ввода контракта.
-      // Поле пишется только у скрытых узлов, чтобы перезапуск сервера не
-      // засорял авторскую карту `hidden: false` у каждой точки.
       ...(node?.hidden === true ? { hidden: true } : {}),
       danger: clamp(Number(node?.danger || 0), 0, 10),
       model: String(node?.model || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
@@ -4254,7 +4259,7 @@ for (const city of ZONE_RUNTIME.cities()) {
   CITY_AUTHORED_LOCATIONS.set(city.locationId, location);
   LOCATIONS[city.locationId] = normalizeLocationDefinition(ZONE_RUNTIME.cityDefinition(city.locationId, location));
 }
-let GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredGlobalMapJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
+let GLOBAL_MAP = normalizeGlobalMapConfig(loadAuthoredGlobalMap(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
 const KROMKA_SAVE_MIGRATION = readJson(KROMKA_SAVE_MIGRATION_FILE, {
   safeDestinations: [{ legacyArea: 'unknown', targetLocationId: 'settlement', spawnId: 'keys-arrival' }]
 });
@@ -4669,11 +4674,6 @@ function kromkaPublicWastelandSnapshot(raw = {}) {
   }
   snapshot.sites = visibleSites;
   return snapshot;
-}
-// Файл в DATA_DIR переписывается и когда подмешалось новое содержимое, иначе
-// оператор увидит на карте то, чего нет в его файле.
-try { writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true }); } catch (err) {
-  console.error('Failed to persist global map file:', err);
 }
 const KROMKA_MUTANT_TYPE_ORDER = Object.freeze([
   'burned', 'fold', 'gari', 'rykhlyak', 'dustling', 'listener', 'mourner', 'lantern'

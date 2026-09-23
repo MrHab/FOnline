@@ -180,6 +180,7 @@ namespace RealmOfAshes.Game
             var frameObject = new GameObject(FrameName, typeof(RectTransform), typeof(Image));
             RectTransform rect = frameObject.GetComponent<RectTransform>();
             rect.SetParent(parent, false);
+            rect.SetAsFirstSibling();
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;

@@ -125,7 +125,11 @@ namespace RealmOfAshes.Game
                 return;
             // Existing screen callbacks stay on the original Button. The real
             // Synty prefab supplies its visual layers behind the live caption.
-            GameObject visual = CreateButtonRoot(parent, "ApocalypseHudButtonVisual");
+            bool square = parent.rect.width >= 32f && parent.rect.width <= 92f &&
+                Mathf.Abs(parent.rect.width - parent.rect.height) <= 16f;
+            GameObject visual = square
+                ? CreateSlotButton(parent, "ApocalypseHudButtonVisual").gameObject
+                : CreateButtonRoot(parent, "ApocalypseHudButtonVisual");
             RectTransform rect = (RectTransform)visual.transform;
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
@@ -135,6 +139,33 @@ namespace RealmOfAshes.Game
             Button visualButton = visual.GetComponent<Button>();
             if (visualButton != null) visualButton.enabled = false;
             foreach (Graphic graphic in visual.GetComponentsInChildren<Graphic>(true))
+                graphic.raycastTarget = false;
+        }
+
+        public static void AddMinimapFrame(RectTransform panel)
+        {
+            if (panel == null || panel.Find("ApocalypseHudMinimapFrame") != null) return;
+            GameObject prefab = Resources.Load<GameObject>(Root +
+                "HUD_Apocalypse_Minimap_Box_02");
+            if (prefab == null) return;
+            GameObject frame = Object.Instantiate(prefab, panel, false);
+            frame.name = "ApocalypseHudMinimapFrame";
+            RectTransform rect = (RectTransform)frame.transform;
+            rect.SetAsFirstSibling();
+            rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = new Vector2(95f, -114f);
+            rect.localScale = Vector3.one * 0.45f;
+            // The package includes a static example map. Keep only its real
+            // frame: the live map, player arrow and markers remain above it.
+            foreach (string part in new[] { "Minimap_Contents", "Greeble_Cog_03",
+                "SPR_Greeble_ElectronicsRack", "ParticleFX_Glow", "SPR_Overlay",
+                "SPR_Scanlines" })
+            {
+                Transform child = rect.Find(part);
+                if (child != null) child.gameObject.SetActive(false);
+            }
+            foreach (Graphic graphic in frame.GetComponentsInChildren<Graphic>(true))
                 graphic.raycastTarget = false;
         }
 

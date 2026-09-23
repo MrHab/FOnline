@@ -172,6 +172,16 @@ namespace RealmOfAshes.EditorTools
                         !readyHealth.GetComponent<UnityEngine.UI.Slider>().interactable,
                         "the Synty health bar was not installed as a read-only live HUD element");
                 }
+                if (Resources.Load<GameObject>("ApocalypseHud/HUD_Apocalypse_Minimap_Box_02") != null)
+                {
+                    Transform minimap = hierarchyProbe.transform.Find(
+                        "AdaptiveGameplayHud/SafeArea/Minimap");
+                    Transform readyFrame = minimap != null
+                        ? minimap.Find("ApocalypseHudMinimapFrame/SPR_Frame") : null;
+                    Require(readyFrame != null &&
+                        !minimap.Find("ApocalypseHudMinimapFrame/Minimap_Contents").gameObject.activeSelf,
+                        "the Synty minimap frame must show live map data instead of the sample map");
+                }
                 if (Resources.Load<GameObject>("ApocalypseHud/Button_Apocalypse_HotBar_Item_01") != null)
                 {
                     Transform quickbar = hierarchyProbe.transform.Find(

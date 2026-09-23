@@ -182,7 +182,23 @@ namespace RealmOfAshes.EditorTools
                         !minimap.Find("ApocalypseHudMinimapFrame/Minimap_Contents").gameObject.activeSelf,
                         "the Synty minimap frame must show live map data instead of the sample map");
                 }
-                if (Resources.Load<GameObject>("ApocalypseHud/Button_Apocalypse_HotBar_Item_01") != null)
+                if (Resources.Load<GameObject>("ApocalypseHud/Screen_HUD_Apocalypse_ARPG_01") != null)
+                {
+                    Transform quickbar = hierarchyProbe.transform.Find(
+                        "AdaptiveGameplayHud/SafeArea/Quickbar/ApocalypseARPGBar");
+                    Transform slots = quickbar != null ? quickbar.Find("Bar_Items") : null;
+                    Require(slots != null && slots.childCount >= RoaQuickbar.SlotCount,
+                        "the ARPG prefab is missing its eight live quick slots");
+                    for (int i = 0; i < RoaQuickbar.SlotCount; i++)
+                        Require(slots.GetChild(i).GetComponent<UnityEngine.UI.Button>() != null
+                            && slots.GetChild(i).Find("LiveSlotLabel") != null,
+                            "ARPG slot " + i + " has no live button or label");
+                    Transform xp = quickbar.Find("XPBar/HUD_XPBar/Slider_Horizontal");
+                    Require(xp != null && xp.GetComponent<UnityEngine.UI.Slider>() != null
+                        && !xp.GetComponent<UnityEngine.UI.Slider>().interactable,
+                        "the ARPG experience bar must be a live read-only slider");
+                }
+                else if (Resources.Load<GameObject>("ApocalypseHud/Button_Apocalypse_HotBar_Item_01") != null)
                 {
                     Transform quickbar = hierarchyProbe.transform.Find(
                         "AdaptiveGameplayHud/SafeArea/Quickbar");
@@ -194,6 +210,15 @@ namespace RealmOfAshes.EditorTools
                             && slot.Find("Item") != null && slot.Find("Item/Selected") != null,
                             "quickbar slot " + i + " does not use the Synty button prefab");
                     }
+                }
+                if (Resources.Load<GameObject>("ApocalypseHud/HUD_Apocalypse_Compass_03") != null)
+                {
+                    Transform compass = hierarchyProbe.transform.Find(
+                        "AdaptiveGameplayHud/SafeArea/ApocalypseCompass");
+                    Require(compass != null && compass.Find("Content/Compass_Content") != null
+                        && compass.Find("Content/Compass_Content/Mask/Icons") != null
+                        && !compass.Find("Content/Compass_Content/Mask/Icons").gameObject.activeSelf,
+                        "the new compass still contains demonstration target markers");
                 }
             }
             finally
@@ -265,8 +290,17 @@ namespace RealmOfAshes.EditorTools
                     Set(socket, "_reconnectAt", Time.realtimeSinceStartup + 4.2f);
                 }
 
+                RoaQuickbar quickbar = host.AddComponent<RoaQuickbar>();
+                Set(quickbar, "_worldActive", true);
+                FieldInfo slots = typeof(RoaQuickbar).GetField("_slots",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Require(slots != null, "HUD capture cannot access quick slots");
+                string[] assigned = (string[])slots.GetValue(quickbar);
+                assigned[0] = "pistol";
+                assigned[1] = "medkit";
+                assigned[2] = "water";
                 RoaHudCanvas canvasOwner = host.AddComponent<RoaHudCanvas>();
-                canvasOwner.Configure(hud, null, null, null, null);
+                canvasOwner.Configure(hud, quickbar, null, null, null);
                 MethodInfo update = typeof(RoaHudCanvas).GetMethod("Update",
                     BindingFlags.Instance | BindingFlags.NonPublic);
                 Require(update != null, "HUD capture cannot invoke presentation update");
@@ -295,6 +329,12 @@ namespace RealmOfAshes.EditorTools
                 canvas.renderMode = RenderMode.ScreenSpaceCamera;
                 canvas.worldCamera = camera;
                 canvas.planeDistance = 1f;
+                RectTransform safe = canvas.transform.Find("SafeArea") as RectTransform;
+                Require(safe != null, "HUD capture safe area was not built");
+                safe.anchorMin = Vector2.zero;
+                safe.anchorMax = Vector2.one;
+                safe.offsetMin = Vector2.zero;
+                safe.offsetMax = Vector2.zero;
 
                 target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32)
                 {
@@ -303,7 +343,17 @@ namespace RealmOfAshes.EditorTools
                 };
                 target.Create();
                 camera.targetTexture = target;
+                foreach (TMPro.TMP_Text label in host.GetComponentsInChildren<TMPro.TMP_Text>(true))
+                    if (label != null && label.enabled) label.ForceMeshUpdate(true, true);
+                foreach (UnityEngine.UI.RectMask2D mask in
+                    host.GetComponentsInChildren<UnityEngine.UI.RectMask2D>(true))
+                    if (mask.GetComponentsInChildren<TMPro.TMP_Text>(true).Length > 0)
+                        mask.enabled = false;
                 Canvas.ForceUpdateCanvases();
+                Debug.Log("[ROA PROBE] Capture layout: canvas "
+                    + ((RectTransform)canvas.transform).rect + ", safe " + safe.rect
+                    + ", quick " + safe.Find("Quickbar")?.gameObject.activeSelf
+                    + ", graphic count " + host.GetComponentsInChildren<UnityEngine.UI.Graphic>(false).Length);
                 if (GraphicsSettings.currentRenderPipeline != null)
                 {
                     var request = new RenderPipeline.StandardRequest { destination = target };

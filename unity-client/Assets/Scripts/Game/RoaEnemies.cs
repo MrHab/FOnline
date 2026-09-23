@@ -1949,7 +1949,8 @@ namespace RealmOfAshes.Game
                 rows.Add(new RoaActorNameplates.Entry
                 {
                     Key = "npc:" + pair.Key,
-                    Name = important ? enemy.Snapshot["name"]?.ToString() ?? "Торговец" : string.Empty,
+                    Name = enemy.Snapshot["name"]?.ToString() ?? (important ? "Торговец" : "Враг"),
+                    Level = enemy.Snapshot["level"]?.ToObject<int>() ?? 0,
                     Faction = NpcCombatFactionLine(
                         enemy.Snapshot["faction"]?.ToString(), hostile,
                         enemy.Snapshot["aiState"]?.ToString(),

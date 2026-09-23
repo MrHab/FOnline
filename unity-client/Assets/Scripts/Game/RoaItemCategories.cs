@@ -108,7 +108,9 @@ namespace RealmOfAshes.Game
             if (string.IsNullOrEmpty(id)) id = "misc";
             if (ArtCache.TryGetValue(id, out Texture2D cached)) return cached;
 
-            Texture2D texture = Resources.Load<Texture2D>("RealmUi/items/item_" + id);
+            Sprite apocalypseIcon = RoaApocalypseItemIcons.For(id);
+            Texture2D texture = apocalypseIcon != null ? apocalypseIcon.texture : null;
+            if (texture == null) texture = Resources.Load<Texture2D>("RealmUi/items/item_" + id);
             if (texture == null)
             {
                 string key = ArtKey(itemOrRuntimeId);

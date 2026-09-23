@@ -9,6 +9,8 @@ const os = require('os');
 const { monitorEventLoopDelay, performance } = require('perf_hooks');
 const nodemailer = require('nodemailer');
 const { version: GAME_VERSION } = require('./package.json');
+const { cleanChatText, chatChannel, chatScope, chatRecipients } =
+  require('./src/server/player-chat');
 const {
   KROMKA_DAMAGE_TYPES,
   resolveDamageMitigation,
@@ -27727,6 +27729,41 @@ function liveOtherSessionForLogin(login, deviceId, token, currentSocketId = '') 
 
 
 io.on('connection', (socket) => {
+  socket.on('playerChatSend', (data = {}, ack) => {
+    if (!data || typeof data !== 'object') data = {};
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    const sender = players.get(socket.id);
+    if (!sender) return fail('Войдите в мир, чтобы отправить сообщение.');
+    const channel = chatChannel(data.channel);
+    if (!channel) return fail('Неизвестный канал чата.');
+    const text = cleanChatText(data.text);
+    if (!text) return fail('Введите сообщение.');
+    const now = Date.now();
+    if (now - Number(sender.lastChatAt || 0) < 700)
+      return fail('Отправляйте сообщения чуть реже.');
+
+    const withClan = player => ({ ...player,
+      chatClanId: serverKromkaClanForPlayer(player)?.id ||
+        player.socialState?.clan?.id || '' });
+    const source = withClan(sender);
+    if (!chatScope(source, channel))
+      return fail(channel === 'faction' ? 'Вы не состоите во фракции.'
+        : channel === 'group' ? 'Вы не состоите в группе.'
+        : channel === 'clan' ? 'Вы не состоите в клане.'
+        : 'Канал сейчас недоступен.');
+    sender.lastChatAt = now;
+    const message = {
+      id: `${sender.characterId}:${now}`, channel,
+      senderId: String(sender.characterId || ''),
+      senderName: String(sender.name || 'Странник').slice(0, 40),
+      text, t: now
+    };
+    const members = [...players.values()].map(withClan);
+    for (const receiver of chatRecipients(source, members, channel))
+      io.to(receiver.id).emit('playerChatMessage', message);
+    if (typeof ack === 'function') ack({ ok: true, id: message.id, t: now });
+  });
+
   socket.on('networkPing', (data = {}, ack) => {
     if (typeof ack !== 'function') return;
     const clientTime = Number(data?.clientTime);

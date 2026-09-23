@@ -252,6 +252,10 @@ namespace RealmOfAshes.EditorTools
                 Transform squareVisual = square.transform.Find("ApocalypseHudButtonVisual/Item");
                 if (squareVisual == null)
                     throw new Exception("Square actions must use the ready-made Synty slot button.");
+                actionImage.color = new Color(0.5f, 0.18f, 0.14f, 1f);
+                skin.ApplyTo(canvas);
+                if (buttonVisual.GetComponent<Image>().color != actionImage.color)
+                    throw new Exception("The Synty button lost the screen's live selection colour.");
                 if (russian.font != RoaUiFont.Default ||
                     number.font != Resources.Load<Font>("ApocalypseHud/SairaCondensed-Regular"))
                     throw new Exception("The Synty font fallback does not preserve Cyrillic text.");

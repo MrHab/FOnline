@@ -173,10 +173,12 @@ assert(nameplates.includes('public static bool IsImportantNpc(')
   && nameplates.includes('plate.HealthFill.fillAmount = Mathf.Clamp01(ratio)')
   && nameplates.includes('CompactHealthState(entry.Hp, entry.MaxHp)')
   && enemies.includes('RoaActorNameplates.IsImportantNpc(canDialogue,')
-  && enemies.includes('Name = important ?')
+  && enemies.includes('Name = enemy.Snapshot["name"]')
+  && enemies.includes('Level = enemy.Snapshot["level"]')
+  && nameplates.includes('HUD_Apocalypse_WorldSpace_EnemyInfo_01')
   && !enemies.includes('if (enemy.Snapshot["canDialogue"]?.ToObject<bool>() != true) continue;')
   && hudProbe.includes('compact health-bar/name hierarchy is not deterministic'),
-  'Unity actor nameplates lost the role-filtered name and compact health hierarchy');
+  'Unity actor nameplates lost actor names, tiers or compact health hierarchy');
 
 // Unity -> server. Unity normally sends through RoaSocketClient.Emit/EmitWithAck.
 // join/state use the lower transport (EmitAsync) directly. Four UI branches choose
@@ -559,7 +561,7 @@ assert(unityCamera.includes('private const string ZoomPrefsKey = "roa.cameraDist
   && unityCamera.includes('private const string PreviousZoomPrefsKey = "roa.cameraDistance.v3";')
   && unityCamera.includes('private const string LegacyZoomPrefsKey = "roa.cameraDistance.v2";')
   && unityCamera.includes('PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);')
-  && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud ? 0f'),
+  && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud || RoaHudCanvas.PointerOverMinimap'),
   'Unity local camera zoom must persist and ignore wheel input behind open UI');
 // Pip-Boy radio: the client exposes the four Kromka stations, and the
 // selected channel streams real records from the built library

@@ -278,6 +278,8 @@ namespace RealmOfAshes.Game
             list.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             scroll.content = list;
 
+            BuildTutorialControls(list);
+
             string[][] sections =
             {
                 new[] { "Передвижение", "ПК: WASD, мышь — направление взгляда, Ctrl/C — присесть, колесо — масштаб. Телефон: левое касание создаёт плавающий стик, правый палец — прицел и стрельба удержанием." },
@@ -307,6 +309,86 @@ namespace RealmOfAshes.Game
                 () => Bootstrap.MenuRestartFirstRunCoach());
             Place((RectTransform)restartCoach.transform, 1f, 0f, 1f, 0f,
                 new Vector2(-194f, 6f), new Vector2(-14f, 30f));
+        }
+
+        private static void BuildTutorialControls(RectTransform list)
+        {
+            GameObject rowPrefab = Resources.Load<GameObject>(
+                "ApocalypseHud/AssetDemo_Apocalypse_Input_ControlSet_01");
+            GameObject keyPrefab = Resources.Load<GameObject>(
+                "ApocalypseHud/Input_Apocalypse_Hotkey_01");
+            if (rowPrefab == null || keyPrefab == null) return;
+
+            Text heading = Label("ControlsHeading", list, 16,
+                TextAnchor.MiddleCenter, TitleInk, FontStyle.Bold);
+            heading.text = "УПРАВЛЕНИЕ · КЛАВИАТУРА И МЫШЬ";
+            heading.gameObject.AddComponent<LayoutElement>().preferredHeight = 34f;
+
+            string[][] bindings =
+            {
+                new[] { "W", "A", "S", "D", "Передвижение" },
+                new[] { "МЫШЬ", "Прицеливание" },
+                new[] { "ЛКМ", "Атака" },
+                new[] { "E", "Взаимодействие · удержать: круг предметов" },
+                new[] { "1–8", "Использовать быстрый слот" },
+                new[] { "R", "Перезарядка" },
+                new[] { "X", "Смена режима оружия" },
+                new[] { "TAB", "ПУТНИК" },
+                new[] { "I", "K", "P", "Инвентарь · навыки · крафт" },
+                new[] { "M", "Карта локации" },
+                new[] { "ALT", "Подробный HUD" },
+                new[] { "F1", "ESC", "Обучение · закрыть окно" }
+            };
+            foreach (string[] binding in bindings)
+            {
+                RectTransform wrapper = Child("ControlRow", list);
+                wrapper.gameObject.AddComponent<LayoutElement>().preferredHeight = 46f;
+                GameObject instance = Object.Instantiate(rowPrefab, wrapper, false);
+                instance.name = "ApocalypseControlSet";
+                RectTransform row = (RectTransform)instance.transform;
+                row.anchorMin = row.anchorMax = new Vector2(0f, 1f);
+                row.pivot = new Vector2(0f, 1f);
+                row.anchoredPosition = Vector2.zero;
+                row.localScale = Vector3.one * 0.43f;
+
+                Transform sampleIcon = row.Find("Input_Buttons/ICON");
+                if (sampleIcon != null) sampleIcon.gameObject.SetActive(false);
+                Transform sampleLabel = row.Find("Label_Input");
+                if (sampleLabel != null)
+                {
+                    Behaviour sampleText = sampleLabel.GetComponent("TextMeshProUGUI") as Behaviour;
+                    if (sampleText != null) sampleText.enabled = false;
+                }
+                Text action = Label("LiveAction", row, 31,
+                    TextAnchor.MiddleLeft, BodyInk);
+                action.text = binding[binding.Length - 1];
+                action.rectTransform.anchorMin = new Vector2(0.5f, 0f);
+                action.rectTransform.anchorMax = new Vector2(1f, 1f);
+                action.rectTransform.offsetMin = new Vector2(18f, 0f);
+                action.rectTransform.offsetMax = new Vector2(-10f, 0f);
+
+                RectTransform keys = row.Find("Input_Buttons") as RectTransform;
+                for (int i = 0; i < binding.Length - 1; i++)
+                {
+                    GameObject key = Object.Instantiate(keyPrefab, keys, false);
+                    key.name = "Key_" + binding[i];
+                    RectTransform keyRect = (RectTransform)key.transform;
+                    keyRect.sizeDelta = new Vector2(80f, 80f);
+                    HorizontalLayoutGroup innerLayout = key.GetComponent<HorizontalLayoutGroup>();
+                    if (innerLayout != null) innerLayout.enabled = false;
+                    ContentSizeFitter fitter = key.GetComponent<ContentSizeFitter>();
+                    if (fitter != null) fitter.enabled = false;
+                    foreach (Graphic graphic in key.GetComponentsInChildren<Graphic>(true))
+                        if (!(graphic is Image)) graphic.enabled = false;
+                    Transform icon = key.transform.Find("Icon");
+                    if (icon != null) icon.gameObject.SetActive(false);
+                    Text label = Label("LiveKey", keyRect,
+                        binding[i].Length > 3 ? 23 : 34,
+                        TextAnchor.MiddleCenter, Color.white, FontStyle.Bold);
+                    label.text = binding[i];
+                    Stretch(label.rectTransform, 0f);
+                }
+            }
         }
 
         /// <summary>Тулбар редактирования HUD внизу экрана.</summary>

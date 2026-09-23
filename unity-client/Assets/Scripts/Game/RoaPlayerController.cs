@@ -416,10 +416,12 @@ namespace RealmOfAshes.Game
         private void ReadInputAndMove()
         {
             bool virtualActive = _virtualMove.sqrMagnitude > 0.0001f;
-            float x = virtualActive ? _virtualMove.x : Input.GetAxisRaw("Horizontal");
-            float z = virtualActive ? _virtualMove.y : Input.GetAxisRaw("Vertical");
+            bool typing = RoaPipboyCanvas.TypingInInputField();
+            float x = virtualActive ? _virtualMove.x : typing ? 0f : Input.GetAxisRaw("Horizontal");
+            float z = virtualActive ? _virtualMove.y : typing ? 0f : Input.GetAxisRaw("Vertical");
             // В седле не приседают: сервер тоже держит седока в полный рост.
-            _crouching = !Mounted && (_virtualCrouch || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C));
+            _crouching = !Mounted && (_virtualCrouch || (!typing &&
+                (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C))));
 
             Vector3 wish = Camera != null
                 ? Camera.PlanarRight() * x + Camera.PlanarForward() * z

@@ -456,11 +456,19 @@ namespace RealmOfAshes.Game
             dialogue.Interaction = Interaction;
             if (Interaction != null) Interaction.DialogueCanvasDriven = true;
 
+            var subtitles = GetComponent<RoaSubtitlesCanvas>();
+            if (subtitles == null) subtitles = gameObject.AddComponent<RoaSubtitlesCanvas>();
+            subtitles.Configure(this, Interaction);
+
             // Меню, графика, обучение и панель редактирования HUD в web-виде.
             var system = GetComponent<RoaSystemCanvas>();
             if (system == null) system = gameObject.AddComponent<RoaSystemCanvas>();
             system.Bootstrap = this;
             SystemCanvasDriven = true;
+
+            var chat = GetComponent<RoaChatCanvas>();
+            if (chat == null) chat = gameObject.AddComponent<RoaChatCanvas>();
+            chat.Configure(this, Socket);
 
             // Экран загрузки локации в web-виде (#location-loading-screen).
             var loadingCanvas = GetComponent<RoaLoadingCanvas>();

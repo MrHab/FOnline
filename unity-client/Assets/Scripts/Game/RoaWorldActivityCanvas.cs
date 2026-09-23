@@ -670,11 +670,9 @@ namespace RealmOfAshes.Game
             _message.gameObject.SetActive(messageVisible);
 
             bool combatActive = Bootstrap?.Combat?.CombatPresentationActive == true;
-            bool detailsHeld = !mobileHud && (Input.GetKey(KeyCode.LeftAlt)
-                || Input.GetKey(KeyCode.RightAlt));
             bool contextAction = canRevive || (showAction && !_selfDowned);
             ActivityHudDensity density = ResolveActivityHudDensity(combatActive, mobileHud,
-                _detailsExpanded || detailsHeld, RoaHudLayout.Editing, contextAction,
+                _detailsExpanded, RoaHudLayout.Editing, contextAction,
                 messageVisible);
             ApplyHudDensityLayout(density);
             RefreshObjectiveRows(density != ActivityHudDensity.Detailed);

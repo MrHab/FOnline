@@ -28,6 +28,12 @@ namespace RealmOfAshes.EditorTools
                 Invoke(chat, "Build");
                 Transform panel = host.transform.Find("ApocalypseChatCanvas/ApocalypseChat");
                 Require(panel != null, "Apocalypse chat prefab was not installed");
+                Require(!panel.parent.gameObject.activeSelf,
+                    "chat should open on Enter instead of covering the fixed HUD");
+                Require(host.transform.Find("ApocalypseChatLauncher/OpenChat")
+                    ?.GetComponent<Button>() != null,
+                    "mobile chat launcher is missing");
+                panel.parent.gameObject.SetActive(true);
                 RectTransform chatRect = (RectTransform)panel;
                 chatRect.localScale = Vector3.one * 0.50f;
                 chatRect.anchoredPosition = new Vector2(14f, 270f);

@@ -36,21 +36,7 @@ namespace RealmOfAshes.Game
 
         public static float FocusLayerAlpha(HudFocusMode focus, HudVisualLayer layer)
         {
-            switch (layer)
-            {
-                case HudVisualLayer.Minimap:
-                    if (focus == HudFocusMode.Activity) return 0.74f;
-                    if (focus == HudFocusMode.Exploration) return 0.86f;
-                    return 1f;
-                case HudVisualLayer.WeaponConsole:
-                    if (focus == HudFocusMode.Activity) return 0.76f;
-                    if (focus == HudFocusMode.Exploration) return 0.82f;
-                    return 1f;
-                case HudVisualLayer.Quickbar:
-                    return focus == HudFocusMode.Detailed ? 0.92f : 1f;
-                default:
-                    return 1f;
-            }
+            return 1f;
         }
 
         public readonly struct ConnectionBannerState
@@ -97,13 +83,13 @@ namespace RealmOfAshes.Game
         public static LayoutProfile ResolveLayout(bool mobile)
         {
             return mobile
-                ? new LayoutProfile(0.75f, new Vector2(64f, -6f),
+                ? new LayoutProfile(0.9f, new Vector2(20f, -112f),
                     0.625f, new Vector2(0f, 44f),
                     0.625f, new Vector2(-62f, -8f),
                     0.625f, new Vector2(0f, 208f))
-                 : new LayoutProfile(1f, new Vector2(12f, -12f),
+                 : new LayoutProfile(1f, new Vector2(24f, -140f),
                     0.875f, new Vector2(0f, 16f),
-                    0.875f, new Vector2(-16f, -16f),
+                    0.875f, new Vector2(-56f, -18f),
                     0.875f, new Vector2(0f, 242f));
         }
 
@@ -116,29 +102,23 @@ namespace RealmOfAshes.Game
         public static HudFocusMode ResolveFocusMode(bool recentCombat, bool activityActive,
                                                      bool detailHeld, bool editingHud)
         {
-            if (detailHeld || editingHud) return HudFocusMode.Detailed;
-            if (recentCombat) return HudFocusMode.Combat;
-            return activityActive ? HudFocusMode.Activity : HudFocusMode.Exploration;
+            return HudFocusMode.Detailed;
         }
 
         public static bool ShowsIdentity(HudFocusMode focus)
         {
-            return focus == HudFocusMode.Detailed;
+            return true;
         }
 
         public static bool ShowsQuickbar(HudFocusMode focus, bool mobile,
                                          bool radialOpen, bool transientStatus)
         {
-            if (mobile) return false;
-            return focus == HudFocusMode.Combat || focus == HudFocusMode.Detailed
-                || radialOpen || transientStatus;
+            return true;
         }
 
         public static float MapFocusScale(bool mobile, HudFocusMode focus)
         {
-            if (mobile) return 0.625f;
-            return focus == HudFocusMode.Detailed || focus == HudFocusMode.Exploration
-                ? 0.875f : 0.75f;
+            return ResolveLayout(mobile).MapScale;
         }
 
         public static float CompactConsoleScale(bool mobile)
@@ -148,8 +128,7 @@ namespace RealmOfAshes.Game
 
         public static float CompactConsoleFocusScale(bool mobile, HudFocusMode focus)
         {
-            if (mobile) return CompactConsoleScale(true);
-            return focus == HudFocusMode.Combat ? 1f : CompactConsoleScale(false);
+            return CompactConsoleScale(mobile);
         }
 
         public static Vector2 CompactConsolePosition(bool mobile)
@@ -159,9 +138,7 @@ namespace RealmOfAshes.Game
 
         public static Vector2 QuickbarFocusPosition(bool mobile, HudFocusMode focus)
         {
-            if (focus == HudFocusMode.Detailed)
-                return ResolveLayout(mobile).QuickbarPosition;
-            return new Vector2(0f, mobile ? 112f : 92f);
+            return new Vector2(0f, mobile ? 75f : 14f);
         }
 
         public static Vector2 ClampBottomPanelPosition(Vector2 position, Vector2 panelSize,
@@ -237,7 +214,7 @@ namespace RealmOfAshes.Game
         private Slider _syntyCompactHealth;
         private HudFocusMode _focusMode;
         private bool _focusInitialized;
-        private float _consoleBlend;
+        private bool _focusMobile;
         private RawImage _playerFrame;
         private Text _nameText;
         private Text _statsText;
@@ -357,7 +334,7 @@ namespace RealmOfAshes.Game
 
         private Rect _lastSafeArea;
         private bool _lastMobile;
-        private const float MinimapPixels = 164f;
+        private const float MinimapPixels = 128f;
 
         public void Configure(RoaHud hud, RoaQuickbar quickbar, RoaMinimap minimap,
                               RoaCombat combat, RoaMobileControls mobile)
@@ -400,24 +377,14 @@ namespace RealmOfAshes.Game
             // где #character-screen перекрывает всё.
             if (RoaGameBootstrap.Active != null && RoaGameBootstrap.Active.FrontendVisible) worldHud = false;
             bool mobile = MobileHudMode; // mobile HUD and touch controls use one authoritative mode
-            bool detailsHeld = !mobile && (Input.GetKey(KeyCode.LeftAlt)
-                || Input.GetKey(KeyCode.RightAlt));
-            bool combatActive = _combat != null && _combat.CombatPresentationActive;
-            bool activityActive = _worldActivity != null && _worldActivity.IsActivityRunning;
-            HudFocusMode focus = ResolveFocusMode(combatActive, activityActive,
-                detailsHeld, RoaHudLayout.Editing);
+            HudFocusMode focus = HudFocusMode.Detailed;
             RefreshHudFocus(worldHud, mobile, focus);
 
             bool stateVisible = worldHud && _hud != null && _hud.HasState;
-            _playerPanel.SetActive(stateVisible && ShowsIdentity(focus));
+            _playerPanel.SetActive(stateVisible);
             _mapPanel.SetActive(worldHud && _minimap != null);
             UpdateMinimapZoomInput(worldHud && _minimap != null && !mobile);
-            bool quickbarTransient = _quickbar != null
-                && (!string.IsNullOrEmpty(_quickbar.CanvasStatus) || _quickbar.IsRadialOpen);
-            _quickPanel.SetActive(worldHud && _quickbar != null &&
-                ((_apocalypseActionBar != null && !mobile && _hud != null && _hud.HasState)
-                 || (_quickbar.CanvasVisible && ShowsQuickbar(focus, mobile,
-                     _quickbar.IsRadialOpen, quickbarTransient))));
+            _quickPanel.SetActive(stateVisible && _quickbar != null);
             string latestCombat = _combat != null && _combat.LogLines.Count > 0
                 ? _combat.LogLines[_combat.LogLines.Count - 1] : string.Empty;
             if (latestCombat != _lastCombatLine)
@@ -464,7 +431,6 @@ namespace RealmOfAshes.Game
         private void Build()
         {
             _focusInitialized = false;
-            _consoleBlend = 0f;
             GameObject root = new GameObject("AdaptiveGameplayHud", typeof(RectTransform), typeof(Canvas),
                                              typeof(CanvasScaler), typeof(GraphicRaycaster));
             root.transform.SetParent(transform, false);
@@ -507,25 +473,30 @@ namespace RealmOfAshes.Game
         private void BuildPlayerPanel()
         {
             RectTransform panel = PanelRect("PlayerStatus", _safeRoot, new Vector2(0f, 1f),
-                                            new Vector2(0f, 1f), new Vector2(12f, -12f), new Vector2(330f, 74f));
+                                            new Vector2(0f, 1f), new Vector2(24f, -140f), new Vector2(230f, 48f));
             _playerPanel = panel.gameObject;
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("status");
+            Image playerBackground = panel.GetComponent<Image>();
+            if (playerBackground != null) playerBackground.color = new Color(0f, 0f, 0f, 0.65f);
+            Outline playerBorder = panel.GetComponent<Outline>();
+            if (playerBorder != null) playerBorder.enabled = false;
 
             _playerFrame = Raw("Frame", panel, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             _playerFrame.raycastTarget = false;
             _playerFrame.color = Color.clear;
             _playerFrame.enabled = false;
-            Image accent = Bar("IdentityAccent", panel, new Vector2(10f, -65f), new Vector2(310f, 3f), ConsoleAccent).transform.parent.GetComponent<Image>();
+            Image accent = Bar("IdentityAccent", panel, new Vector2(10f, -44f), new Vector2(210f, 2f), ConsoleAccent).transform.parent.GetComponent<Image>();
             if (accent != null) accent.color = new Color(0.04f, 0.04f, 0.035f, 0.72f);
 
             _fpsText = Label("Diagnostics", panel, Vector2.zero, Vector2.zero, 1,
                              TextAnchor.MiddleLeft, Color.clear);
             _fpsText.gameObject.SetActive(false);
-            _nameText = Label("Name", panel, new Vector2(14f, -8f), new Vector2(300f, 25f), 17,
+            _nameText = Label("Name", panel, new Vector2(14f, -8f), new Vector2(205f, 28f), 17,
                               TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
             _statsText = Label("Progress", panel, new Vector2(14f, -35f), new Vector2(300f, 23f), 11,
                                TextAnchor.MiddleLeft, MutedInk, FontStyle.Bold);
             _statsText.supportRichText = true;
+            _statsText.gameObject.SetActive(false);
         }
 
         private void BuildMinimapPanel()
@@ -535,23 +506,35 @@ namespace RealmOfAshes.Game
             _mapPanel = panel.gameObject;
             _mapGroup = panel.gameObject.AddComponent<CanvasGroup>();
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("minimap");
-            RoaApocalypseUiKit.AddMinimapFrame(panel);
             GameObject mapDevice = Resources.Load<GameObject>(
                 "ApocalypseHud/HUD_Apocalypse_Minimap_Box_02");
+            if (mapDevice == null) RoaApocalypseUiKit.AddMinimapFrame(panel);
             if (mapDevice != null)
             {
+                Image panelBackground = panel.GetComponent<Image>();
+                if (panelBackground != null) panelBackground.enabled = false;
+                Outline panelBorder = panel.GetComponent<Outline>();
+                if (panelBorder != null) panelBorder.enabled = false;
                 GameObject device = Instantiate(mapDevice, panel, false);
                 device.name = "ApocalypseMinimapDevice";
                 RectTransform deviceRect = (RectTransform)device.transform;
                 deviceRect.anchorMin = deviceRect.anchorMax = new Vector2(0f, 1f);
                 deviceRect.pivot = new Vector2(0.5f, 0.5f);
                 deviceRect.anchoredPosition = new Vector2(95f, -114f);
-                deviceRect.localScale = Vector3.one * 0.54f;
+                deviceRect.localScale = Vector3.one * 0.42f;
                 deviceRect.SetAsFirstSibling();
                 Transform sampleMap = deviceRect.Find("Minimap_Contents/Map_Container/Map");
                 if (sampleMap != null) sampleMap.gameObject.SetActive(false);
                 Transform sampleMarkers = deviceRect.Find("Minimap_Contents/Elements_Container");
                 if (sampleMarkers != null) sampleMarkers.gameObject.SetActive(false);
+                Transform samplePlayer = deviceRect.Find("Minimap_Contents/Map_Icon_Player");
+                if (samplePlayer != null) samplePlayer.gameObject.SetActive(false);
+                Transform demoContents = deviceRect.Find("Minimap_Contents");
+                if (demoContents != null) demoContents.gameObject.SetActive(false);
+                Transform scanlines = deviceRect.Find("SPR_Scanlines");
+                if (scanlines != null) scanlines.gameObject.SetActive(false);
+                Transform demoGlow = deviceRect.Find("ParticleFX_Glow");
+                if (demoGlow != null) demoGlow.gameObject.SetActive(false);
                 foreach (Animator animator in device.GetComponentsInChildren<Animator>(true))
                     animator.enabled = false;
                 foreach (Graphic graphic in device.GetComponentsInChildren<Graphic>(true))
@@ -559,8 +542,14 @@ namespace RealmOfAshes.Game
             }
             _mapTitle = Label("Title", panel, new Vector2(10f, -7f), new Vector2(170f, 22f), 12,
                               TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
+            if (mapDevice != null) _mapTitle.enabled = false;
             RectTransform frame = Rect("Map", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                                       new Vector2(0f, 1f), new Vector2(13f, -32f), new Vector2(MinimapPixels, MinimapPixels));
+                                       new Vector2(0f, 1f), new Vector2(31f, -50f), new Vector2(MinimapPixels, MinimapPixels));
+            Image screenBase = frame.gameObject.AddComponent<Image>();
+            screenBase.type = Image.Type.Filled;
+            screenBase.fillMethod = Image.FillMethod.Horizontal;
+            screenBase.color = new Color(0.035f, 0.19f, 0.045f, 1f);
+            screenBase.raycastTarget = false;
             frame.gameObject.AddComponent<RectMask2D>();
             _mapFrame = frame;
             RectTransform map = MinimapRotor(frame);
@@ -1019,50 +1008,29 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            if (!_focusInitialized || resolved != _focusMode)
+            if (!_focusInitialized || resolved != _focusMode || _focusMobile != mobile)
             {
                 _focusMode = resolved;
+                _focusMobile = mobile;
                 ApplyPanelLayout((RectTransform)_quickPanel.transform,
                     ResolveLayout(mobile).QuickbarScale,
-                    _apocalypseActionBar != null && !mobile
-                        ? new Vector2(0f, 14f)
-                        : QuickbarFocusPosition(mobile, _focusMode));
+                    QuickbarFocusPosition(mobile, _focusMode));
                 ApplyPanelLayout((RectTransform)_mapPanel.transform,
                     MapFocusScale(mobile, _focusMode), ResolveLayout(mobile).MapPosition);
                 ApplyPanelLayout((RectTransform)_compactConsolePanel.transform,
                     CompactConsoleFocusScale(mobile, _focusMode),
                     CompactConsolePosition(mobile));
-            }
-
-            float target = resolved == HudFocusMode.Detailed ? 1f : 0f;
-            if (!_focusInitialized)
-            {
-                _consoleBlend = target;
                 _focusInitialized = true;
             }
-            else
-            {
-                _consoleBlend = Mathf.MoveTowards(_consoleBlend, target,
-                    Time.unscaledDeltaTime * 6.5f);
-            }
-
-            float fullAlpha = Mathf.SmoothStep(0f, 1f, _consoleBlend);
-            float compactAlpha = Mathf.SmoothStep(0f, 1f, 1f - _consoleBlend);
-            float focusFadeSpeed = Time.unscaledDeltaTime * 4.8f;
-            if (_mapGroup != null)
-                _mapGroup.alpha = Mathf.MoveTowards(_mapGroup.alpha,
-                    FocusLayerAlpha(resolved, HudVisualLayer.Minimap), focusFadeSpeed);
-            if (_quickGroup != null)
-                _quickGroup.alpha = Mathf.MoveTowards(_quickGroup.alpha,
-                    FocusLayerAlpha(resolved, HudVisualLayer.Quickbar), focusFadeSpeed);
-            float weaponAlpha = FocusLayerAlpha(resolved, HudVisualLayer.WeaponConsole);
-            _consolePanel.SetActive(fullAlpha > 0.01f);
-            _compactConsolePanel.SetActive(compactAlpha > 0.01f
-                && (_apocalypseActionBar == null || mobile));
-            _consoleGroup.alpha = fullAlpha;
-            _compactConsoleGroup.alpha = compactAlpha * weaponAlpha;
+            // The selected Apocalypse composition stays in place through combat,
+            // activity and input. The legacy console is only a missing-pack fallback.
+            _consolePanel.SetActive(_apocalypseActionBar == null);
+            _compactConsolePanel.SetActive(false);
+            _consoleGroup.alpha = 1f;
+            _compactConsoleGroup.alpha = 0f;
+            if (_mapGroup != null) _mapGroup.alpha = 1f;
+            if (_quickGroup != null) _quickGroup.alpha = 1f;
             ClampBottomPanelToSafeArea((RectTransform)_consolePanel.transform);
-            ClampBottomPanelToSafeArea((RectTransform)_compactConsolePanel.transform);
         }
 
         private void ApplyAdaptiveLayout(bool mobile)
@@ -1079,9 +1047,7 @@ namespace RealmOfAshes.Game
             ApplyPanelLayout((RectTransform)_mapPanel.transform,
                 MapFocusScale(mobile, _focusMode), layout.MapPosition);
             ApplyPanelLayout((RectTransform)_quickPanel.transform,
-                layout.QuickbarScale, _apocalypseActionBar != null && !mobile
-                    ? new Vector2(0f, 14f)
-                    : QuickbarFocusPosition(mobile, _focusMode));
+                layout.QuickbarScale, QuickbarFocusPosition(mobile, _focusMode));
         }
 
         private static void ApplyPanelLayout(RectTransform panel, float scale, Vector2 position)
@@ -1500,7 +1466,9 @@ namespace RealmOfAshes.Game
             if (_minimap == null || !_mapPanel.activeSelf) return;
             if (!_minimap.IsReady)
             {
-                _mapImage.enabled = false;
+                _mapImage.enabled = true;
+                _mapImage.texture = Texture2D.whiteTexture;
+                _mapImage.color = new Color(0.07f, 0.35f, 0.09f, 1f);
                 _mapTitle.text = "\u041a\u0410\u0420\u0422\u0410: \u0417\u0410\u0413\u0420\u0423\u0417\u041a";
                 _cellText.text = string.Empty;
                 for (int i = 0; i < _markers.Length; i++) _markers[i].gameObject.SetActive(false);
@@ -1508,6 +1476,7 @@ namespace RealmOfAshes.Game
                 return;
             }
             _mapImage.enabled = true;
+            _mapImage.color = Color.white;
             // Снимок локации сверху, пока он не снят — схема из данных локации.
             _mapImage.texture = _minimap.MapTexture;
             // В клетке опасных земель — её имя с номером («Меловая чаша №47»).

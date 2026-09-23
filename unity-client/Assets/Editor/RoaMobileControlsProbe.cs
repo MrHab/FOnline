@@ -465,14 +465,13 @@ namespace RealmOfAshes.EditorTools
 
         private static void VerifyIndependentTouchZones(int width, int height)
         {
-            MethodInfo actionRect = typeof(RoaMobileControls).GetMethod(
-                "ActionRect", BindingFlags.NonPublic | BindingFlags.Static);
-            Require(actionRect != null, "mobile action layout helper is missing");
-            Rect fire = RoaMobileControls.FireRect(width, height);
-            var actions = new Rect[6];
+            RoaMobileControlsCanvas.Layout layout = RoaMobileControlsCanvas.CalculateLayout(
+                width, height, new Rect(0f, 0f, width, height));
+            Rect fire = layout.Fire;
+            var actions = new Rect[8];
             for (int i = 0; i < actions.Length; i++)
             {
-                actions[i] = (Rect)actionRect.Invoke(null, new object[] { width, height, i + 1 });
+                actions[i] = layout.Action(i + 1);
                 Require(actions[i].xMin >= 0f && actions[i].yMin >= 0f
                         && actions[i].xMax <= width && actions[i].yMax <= height,
                         "mobile action button leaves the landscape viewport");

@@ -109,11 +109,14 @@ namespace RealmOfAshes.EditorTools
         private static async void RunRuntime()
         {
             try {
+                var modes = new[] { "listing", "catalog", "buy", "sell", "sellorder", "buyorder", "edit", "journal" }
+                    .Concat(File.Exists(Path.Combine(Output, "verified-state.json")) ? new[] { "verified" } : Array.Empty<string>());
                 foreach (bool mobile in new[] { false, true })
-                    foreach (string mode in new[] { "listing", "catalog", "buy", "sell", "sellorder", "buyorder", "edit", "journal" })
+                    foreach (string mode in modes)
                         await Capture(mode, mobile);
                 RoaAuctionSinCaptureProbe.Run();
-                File.WriteAllText(Path.Combine(Output, "result.txt"), "PASS: listing filters, catalogue search, four item actions, quantity, price history, editing and journal at 1440x810 and 844x390.");
+                File.WriteAllText(Path.Combine(Output, "result.txt"), "PASS: listing filters, catalogue search, four item actions, quantity, price history, editing and journal at 1440x810 and 844x390"
+                    + (File.Exists(Path.Combine(Output, "verified-state.json")) ? "; captured live server trade history." : "."));
                 SessionState.SetInt(Key + ".result", 0);
                 Debug.Log("[AUCTION MARKET] PASS: runtime interactions and desktop/mobile captures.");
             }
@@ -146,8 +149,15 @@ namespace RealmOfAshes.EditorTools
                 Set(screen, "_snapshotAt", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
                 Set(screen, "_tab", mode == "edit" ? "Mine" : mode == "journal" ? "Journal" : "Buy");
                 if (mode == "catalog") Set(screen, "_availability", 2);
-                if (mode == "buy" || mode == "sell" || mode == "edit") {
-                    var order = state["orders"][mode == "buy" ? 0 : mode == "sell" ? 2 : 1] as JObject;
+                if (mode == "verified") {
+                    var verified = JObject.Parse(File.ReadAllText(Path.Combine(Output, "verified-state.json")));
+                    Require(verified["itemId"]?.ToString() == "ammo9", "The live capture must be for ammo9.");
+                    state["history"] = verified["history"]?.DeepClone();
+                    state["historySeries"] = verified["historySeries"]?.DeepClone();
+                    Require(state["history"]?[0]?["qty"]?.Value<int>() == 35, "The live capture must contain the verified 35 units.");
+                }
+                if (mode == "buy" || mode == "verified" || mode == "sell" || mode == "edit") {
+                    var order = state["orders"][mode == "buy" || mode == "verified" ? 0 : mode == "sell" ? 2 : 1] as JObject;
                     Call(screen, "SelectOrder", order, mode == "edit");
                     InputField quantity = (InputField)Get(screen, mode == "edit" ? "_qtyInput" : "_modalQty");
                     Require(quantity.text == (mode == "edit" ? "10" : "1"), "Quantity does not match the selected operation.");
@@ -181,20 +191,22 @@ namespace RealmOfAshes.EditorTools
                     Require(((RectTransform)Get(screen, "_list")).Cast<Transform>().Count(child => child.name == "Item") == 7,
                         "A market page must display seven individual offers.");
                 }
-                if (mode == "buy") {
-                    Require(host.GetComponentsInChildren<RectTransform>().Count(rect => rect.name == "TradeHour") == 2,
+                if (mode == "buy" || mode == "verified") {
+                    Require(host.GetComponentsInChildren<RectTransform>().Count(rect => rect.name == "TradeHour") == (mode == "verified" ? 1 : 2),
                         "Price chart must draw the completed trade buckets.");
+                    Require(host.GetComponentsInChildren<RectTransform>().Count(rect => rect.name == "PriceSegment") == (mode == "verified" ? 0 : 1),
+                        "The chart must join distinct completed trade hours with a price line.");
                     host.GetComponentsInChildren<Button>().First(button => button.GetComponentInChildren<Text>()?.text == "7 ДНЕЙ").onClick.Invoke();
                     Require((int)Get(screen, "_historyHours") == 168, "History period control must change the chart range.");
                     host.GetComponentsInChildren<Button>().First(button => button.GetComponentInChildren<Text>()?.text == "24 ЧАСА").onClick.Invoke();
                     await Task.Yield(); await Task.Yield();
                 }
                 string all = string.Join("\n", host.GetComponentsInChildren<Text>().Select(text => text.text));
-                Require(all.Contains(mode == "buy" ? "К оплате: 36" : mode == "edit" ? "СОХРАНИТЬ ИЗМЕНЕНИЯ"
+                Require(all.Contains(mode == "buy" || mode == "verified" ? "К оплате: 36" : mode == "edit" ? "СОХРАНИТЬ ИЗМЕНЕНИЯ"
                     : mode == "journal" ? "Продано" : mode == "catalog" ? RoaItemData.Name("medkit")
                     : mode == "listing" ? "КУПИТЬ С РЫНКА" : mode == "sellorder" ? "ВЫСТАВИТЬ НА ПРОДАЖУ"
                     : mode == "sell" ? "ПРОДАТЬ" : "ПОСТАВИТЬ ЗАЯВКУ"), "Missing action in " + mode);
-                if (mode == "buy") Require(all.Contains("К оплате: 36"), "Partial purchase total must be 36.");
+                if (mode == "buy" || mode == "verified") Require(all.Contains("К оплате: 36"), "Partial purchase total must be 36.");
                 if (mode == "edit") Require(all.Contains("Вернётся: 56"), "Edit must preview the correct reserve refund.");
                 Camera camera = cameraObject.AddComponent<Camera>(); camera.enabled = false;
                 camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = Color.black;

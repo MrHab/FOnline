@@ -51,6 +51,7 @@ const servicePosition = (locationId, service) => {
   sellerState.territoryFaction = noFaction();
   sellerState.inventory.silver = 3000;
   sellerState.inventory.ammo9 = 60;
+  sellerState.inventory.scrap = 10;
   sellerState.inventory.leather = 1;
   sellerState.player = {
     ...(sellerState.player || {}),
@@ -220,6 +221,56 @@ const servicePosition = (locationId, service) => {
   assert.equal(shelfBuy.shelved, 2, 'The chosen delivery destination is returned in the receipt.');
   assert.equal(qty(shelfBuy.self, 'ammo9'), buyerBeforeShelf, 'Buying to the shelf does not add weight to the backpack.');
   assert(shelfBuy.auction.shelf.items.some(row => row.itemId === 'ammo9' && row.qty === 2 && row.reason === 'bought'));
+
+  // Several real Socket.IO trades at distinct prices must collapse into the
+  // current hourly chart point by quantity-weighted price, including a trade
+  // initiated from each side of the book.
+  const variedTrades = [];
+  for (const [price, amount] of [[14, 3], [22, 2]]) {
+    const offer = await market('trade', { action: 'sell', itemId: 'ammo9', qty: amount,
+      price, requestId: `chart-sell-${price}` });
+    const purchase = await market('harvest', { action: 'buyNow', orderId: offer.orderId,
+      qty: amount, expectedPrice: price, requestId: `chart-buy-${price}` });
+    assert.equal(purchase.cost, price * amount);
+    variedTrades.push({ direction: 'buyNow', price, qty: amount, cost: purchase.cost });
+  }
+  const buyOffer = await market('trade', { action: 'buy', itemId: 'ammo9', qty: 4,
+    price: 9, requestId: 'chart-buy-order' });
+  assert.equal(buyOffer.restingQty, 4);
+  const sale = await market('harvest', { action: 'sellNow', orderId: buyOffer.orderId,
+    qty: 4, expectedPrice: 9, requestId: 'chart-sell-now' });
+  assert.equal(sale.price, 9);
+  variedTrades.push({ direction: 'sellNow', price: 9, qty: 4, proceeds: sale.proceeds });
+  const scrapOffer = await market('trade', { action: 'sell', itemId: 'scrap', qty: 4,
+    price: 7, requestId: 'chart-scrap-sell' });
+  await market('harvest', { action: 'buyNow', orderId: scrapOffer.orderId,
+    qty: 2, expectedPrice: 7, requestId: 'chart-scrap-buy' });
+  const scrapCross = await market('harvest', { action: 'buy', itemId: 'scrap', qty: 2,
+    price: 8, requestId: 'chart-scrap-cross' });
+  assert.equal(scrapCross.boughtQty, 2);
+  const scrapChart = (await market('harvest', { action: 'state', itemId: 'scrap' })).auction;
+  assert.equal(scrapChart.history[0].qty, 4);
+  assert.equal(scrapChart.history[0].average, 7);
+  const chartState = (await market('harvest', { action: 'state', itemId: 'ammo9' })).auction;
+  assert.equal(chartState.history[0].qty, 35);
+  assert.equal(chartState.history[0].average, 12.34,
+    'The visible chart price is weighted by the quantity at all executed prices.');
+  assert.deepEqual(chartState.historySeries.map(row => [row.qty, row.average]), [[35, 12.34]],
+    'Trades within one hour produce one live chart point, not four misleading bars.');
+  if (process.env.ROA_MARKET_CAPTURE) {
+    const capturePath = path.resolve(process.env.ROA_MARKET_CAPTURE);
+    fs.mkdirSync(path.dirname(capturePath), { recursive: true });
+    fs.writeFileSync(capturePath, JSON.stringify({
+      market: chartState.marketName, itemId: 'ammo9', trades: [
+        { direction: 'buyNow', price: 10, qty: 5 },
+        { direction: 'buyOrderCross', price: 10, qty: 15 },
+        { direction: 'buyOrderCross', price: 15, qty: 4 },
+        { direction: 'buyNow', price: 25, qty: 2 },
+        ...variedTrades
+      ], history: chartState.history, historySeries: chartState.historySeries,
+      otherItem: { itemId: 'scrap', history: scrapChart.history, historySeries: scrapChart.historySeries }
+    }, null, 2));
+  }
 
   // --- торгуют только торговцы-люди -----------------------------------------
   const scrapActors = accounts.target.join.worldState?.enemies || [];

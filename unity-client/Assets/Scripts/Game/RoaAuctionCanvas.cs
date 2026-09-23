@@ -1157,12 +1157,16 @@ namespace RealmOfAshes.Game
             Place(chart, 0f, 0f, 1f, 1f, new Vector2(12f, 65f), new Vector2(-12f, -252f));
             chart.gameObject.AddComponent<Image>().color = RowBg;
             _modalRows.Add(chart.gameObject);
+            RectTransform plot = Child("PricePlot", chart);
+            Place(plot, 0f, 0f, 1f, 1f, new Vector2(42f, 26f), new Vector2(-10f, -10f));
             for (int i = 1; i < 4; i++)
             {
-                RectTransform grid = Child("Grid", chart);
+                RectTransform grid = Child("Grid", plot);
                 Place(grid, 0f, i / 4f, 1f, i / 4f, Vector2.zero, new Vector2(0f, 1f));
                 grid.gameObject.AddComponent<Image>().color = new Color(InkDim.r, InkDim.g, InkDim.b, 0.12f);
             }
+            double[] prices = null;
+            int[] quantities = null;
             if (_state?["historyItemId"]?.ToString() == _itemId && volume > 0)
             {
                 int slots = _historyHours == 24 ? 24 : 28;
@@ -1170,7 +1174,7 @@ namespace RealmOfAshes.Game
                 long end = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / hourMs * hourMs;
                 long first = end - (_historyHours - 1L) * hourMs;
                 double[] weighted = new double[slots];
-                int[] quantities = new int[slots];
+                quantities = new int[slots];
                 foreach (JObject row in (_state?["historySeries"] as JArray ?? new JArray()).OfType<JObject>())
                 {
                     long at = row["at"]?.Value<long>() ?? 0L;
@@ -1181,19 +1185,50 @@ namespace RealmOfAshes.Game
                     weighted[index] += (row["average"]?.Value<double>() ?? 0) * qty;
                     quantities[index] += qty;
                 }
-                double max = 0;
-                for (int i = 0; i < slots; i++) if (quantities[i] > 0) max = Math.Max(max, weighted[i] / quantities[i]);
+                prices = new double[slots];
                 for (int i = 0; i < slots; i++)
+                    if (quantities[i] > 0) prices[i] = weighted[i] / quantities[i];
+            }
+            var observed = prices == null ? new List<double>() : prices.Where((price, i) => quantities[i] > 0).ToList();
+            double low = observed.Count > 0 ? observed.Min() : 0;
+            double high = observed.Count > 0 ? observed.Max() : 1;
+            double padding = Math.Max(1, (high - low) * 0.15);
+            double floor = Math.Max(0, low - padding);
+            double ceiling = high + padding;
+            Text highLabel = Label("ChartHigh", chart, 10, TextAnchor.MiddleRight, InkDim);
+            Place(highLabel.rectTransform, 0f, 1f, 0f, 1f,
+                new Vector2(3f, -25f), new Vector2(38f, -9f));
+            highLabel.text = Math.Ceiling(ceiling).ToString("0");
+            Text lowLabel = Label("ChartLow", chart, 10, TextAnchor.MiddleRight, InkDim);
+            Place(lowLabel.rectTransform, 0f, 0f, 0f, 0f,
+                new Vector2(3f, 26f), new Vector2(38f, 42f));
+            lowLabel.text = Math.Floor(floor).ToString("0");
+            Text startLabel = Label("ChartStart", chart, 10, TextAnchor.MiddleLeft, InkDim);
+            Place(startLabel.rectTransform, 0f, 0f, 0.5f, 0f, new Vector2(42f, 2f), new Vector2(0f, 23f));
+            startLabel.text = _historyHours == 24 ? "24 ч назад" : _historyHours == 168 ? "7 д назад" : "28 д назад";
+            Text endLabel = Label("ChartEnd", chart, 10, TextAnchor.MiddleRight, InkDim);
+            Place(endLabel.rectTransform, 0.5f, 0f, 1f, 0f, Vector2.zero, new Vector2(-10f, 23f));
+            endLabel.text = "сейчас";
+            RectTransform lineRect = Child("PriceLine", plot);
+            Stretch(lineRect, 0f);
+            var line = lineRect.gameObject.AddComponent<RoaAuctionPriceChart>();
+            line.LineColor = Accent;
+            var points = new List<Vector2>();
+            if (prices != null)
+            {
+                for (int i = 0; i < prices.Length; i++)
                 {
-                    if (quantities[i] <= 0 || max <= 0) continue;
-                    float height = Mathf.Max(0.035f, (float)(weighted[i] / quantities[i] / max));
-                    RectTransform bar = Child("TradeHour", chart);
-                    float left = (i + 0.16f) / slots;
-                    float right = (i + 0.84f) / slots;
-                    Place(bar, left, 0f, right, height, new Vector2(0f, 2f), new Vector2(0f, -2f));
-                    bar.gameObject.AddComponent<Image>().color = Accent;
+                    if (quantities[i] <= 0) continue;
+                    float x = (i + 0.5f) / prices.Length;
+                    float y = Mathf.Clamp01((float)((prices[i] - floor) / (ceiling - floor)));
+                    points.Add(new Vector2(x, y));
+                    RectTransform mark = Child("TradeHour", plot);
+                    mark.anchorMin = mark.anchorMax = new Vector2(x, y);
+                    mark.sizeDelta = new Vector2(7f, 7f);
+                    mark.gameObject.AddComponent<Image>().color = Accent;
                 }
             }
+            line.SetPoints(points);
             int[] choices = { 672, 168, 24 };
             for (int i = 0; i < choices.Length; i++)
             {
@@ -2336,6 +2371,59 @@ namespace RealmOfAshes.Game
             Stretch(label.rectTransform, 2f);
             label.text = caption;
             return button;
+        }
+    }
+
+    /// <summary>Price curve in normalized chart coordinates; follows the UI when resized.</summary>
+    public sealed class RoaAuctionPriceChart : MonoBehaviour
+    {
+        private readonly List<Vector2> _points = new List<Vector2>();
+        private readonly List<RectTransform> _segments = new List<RectTransform>();
+        private RectTransform _rect;
+        private Vector2 _lastSize;
+        public Color LineColor = Color.white;
+
+        public void SetPoints(IEnumerable<Vector2> points)
+        {
+            _points.Clear();
+            if (points != null) _points.AddRange(points);
+            foreach (RectTransform segment in _segments) if (segment != null) Destroy(segment.gameObject);
+            _segments.Clear();
+            for (int i = 1; i < _points.Count; i++)
+            {
+                var segment = new GameObject("PriceSegment", typeof(RectTransform), typeof(Image));
+                segment.transform.SetParent(transform, false);
+                var image = segment.GetComponent<Image>();
+                image.color = LineColor;
+                image.raycastTarget = false;
+                _segments.Add((RectTransform)segment.transform);
+            }
+            _rect = (RectTransform)transform;
+            _lastSize = Vector2.zero;
+            UpdateSegments();
+        }
+
+        private void LateUpdate()
+        {
+            if (_rect != null && _lastSize != _rect.rect.size) UpdateSegments();
+        }
+
+        private void UpdateSegments()
+        {
+            if (_rect == null) return;
+            _lastSize = _rect.rect.size;
+            for (int i = 1; i < _points.Count; i++)
+            {
+                Vector2 direction = new Vector2((_points[i].x - _points[i - 1].x) * _lastSize.x,
+                    (_points[i].y - _points[i - 1].y) * _lastSize.y);
+                RectTransform segment = _segments[i - 1];
+                segment.anchorMin = segment.anchorMax = _points[i - 1];
+                segment.pivot = new Vector2(0f, 0.5f);
+                segment.anchoredPosition = Vector2.zero;
+                segment.sizeDelta = new Vector2(direction.magnitude, 2.5f);
+                segment.localRotation = Quaternion.Euler(0f, 0f,
+                    Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
+            }
         }
     }
 }

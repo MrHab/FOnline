@@ -632,11 +632,21 @@ namespace RealmOfAshes.Game
             _consoleGroup.blocksRaycasts = false;
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("console");
 
-            var frame = panel.gameObject.AddComponent<RawImage>();
-            frame.texture = Resources.Load<Texture2D>("RealmUi/weapon_ui");
-            frame.raycastTarget = false;
-            if (frame.texture == null)
-                Debug.LogError("[ROA] Не найден арт консоли RealmUi/weapon_ui — HUD останется без фона.");
+            Sprite apocalypseBackground = RoaApocalypseUiSkin.Background;
+            if (apocalypseBackground != null)
+            {
+                var frame = panel.gameObject.AddComponent<Image>();
+                frame.sprite = apocalypseBackground;
+                frame.type = Image.Type.Sliced;
+                frame.color = new Color(0.79f, 0.74f, 0.64f, 0.96f);
+                frame.raycastTarget = false;
+            }
+            else
+            {
+                var frame = panel.gameObject.AddComponent<RawImage>();
+                frame.texture = Resources.Load<Texture2D>("RealmUi/weapon_ui");
+                frame.raycastTarget = false;
+            }
 
             // Ряд диодов: 31.5%/2.8%, ширина 37.5%, поровну по ряду.
             if (_ledCircle == null) _ledCircle = BuildCircleTexture();
@@ -772,11 +782,21 @@ namespace RealmOfAshes.Game
                                 int valueSize = 19)
         {
             RectTransform box = PercentRect(name, panel, left, top, width, height);
-            Text label = PercentLabel("Label", box, 0f, 0f, 1f, 0.44f, 12,
+            Sprite bar = RoaApocalypseUiSkin.Bar;
+            if (bar != null)
+            {
+                Image casing = box.gameObject.AddComponent<Image>();
+                casing.sprite = bar;
+                casing.type = Image.Type.Sliced;
+                casing.color = new Color(0.78f, 0.72f, 0.59f, 0.88f);
+                casing.raycastTarget = false;
+            }
+            Text label = PercentLabel("Label", box, 0.04f, 0.02f, 0.92f, 0.36f, 9,
                                       TextAnchor.MiddleCenter, ConsoleLabel, FontStyle.Bold);
             label.text = title;
-            return PercentLabel("Value", box, 0f, 0.44f, 1f, 0.56f, valueSize,
-                                TextAnchor.MiddleCenter, ConsoleValue, FontStyle.Bold);
+            Text value = PercentLabel("Value", box, 0.03f, 0.41f, 0.94f, 0.56f,
+                Mathf.Min(valueSize, 12), TextAnchor.MiddleCenter, ConsoleValue, FontStyle.Bold);
+            return value;
         }
 
         /// <summary>Дочерний Rect по долям родителя от верхнего левого угла — как проценты в css.</summary>

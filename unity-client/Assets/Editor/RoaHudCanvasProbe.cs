@@ -240,9 +240,20 @@ namespace RealmOfAshes.EditorTools
                     BindingFlags.Instance | BindingFlags.NonPublic);
                 Require(update != null, "HUD capture cannot invoke presentation update");
                 update.Invoke(canvasOwner, null);
+                if (string.Equals(Environment.GetEnvironmentVariable(
+                        "ROA_HUD_CAPTURE_DETAILED"), "1", StringComparison.Ordinal))
+                {
+                    Set(canvasOwner, "_focusInitialized", false);
+                    MethodInfo focus = typeof(RoaHudCanvas).GetMethod("RefreshHudFocus",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+                    Require(focus != null, "HUD capture cannot switch to the detailed console");
+                    focus.Invoke(canvasOwner, new object[]
+                        { true, false, RoaHudCanvas.HudFocusMode.Detailed });
+                }
 
                 Canvas canvas = host.GetComponentInChildren<Canvas>(true);
                 Require(canvas != null, "HUD capture canvas was not built");
+                host.AddComponent<RoaApocalypseUiSkin>().ApplyTo(canvas);
                 cameraObject = new GameObject("HudCaptureCamera");
                 Camera camera = cameraObject.AddComponent<Camera>();
                 camera.enabled = false;

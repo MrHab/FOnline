@@ -188,6 +188,8 @@ namespace RealmOfAshes.Game
             if (RoaLocalModelReview.TryStart()) return;
             Active = this;
             RoaUiTheme.Ensure(gameObject);
+            if (GetComponent<RoaApocalypseUiSkin>() == null)
+                gameObject.AddComponent<RoaApocalypseUiSkin>();
             ApplyAutomationEnvironment();
 #if UNITY_WEBGL && !UNITY_EDITOR
             // WebGL-сборка раздаётся тем же Node-сервером (public/unity/): сервер —

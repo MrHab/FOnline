@@ -15,7 +15,30 @@ namespace RealmOfAshes.Game
         private static Sprite _buttonPlate;
         private static Sprite _windowPlate;
         private static Sprite _windowFrame;
+        private static Sprite _slicedFrame;
         private static Sprite _inputPlate;
+
+        public static Sprite FrameSprite
+        {
+            get
+            {
+                if (_slicedFrame != null) return _slicedFrame;
+                if (_windowFrame == null)
+                    _windowFrame = Resources.Load<Sprite>(Root +
+                        "SPR_HUD_Apocalypse_Frame_Large_03_Clean");
+                if (_windowFrame == null) return null;
+                if (_windowFrame.border.sqrMagnitude > 0f)
+                    return _slicedFrame = _windowFrame;
+                // This pack sprite has a transparent centre and a 13 px rim, but
+                // its source importer leaves the 9-slice border at zero.
+                _slicedFrame = Sprite.Create(_windowFrame.texture, _windowFrame.rect,
+                    new Vector2(_windowFrame.pivot.x / _windowFrame.rect.width,
+                        _windowFrame.pivot.y / _windowFrame.rect.height),
+                    _windowFrame.pixelsPerUnit, 0, SpriteMeshType.FullRect,
+                    new Vector4(18f, 18f, 18f, 18f));
+                return _slicedFrame;
+            }
+        }
 
         public static bool IsInstalled => Resources.Load<GameObject>(Root +
             "Button_Apocalypse_Simple") != null;
@@ -125,10 +148,8 @@ namespace RealmOfAshes.Game
             surface.type = Image.Type.Sliced;
             surface.color = Color.white;
             if (!frame || surface.transform.Find("ApocalypseHudFrame") != null) return;
-            if (_windowFrame == null)
-                _windowFrame = Resources.Load<Sprite>(Root +
-                    "SPR_HUD_Apocalypse_Frame_Large_03_Clean");
-            if (_windowFrame == null) return;
+            Sprite borderSprite = FrameSprite;
+            if (borderSprite == null) return;
             var go = new GameObject("ApocalypseHudFrame", typeof(RectTransform), typeof(Image));
             RectTransform rect = (RectTransform)go.transform;
             rect.SetParent(surface.transform, false);
@@ -137,7 +158,7 @@ namespace RealmOfAshes.Game
             rect.anchorMax = Vector2.one;
             rect.offsetMin = rect.offsetMax = Vector2.zero;
             Image image = go.GetComponent<Image>();
-            image.sprite = _windowFrame;
+            image.sprite = borderSprite;
             image.type = Image.Type.Sliced;
             image.color = new Color(0.91f, 0.70f, 0.37f, 0.68f);
             image.raycastTarget = false;

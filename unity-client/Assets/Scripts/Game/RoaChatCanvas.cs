@@ -62,7 +62,8 @@ namespace RealmOfAshes.Game
             if (_canvasObject == null) return;
             if (_canvasObject.activeSelf != _expanded) _canvasObject.SetActive(_expanded);
 
-            bool mobile = Application.isMobilePlatform;
+            bool mobile = _bootstrap.MobileControls != null
+                ? _bootstrap.MobileControls.ControlsEnabled : Application.isMobilePlatform;
             if (_launcherObject != null)
                 _launcherObject.SetActive(mobile && !_expanded);
             var rect = (RectTransform)_panel.transform;

@@ -49,6 +49,55 @@ namespace RealmOfAshes.Game
         /// <summary>Сколько ждать после загрузки, прежде чем снимать локацию сверху.</summary>
         public const float SnapshotDelaySeconds = 1.2f;
 
+        /// <summary>
+        /// Приближение миникарты. 1 — вся локация в окне, как было; дальше окно
+        /// показывает кусок карты крупнее и ведёт за игроком. Шаг целый: колесо
+        /// мыши над миникартой и кнопки «+»/«−» переключают ярусы, выбранный
+        /// ярус переживает перезапуск.
+        /// </summary>
+        public const float MinZoom = 1f;
+        public const float MaxZoom = 4f;
+        private const string ZoomPrefsKey = "roa.minimap.zoom";
+        public float Zoom { get; private set; } = 1f;
+
+        public void SetZoom(float value)
+        {
+            float clamped = Mathf.Clamp(Mathf.Round(value), MinZoom, MaxZoom);
+            if (Mathf.Approximately(clamped, Zoom)) return;
+            Zoom = clamped;
+            PlayerPrefs.SetFloat(ZoomPrefsKey, clamped);
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>Сдвинуть приближение на ярус: +1 ближе, −1 дальше.</summary>
+        public void ZoomBy(int steps)
+        {
+            SetZoom(Zoom + steps);
+        }
+
+        /// <summary>
+        /// Окно миникарты на ярусе приближения: во сколько раз растянут слой карты и
+        /// куда он сдвинут в пикселях рамки. Сдвиг ведёт за точкой focus (0..1 по карте)
+        /// и упирается в края карты — за рамкой не открывается пустота. Пока карта
+        /// мельче окна (ярус 1), сдвигать некуда и она стоит по центру.
+        /// Сверяет RoaMinimapZoomProbe.
+        /// </summary>
+        public static void Viewport(float zoom, Vector2 focus, float framePixels,
+                                    out float scale, out Vector2 offset)
+        {
+            scale = CameraAlignScale * Mathf.Clamp(zoom, MinZoom, MaxZoom);
+            Vector2 fromCentre = (focus - new Vector2(0.5f, 0.5f)) * framePixels * scale;
+            // Половина карты в пикселях рамки против половины её диагонали: рамка
+            // повёрнута к карте на 45°, поэтому в углы она заглядывает дальше всего.
+            float limit = Mathf.Max(0f, framePixels * 0.5f * scale - framePixels * 0.70710678f);
+            var shift = new Vector2(Mathf.Clamp(-fromCentre.x, -limit, limit),
+                                    Mathf.Clamp(-fromCentre.y, -limit, limit));
+            float radians = CameraAlignDeg * Mathf.Deg2Rad;
+            float sin = Mathf.Sin(radians);
+            float cos = Mathf.Cos(radians);
+            offset = new Vector2(shift.x * cos - shift.y * sin, shift.x * sin + shift.y * cos);
+        }
+
         public int MapWidth { get; private set; }
         public int MapDepth { get; private set; }
         public int StaticFeatureCount { get; private set; }
@@ -171,7 +220,7 @@ namespace RealmOfAshes.Game
         /// Поворот значка игрока на миникарте (градусы, ось Z канвы).
         ///
         /// Миникарта смотрит на мир сверху, север вверху: вправо — +X Unity (восток),
-        /// вверх — +Z Unity (север, малые tz). Игрок с yaw θ смотрит в (sin θ, cos θ) —
+        /// вверх — +Z Unity (север, большие tz). Игрок с yaw θ смотрит в (sin θ, cos θ) —
         /// на карте это тот же вектор. Значок нарисован остриём вверх, поворот φ уводит
         /// остриё в (−sin φ, cos φ), поэтому φ = −θ. Сверяет RoaMinimapSnapshotProbe.
         /// </summary>
@@ -190,6 +239,11 @@ namespace RealmOfAshes.Game
             // подложки (строка пикселей tz). Прежний переворот зеркалил значок игрока
             // и маркеры относительно картинки. Сверяет RoaMinimapSnapshotProbe.
             return new Vector2((tx + 0.5f) / MapWidth, (tz + 0.5f) / MapDepth);
+        }
+
+        private void Awake()
+        {
+            Zoom = Mathf.Clamp(Mathf.Round(PlayerPrefs.GetFloat(ZoomPrefsKey, MinZoom)), MinZoom, MaxZoom);
         }
 
         private void OnDestroy()

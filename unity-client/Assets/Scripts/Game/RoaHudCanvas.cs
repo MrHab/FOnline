@@ -274,10 +274,18 @@ namespace RealmOfAshes.Game
         private static readonly Color HpCritical = new Color(1f, 0.431f, 0.345f, 1f);
         private static readonly Color AmmoEmpty = new Color(1f, 0.427f, 0.337f, 1f);
         private RawImage _mapImage;
+        private RectTransform _mapFrame;
+        private RectTransform _mapRotor;
         private Text _mapTitle;
         private Text _cellText;
         private RectTransform _markerLayer;
         private Image _playerArrow;
+
+        /// <summary>
+        /// Курсор стоит над миникартой: колесо в это время приближает её, а не
+        /// камеру мира (RoaCameraRig читает этот флаг).
+        /// </summary>
+        public static bool PointerOverMinimap { get; private set; }
         private readonly Image[] _markers = new Image[96];
         private readonly Button[] _slotButtons = new Button[RoaQuickbar.SlotCount];
         private readonly Text[] _slotTexts = new Text[RoaQuickbar.SlotCount];
@@ -401,6 +409,7 @@ namespace RealmOfAshes.Game
             bool stateVisible = worldHud && _hud != null && _hud.HasState;
             _playerPanel.SetActive(stateVisible && ShowsIdentity(focus));
             _mapPanel.SetActive(worldHud && _minimap != null);
+            UpdateMinimapZoomInput(worldHud && _minimap != null && !mobile);
             bool quickbarTransient = _quickbar != null
                 && (!string.IsNullOrEmpty(_quickbar.CanvasStatus) || _quickbar.IsRadialOpen);
             _quickPanel.SetActive(worldHud && _quickbar != null && _quickbar.CanvasVisible
@@ -524,7 +533,9 @@ namespace RealmOfAshes.Game
             RectTransform frame = Rect("Map", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
                                        new Vector2(0f, 1f), new Vector2(13f, -32f), new Vector2(MinimapPixels, MinimapPixels));
             frame.gameObject.AddComponent<RectMask2D>();
+            _mapFrame = frame;
             RectTransform map = MinimapRotor(frame);
+            _mapRotor = map;
             _mapImage = map.gameObject.AddComponent<RawImage>();
             _mapImage.color = Color.white;
             _mapImage.raycastTarget = false;
@@ -558,9 +569,10 @@ namespace RealmOfAshes.Game
                               TextAnchor.MiddleLeft, MutedInk);
             _cellText.gameObject.SetActive(false);
 
-            // Карта мира: сетка зон с флажком там, где игрок.
+            // Карта мира: сетка зон с флажком там, где игрок. Правый край ряда отдан
+            // кнопкам приближения, поэтому кнопка карты мира короче рамки.
             RectTransform world = Rect("WorldMap", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                                       new Vector2(0f, 1f), new Vector2(13f, -201f), new Vector2(MinimapPixels, 24f));
+                                       new Vector2(0f, 1f), new Vector2(13f, -201f), new Vector2(116f, 24f));
             Image worldImage = world.gameObject.AddComponent<Image>();
             worldImage.color = new Color(0.10f, 0.10f, 0.08f, 0.96f);
             Button worldButton = world.gameObject.AddComponent<Button>();
@@ -570,9 +582,36 @@ namespace RealmOfAshes.Game
             worldColors.pressedColor = new Color(0.48f, 0.35f, 0.13f, 1f);
             worldButton.colors = worldColors;
             worldButton.onClick.AddListener(() => RoaGameBootstrap.Active?.WorldOverview?.Toggle());
-            Text worldLabel = Label("Label", world, Vector2.zero, new Vector2(MinimapPixels, 24f), 11,
+            Text worldLabel = Label("Label", world, Vector2.zero, new Vector2(116f, 24f), 11,
                                     TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
             worldLabel.text = "КАРТА МИРА";
+
+            // Приближение: колесом мыши над картой и этими кнопками — на телефоне
+            // колеса нет. Кнопки стоят в нижнем ряду панели: карту они не закрывают, а
+            // верхний правый угол экрана занят кнопкой игрового меню.
+            MinimapZoomButton(panel, "−", new Vector2(133f, -201f), -1);
+            MinimapZoomButton(panel, "+", new Vector2(157f, -201f), 1);
+        }
+
+        /// <summary>Кнопка приближения миникарты: +1 ближе, −1 дальше.</summary>
+        private void MinimapZoomButton(RectTransform panel, string caption, Vector2 position, int steps)
+        {
+            RectTransform rect = Rect("MinimapZoom" + (steps > 0 ? "In" : "Out"), panel,
+                                      new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                                      position, new Vector2(20f, 24f));
+            var image = rect.gameObject.AddComponent<Image>();
+            image.color = new Color(0.10f, 0.10f, 0.08f, 0.72f);
+            var button = rect.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            ColorBlock colors = button.colors;
+            colors.highlightedColor = new Color(0.30f, 0.24f, 0.11f, 1f);
+            colors.pressedColor = new Color(0.48f, 0.35f, 0.13f, 1f);
+            button.colors = colors;
+            button.onClick.AddListener(() => _minimap?.ZoomBy(steps));
+            Text label = Label("Label", rect, Vector2.zero, new Vector2(22f, 22f), 14,
+                               TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
+            label.text = caption;
+            label.raycastTarget = false;
         }
 
         /// <summary>
@@ -1360,6 +1399,9 @@ namespace RealmOfAshes.Game
             _mapTitle.text = !string.IsNullOrEmpty(cellTitle) ? cellTitle
                 : (string.IsNullOrEmpty(_minimap.LocationName) ? "\u041a\u0430\u0440\u0442\u0430" : _minimap.LocationName);
             _cellText.text = _minimap.CellLabel;
+            Vector2 focus = _minimap.HasPlayer ? _minimap.PlayerMapNormalized : new Vector2(0.5f, 0.5f);
+            float zoom = ApplyMinimapZoom(focus);
+            Vector3 pinScale = Vector3.one / zoom;
             int count = Mathf.Min(_markers.Length, _minimap.Markers.Count);
             for (int i = 0; i < count; i++)
             {
@@ -1370,6 +1412,7 @@ namespace RealmOfAshes.Game
                 image.gameObject.SetActive(visible);
                 if (!visible) continue;
                 image.rectTransform.anchoredPosition = new Vector2(p.x * MinimapPixels, p.y * MinimapPixels);
+                image.rectTransform.localScale = pinScale;
                 ApplyMarkerStyle(image, marker.Kind);
             }
             for (int i = count; i < _markers.Length; i++) _markers[i].gameObject.SetActive(false);
@@ -1377,12 +1420,48 @@ namespace RealmOfAshes.Game
             bool playerVisible = _minimap.HasPlayer && player.x >= 0f && player.y >= 0f
                 && player.x <= 1f && player.y <= 1f;
             _playerArrow.gameObject.SetActive(playerVisible);
+            _playerArrow.rectTransform.localScale = pinScale;
             if (playerVisible)
             {
                 _playerArrow.rectTransform.anchoredPosition = new Vector2(player.x * MinimapPixels, player.y * MinimapPixels);
                 _playerArrow.rectTransform.localEulerAngles =
                     new Vector3(0f, 0f, RoaMinimap.PlayerIconRotation(_minimap.PlayerHeading));
             }
+        }
+
+        /// <summary>
+        /// Колесо мыши над миникартой приближает её. Пока курсор над рамкой, зум
+        /// камеры мира молчит (RoaCameraRig смотрит на PointerOverMinimap): иначе один
+        /// поворот колеса двигал бы и карту, и камеру.
+        /// </summary>
+        private void UpdateMinimapZoomInput(bool active)
+        {
+            if (!active || _mapFrame == null || !_mapPanel.activeSelf)
+            {
+                PointerOverMinimap = false;
+                return;
+            }
+            PointerOverMinimap = RectTransformUtility.RectangleContainsScreenPoint(
+                _mapFrame, Input.mousePosition, null);
+            if (!PointerOverMinimap) return;
+            float scroll = Input.mouseScrollDelta.y;
+            if (Mathf.Abs(scroll) > 0.01f) _minimap.ZoomBy(scroll > 0f ? 1 : -1);
+        }
+
+        /// <summary>
+        /// Приближение окна миникарты. Слой карты растёт вместе с зумом, а окно ведёт
+        /// за игроком: смещение считается в осях карты и упирается в её края, чтобы за
+        /// рамкой не открывалась пустота. Значок игрока и маркеры гасят масштаб — иначе
+        /// на четырёхкратном приближении они расплылись бы кляксами.
+        /// </summary>
+        private float ApplyMinimapZoom(Vector2 focus)
+        {
+            float zoom = _minimap != null ? Mathf.Max(1f, _minimap.Zoom) : 1f;
+            if (_mapRotor == null) return zoom;
+            RoaMinimap.Viewport(zoom, focus, MinimapPixels, out float scale, out Vector2 offset);
+            _mapRotor.localScale = Vector3.one * scale;
+            _mapRotor.anchoredPosition = offset;
+            return zoom;
         }
 
         private void RefreshQuickbar()

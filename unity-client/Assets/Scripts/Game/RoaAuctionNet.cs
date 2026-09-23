@@ -6,8 +6,8 @@ using RealmOfAshes.Net;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Рынок фракции у аукционера базы: книга ордеров на продажу и на выкуп.
-    /// Сервер проверяет членство, присутствие рядом с аукционером, категорию,
+    /// Рынок столицы у аукционера: книга ордеров на продажу и на выкуп.
+    /// Сервер проверяет присутствие рядом с аукционером, категорию,
     /// срок и цену, снимает предметы и марки; requestId делает ордер, покупку и
     /// продажу безопасными при повторе.
     /// </summary>
@@ -15,7 +15,24 @@ namespace RealmOfAshes.Game
     {
         public static bool RequestState(RoaSocketClient socket, Action<JObject> completed)
         {
-            return Send(socket, new Dictionary<string, object> { ["action"] = "state" }, completed);
+            return RequestState(socket, string.Empty, completed);
+        }
+
+        public static bool RequestState(RoaSocketClient socket, string itemId, Action<JObject> completed)
+        {
+            return Send(socket, new Dictionary<string, object> { ["action"] = "state", ["itemId"] = itemId }, completed);
+        }
+
+        public static bool UpdateOrder(RoaSocketClient socket, string orderId, int qty, int price,
+                                       int durationHours, Action<JObject> completed, int expectedPrice = 0, int expectedQty = 0)
+        {
+            return Send(socket, new Dictionary<string, object>
+            {
+                ["action"] = "update", ["orderId"] = orderId, ["qty"] = qty,
+                ["price"] = price, ["durationHours"] = durationHours,
+                ["expectedPrice"] = expectedPrice, ["expectedQty"] = expectedQty,
+                ["requestId"] = NewRequestId("market-update")
+            }, completed);
         }
 
         /// <summary>
@@ -43,7 +60,7 @@ namespace RealmOfAshes.Game
         /// Ставится только на предметы без износа и собственных свойств.
         /// </summary>
         public static bool BuyOrder(RoaSocketClient socket, string itemId, int qty, int price,
-                                    int durationHours, Action<JObject> completed)
+                                    int durationHours, Action<JObject> completed, bool deliverToInventory = true)
         {
             return Send(socket, new Dictionary<string, object>
             {
@@ -52,31 +69,36 @@ namespace RealmOfAshes.Game
                 ["qty"] = Math.Max(1, qty),
                 ["price"] = Math.Max(1, price),
                 ["durationHours"] = Math.Max(0, durationHours),
+                ["deliverToInventory"] = deliverToInventory,
                 ["requestId"] = NewRequestId("market-buy")
             }, completed);
         }
 
         /// <summary>Купить сейчас с конкретного ордера на продажу.</summary>
-        public static bool BuyNow(RoaSocketClient socket, string orderId, int qty, Action<JObject> completed)
+        public static bool BuyNow(RoaSocketClient socket, string orderId, int qty, Action<JObject> completed,
+                                  int expectedPrice = 0, bool deliverToInventory = true)
         {
             return Send(socket, new Dictionary<string, object>
             {
                 ["action"] = "buyNow",
                 ["orderId"] = orderId ?? string.Empty,
                 ["qty"] = Math.Max(1, qty),
-                ["requestId"] = NewRequestId("market-buynow")
+                ["requestId"] = NewRequestId("market-buynow"),
+                ["expectedPrice"] = expectedPrice,
+                ["deliverToInventory"] = deliverToInventory
             }, completed);
         }
 
         /// <summary>Продать сейчас в конкретный ордер на выкуп.</summary>
-        public static bool SellNow(RoaSocketClient socket, string orderId, int qty, string itemRuntimeId, Action<JObject> completed)
+        public static bool SellNow(RoaSocketClient socket, string orderId, int qty, string itemRuntimeId, Action<JObject> completed, int expectedPrice = 0)
         {
             var payload = new Dictionary<string, object>
             {
                 ["action"] = "sellNow",
                 ["orderId"] = orderId ?? string.Empty,
                 ["qty"] = Math.Max(1, qty),
-                ["requestId"] = NewRequestId("market-sellnow")
+                ["requestId"] = NewRequestId("market-sellnow"),
+                ["expectedPrice"] = expectedPrice
             };
             if (!string.IsNullOrEmpty(itemRuntimeId)) payload["itemRuntimeId"] = itemRuntimeId;
             return Send(socket, payload, completed);

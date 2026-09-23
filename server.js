@@ -236,6 +236,7 @@ const {
   setupFeeFor: marketSetupFee,
   shelfFor: marketShelfFor,
   takeBuyOrder: marketTakeBuyOrder,
+  updateOrder: marketUpdateOrder,
   takeSellOrder: marketTakeSellOrder
 } = require('./src/server/faction-market');
 const {
@@ -28489,9 +28490,9 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ok: true, result: { completed: result.completed === true, awaitingOutcome: result.awaitingOutcome === true, awaitingTurnIn: result.awaitingTurnIn === true, outcomeTag: result.outcomeTag || '' }, journal: publicKromkaQuestJournal(p.kromkaQuestState, KROMKA_QUEST_CATALOG), self: publicAuthoritativePlayerState(p) });
   });
 
-  // Рынок фракции у аукционера базы: состояние книги, ордер на продажу, ордер
-  // на выкуп, мгновенные «купить сейчас» и «продать сейчас», отмена ордера и
-  // забор полки. Только член фракции рядом с аукционером; каждое изменение
+  // Рынок столицы: книга, заявки на продажу и выкуп, мгновенные сделки,
+  // изменение и отмена заявок, история и забор полки. Защищённое поселение
+  // и аукционер рядом обязательны; членство не требуется. Каждое изменение
   // идемпотентно по requestId. Встречные ордера исполняются по цене того, кто
   // стоял в книге, товар держит ордер на продажу, марки — ордер на выкуп.
   socket.on('auctionAction', (data = {}, ack) => {
@@ -28515,6 +28516,10 @@ io.on('connection', (socket) => {
     const auctionState = () => publicMarket(store, p.characterId, auctionRules, now, {
       marketId: hubId,
       marketName: cityAuctions ? String(loc.name || hubId) : '',
+      itemId: data.itemId,
+      catalog: KROMKA_ITEM_CATALOG.items.filter(item => item.id !== 'silver' && item.id !== 'fists'
+        && !serverSinTradedOnlyInExchange(item.id) && !serverItemProtectedFromPvpDrop(item.id))
+        .map(item => ({ itemId: item.id, category: KROMKA_ITEM_INDEXES.categories[item.id] || 'misc' })),
       // Состояние артефакта видно до покупки; скрытые свойства сырого
       // экземпляра публичная проекция по-прежнему не отдаёт.
       projectArtifact: record => publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG)
@@ -28523,17 +28528,30 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: true, auction: auctionState() });
       return;
     }
-    if (!['sell', 'buy', 'buyNow', 'sellNow', 'cancel', 'claim'].includes(action)) return fail('Неизвестное действие аукциона.');
+    if (!['sell', 'buy', 'buyNow', 'sellNow', 'update', 'cancel', 'claim'].includes(action)) return fail('Неизвестное действие аукциона.');
     const transaction = beginCriticalAction(p, 'auctionAction', data,
-      ['action', 'itemId', 'qty', 'price', 'durationHours', 'orderId', 'itemRuntimeId']);
+      ['action', 'itemId', 'qty', 'price', 'durationHours', 'orderId', 'itemRuntimeId', 'expectedPrice', 'expectedQty', 'deliverToInventory']);
     if (!transaction.ok) return fail(transaction.error);
     if (transaction.replay) {
       if (typeof ack === 'function') ack({ ...transaction.result, auction: auctionState(), self: publicAuthoritativePlayerState(p) });
       return;
     }
     const orderId = String(data.orderId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+    if (['buyNow', 'sellNow', 'update'].includes(action) && store.orders?.[orderId]) {
+      const current = store.orders[orderId];
+      // Older clients never sent a quote because orders could not be edited.
+      // They must refresh their client before taking a repriced order.
+      if (current.updatedAt > 0 && ['buyNow', 'sellNow'].includes(action)
+        && !(Number(data.expectedPrice) > 0)) return fail('Заявка изменилась. Обновите игру перед подтверждением сделки.');
+      if ((Number(data.expectedPrice) > 0 && Number(data.expectedPrice) !== current.price)
+        || (action === 'update' && Number(data.expectedQty) > 0 && Number(data.expectedQty) !== current.qty)) {
+        return fail('Заявка изменилась. Обновите рынок и проверьте цену и остаток.');
+      }
+    }
     const durationHours = Math.max(0, Math.floor(Number(data.durationHours || 0)));
     const durationMs = durationHours > 0 ? durationHours * 3600000 : auctionRules.listingLifetimeMs;
+    if (['sell', 'buy', 'buyNow', 'sellNow', 'update'].includes(action)
+      && (!Number.isSafeInteger(Number(data.qty)) || Number(data.qty) <= 0)) return fail('Укажите целое положительное количество.');
     let payload = null;
     if (action === 'sell') {
       // Ордер на продажу: товар уходит на сервер, встречные ордера на выкуп
@@ -28551,6 +28569,9 @@ io.on('connection', (socket) => {
       const validation = serverValidateWeaponRuntimeRemoval(p, row, { releaseLoadedAmmo: true });
       if (!validation.ok) return fail(validation.error || 'Предмет недоступен.');
       const records = serverCaptureWeaponRuntimeRecords(p, row, validation);
+      if (records.some(record => Number(record.condition ?? 100) < 100)
+        || (KROMKA_ITEM_INDEXES.byId[itemId]?.conditionMode === 'shared'
+          && serverPlayerItemCondition(p, itemId) < 100)) return fail('Перед продажей на рынке полностью отремонтируйте предмет.');
       serverInventoryRemove(p, itemId, qty);
       serverFinalizeWeaponRuntimeRemoval(p, row, validation);
       const placed = marketPlaceSellOrder(store, {
@@ -28602,8 +28623,10 @@ io.on('connection', (socket) => {
       // исполненному ордеру не должен пропасть из-за веса.
       let shelved = 0;
       for (const bought of placed.bought) {
-        const carryCheck = serverLimitItemsByCarry(p, data, [{ id: bought.itemId, qty: bought.qty }], { apply: false });
-        const fits = Math.max(0, Math.min(bought.qty, carryCheck.items.find(entry => entry.id === bought.itemId)?.qty || 0));
+        const carryCheck = data.deliverToInventory === false ? null
+          : serverLimitItemsByCarry(p, data, [{ id: bought.itemId, qty: bought.qty }], { apply: false });
+        const fits = carryCheck ? Math.max(0, Math.min(bought.qty,
+          carryCheck.items.find(entry => entry.id === bought.itemId)?.qty || 0)) : 0;
         if (fits > 0) {
           serverInventoryAdd(p, bought.itemId, fits);
           if (bought.records?.length) serverRestoreWeaponRuntimeRecords(p, bought.records);
@@ -28628,17 +28651,25 @@ io.on('connection', (socket) => {
       const take = Math.max(1, Math.min(want > 0 ? want : order.qty, order.qty));
       const cost = take * order.price;
       if (serverInventoryQty(p.inventory, 'silver') < cost) return fail(`Не хватает марок: нужно ${cost}.`);
-      const carryCheck = serverLimitItemsByCarry(p, data, [{ id: order.itemId, qty: take }], { apply: false });
-      if (!carryCheck.items.some(entry => entry.id === order.itemId && entry.qty >= take)) return fail('Нет места или грузоподъёмности для покупки.');
+      const carryCheck = data.deliverToInventory === false ? null
+        : serverLimitItemsByCarry(p, data, [{ id: order.itemId, qty: take }], { apply: false });
+      if (carryCheck && !carryCheck.items.some(entry => entry.id === order.itemId && entry.qty >= take))
+        return fail('Нет места или грузоподъёмности для покупки.');
       const bought = marketTakeSellOrder(store, orderId, p.characterId, take, auctionRules, now);
       if (!bought.ok) return fail(bought.error);
       serverInventoryRemove(p, 'silver', bought.cost);
-      serverInventoryAdd(p, bought.order.itemId, bought.qty);
-      serverRestoreWeaponRuntimeRecords(p, bought.records || []);
+      if (data.deliverToInventory === false) {
+        marketCreditShelfItems(store, p.characterId,
+          [{ itemId: bought.order.itemId, qty: bought.qty, records: bought.records || [], reason: 'bought' }], now);
+      } else {
+        serverInventoryAdd(p, bought.order.itemId, bought.qty);
+        serverRestoreWeaponRuntimeRecords(p, bought.records || []);
+      }
       sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
       payload = {
         ok: true, action, orderId, itemId: bought.order.itemId, qty: bought.qty,
-        price: bought.price, cost: bought.cost, tax: bought.tax
+        price: bought.price, cost: bought.cost, tax: bought.tax,
+        shelved: data.deliverToInventory === false ? bought.qty : 0
       };
     } else if (action === 'sellNow') {
       // Мгновенная продажа в конкретный ордер на выкуп.
@@ -28653,6 +28684,9 @@ io.on('connection', (socket) => {
       const validation = serverValidateWeaponRuntimeRemoval(p, row, { releaseLoadedAmmo: true });
       if (!validation.ok) return fail(validation.error || 'Предмет недоступен.');
       const records = serverCaptureWeaponRuntimeRecords(p, row, validation);
+      if (records.some(record => Number(record.condition ?? 100) < 100)
+        || (KROMKA_ITEM_INDEXES.byId[itemId]?.conditionMode === 'shared'
+          && serverPlayerItemCondition(p, itemId) < 100)) return fail('Перед продажей на рынке полностью отремонтируйте предмет.');
       serverInventoryRemove(p, itemId, take);
       serverFinalizeWeaponRuntimeRemoval(p, row, validation);
       const sold = marketTakeBuyOrder(store, orderId, p.characterId, take, records, auctionRules, now);
@@ -28668,6 +28702,16 @@ io.on('connection', (socket) => {
         ok: true, action, orderId, itemId, qty: sold.qty, price: sold.price,
         proceeds: sold.proceeds, tax: sold.tax, shelvedSilver
       };
+    } else if (action === 'update') {
+      const updated = marketUpdateOrder(store, orderId, p.characterId, {
+        qty: Number(data.qty), price: Number(data.price), durationMs,
+        availableSilver: serverInventoryQty(p.inventory, 'silver')
+      }, auctionRules, now);
+      if (!updated.ok) return fail(updated.error);
+      if (updated.balanceDelta < 0) serverInventoryRemove(p, 'silver', -updated.balanceDelta);
+      else serverPayMarketProceeds(p, store, p.characterId, updated.balanceDelta);
+      payload = { ok: true, action, orderId: updated.order?.id || '', itemId: updated.itemId,
+        setupFee: updated.setupFee, restingQty: updated.restingQty, balanceDelta: updated.balanceDelta };
     } else if (action === 'cancel') {
       const cancelled = marketCancelOrder(store, orderId, p.characterId, now);
       if (!cancelled.ok) return fail(cancelled.error);

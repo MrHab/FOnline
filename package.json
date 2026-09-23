@@ -75,7 +75,7 @@
     "check:public-events": "node tools/check-public-events.js",
     "check:world-boss": "node tools/check-world-boss.js",
     "check:lab-mechanics": "node tools/check-lab-mechanics.js",
-    "check:faction-market": "node tools/check-faction-market.js && node tools/check-city-auctions.js",
+    "check:faction-market": "node tools/check-faction-market.js && node tools/check-city-auctions.js && node tools/check-market-workflows.js",
     "check:auction-network": "node tools/check-auction-network.js",
     "check:webgl-delivery": "node tools/check-webgl-delivery.js",
     "check:webgl-payload": "node tools/check-webgl-payload.js",

@@ -32,7 +32,7 @@ assert.equal(config.taxPct, 0.08);
 assert.equal(config.premiumTaxPct, 0.04);
 assert.equal(config.rules.setupFeePct, 0.025);
 assert.deepEqual(config.rules.durationChoicesMs.map(ms => ms / HOUR), [24, 72, 168, 720], 'orders live up to 30 days');
-assert.equal(config.rules.listingLifetimeMs, 168 * HOUR);
+assert.equal(config.rules.listingLifetimeMs, 720 * HOUR);
 assert.equal(normalizeCityAuctionConfig({}).rules.taxPct, 0.08, 'defaults match the bible');
 
 // --- налог продавца -------------------------------------------------------------------

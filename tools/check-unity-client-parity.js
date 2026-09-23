@@ -559,7 +559,7 @@ assert(unityCamera.includes('private const string ZoomPrefsKey = "roa.cameraDist
   && unityCamera.includes('private const string PreviousZoomPrefsKey = "roa.cameraDistance.v3";')
   && unityCamera.includes('private const string LegacyZoomPrefsKey = "roa.cameraDistance.v2";')
   && unityCamera.includes('PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);')
-  && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud ? 0f'),
+  && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud || RoaHudCanvas.PointerOverMinimap'),
   'Unity local camera zoom must persist and ignore wheel input behind open UI');
 // Pip-Boy radio: the client exposes the four Kromka stations, and the
 // selected channel streams real records from the built library

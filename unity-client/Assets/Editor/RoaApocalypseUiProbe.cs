@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.IO;
+using System.Reflection;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
@@ -19,6 +20,7 @@ namespace RealmOfAshes.EditorTools
             RoaHudReadabilityProbe.Run();
             RoaAuthStepsLayoutProbe.Run();
             RoaMobileLayoutProbe.Run();
+            VerifyQuantitySlider();
         }
 
         [MenuItem("Realm of Ashes/Probe/Apocalypse HUD Screenshots")]
@@ -91,6 +93,28 @@ namespace RealmOfAshes.EditorTools
             finally
             {
                 UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void VerifyQuantitySlider()
+        {
+            if (Resources.Load<GameObject>("ApocalypseHud/Slider_Apocalypse_Horizontal") == null)
+                return;
+            GameObject host = new GameObject("Quantity prefab probe");
+            try
+            {
+                RoaQuantityCanvas quantity = host.AddComponent<RoaQuantityCanvas>();
+                typeof(RoaQuantityCanvas).GetMethod("EnsureBuilt",
+                    BindingFlags.Instance | BindingFlags.NonPublic).Invoke(quantity, null);
+                Transform range = host.transform.Find("QuantityCanvas/QuantitySidePanel/Panel/Range");
+                Slider slider = range != null ? range.GetComponent<Slider>() : null;
+                if (slider == null || slider.fillRect == null || slider.handleRect == null ||
+                    range.Find("Fill Area") == null || range.Find("Handle Slide Area") == null)
+                    throw new Exception("The quantity selector lost the ready-made Synty slider.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
             }
         }
 
@@ -214,6 +238,10 @@ namespace RealmOfAshes.EditorTools
                 if (actionImage.sprite != metal || !actionImage.raycastTarget ||
                     action.GetComponent<Button>().targetGraphic != actionImage)
                     throw new Exception("The Synty button lost its click target.");
+                Transform buttonVisual = action.transform.Find("ApocalypseHudButtonVisual");
+                if (buttonVisual == null || buttonVisual.GetComponent<Button>().enabled ||
+                    buttonVisual.GetComponent<Image>().raycastTarget)
+                    throw new Exception("The ready-made Synty button does not preserve the live click target.");
                 if (russian.font != RoaUiFont.Default ||
                     number.font != Resources.Load<Font>("ApocalypseHud/SairaCondensed-Regular"))
                     throw new Exception("The Synty font fallback does not preserve Cyrillic text.");

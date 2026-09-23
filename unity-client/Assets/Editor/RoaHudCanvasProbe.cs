@@ -172,6 +172,19 @@ namespace RealmOfAshes.EditorTools
                         !readyHealth.GetComponent<UnityEngine.UI.Slider>().interactable,
                         "the Synty health bar was not installed as a read-only live HUD element");
                 }
+                if (Resources.Load<GameObject>("ApocalypseHud/Button_Apocalypse_HotBar_Item_01") != null)
+                {
+                    Transform quickbar = hierarchyProbe.transform.Find(
+                        "AdaptiveGameplayHud/SafeArea/Quickbar");
+                    Require(quickbar != null, "the quickbar is missing");
+                    for (int i = 0; i < RoaQuickbar.SlotCount; i++)
+                    {
+                        Transform slot = quickbar.Find("Slot" + i);
+                        Require(slot != null && slot.GetComponent<UnityEngine.UI.Button>() != null
+                            && slot.Find("Item") != null && slot.Find("Item/Selected") != null,
+                            "quickbar slot " + i + " does not use the Synty button prefab");
+                    }
+                }
             }
             finally
             {

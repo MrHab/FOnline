@@ -333,7 +333,9 @@ namespace RealmOfAshes.Game
             panel.pivot = anchor;
             panel.anchoredPosition = position;
             panel.sizeDelta = size;
-            panel.gameObject.AddComponent<Image>().color = PanelBg;
+            Image surface = panel.gameObject.AddComponent<Image>();
+            surface.color = PanelBg;
+            RoaApocalypseUiKit.StyleWindow(surface, true);
             Outline outline = panel.gameObject.AddComponent<Outline>();
             outline.effectColor = PanelBorder;
             outline.effectDistance = new Vector2(1f, -1f);
@@ -357,14 +359,13 @@ namespace RealmOfAshes.Game
 
         private static Button UiButton(string name, RectTransform parent, string caption, int size, System.Action onClick)
         {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var image = go.AddComponent<Image>();
-            image.color = ButtonBg;
+            var go = RoaApocalypseUiKit.CreateButtonRoot(parent, name);
+            var image = go.GetComponent<Image>();
+            if (image.sprite == null) image.color = ButtonBg;
             Outline outline = go.AddComponent<Outline>();
             outline.effectColor = ButtonBorder;
             outline.effectDistance = new Vector2(1f, -1f);
-            var button = go.AddComponent<Button>();
+            var button = go.GetComponent<Button>();
             button.targetGraphic = image;
             Text label = Label("Label", (RectTransform)go.transform, size, TextAnchor.MiddleCenter, ButtonInk);
             Stretch(label.rectTransform, 8f);

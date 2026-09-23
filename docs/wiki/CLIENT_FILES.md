@@ -169,8 +169,9 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 `RoaHudDragHandle` (редактор HUD), `RoaSystemCanvas` (меню, графика,
 обучение), `RoaDialogueCanvas`, `RoaBarterCanvas`, `RoaLootCanvas`,
 `RoaStorageCanvas`, `RoaWorkbenchCanvas`, `RoaQuantityCanvas`, `RoaUiTheme`,
-`RoaApocalypseUiSkin` (оформляет создаваемые во время игры окна графикой
-`Resources/ApocalypseHud`, не меняя действие кнопок и данные сервера),
+`RoaApocalypseUiSkin` (оформляет создаваемые во время игры окна и добавляет
+визуальные слои готовых кнопок), `RoaApocalypseUiKit` (создаёт кнопки, быстрые
+слоты и рамки из локально установленного пака, сохраняя игровые обработчики),
 `RoaUiPalette`, `RoaUiFont` (Noto Sans с кириллицей для WebGL), `RoaUiScale`
 (единый CanvasScaler: 1440×810, mobile 1280×720), `RoaUiScroll`,
 `RoaUiPrefabTemplate`.
@@ -178,7 +179,7 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 Для оформления Apocalypse HUD владелец пакета импортирует
 **Synty INTERFACE - Apocalypse HUD** в `unity-client/Assets/Synty`, затем
 запускает `unity-client/Tools/install-apocalypse-hud.ps1`. Скрипт переносит
-нужные спрайты, готовые префабы кнопки слота и полосы здоровья, их настройки
+нужные спрайты и готовые префабы кнопок, слотов, полос, ползунка и виджетов HUD, их настройки
 импорта и шрифт в локальный
 `Assets/Resources/ApocalypseHud`; оба каталога исключены из публичного Git.
 После импорта можно выполнить пробы **Realm of Ashes → Probe → Apocalypse HUD

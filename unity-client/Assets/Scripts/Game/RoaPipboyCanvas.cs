@@ -198,7 +198,9 @@ namespace RealmOfAshes.Game
             GameObject focus = events != null ? events.currentSelectedGameObject : null;
             if (focus == null) return false;
             var field = focus.GetComponent<InputField>();
-            return field != null && field.isFocused;
+            if (field != null && field.isFocused) return true;
+            var tmpField = focus.GetComponent<TMPro.TMP_InputField>();
+            return tmpField != null && tmpField.isFocused;
         }
 
         public void TogglePage(Page page)
@@ -1592,7 +1594,14 @@ namespace RealmOfAshes.Game
             artRect.anchoredPosition = new Vector2(0f, 16f);
             artRect.sizeDelta = new Vector2(50f, 50f);
             var art = artRect.gameObject.AddComponent<RawImage>();
-            art.texture = RoaItemCategories.Art(row.Id);
+            Sprite apocalypseIcon = RoaApocalypseItemIcons.For(row.Id);
+            art.texture = apocalypseIcon != null ? apocalypseIcon.texture : RoaItemCategories.Art(row.Id);
+            if (apocalypseIcon != null)
+            {
+                Rect source = apocalypseIcon.textureRect;
+                art.uvRect = new Rect(source.x / art.texture.width, source.y / art.texture.height,
+                    source.width / art.texture.width, source.height / art.texture.height);
+            }
             art.raycastTarget = false;
             art.enabled = art.texture != null;
 

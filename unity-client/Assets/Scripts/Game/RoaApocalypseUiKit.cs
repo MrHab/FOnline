@@ -138,8 +138,27 @@ namespace RealmOfAshes.Game
             rect.SetAsFirstSibling();
             Button visualButton = visual.GetComponent<Button>();
             if (visualButton != null) visualButton.enabled = false;
+            CanvasGroup visualGroup = visual.GetComponent<CanvasGroup>();
+            if (visualGroup == null) visualGroup = visual.AddComponent<CanvasGroup>();
+            visualGroup.alpha = 0.84f;
             foreach (Graphic graphic in visual.GetComponentsInChildren<Graphic>(true))
                 graphic.raycastTarget = false;
+        }
+
+        public static void SyncButtonVisual(Image source)
+        {
+            if (source == null || source.GetComponent<Button>() == null) return;
+            Transform visual = source.transform.Find("ApocalypseHudButtonVisual");
+            if (visual == null) return;
+            Image plate = visual.GetComponent<Image>();
+            if (plate != null && plate.sprite != null) plate.color = source.color;
+            Transform slotPlate = visual.Find("Item/SPR_Background");
+            if (slotPlate != null)
+            {
+                Image slotImage = slotPlate.GetComponent<Image>();
+                if (slotImage != null)
+                    slotImage.color = Color.Lerp(Color.white, source.color, 0.6f);
+            }
         }
 
         public static void AddMinimapFrame(RectTransform panel)

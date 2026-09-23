@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace RealmOfAshes.Game
 {
@@ -14,6 +15,10 @@ namespace RealmOfAshes.Game
         private CanvasGroup _interactionPromptGroup;
         private Text _interactionPromptKey;
         private Text _interactionPromptAction;
+        private TextMeshProUGUI _syntyPromptObject;
+        private TextMeshProUGUI _syntyPromptAction;
+        private TextMeshProUGUI[] _syntyPromptKeys;
+        private bool _syntyPrompt;
         private string _lastInteractionPrompt = string.Empty;
 
         public bool InteractionPromptVisible
@@ -24,7 +29,9 @@ namespace RealmOfAshes.Game
 
         public string InteractionPromptText
         {
-            get { return _interactionPromptAction != null ? _interactionPromptAction.text : string.Empty; }
+            get { return _syntyPrompt ? (_syntyPromptObject != null
+                ? _syntyPromptObject.text : string.Empty)
+                : _interactionPromptAction != null ? _interactionPromptAction.text : string.Empty; }
         }
 
         public static void FormatInteractionPrompt(string hint, bool mobile, out string key, out string action)
@@ -44,6 +51,34 @@ namespace RealmOfAshes.Game
 
         private void BuildInteractionPrompt()
         {
+            GameObject prefab = Resources.Load<GameObject>(
+                "ApocalypseHud/HUD_Apocalypse_Interact_ContextSensitive_03");
+            if (prefab != null)
+            {
+                _interactionPrompt = Instantiate(prefab, _safeRoot, false);
+                _interactionPrompt.name = "InteractionPrompt";
+                RectTransform sourceRect = (RectTransform)_interactionPrompt.transform;
+                sourceRect.anchorMin = sourceRect.anchorMax = new Vector2(0.5f, 0f);
+                sourceRect.pivot = new Vector2(0.5f, 0f);
+                sourceRect.anchoredPosition = new Vector2(0f, 216f);
+                sourceRect.localScale = Vector3.one * 0.58f;
+                _syntyPromptObject = sourceRect.Find("Content/Label_Object")
+                    ?.GetComponent<TextMeshProUGUI>();
+                _syntyPromptAction = sourceRect.Find("Content/Input_Action/txtAction")
+                    ?.GetComponent<TextMeshProUGUI>();
+                _syntyPromptKeys = sourceRect.GetComponentsInChildren<TextMeshProUGUI>(true);
+                foreach (Animator animator in sourceRect.GetComponentsInChildren<Animator>(true))
+                    animator.enabled = false;
+                foreach (Graphic graphic in sourceRect.GetComponentsInChildren<Graphic>(true))
+                    graphic.raycastTarget = false;
+                _interactionPromptGroup = _interactionPrompt.AddComponent<CanvasGroup>();
+                _interactionPromptGroup.alpha = 0f;
+                _interactionPromptGroup.blocksRaycasts = false;
+                _interactionPromptGroup.interactable = false;
+                _syntyPrompt = true;
+                _interactionPrompt.SetActive(false);
+                return;
+            }
             RectTransform panel = PanelRect("InteractionPrompt", _safeRoot, new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f), new Vector2(0f, 216f), new Vector2(470f, 46f));
             _interactionPrompt = panel.gameObject;
@@ -88,7 +123,8 @@ namespace RealmOfAshes.Game
             if (_interactionPrompt == null) return;
             RectTransform rect = (RectTransform)_interactionPrompt.transform;
             rect.anchoredPosition = new Vector2(0f, mobile ? 302f : 216f);
-            rect.localScale = Vector3.one * (mobile ? 0.86f : 1f);
+            rect.localScale = Vector3.one * (_syntyPrompt
+                ? (mobile ? 0.48f : 0.58f) : (mobile ? 0.86f : 1f));
         }
 
         private void RefreshInteractionPrompt(bool worldHud)
@@ -107,8 +143,24 @@ namespace RealmOfAshes.Game
             {
                 bool mobile = _mobile != null && _mobile.ControlsEnabled;
                 FormatInteractionPrompt(hint, mobile, out string key, out string action);
-                _interactionPromptKey.text = key;
-                _interactionPromptAction.text = action;
+                if (_syntyPrompt)
+                {
+                    int colon = action.IndexOf(':');
+                    if (_syntyPromptObject != null)
+                        _syntyPromptObject.text = colon >= 0
+                            ? action.Substring(colon + 1).Trim() : action;
+                    if (_syntyPromptAction != null)
+                        _syntyPromptAction.text = colon >= 0
+                            ? action.Substring(0, colon).Trim() : "Взаимодействовать";
+                    foreach (TextMeshProUGUI label in _syntyPromptKeys)
+                        if (label != null && label.name == "Label_Input_Key")
+                            label.text = key;
+                }
+                else
+                {
+                    _interactionPromptKey.text = key;
+                    _interactionPromptAction.text = action;
+                }
                 if (!_interactionPrompt.activeSelf)
                 {
                     _interactionPrompt.SetActive(true);
@@ -129,7 +181,9 @@ namespace RealmOfAshes.Game
             float target = show ? 1f : 0f;
             _interactionPromptGroup.alpha = Mathf.MoveTowards(_interactionPromptGroup.alpha, target,
                 Time.unscaledDeltaTime * 8f);
-            float layoutScale = _mobile != null && _mobile.ControlsEnabled ? 0.86f : 1f;
+            float layoutScale = _syntyPrompt
+                ? (_mobile != null && _mobile.ControlsEnabled ? 0.48f : 0.58f)
+                : (_mobile != null && _mobile.ControlsEnabled ? 0.86f : 1f);
             _interactionPrompt.transform.localScale = Vector3.Lerp(_interactionPrompt.transform.localScale,
                 Vector3.one * layoutScale, 1f - Mathf.Exp(-12f * Time.unscaledDeltaTime));
             if (!show && _interactionPromptGroup.alpha <= 0.001f) _interactionPrompt.SetActive(false);

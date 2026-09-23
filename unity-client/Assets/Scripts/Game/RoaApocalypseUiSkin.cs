@@ -80,6 +80,7 @@ namespace RealmOfAshes.Game
                     image.color = ButtonTint(image.color);
                 else if (image.sprite == _background && IsLegacyGreen(image.color))
                     image.color = SurfaceTint(image.color);
+                RoaApocalypseUiKit.SyncButtonVisual(image);
                 return;
             }
             if (image.name == FrameName || image.color.a < 0.1f ||
@@ -165,6 +166,7 @@ namespace RealmOfAshes.Game
                     : ButtonTint(image.color);
                 if (!quickSlot && width >= 110f && height >= 26f)
                     AddActionIcon(image.rectTransform, name, height);
+                RoaApocalypseUiKit.SyncButtonVisual(image);
                 _styledImages.Add(image);
                 return;
             }

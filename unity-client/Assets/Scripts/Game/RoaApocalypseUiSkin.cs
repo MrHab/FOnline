@@ -22,7 +22,6 @@ namespace RealmOfAshes.Game
         private static Sprite _minimapBox;
         private static Sprite _smallBox;
         private static Sprite _sliderTrack;
-        private static Sprite _thinFrame;
         private static Sprite _bar;
         private static Sprite _playerMarker;
         private static Font _displayFont;
@@ -220,7 +219,7 @@ namespace RealmOfAshes.Game
 
         private static void AddFrame(RectTransform parent)
         {
-            Sprite frame = Load(ref _thinFrame, "SPR_HUD_Apocalypse_Frame_Large_03_Clean");
+            Sprite frame = RoaApocalypseUiKit.FrameSprite;
             if (frame == null || parent.Find(FrameName) != null) return;
             var frameObject = new GameObject(FrameName, typeof(RectTransform), typeof(Image));
             RectTransform rect = frameObject.GetComponent<RectTransform>();

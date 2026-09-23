@@ -235,6 +235,8 @@ namespace RealmOfAshes.EditorTools
                 if (panelImage.sprite != background || panelImage.type != Image.Type.Sliced ||
                     panel.transform.Find("ApocalypseHudFrame") == null)
                     throw new Exception("The inventory panel did not receive the Synty background and frame.");
+                if (panel.transform.Find("ApocalypseHudFrame").GetComponent<Image>().sprite.border.x < 16f)
+                    throw new Exception("The Synty frame must preserve its rim when the window resizes.");
                 if (actionImage.sprite != metal || !actionImage.raycastTarget ||
                     action.GetComponent<Button>().targetGraphic != actionImage)
                     throw new Exception("The Synty button lost its click target.");

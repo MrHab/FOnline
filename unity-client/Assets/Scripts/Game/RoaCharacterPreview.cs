@@ -134,6 +134,7 @@ namespace RealmOfAshes.Game
         public bool RenderNow()
         {
             if (!_visible || _camera == null || _texture == null || !IsReady) return false;
+            _modelObject?.GetComponentInChildren<RoaApocalypseCharacterSkin>(true)?.SyncPose();
             _camera.targetTexture = _texture;
             if (GraphicsSettings.currentRenderPipeline != null)
             {

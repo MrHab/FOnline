@@ -132,6 +132,7 @@ namespace RealmOfAshes.Game
         private RoaWeaponView _weapon;
         private RoaOffhandWeaponView _offhandWeapon;
         private RoaEquipmentView _equipment;
+        private RoaApocalypseCharacterSkin _apocalypseSkin;
         // Транспорт под седоком. Пока _riding, клип — покой, а поверх него поза
         // седока (RoaRiderPose) с весом _riderWeight; при спешивании вес плавно
         // уходит, а отпущенный транспорт сам доигрывает уход и удаляется.
@@ -1052,6 +1053,15 @@ namespace RealmOfAshes.Game
             PrepareAppearance();
             ApplyAppearanceVisuals();
 
+            GameObject apocalypseBody = RoaApocalypseModels.Character(key);
+            if (_modelRoot != null && apocalypseBody != null)
+            {
+                _apocalypseSkin = GetComponent<RoaApocalypseCharacterSkin>();
+                if (_apocalypseSkin == null)
+                    _apocalypseSkin = gameObject.AddComponent<RoaApocalypseCharacterSkin>();
+                _apocalypseSkin.Bind(apocalypseBody);
+            }
+
             _animation.wrapMode = WrapMode.Loop;
             Play("idle");
             Ready = true;
@@ -1148,6 +1158,7 @@ namespace RealmOfAshes.Game
 
         private void NotifyVisualChanged()
         {
+            if (_apocalypseSkin != null) _apocalypseSkin.HideLegacyVisuals();
             RoaVisibilityGate gate = GetComponentInParent<RoaVisibilityGate>();
             if (gate != null) gate.Invalidate();
             if (OnVisualChanged != null) OnVisualChanged();

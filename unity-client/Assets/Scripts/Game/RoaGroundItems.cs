@@ -344,8 +344,16 @@ namespace RealmOfAshes.Game
                     return;
                 }
 
+
+                GameObject packPrefab = kind == "weapon" ? RoaApocalypseModels.Weapon(itemId)
+                    : kind == "vehicle" ? RoaApocalypseModels.Vehicle(itemId)
+                    : RoaApocalypseModels.Item(itemId);
+                GameObject packVisual = RoaApocalypseVisuals.AttachStatic(holder.transform, packPrefab);
+
                 item.Visual = holder;
-                item.VisualRenderers = holder.GetComponentsInChildren<Renderer>(true);
+                // Visibility updates must not re-enable the hidden legacy meshes.
+                item.VisualRenderers = (packVisual != null ? packVisual : holder)
+                    .GetComponentsInChildren<Renderer>(true);
                 item.VisualFailures = 0;
                 item.VisualRetryAt = 0f;
                 ApplyVisibility(item);

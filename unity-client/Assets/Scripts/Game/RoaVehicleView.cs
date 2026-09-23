@@ -182,6 +182,8 @@ namespace RealmOfAshes.Game
             // Ось колеса стоит на высоте радиуса: земля — начало модели.
             _wheelRadius = Mathf.Max(0.12f, transform.InverseTransformPoint(_wheelRear.position).y);
 
+            RoaApocalypseVisuals.AttachStatic(model, RoaApocalypseModels.Vehicle(ItemId));
+
             foreach (Renderer renderer in model.GetComponentsInChildren<Renderer>(true))
             {
                 renderer.shadowCastingMode = ShadowCastingMode.On;

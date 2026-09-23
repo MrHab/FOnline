@@ -71,7 +71,11 @@ namespace RealmOfAshes.Game
                 holder.transform.SetParent(parent, false);
                 if (await import.InstantiateMainSceneAsync(holder.transform)
                     && holder != null && parent != null
-                    && holder.GetComponentsInChildren<Renderer>(true).Length > 0) return holder;
+                    && holder.GetComponentsInChildren<Renderer>(true).Length > 0)
+                {
+                    RoaApocalypseVisuals.AttachStatic(holder.transform, RoaApocalypseModels.Item(itemId));
+                    return holder;
+                }
             }
             catch (MissingReferenceException) { /* Owner disappeared during import. */ }
             catch (Exception error) { Debug.LogWarning("[ROA] Item model " + itemId + ": " + error.Message); }

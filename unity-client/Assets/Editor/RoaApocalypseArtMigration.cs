@@ -1,0 +1,416 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Kromka.Authoring;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+namespace RealmOfAshes.EditorTools
+{
+    /// <summary>
+    /// Replaces presentation only. Authored ids, transforms, colliders, spawn anchors and
+    /// server data remain on their original objects. The purchased Synty pack stays local.
+    /// </summary>
+    public static class RoaApocalypseArtMigration
+    {
+        private const string PackRoot = "Assets/Synty/PolygonApocalypse/";
+        private const string Pack = PackRoot + "Prefabs/";
+        private const string ReplacementName = "PolygonApocalypse_Visual";
+        private const string SceneRoot = "Assets/Scenes/Kromka/Locations";
+        private const string MapScene = "Assets/Scenes/Kromka/KromkaGlobalMap.unity";
+        private const string RecoveredRoot = "Assets/Prefabs/Kromka/RecoveredEnvironment";
+
+        // The left side is the game's authored model key; the right side is a Synty prefab.
+        private static readonly Dictionary<string, string> Models = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "armory_rack", "Props/SM_Prop_Workbench_01" },
+            { "asphalt_slab", "Environment/SM_Env_Road_01" },
+            { "barrel_cluster", "Props/SM_Prop_BarrelStack_01" },
+            { "brahmin_pen", "Props/SM_Prop_Fence_Wood_Straight_01" },
+            { "campfire_rest", "Props/SM_Prop_BurnPile_01" },
+            { "car_wreck", "Props/SM_Prop_Car_Wrecked_01" },
+            { "cargo_stack", "Props/SM_Prop_Container_01" },
+            { "concrete_wall", "Props/SM_Prop_Barrier_Concrete_01" },
+            { "cot_bed", "Props/SM_Prop_Bedframe_01" },
+            { "craft_station_ammo", "Props/SM_Prop_Workbench_01" },
+            { "craft_station_chem", "Props/SM_Prop_Workbench_01" },
+            { "craft_station_energy", "Props/SM_Prop_Generator_01" },
+            { "craft_station_repair", "Props/SM_Prop_Workbench_01" },
+            { "craft_station_tools", "Props/SM_Prop_Workbench_01" },
+            { "craft_station_weapon", "Props/SM_Prop_Workbench_01" },
+            { "dead_tree_a", "Environment/SM_Env_Tree_Dead_01" },
+            { "dead_tree_b", "Environment/SM_Env_Tree_Dead_02" },
+            { "dead_tree_c", "Environment/SM_Env_Tree_Dead_03" },
+            { "deadwood", "Environment/SM_Env_Tree_Dead_01" },
+            { "dry_bush", "Environment/SM_Env_Bushes_01" },
+            { "fence_segment", "Props/SM_Prop_Fence_Wood_Straight_01" },
+            { "garden_patch", "Environment/SM_Env_Overgrowth_01" },
+            { "highway_sign", "Props/SM_Prop_Sign_Stop_01" },
+            { "job_board", "Props/SM_Prop_Blackboard_01" },
+            { "oil_pump_jack", "Props/SM_Prop_Gaspump_01" },
+            { "ore_outcrop", "Environment/SM_Env_Rock_01" },
+            { "perimeter_debris", "Props/SM_Prop_TrashPile_01" },
+            { "relay_antenna", "Buildings/SM_Bld_RadioTower_01" },
+            { "road_tile", "Environment/SM_Env_Road_Dirt_Straight_01" },
+            { "roadblock_barricade", "Props/SM_Prop_Barricade_01" },
+            { "rubble_rock", "Environment/SM_Env_Rock_02" },
+            { "ruined_billboard", "Props/SM_Prop_Billboard_Sign_01" },
+            { "rust_barrel_v1", "Props/SM_Prop_Barrel_Old_01" },
+            { "scrap_heap", "Props/SM_Prop_TrashPile_02" },
+            { "scrap_wall_segment", "Props/SM_Prop_Wall_Junk_01" },
+            { "scrap_watch_tower", "Buildings/SM_Bld_RadioTower_01" },
+            { "storage_chest", "Props/SM_Prop_Crate_01" },
+            { "storage_lean_to", "Buildings/SM_Bld_Junk_Shelter_01" },
+            { "tire_stack", "Props/SM_Prop_Tire_Pile_01" },
+            { "trade_machine", "Props/SM_Prop_VendingMachine_01" },
+            { "trader_awning", "Buildings/SM_Bld_Market_Medium_01" },
+            { "utility_pole", "Props/SM_Prop_Powerpole_01" },
+            { "wasteland_shack", "Buildings/SM_Bld_Junk_Shelter_02" },
+            { "watch_post", "Buildings/SM_Bld_RadioTower_01" },
+            { "water_tank", "Buildings/SM_Bld_WaterTank_01" },
+            { "workshop_bench", "Props/SM_Prop_Workbench_01" }
+        };
+
+        internal static IEnumerable<KeyValuePair<string, string>> EnvironmentModels => Models;
+
+        [MenuItem("Realm of Ashes/PolygonApocalypse/Replace world visuals")]
+        public static void MigrateAll()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Visual migration requires Edit Mode.");
+            ValidatePack();
+            int prefabCount = MigrateRecoveredPrefabs();
+            int mapCount = MigrateScene(MapScene, true);
+            int locationCount = 0;
+            int visualCount = mapCount;
+            foreach (string scene in AssetDatabase.FindAssets("t:Scene", new[] { SceneRoot })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(path => path.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(path => path, StringComparer.Ordinal))
+            {
+                visualCount += MigrateScene(scene, false);
+                locationCount++;
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log("[ROA APOCALYPSE] " + prefabCount + " shared prefabs, " + locationCount
+                + " location scenes, " + visualCount + " scene visuals migrated.");
+        }
+
+        [MenuItem("Realm of Ashes/PolygonApocalypse/Preview map and tutorial")]
+        public static void MigratePreview()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Visual migration requires Edit Mode.");
+            ValidatePack();
+            int prefabs = MigrateRecoveredPrefabs();
+            int map = MigrateScene(MapScene, true);
+            int tutorial = MigrateScene(SceneRoot + "/tutorialCaravanYard.unity", false);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[ROA APOCALYPSE] Preview: " + prefabs + " prefabs, "
+                + map + " map visuals, " + tutorial + " tutorial visuals.");
+        }
+
+        // Invoked by an explicit Library request after script compilation. This avoids
+        // interrupting the editor during its large first import of the licensed pack.
+        [InitializeOnLoadMethod]
+        private static void MigrateIfRequested()
+        {
+            string request = Path.Combine(Application.dataPath, "../Library/roa-apocalypse-migrate.request");
+            string preview = Path.Combine(Application.dataPath, "../Library/roa-apocalypse-preview.request");
+            if (!File.Exists(request) && !File.Exists(preview)) return;
+            EditorApplication.update += ProcessRequest;
+        }
+
+        private static void ProcessRequest()
+        {
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+            EditorApplication.update -= ProcessRequest;
+            string request = Path.Combine(Application.dataPath, "../Library/roa-apocalypse-migrate.request");
+            string preview = Path.Combine(Application.dataPath, "../Library/roa-apocalypse-preview.request");
+            try
+            {
+                if (File.Exists(request))
+                {
+                    File.Delete(request);
+                    MigrateAll();
+                }
+                else if (File.Exists(preview))
+                {
+                    File.Delete(preview);
+                    MigratePreview();
+                }
+            }
+            catch (Exception error)
+            {
+                Debug.LogException(error);
+            }
+        }
+
+        private static void ValidatePack()
+        {
+            foreach (string name in Models.Values.Distinct(StringComparer.Ordinal))
+                if (Load(name) == null)
+                    throw new InvalidOperationException("PolygonApocalypse prefab is missing: " + name);
+        }
+
+        private static GameObject Load(string name) =>
+            AssetDatabase.LoadAssetAtPath<GameObject>(Pack + name + ".prefab");
+
+        private static int MigrateRecoveredPrefabs()
+        {
+            int changed = 0;
+            foreach (KeyValuePair<string, string> pair in Models)
+            {
+                string path = RecoveredRoot + "/" + pair.Key + ".prefab";
+                if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null) continue;
+                GameObject root = PrefabUtility.LoadPrefabContents(path);
+                try
+                {
+                    if (!ReplaceVisual(root.transform, pair.Value)) continue;
+                    PrefabUtility.SaveAsPrefabAsset(root, path);
+                    changed++;
+                }
+                finally { PrefabUtility.UnloadPrefabContents(root); }
+            }
+            return changed;
+        }
+
+        private static int MigrateScene(string path, bool globalMap)
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null) return 0;
+            Scene existing = SceneManager.GetSceneByPath(path);
+            bool alreadyOpen = existing.IsValid() && existing.isLoaded;
+            Scene scene = alreadyOpen ? existing : EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+            try
+            {
+                int changed = globalMap ? MigrateMap(scene) : MigrateLocation(scene);
+                if (changed > 0)
+                {
+                    EditorSceneManager.MarkSceneDirty(scene);
+                    if (!EditorSceneManager.SaveScene(scene))
+                        throw new IOException("Could not save " + path);
+                }
+                return changed;
+            }
+            finally
+            {
+                if (!alreadyOpen) EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        private static int MigrateLocation(Scene scene)
+        {
+            int changed = 0;
+            foreach (GameObject top in scene.GetRootGameObjects())
+            foreach (KromkaPlacedObjectAuthoring marker in top.GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true))
+            {
+                if (marker.Role == "terrain" || marker.Role == "anomaly") continue;
+                string key = marker.ServerArchetypeId;
+                string model = Models.TryGetValue(key, out string exact) ? exact : Guess(key + " " + marker.name, marker.Role);
+                if (model != null && ReplaceVisual(marker.transform, model, 35f)) changed++;
+            }
+            foreach (GameObject top in scene.GetRootGameObjects())
+            foreach (MeshRenderer renderer in top.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (renderer == null || !renderer.enabled || InPack(renderer.gameObject)
+                    || UnderTerrain(renderer.transform) || UnderReplacement(renderer.transform)) continue;
+                string model = GuessLocationAccent(Context(renderer.transform));
+                if (model != null && ReplaceVisual(renderer.transform, model, 30f))
+                    changed++;
+            }
+            return changed;
+        }
+
+        private static bool UnderTerrain(Transform node)
+        {
+            for (Transform item = node; item != null; item = item.parent)
+            {
+                KromkaPlacedObjectAuthoring marker = item.GetComponent<KromkaPlacedObjectAuthoring>();
+                if (marker != null && marker.Role == "terrain") return true;
+            }
+            return false;
+        }
+
+        private static bool UnderReplacement(Transform node)
+        {
+            for (Transform item = node; item != null; item = item.parent)
+                if (item.name == ReplacementName) return true;
+            return false;
+        }
+
+        private static int MigrateMap(Scene scene)
+        {
+            int changed = 0;
+            foreach (GameObject top in scene.GetRootGameObjects())
+            foreach (MeshRenderer renderer in top.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (renderer == null || !renderer.enabled || InPack(renderer.gameObject)) continue;
+                string context = Context(renderer.transform);
+                if (UnderNamedMapBase(renderer.transform))
+                    continue;
+                string model = GuessMapAccent(context);
+                if (model != null && ReplaceVisual(renderer.transform, model, 30f)) changed++;
+            }
+            return changed;
+        }
+
+        private static bool UnderNamedMapBase(Transform node)
+        {
+            for (Transform item = node; item != null; item = item.parent)
+            {
+                string name = item.name;
+                if (name.IndexOf("SelectionSurface", StringComparison.OrdinalIgnoreCase) >= 0
+                    || name.IndexOf("Terrain_EDITABLE", StringComparison.OrdinalIgnoreCase) >= 0
+                    || name.IndexOf("ContinuousRelief", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            }
+            return false;
+        }
+
+        private static string Context(Transform node)
+        {
+            var names = new List<string>();
+            for (Transform item = node; item != null && names.Count < 5; item = item.parent)
+                names.Add(item.name);
+            return string.Join(" ", names);
+        }
+
+        // The world map also contains authored relief, roads, water and selection
+        // meshes. These are surfaces, not interchangeable scenery props.
+        private static string GuessMapAccent(string context)
+        {
+            string name = context.ToLowerInvariant();
+            if (Has(name, "tree", "deadwood", "shelterbelt")) return "Environment/SM_Env_Tree_Dead_01";
+            if (Has(name, "bush", "vegetation")) return "Environment/SM_Env_Bushes_01";
+            if (Has(name, "vehicle", "truck", "car_wreck", "bus")) return "Props/SM_Prop_Car_Wrecked_01";
+            if (Has(name, "barrel", "drum")) return "Props/SM_Prop_Barrel_Old_01";
+            if (Has(name, "crate", "container")) return "Props/SM_Prop_Container_01";
+            if (Has(name, "sign", "billboard")) return "Props/SM_Prop_Billboard_Sign_01";
+            if (Has(name, "fence", "barricade")) return "Props/SM_Prop_Barricade_01";
+            if (Has(name, "antenna", "radio_tower")) return "Buildings/SM_Bld_RadioTower_01";
+            if (Has(name, "powerpole", "utilitypole")) return "Props/SM_Prop_Powerpole_01";
+            if (Has(name, "shack", "shelter")) return "Buildings/SM_Bld_Junk_Shelter_01";
+            if (Has(name, "water_tank")) return "Buildings/SM_Bld_WaterTank_01";
+            return null;
+        }
+
+        private static string GuessLocationAccent(string context)
+        {
+            string name = context.ToLowerInvariant();
+            if (Has(name, "ground", "surface", "terrain", "water", "river", "lake",
+                    "road", "route", "floor", "foundation", "horizon")) return null;
+            return GuessMapAccent(context) ?? (Has(name, "rock", "boulder", "ore")
+                ? "Environment/SM_Env_Rock_01" : null);
+        }
+
+        private static string Guess(string text, string role)
+        {
+            string name = (text + " " + role).ToLowerInvariant();
+            if (Has(name, "road", "route", "asphalt", "highway", "tract")) return "Environment/SM_Env_Road_Dirt_Straight_01";
+            if (Has(name, "rail", "track")) return "Environment/SM_Env_Road_Bare_01";
+            if (Has(name, "tower", "antenna", "mast", "radio")) return "Buildings/SM_Bld_RadioTower_01";
+            if (Has(name, "pylon", "powerpole", "pole")) return "Props/SM_Prop_Powerpole_01";
+            if (Has(name, "wall", "fence", "barrier", "fortification")) return "Props/SM_Prop_Wall_Junk_01";
+            if (Has(name, "bridge", "walkway")) return "Environment/SM_Env_Bridge_01";
+            if (Has(name, "tank", "reservoir", "vat")) return "Buildings/SM_Bld_WaterTank_01";
+            if (Has(name, "pipe", "culvert", "drain")) return "Environment/SM_Env_StormCanal_Pipe_01";
+            if (Has(name, "machine", "factory", "industrial", "furnace", "processing")) return "Buildings/SM_Bld_Industrial_Small_01";
+            if (Has(name, "house", "shelter", "shack", "module", "settlement")) return "Buildings/SM_Bld_Junk_Shelter_01";
+            if (Has(name, "market", "trader", "awning", "canopy")) return "Buildings/SM_Bld_Market_Medium_01";
+            if (Has(name, "vehicle", "truck", "car", "bus", "wreck")) return "Props/SM_Prop_Car_Wrecked_01";
+            if (Has(name, "tree", "deadwood", "shelterbelt")) return "Environment/SM_Env_Tree_Dead_01";
+            if (Has(name, "bush", "grass", "garden", "vegetation")) return "Environment/SM_Env_Bushes_01";
+            if (Has(name, "rock", "ore", "cliff", "mountain", "boulder", "strata", "slag")) return "Environment/SM_Env_Rock_01";
+            if (Has(name, "barrel", "drum")) return "Props/SM_Prop_Barrel_Old_01";
+            if (Has(name, "crate", "cargo", "container", "depot")) return "Props/SM_Prop_Container_01";
+            if (Has(name, "rubble", "ruin", "debris", "scrap", "junk")) return "Props/SM_Prop_Rubble_Concrete_01";
+            if (Has(name, "ground", "surface", "dirt", "sand", "soil")) return "Environment/SM_Env_Dirt_Flat_01";
+            if (Has(name, "sign", "billboard")) return "Props/SM_Prop_Billboard_Sign_01";
+            if (Has(name, "bench", "station", "workshop")) return "Props/SM_Prop_Workbench_01";
+            if (Has(name, "building", "city", "facility", "structure")) return "Buildings/SM_Bld_Industrial_Small_01";
+            return "Props/SM_Prop_TrashPile_01";
+        }
+
+        private static bool Has(string text, params string[] fragments) =>
+            fragments.Any(fragment => text.Contains(fragment));
+
+        private static bool InPack(GameObject value)
+        {
+            GameObject source = PrefabUtility.GetCorrespondingObjectFromSource(value);
+            string path = source != null ? AssetDatabase.GetAssetPath(source) : string.Empty;
+            return path.StartsWith(PackRoot, StringComparison.Ordinal);
+        }
+
+        private static bool ReplaceVisual(Transform root, string model, float maxExtent = float.PositiveInfinity)
+        {
+            if (root.Find(ReplacementName) != null) return false;
+            GameObject prefab = Load(model);
+            if (prefab == null) throw new InvalidOperationException("Missing PolygonApocalypse model: " + model);
+            Renderer[] old = root.GetComponentsInChildren<Renderer>(true)
+                .Where(renderer => renderer is MeshRenderer || renderer is SkinnedMeshRenderer)
+                .Where(renderer => renderer.enabled && !InPack(renderer.gameObject))
+                .Where(renderer => root.GetComponent<KromkaPlacedObjectAuthoring>() == null
+                    || renderer.GetComponentInParent<KromkaPlacedObjectAuthoring>()?.transform == root)
+                .ToArray();
+            if (old.Length == 0) return false;
+            Bounds before = LocalBounds(root, old);
+            if (before.size.x > maxExtent || before.size.y > maxExtent
+                || before.size.z > maxExtent) return false;
+            GameObject art = (GameObject)PrefabUtility.InstantiatePrefab(prefab, root.gameObject.scene);
+            art.name = ReplacementName;
+            art.transform.SetParent(root, false);
+            art.transform.localPosition = Vector3.zero;
+            art.transform.localRotation = Quaternion.identity;
+            art.transform.localScale = Vector3.one;
+            foreach (Collider collider in art.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+            Renderer[] fresh = art.GetComponentsInChildren<Renderer>(true)
+                .Where(renderer => renderer.enabled && renderer.gameObject.activeSelf)
+                .ToArray();
+            Bounds source = LocalBounds(root, fresh);
+            if (source.size.sqrMagnitude < 0.000001f)
+            {
+                UnityEngine.Object.DestroyImmediate(art);
+                throw new InvalidOperationException("PolygonApocalypse prefab has no usable bounds: " + model);
+            }
+            Vector3 size = new Vector3(
+                Mathf.Clamp(before.size.x / Mathf.Max(source.size.x, 0.01f), 0.02f, 80f),
+                Mathf.Clamp(before.size.y / Mathf.Max(source.size.y, 0.01f), 0.02f, 80f),
+                Mathf.Clamp(before.size.z / Mathf.Max(source.size.z, 0.01f), 0.02f, 80f));
+            art.transform.localScale = size;
+            Bounds fitted = LocalBounds(root, fresh);
+            art.transform.localPosition = before.center - fitted.center;
+            foreach (Renderer renderer in old) renderer.enabled = false;
+            return true;
+        }
+
+        private static Bounds LocalBounds(Transform root, IEnumerable<Renderer> renderers)
+        {
+            Bounds result = default;
+            bool any = false;
+            foreach (Renderer renderer in renderers)
+            {
+                MeshFilter filter = renderer.GetComponent<MeshFilter>();
+                Mesh mesh = filter != null ? filter.sharedMesh : null;
+                Bounds source = renderer is SkinnedMeshRenderer skin
+                    ? skin.localBounds
+                    : mesh != null ? mesh.bounds : renderer.localBounds;
+                Matrix4x4 toRoot = root.worldToLocalMatrix * renderer.transform.localToWorldMatrix;
+                Vector3 min = source.min;
+                Vector3 max = source.max;
+                for (int x = 0; x < 2; x++)
+                for (int y = 0; y < 2; y++)
+                for (int z = 0; z < 2; z++)
+                {
+                    Vector3 point = toRoot.MultiplyPoint3x4(new Vector3(
+                        x == 0 ? min.x : max.x, y == 0 ? min.y : max.y, z == 0 ? min.z : max.z));
+                    if (!any) { result = new Bounds(point, Vector3.zero); any = true; }
+                    else result.Encapsulate(point);
+                }
+            }
+            return result;
+        }
+    }
+}

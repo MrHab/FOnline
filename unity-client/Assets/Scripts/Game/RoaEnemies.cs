@@ -1295,7 +1295,7 @@ namespace RealmOfAshes.Game
             }
             else
             {
-                _ = LoadModelGuarded(enemy, url);
+                _ = LoadModelGuarded(enemy, url, key);
             }
 
             return enemy;
@@ -1399,11 +1399,11 @@ namespace RealmOfAshes.Game
         /// в такой задаче никто не наблюдает: без этого перехвата сбой выглядит
         /// как «модель просто не появилась», без единой строки в консоли.
         /// </summary>
-        private async Task LoadModelGuarded(Enemy enemy, string url)
+        private async Task LoadModelGuarded(Enemy enemy, string url, string modelKey)
         {
             try
             {
-                await LoadModel(enemy, url);
+                await LoadModel(enemy, url, modelKey);
             }
             catch (MissingReferenceException)
             {
@@ -1416,7 +1416,7 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private async Task LoadModel(Enemy enemy, string url)
+        private async Task LoadModel(Enemy enemy, string url, string modelKey)
         {
             GltfImport import = await LoadCached(url);
 
@@ -1430,22 +1430,32 @@ namespace RealmOfAshes.Game
 
             if (enemy.Root == null) return;
 
-            if (!await import.InstantiateMainSceneAsync(enemy.Root.transform))
+            var model = new GameObject("EnemyModel:" + modelKey);
+            model.transform.SetParent(enemy.Root.transform, false);
+            if (!await import.InstantiateMainSceneAsync(model.transform))
             {
+                Destroy(model);
                 Debug.LogError("[ROA] Экземпляр модели существа не создан: " + url);
                 return;
             }
 
-            if (enemy.Root == null) return;
+            if (enemy.Root == null) { Destroy(model); return; }
 
             // У части существ клипы свои, а часть моделей — статичный меш.
-            enemy.Animation = enemy.Root.GetComponentInChildren<Animation>();
-            if (enemy.Animation == null) return;
-
-            enemy.Animation.wrapMode = WrapMode.Loop;
-            PlayClip(enemy, enemy.Dead ? "death" : "idle");
+            enemy.Animation = model.GetComponentInChildren<Animation>();
+            float pitch;
+            GameObject packPrefab = RoaApocalypseModels.Creature(modelKey, out pitch);
+            if (packPrefab != null)
+                RoaApocalypseVisuals.AttachStatic(model.transform, packPrefab, 0f, pitch);
+            else Debug.LogWarning("[ROA] No PolygonApocalypse creature model for " + modelKey);
+            if (enemy.Animation != null)
+            {
+                enemy.Animation.wrapMode = WrapMode.Loop;
+                PlayClip(enemy, enemy.Dead ? "death" : "idle");
+            }
 
             if (enemy.CarriesWeapon) await RefreshCreatureWeapon(enemy);
+            enemy.Gate?.Invalidate();
         }
 
         // Тип телосложения для брони существа: под её кости подбирается ближайший
@@ -1528,6 +1538,9 @@ namespace RealmOfAshes.Game
             if (grip != null)
                 holder.transform.localPosition =
                     -holder.transform.InverseTransformPoint(grip.position);
+
+            RoaApocalypseVisuals.AttachStatic(holder.transform,
+                RoaApocalypseModels.Weapon(modelId), 180f);
 
             enemy.WeaponHolder = holder;
         }

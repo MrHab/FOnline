@@ -4,7 +4,7 @@ namespace RealmOfAshes.World
 {
     /// <summary>
     /// Curated environment models shipped through Resources. Keeping the palette in a
-    /// ScriptableObject lets runtime locations reuse the same approved MEP prefabs without
+    /// ScriptableObject lets runtime locations reuse the same PolygonApocalypse prefabs without
     /// scene references, AssetDatabase calls or generated substitute meshes.
     /// </summary>
     public sealed class RoaEnvironmentPalette : ScriptableObject

@@ -176,6 +176,9 @@ namespace RealmOfAshes.EditorTools
                     TextureFormat.RGBA32, false);
                 readback.ReadPixels(new Rect(0, 0, preview.Texture.width, preview.Texture.height), 0, 0);
                 readback.Apply(false, false);
+                string apocalypseCapture = System.IO.Path.GetFullPath(System.IO.Path.Combine(
+                    Application.dataPath, "../Temp/ApocalypseCharacterPreview.png"));
+                System.IO.File.WriteAllBytes(apocalypseCapture, readback.EncodeToPNG());
 
                 Color32[] pixels = readback.GetPixels32();
                 int nonBackground = 0;
@@ -264,6 +267,17 @@ namespace RealmOfAshes.EditorTools
                     BindingFlags.Instance | BindingFlags.NonPublic);
                 Check(runtimeLateUpdate != null, "runtime LateUpdate персонажа недоступен");
                 runtimeLateUpdate.Invoke(loaded, null);
+                if (Application.isPlaying)
+                {
+                    Check(preview.RenderNow(), "камера не отрисовала броню PolygonApocalypse");
+                    RenderTexture.active = preview.Texture;
+                    var armorReadback = new Texture2D(preview.Texture.width, preview.Texture.height, TextureFormat.RGBA32, false);
+                    armorReadback.ReadPixels(new Rect(0, 0, preview.Texture.width, preview.Texture.height), 0, 0);
+                    armorReadback.Apply();
+                    System.IO.File.WriteAllBytes(System.IO.Path.GetFullPath(System.IO.Path.Combine(
+                        Application.dataPath, "../Temp/ApocalypseArmoredPreview.png")), armorReadback.EncodeToPNG());
+                    UnityEngine.Object.Destroy(armorReadback);
+                }
                 FieldInfo weaponField = typeof(RoaCharacterView).GetField("_weapon",
                     BindingFlags.Instance | BindingFlags.NonPublic);
                 RoaWeaponView weapon = weaponField?.GetValue(loaded) as RoaWeaponView;

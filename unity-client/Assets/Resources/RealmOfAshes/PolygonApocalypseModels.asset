@@ -1,0 +1,364 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca78b8a08dcf6d5439d390c2c372a6a6, type: 3}
+  m_Name: PolygonApocalypseModels
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.Game.RoaApocalypseModels
+  male: {fileID: 1109315531109580, guid: 978e4e824620a0f40a841eccaf23a994, type: 3}
+  female: {fileID: 1612642967817046, guid: 145e4b15636b57d47bb0d069eb16834f, type: 3}
+  maleSoldier: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+  femaleSoldier: {fileID: 1975523430147412, guid: b1b8d24198898074e9e7a0a14af7ba95, type: 3}
+  maleHazmat: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
+  maleRiot: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
+  backpackAttachment: {fileID: 1564870888801122, guid: ac097a787546bb24ebc0fce58ca8224d, type: 3}
+  helmetAttachment: {fileID: 1262996259358930, guid: 7dea907e69fa1db4888c36ce5482a775, type: 3}
+  motorbike: {fileID: 1217920854927372, guid: 32684c090c48c8b40bfc7d8845741599, type: 3}
+  weapons:
+  - itemId: pistol
+    prefab: {fileID: 1562996608389564, guid: a1608518da2a041418e8a5351d223d94, type: 3}
+  - itemId: revolver
+    prefab: {fileID: 1111015175407080, guid: 151fe3144103e1440900697f4b29c68e, type: 3}
+  - itemId: sawedOffShotgun
+    prefab: {fileID: 1105646471333690, guid: a2458a3a2318bb64ea864a87f6558170, type: 3}
+  - itemId: smg
+    prefab: {fileID: 1025874851918808, guid: e22ad038422a02c49b86a09ff69dedfc, type: 3}
+  - itemId: rifle
+    prefab: {fileID: 1862461175073062, guid: f8ee5a952b0a300448ad8d17e2ab2584, type: 3}
+  - itemId: assaultRifle
+    prefab: {fileID: 1900586067242068, guid: ad49a19d2c4adc94b838606a5d459f85, type: 3}
+  - itemId: machineGun
+    prefab: {fileID: 1167886286928202, guid: c10ff4af96f3d7243ae6a36a3377ce60, type: 3}
+  - itemId: laserPistol
+    prefab: {fileID: 1607563544594070, guid: 8b4c47d9211a9784fb3b35a87af8b353, type: 3}
+  - itemId: flamethrower
+    prefab: {fileID: 1172656402973578, guid: aef0a5fd18f8fc745b48fb751ebcf18b, type: 3}
+  - itemId: plasmaRifle
+    prefab: {fileID: 1216028739883728, guid: 99819784f3e024e4c848e39a0da42d59, type: 3}
+  - itemId: shotgun
+    prefab: {fileID: 1105646471333690, guid: a2458a3a2318bb64ea864a87f6558170, type: 3}
+  - itemId: rocketLauncher
+    prefab: {fileID: 1265324198127248, guid: 5f73668964f88164aae003225d1f933f, type: 3}
+  - itemId: knife
+    prefab: {fileID: 1458518773578602, guid: 0382438fca188874582f78853c471286, type: 3}
+  - itemId: pickaxe
+    prefab: {fileID: 1436426956864622, guid: 58a3f3f478bd0374aa7b5d42880672f5, type: 3}
+  - itemId: axe
+    prefab: {fileID: 1400711587830432, guid: cec5944b3fba5e643b7558cbd3366cd4, type: 3}
+  - itemId: handPump
+    prefab: {fileID: 1458207331373352, guid: 67dc5c17caf2cce4b85e75244a2d8ce1, type: 3}
+  items:
+  - itemId: ammo9
+    prefab: {fileID: 1202029276534874, guid: 86bb9dc1b51ac1b40881bebab79f89cf, type: 3}
+  - itemId: ammo556
+    prefab: {fileID: 1851930539644918, guid: f0fc41b28f2a6a943a204ab9ba84bc87, type: 3}
+  - itemId: shotgunShell
+    prefab: {fileID: 1890173635108940, guid: 3b0fb3fda92d12a4caa1fd3a00956fd1, type: 3}
+  - itemId: rocketAmmo
+    prefab: {fileID: 1740100772245106, guid: a284ce8a02abbd940b690c338a51f6d9, type: 3}
+  - itemId: ammoParts
+    prefab: {fileID: 1740100772245106, guid: a284ce8a02abbd940b690c338a51f6d9, type: 3}
+  - itemId: energyCell
+    prefab: {fileID: 1040866198591268, guid: e4cf0824496bede4bb19ba9967e020f6, type: 3}
+  - itemId: electronics
+    prefab: {fileID: 1641304953013102, guid: a605a5f87e9bb1a47b6377c2306c9dbd, type: 3}
+  - itemId: circuitModule
+    prefab: {fileID: 1641304953013102, guid: a605a5f87e9bb1a47b6377c2306c9dbd, type: 3}
+  - itemId: napalm
+    prefab: {fileID: 1544143072547004, guid: aa9d0fceec1d4814aa3e38892faa08a0, type: 3}
+  - itemId: oil
+    prefab: {fileID: 1544143072547004, guid: aa9d0fceec1d4814aa3e38892faa08a0, type: 3}
+  - itemId: medkit
+    prefab: {fileID: 1419824209681924, guid: e3c29f4b68873c34fb53043e28bd48ce, type: 3}
+  - itemId: medicine
+    prefab: {fileID: 1419824209681924, guid: e3c29f4b68873c34fb53043e28bd48ce, type: 3}
+  - itemId: bioReagent
+    prefab: {fileID: 1419824209681924, guid: e3c29f4b68873c34fb53043e28bd48ce, type: 3}
+  - itemId: stim
+    prefab: {fileID: 1337799580505134, guid: 07973e2f008580343949b7f8c06cf72c, type: 3}
+  - itemId: antibiotics
+    prefab: {fileID: 1337799580505134, guid: 07973e2f008580343949b7f8c06cf72c, type: 3}
+  - itemId: doctorBag
+    prefab: {fileID: 1326644470446332, guid: 29bbdad2089078346a5cb0efbe9d593e, type: 3}
+  - itemId: artifactContainer
+    prefab: {fileID: 1835224929256552, guid: df170dcae36ee024c81fa2300892e7e5, type: 3}
+  - itemId: repairKit
+    prefab: {fileID: 1835224929256552, guid: df170dcae36ee024c81fa2300892e7e5, type: 3}
+  - itemId: ore
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: scrap
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: alloyPlate
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: weaponParts
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: metalArmor
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: ballisticVest
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: combatArmor
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: heavyArmor
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: energySuit
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: chemicals
+    prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
+  - itemId: spectrumSample
+    prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
+  - itemId: stabilizerCatalyst
+    prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
+  - itemId: wood
+    prefab: {fileID: 1350644683509884, guid: 76268956b264f0146950f405edf04c42, type: 3}
+  - itemId: food
+    prefab: {fileID: 1475631568837504, guid: 43c02ad0264295844bda05a0e56a7b21, type: 3}
+  - itemId: water
+    prefab: {fileID: 1129776882994900, guid: 6f4046d7967c3b74a88971615df168e4, type: 3}
+  - itemId: silver
+    prefab: {fileID: 1210496204973002, guid: 55e31d9d98e7506428bd5fc800ea4122, type: 3}
+  - itemId: blue
+    prefab: {fileID: 1210496204973002, guid: 55e31d9d98e7506428bd5fc800ea4122, type: 3}
+  - itemId: trophy
+    prefab: {fileID: 1515035654734784, guid: f5e52fc0c8d68eb4bb6f0a7fa8b6650a, type: 3}
+  - itemId: leather
+    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
+  - itemId: hazmatSuit
+    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
+  - itemId: boots
+    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
+  - itemId: assaultBoots
+    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
+  - itemId: reinforcedBoots
+    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
+  - itemId: scoutBoots
+    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
+  - itemId: backpack
+    prefab: {fileID: 1326644470446332, guid: 29bbdad2089078346a5cb0efbe9d593e, type: 3}
+  - itemId: artifactDetectorMk1
+    prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+  - itemId: artifactDetectorMk2
+    prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+  - itemId: artifactDetectorMk3
+    prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+  - itemId: artifactBelt2
+    prefab: {fileID: 5068620470544949965, guid: ba195a88cc542844e9be28b4f1d3f784, type: 3}
+  - itemId: artifactBelt3
+    prefab: {fileID: 5068620470544949965, guid: ba195a88cc542844e9be28b4f1d3f784, type: 3}
+  - itemId: artifactBelt4
+    prefab: {fileID: 5068620470544949965, guid: ba195a88cc542844e9be28b4f1d3f784, type: 3}
+  - itemId: artifactSpring
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactVein
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactNode
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactDrop
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactBloodkin
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactShell
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactWarmer
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactSieve
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactThunderer
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactHusher
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactAnchor
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactDew
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactMemory
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: artifactUnknown
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: preWarHelmet
+    prefab: {fileID: 1239577106600078, guid: 684bfe2b1f62271498ed7c75f412de2c, type: 3}
+  - itemId: weldedHelmet
+    prefab: {fileID: 1239577106600078, guid: 684bfe2b1f62271498ed7c75f412de2c, type: 3}
+  - itemId: helmet
+    prefab: {fileID: 1239577106600078, guid: 684bfe2b1f62271498ed7c75f412de2c, type: 3}
+  - itemId: tacticalHelmet
+    prefab: {fileID: 1239577106600078, guid: 684bfe2b1f62271498ed7c75f412de2c, type: 3}
+  - itemId: assaultHelmet
+    prefab: {fileID: 1239577106600078, guid: 684bfe2b1f62271498ed7c75f412de2c, type: 3}
+  creatures:
+  - modelKey: traderNpc
+    prefab: {fileID: 1109315531109580, guid: 978e4e824620a0f40a841eccaf23a994, type: 3}
+    pitch: 0
+  - modelKey: caravanMerchant
+    prefab: {fileID: 1109315531109580, guid: 978e4e824620a0f40a841eccaf23a994, type: 3}
+    pitch: 0
+  - modelKey: caravanGuard
+    prefab: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+    pitch: 0
+  - modelKey: klimPatrolGuard
+    prefab: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+    pitch: 0
+  - modelKey: wastelandSettler
+    prefab: {fileID: 1612642967817046, guid: 145e4b15636b57d47bb0d069eb16834f, type: 3}
+    pitch: 0
+  - modelKey: enemyRaider
+    prefab: {fileID: 1962457702341656, guid: aab8f459d9f6f1840a3731182032078d, type: 3}
+    pitch: 0
+  - modelKey: enemyGhoul
+    prefab: {fileID: 1187010538823314, guid: b87cb604b959698428935c5d56bd97c0, type: 3}
+    pitch: 0
+  - modelKey: kromkaBurned
+    prefab: {fileID: 1187010538823314, guid: b87cb604b959698428935c5d56bd97c0, type: 3}
+    pitch: 0
+  - modelKey: kromkaFold
+    prefab: {fileID: 1187010538823314, guid: b87cb604b959698428935c5d56bd97c0, type: 3}
+    pitch: 0
+  - modelKey: enemySuperMutant
+    prefab: {fileID: 1331328711462180, guid: e8e6a8d0d7d9a1245a0d143f23cc283b, type: 3}
+    pitch: 0
+  - modelKey: enemyAshWolf
+    prefab: {fileID: 1331328711462180, guid: e8e6a8d0d7d9a1245a0d143f23cc283b, type: 3}
+    pitch: 70
+  - modelKey: kromkaGari
+    prefab: {fileID: 1331328711462180, guid: e8e6a8d0d7d9a1245a0d143f23cc283b, type: 3}
+    pitch: 70
+  - modelKey: enemyGecko
+    prefab: {fileID: 1331328711462180, guid: e8e6a8d0d7d9a1245a0d143f23cc283b, type: 3}
+    pitch: 70
+  - modelKey: kromkaListener
+    prefab: {fileID: 1331328711462180, guid: e8e6a8d0d7d9a1245a0d143f23cc283b, type: 3}
+    pitch: 70
+  - modelKey: enemyRadscorpion
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 70
+  - modelKey: kromkaRykhlyak
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 70
+  - modelKey: enemyFireGecko
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 70
+  - modelKey: kromkaMourner
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 70
+  - modelKey: enemyMutantAnt
+    prefab: {fileID: 1015224441584018, guid: 807784d16a875e0499c116c9506424aa, type: 3}
+    pitch: 75
+  - modelKey: kromkaDustling
+    prefab: {fileID: 1015224441584018, guid: 807784d16a875e0499c116c9506424aa, type: 3}
+    pitch: 75
+  - modelKey: brahmin
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 55
+  - modelKey: friendlyBrahmin
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 55
+  - modelKey: kromkaLantern
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 55
+  environment:
+  - modelKey: armory_rack
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: asphalt_slab
+    prefab: {fileID: 1919677564439932, guid: f8a48f8be2524674799f72b2d14af8e9, type: 3}
+  - modelKey: barrel_cluster
+    prefab: {fileID: 1160118780968504, guid: 70fb46fb4d63e3340b0f223f24a9af39, type: 3}
+  - modelKey: brahmin_pen
+    prefab: {fileID: 1961064795716536, guid: 372805122ee98e544a98acf612666c14, type: 3}
+  - modelKey: campfire_rest
+    prefab: {fileID: 1250369813790830, guid: 43c5be087319b3f4dbba869a4752ee24, type: 3}
+  - modelKey: car_wreck
+    prefab: {fileID: 1572569093490736, guid: f6433493c51db7a4c9ea72ac5084e6c6, type: 3}
+  - modelKey: cargo_stack
+    prefab: {fileID: 1421640055835710, guid: f3bb2a070b022d8478a13ea41149c4a3, type: 3}
+  - modelKey: concrete_wall
+    prefab: {fileID: 1090662257128980, guid: fea05091ba5f3f84786932dfdddc3b23, type: 3}
+  - modelKey: cot_bed
+    prefab: {fileID: 1762450614453468, guid: 016ad3349798a984b85484ddf70a27dc, type: 3}
+  - modelKey: craft_station_ammo
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: craft_station_chem
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: craft_station_energy
+    prefab: {fileID: 1225048615775740, guid: 464f78a898f604d4aa6188472f930185, type: 3}
+  - modelKey: craft_station_repair
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: craft_station_tools
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: craft_station_weapon
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: dead_tree_a
+    prefab: {fileID: 1796885337435754, guid: 97eeef42e1d4d814db88bb348f6c5315, type: 3}
+  - modelKey: dead_tree_b
+    prefab: {fileID: 1118852644942752, guid: 2c6eea56361198e4e99317e1f87c7a3d, type: 3}
+  - modelKey: dead_tree_c
+    prefab: {fileID: 1369509060990928, guid: 541d55964971acb4badd8724436b8489, type: 3}
+  - modelKey: deadwood
+    prefab: {fileID: 1796885337435754, guid: 97eeef42e1d4d814db88bb348f6c5315, type: 3}
+  - modelKey: dry_bush
+    prefab: {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}
+  - modelKey: fence_segment
+    prefab: {fileID: 1961064795716536, guid: 372805122ee98e544a98acf612666c14, type: 3}
+  - modelKey: garden_patch
+    prefab: {fileID: 1822765171362998, guid: 3a58129ae5b98e54194c0043f168413f, type: 3}
+  - modelKey: highway_sign
+    prefab: {fileID: 1033860218315092, guid: ffc021460e31bd444a0c04338d020c57, type: 3}
+  - modelKey: job_board
+    prefab: {fileID: 1483296264772644, guid: 36f74d9c91369ee4cb733615548c6102, type: 3}
+  - modelKey: oil_pump_jack
+    prefab: {fileID: 1267131352853402, guid: 47da375f113338e47b5357cdd6284614, type: 3}
+  - modelKey: ore_outcrop
+    prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
+  - modelKey: perimeter_debris
+    prefab: {fileID: 1980102390720548, guid: 9b425efa126d5aa48aeda3fa09c70785, type: 3}
+  - modelKey: relay_antenna
+    prefab: {fileID: 1986437825360374, guid: 8baa48d3960ea2e478eab614acc048bf, type: 3}
+  - modelKey: road_tile
+    prefab: {fileID: 1549825329564326, guid: 4d7a1cef4b51c604a83e17a8a5dc96ed, type: 3}
+  - modelKey: roadblock_barricade
+    prefab: {fileID: 1627071915366092, guid: b092211bc2fc70a44b2d0923759d5c16, type: 3}
+  - modelKey: rubble_rock
+    prefab: {fileID: 1953317842719524, guid: 8d16041c0d131c94fa77f8401777777f, type: 3}
+  - modelKey: ruined_billboard
+    prefab: {fileID: 1620165169467740, guid: 9ff1382a89dbf2e458095fdd4294af51, type: 3}
+  - modelKey: rust_barrel_v1
+    prefab: {fileID: 1890296390273018, guid: 46b7bcd01c72c9148b72bd322a02225c, type: 3}
+  - modelKey: scrap_heap
+    prefab: {fileID: 1841504986358056, guid: 24fafb288dd79c64697b8bc01a50aeba, type: 3}
+  - modelKey: scrap_wall_segment
+    prefab: {fileID: 1022004951223104, guid: 6b4d26e24efa892498cc8703f5fd44d6, type: 3}
+  - modelKey: scrap_watch_tower
+    prefab: {fileID: 1986437825360374, guid: 8baa48d3960ea2e478eab614acc048bf, type: 3}
+  - modelKey: storage_chest
+    prefab: {fileID: 1082924602782462, guid: 54e8cd42ff115b14a90340ee66d64fa1, type: 3}
+  - modelKey: storage_lean_to
+    prefab: {fileID: 1623103741959910, guid: c808dd7672f316d4b95e2d0f05d6da22, type: 3}
+  - modelKey: tire_stack
+    prefab: {fileID: 1327414462953822, guid: 346855a62eb2ac047bad52a7b7e47549, type: 3}
+  - modelKey: trade_machine
+    prefab: {fileID: 1943517841819872, guid: fd5265e1bff79694782bf5c50669f524, type: 3}
+  - modelKey: trader_awning
+    prefab: {fileID: 1575535087174988, guid: 526a98456f094134ea335de6eac32587, type: 3}
+  - modelKey: utility_pole
+    prefab: {fileID: 1502806290364868, guid: 03b617bb9ab64ad40b20fa78525fcf7f, type: 3}
+  - modelKey: wasteland_shack
+    prefab: {fileID: 1179771526004886, guid: c3734c33154735c4abbbc836ff7e9b4b, type: 3}
+  - modelKey: watch_post
+    prefab: {fileID: 1986437825360374, guid: 8baa48d3960ea2e478eab614acc048bf, type: 3}
+  - modelKey: water_tank
+    prefab: {fileID: 1513997905505002, guid: 46133089344458744b67372c6e18592d, type: 3}
+  - modelKey: workshop_bench
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  defaultEnvironment: {fileID: 1980102390720548, guid: 9b425efa126d5aa48aeda3fa09c70785, type: 3}
+  roadEnvironment: {fileID: 1549825329564326, guid: 4d7a1cef4b51c604a83e17a8a5dc96ed, type: 3}
+  plantEnvironment: {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}
+  buildingEnvironment: {fileID: 1623103741959910, guid: c808dd7672f316d4b95e2d0f05d6da22, type: 3}
+  barrierEnvironment: {fileID: 1090662257128980, guid: fea05091ba5f3f84786932dfdddc3b23, type: 3}
+  towerEnvironment: {fileID: 1986437825360374, guid: 8baa48d3960ea2e478eab614acc048bf, type: 3}
+  industrialEnvironment: {fileID: 1225048615775740, guid: 464f78a898f604d4aa6188472f930185, type: 3}
+  rockEnvironment: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}

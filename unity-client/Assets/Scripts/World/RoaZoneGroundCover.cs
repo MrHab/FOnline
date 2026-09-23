@@ -275,7 +275,8 @@ namespace RealmOfAshes.World
             {
                 Mesh mesh = filter.sharedMesh;
                 MeshRenderer renderer = filter.GetComponent<MeshRenderer>();
-                if (mesh == null || renderer == null) continue;
+                if (mesh == null || renderer == null || !renderer.enabled
+                    || !ActiveWithin(filter.transform, prefab.transform)) continue;
                 Matrix4x4 local = toRoot * filter.transform.localToWorldMatrix;
                 indices.Add(_parts.Count);
                 _parts.Add(new Part { Mesh = mesh, Materials = renderer.sharedMaterials, Local = local });
@@ -290,6 +291,16 @@ namespace RealmOfAshes.World
                 }
             }
             return indices;
+        }
+
+        private static bool ActiveWithin(Transform node, Transform root)
+        {
+            for (Transform current = node; current != null; current = current.parent)
+            {
+                if (!current.gameObject.activeSelf) return false;
+                if (current == root) return true;
+            }
+            return false;
         }
 
         // Объекты зоны в ячейках по 10 м: покров проверяет только соседние ячейки.

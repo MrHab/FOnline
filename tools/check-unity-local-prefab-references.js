@@ -59,7 +59,10 @@ function validateRecovery(result) {
     const yaml = fs.readFileSync(path.join(root, expected), 'utf8').replaceAll('\r\n', '\n');
     assert(yaml.includes(`--- !u!1 &${row.rootGameObjectId}\n`), `${row.key}: root GameObject ID changed`);
     assert(yaml.includes(`--- !u!4 &${row.rootTransformId}\n`), `${row.key}: root Transform ID changed`);
-    assert(!yaml.includes('m_SourcePrefab:'), `${row.key}: must be a native prefab, not a retired model variant`);
+    const rootBlock = yaml.match(new RegExp(`--- !u!1 &${row.rootGameObjectId}\\n([\\s\\S]*?)(?=--- !u!|$)`))?.[1] || '';
+    assert(rootBlock.includes('m_PrefabInstance: {fileID: 0}')
+      && rootBlock.includes('m_CorrespondingSourceObject: {fileID: 0}'),
+    `${row.key}: recovered root must remain native; nested PolygonApocalypse prefabs are allowed`);
     assert(yaml.includes('MeshRenderer:'), `${row.key}: restored prefab has no visual geometry`);
     const anchors = new Set([...yaml.matchAll(/^--- !u!\d+ &(-?\d+)/gm)].map(m => m[1]));
     for (const match of yaml.matchAll(/\{fileID: (-?\d+)\}/g))

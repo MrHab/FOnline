@@ -534,6 +534,7 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            RoaApocalypseVisuals.AttachStatic(_weapon, RoaApocalypseModels.Weapon(weaponId), 180f);
             WeaponId = weaponId;
             Ready = true;
             if (Stowed) holder.SetActive(false);

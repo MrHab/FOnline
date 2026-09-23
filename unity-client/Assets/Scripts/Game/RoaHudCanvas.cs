@@ -529,6 +529,7 @@ namespace RealmOfAshes.Game
             _mapPanel = panel.gameObject;
             _mapGroup = panel.gameObject.AddComponent<CanvasGroup>();
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("minimap");
+            RoaApocalypseUiKit.AddMinimapFrame(panel);
             _mapTitle = Label("Title", panel, new Vector2(10f, -7f), new Vector2(170f, 22f), 12,
                               TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
             RectTransform frame = Rect("Map", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),

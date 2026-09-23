@@ -227,6 +227,11 @@ namespace RealmOfAshes.EditorTools
                 Image actionImage = action.GetComponent<Image>();
                 action.GetComponent<Button>().targetGraphic = actionImage;
 
+                var square = new GameObject("SquareAction", typeof(RectTransform), typeof(Image),
+                    typeof(Button));
+                square.transform.SetParent(panel.transform, false);
+                square.GetComponent<RectTransform>().sizeDelta = new Vector2(48f, 48f);
+
                 Text russian = Label(panel.transform, "Продолжить");
                 Text number = Label(panel.transform, "125 / 200");
                 skin.ApplyTo(canvas);
@@ -244,12 +249,15 @@ namespace RealmOfAshes.EditorTools
                 if (buttonVisual == null || buttonVisual.GetComponent<Button>().enabled ||
                     buttonVisual.GetComponent<Image>().raycastTarget)
                     throw new Exception("The ready-made Synty button does not preserve the live click target.");
+                Transform squareVisual = square.transform.Find("ApocalypseHudButtonVisual/Item");
+                if (squareVisual == null)
+                    throw new Exception("Square actions must use the ready-made Synty slot button.");
                 if (russian.font != RoaUiFont.Default ||
                     number.font != Resources.Load<Font>("ApocalypseHud/SairaCondensed-Regular"))
                     throw new Exception("The Synty font fallback does not preserve Cyrillic text.");
 
                 panelRect.sizeDelta = new Vector2(300f, 140f);
-                if (panel.transform.childCount != 4)
+                if (panel.transform.childCount != 5)
                     throw new Exception("Repeated skinning duplicated panel decoration.");
                 Debug.Log("[ROA PROBE] Apocalypse HUD skin OK: panel, button, fonts and interaction.");
             }

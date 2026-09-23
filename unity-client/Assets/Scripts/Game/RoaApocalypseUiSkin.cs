@@ -14,9 +14,14 @@ namespace RealmOfAshes.Game
     {
         private const string AssetRoot = "ApocalypseHud/";
         private const string FrameName = "ApocalypseHudFrame";
+        private const string ActionIconName = "ApocalypseHudActionIcon";
 
         private static Sprite _background;
         private static Sprite _button;
+        private static Sprite _input;
+        private static Sprite _minimapBox;
+        private static Sprite _smallBox;
+        private static Sprite _sliderTrack;
         private static Sprite _thinFrame;
         private static Sprite _bar;
         private static Sprite _playerMarker;
@@ -98,9 +103,7 @@ namespace RealmOfAshes.Game
             }
             if (image.sprite == Background)
             {
-                Rect bounds = image.rectTransform.rect;
-                if (bounds.width >= 160f && bounds.height >= 72f &&
-                    (bounds.width < 880f || bounds.height < 470f))
+                if (image.name == "CharacterCard")
                     AddFrame(image.rectTransform);
                 _styledImages.Add(image);
                 return;
@@ -117,6 +120,18 @@ namespace RealmOfAshes.Game
             if (width < 12f || height < 12f) return;
 
             string name = image.name;
+            if (name == "Background" && image.GetComponentInParent<Slider>() != null)
+            {
+                Sprite track = Load(ref _sliderTrack, "SPR_HUD_Apocalypse_Bar_Horizontal_01");
+                if (track != null)
+                {
+                    image.sprite = track;
+                    image.type = Image.Type.Sliced;
+                    image.color = new Color(1f, 1f, 1f, image.color.a);
+                }
+                _styledImages.Add(image);
+                return;
+            }
             if (name.Contains("Fill") || name.Contains("Meter") ||
                 name.Contains("Glow") || name.Contains("Track") ||
                 image.GetComponentInParent<Slider>() != null)
@@ -125,15 +140,46 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            if (image.GetComponent<Button>() != null || image.GetComponent<InputField>() != null)
+            if (image.GetComponent<InputField>() != null)
             {
-                Sprite sprite = Load(ref _button, "SPR_Apocalypse_Box_Metal_04");
+                Sprite field = Load(ref _input, "SPR_Apocalypse_Bar_MetalRusty_01");
+                if (field == null) return;
+                image.sprite = field;
+                image.type = Image.Type.Sliced;
+                image.color = new Color(1f, 1f, 1f, image.color.a);
+                _styledImages.Add(image);
+                return;
+            }
+
+            if (image.GetComponent<Button>() != null)
+            {
+                bool quickSlot = image.transform.parent != null &&
+                    image.transform.parent.name == "Quickbar";
+                Sprite sprite = quickSlot
+                    ? Load(ref _smallBox, "SPR_HUD_Apocalypse_Box_Small_02")
+                    : Load(ref _button, "SPR_Apocalypse_Box_Metal_04");
                 if (sprite == null) return;
                 image.sprite = sprite;
                 image.type = Image.Type.Sliced;
-                image.color = ButtonTint(image.color);
+                image.color = quickSlot ? new Color(1f, 1f, 1f, image.color.a)
+                    : ButtonTint(image.color);
+                if (!quickSlot && width >= 110f && height >= 26f)
+                    AddActionIcon(image.rectTransform, name, height);
                 _styledImages.Add(image);
                 return;
+            }
+
+            if (name == "Minimap")
+            {
+                Sprite minimap = Load(ref _minimapBox, "SPR_HUD_Apocalypse_Box_Medium_02");
+                if (minimap != null)
+                {
+                    image.sprite = minimap;
+                    image.type = Image.Type.Sliced;
+                    image.color = new Color(1f, 1f, 1f, image.color.a);
+                    _styledImages.Add(image);
+                    return;
+                }
             }
 
             if (width < 90f || height < 30f) return;
@@ -144,9 +190,7 @@ namespace RealmOfAshes.Game
             image.color = SurfaceTint(image.color);
             _styledImages.Add(image);
 
-            bool isFullscreen = width > 880f && height > 470f;
-            bool isPanel = width >= 160f && height >= 72f;
-            if (isPanel && !isFullscreen && image.GetComponent<RectMask2D>() == null)
+            if (name == "CharacterCard")
                 AddFrame(image.rectTransform);
         }
 
@@ -190,6 +234,39 @@ namespace RealmOfAshes.Game
             border.type = Image.Type.Sliced;
             border.color = new Color(0.91f, 0.70f, 0.37f, 0.68f);
             border.raycastTarget = false;
+        }
+
+        private static void AddActionIcon(RectTransform button, string name, float height)
+        {
+            string icon = null;
+            switch (name)
+            {
+                case "Inventory": icon = "ICON_Apocalpyse_Inventory_Backpack_01"; break;
+                case "Map": icon = "ICON_Apocalpyse_Map_Quest_01"; break;
+                case "Pipboy": icon = "ICON_Apocalpyse_Inventory_Notes_01"; break;
+                case "GearButton":
+                case "Menu": icon = "ICON_Input_Xbox_Button_Menu_Clean"; break;
+                case "Fire": icon = "ICON_Apocalpyse_Inventory_Weapon_01"; break;
+                case "Interact": icon = "ICON_Apocalpyse_Map_Unknown_01"; break;
+                case "Target": icon = "ICON_Apocalpyse_Map_Target_01"; break;
+                case "Reload": icon = "ICON_SM_Wep_Pistol_Ammo_01"; break;
+                case "Vehicle": icon = "ICON_Apocalpyse_Map_Vehicle_01"; break;
+            }
+            if (icon == null || button.Find(ActionIconName) != null) return;
+            Sprite sprite = Resources.Load<Sprite>(AssetRoot + icon);
+            if (sprite == null) return;
+            var node = new GameObject(ActionIconName, typeof(RectTransform), typeof(Image));
+            RectTransform rect = node.GetComponent<RectTransform>();
+            rect.SetParent(button, false);
+            rect.anchorMin = rect.anchorMax = new Vector2(0f, 0.5f);
+            rect.pivot = new Vector2(0f, 0.5f);
+            rect.anchoredPosition = new Vector2(7f, 0f);
+            float size = Mathf.Min(22f, height - 8f);
+            rect.sizeDelta = new Vector2(size, size);
+            Image image = node.GetComponent<Image>();
+            image.sprite = sprite;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
         }
 
         private static void StyleText(Text label)

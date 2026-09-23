@@ -178,7 +178,8 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 Для оформления Apocalypse HUD владелец пакета импортирует
 **Synty INTERFACE - Apocalypse HUD** в `unity-client/Assets/Synty`, затем
 запускает `unity-client/Tools/install-apocalypse-hud.ps1`. Скрипт переносит
-нужные спрайты, их настройки импорта и шрифт в локальный
+нужные спрайты, готовые префабы кнопки слота и полосы здоровья, их настройки
+импорта и шрифт в локальный
 `Assets/Resources/ApocalypseHud`; оба каталога исключены из публичного Git.
 После импорта можно выполнить пробы **Realm of Ashes → Probe → Apocalypse HUD
 Skin** и **Apocalypse HUD Layouts**. Без локально установленного пака клиент

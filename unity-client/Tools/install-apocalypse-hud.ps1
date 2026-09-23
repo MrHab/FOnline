@@ -27,12 +27,18 @@ $names = @(
     'ICON_SM_Wep_CrossBow_Bolt_01.png',
     'ICON_SM_Wep_Pistol_Ammo_01.png',
     'SPR_Apocalypse_Bar_MetalRusty_01.png',
+    'SPR_Apocalypse_Bar_MetalRounded_01.png',
     'SPR_Apocalypse_Box_Background_01.png',
     'SPR_Apocalypse_Box_Metal_04.png',
     'SPR_Apocalypse_Dial_Background_01.png',
     'SPR_HUD_Apocalypse_Frame_Large_03_Clean.png',
+    'SPR_HUD_Apocalypse_Bar_Horizontal_01.png',
+    'SPR_HUD_Apocalypse_Box_Medium_02.png',
+    'SPR_HUD_Apocalypse_Box_Small_02.png',
     'SPR_HUD_Apocalypse_Map_Player_01.png',
-    'SairaCondensed-Regular.ttf'
+    'SairaCondensed-Regular.ttf',
+    'Button_Apocalypse_HotBar_Item_01.prefab',
+    'HUD_Apocalypse_HealthBar_01.prefab'
 )
 
 $wanted = @{}

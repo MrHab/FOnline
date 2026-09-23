@@ -80,12 +80,13 @@ namespace RealmOfAshes.EditorTools
                 foreach (string id in new[] { "Inventory", "Map", "Pipboy", "Menu", "Fire",
                     "Interact", "Target", "Crouch", "Reload", "Mode", "Player", "Bolt", "Vehicle" })
                 {
-                    if (!view.ButtonHasIcon(id) || !view.TryGetButtonScreenRect(id, out Rect button) ||
+                    if (!view.ButtonHasIcon(id) || !view.ButtonUsesSyntyPrefab(id) ||
+                        !view.TryGetButtonScreenRect(id, out Rect button) ||
                         button.xMin < safe.xMin - 0.01f || button.yMin < safe.yMin - 0.01f ||
                         button.xMax > safe.xMax + 0.01f || button.yMax > safe.yMax + 0.01f)
                         throw new Exception("Missing Synty icon or unsafe touch target: " + id);
                 }
-                Debug.Log("[ROA PROBE] Apocalypse mobile controls OK: 13 icons and safe touch targets.");
+                Debug.Log("[ROA PROBE] Apocalypse mobile controls OK: 13 prefab icons and safe touch targets.");
             }
             finally
             {
@@ -184,8 +185,11 @@ namespace RealmOfAshes.EditorTools
                     "ApocalypseHud/SPR_Apocalypse_Box_Metal_04");
                 if (background == null || metal == null || RoaApocalypseUiSkin.Bar == null)
                     throw new Exception("Apocalypse HUD sprites were not imported as UI sprites.");
+                if (Resources.Load<GameObject>("ApocalypseHud/Button_Apocalypse_HotBar_Item_01") == null ||
+                    Resources.Load<GameObject>("ApocalypseHud/HUD_Apocalypse_HealthBar_01") == null)
+                    throw new Exception("The ready-made Synty HUD prefabs were not installed.");
 
-                var panel = new GameObject("InventoryPanel", typeof(RectTransform), typeof(Image));
+                var panel = new GameObject("CharacterCard", typeof(RectTransform), typeof(Image));
                 panel.transform.SetParent(root.transform, false);
                 var panelRect = panel.GetComponent<RectTransform>();
                 panelRect.sizeDelta = new Vector2(700f, 500f);

@@ -85,6 +85,7 @@ namespace RealmOfAshes.Game
             panel.sizeDelta = new Vector2(330f, 262f);
             var bg = panel.gameObject.AddComponent<Image>();
             bg.color = PanelBg;
+            RoaApocalypseUiKit.StyleWindow(bg, true);
             var border = panel.gameObject.AddComponent<Outline>();
             border.effectColor = PanelBorder;
             border.effectDistance = new Vector2(1f, -1f);
@@ -114,30 +115,39 @@ namespace RealmOfAshes.Game
             y -= 46f;
 
             // #qty-range
-            RectTransform sliderRect = Child("Range", panel);
+            GameObject sliderPrefab = Resources.Load<GameObject>(
+                "ApocalypseHud/Slider_Apocalypse_Horizontal");
+            RectTransform sliderRect = sliderPrefab != null
+                ? (RectTransform)Instantiate(sliderPrefab, panel, false).transform
+                : Child("Range", panel);
+            sliderRect.name = "Range";
             Place(sliderRect, 12f, y - 18f, -12f, y);
-            _slider = sliderRect.gameObject.AddComponent<Slider>();
+            _slider = sliderRect.GetComponent<Slider>();
+            if (_slider == null) _slider = sliderRect.gameObject.AddComponent<Slider>();
             _slider.wholeNumbers = true;
-            RectTransform track = Child("Track", sliderRect);
-            Place(track, 0f, -11f, 0f, -7f);
-            var trackImage = track.gameObject.AddComponent<Image>();
-            trackImage.color = SliderTrack;
-            RectTransform fillArea = Child("FillArea", sliderRect);
-            Place(fillArea, 0f, -11f, 0f, -7f);
-            RectTransform fill = Child("Fill", fillArea);
-            Stretch(fill, 0f);
-            var fillImage = fill.gameObject.AddComponent<Image>();
-            fillImage.color = SliderFill;
-            RectTransform handleArea = Child("HandleArea", sliderRect);
-            Place(handleArea, 6f, -18f, -6f, 0f);
-            RectTransform handle = Child("Handle", handleArea);
-            handle.sizeDelta = new Vector2(14f, 18f);
-            var handleImage = handle.gameObject.AddComponent<Image>();
-            handleImage.color = SliderFill;
-            _slider.fillRect = fill;
-            _slider.handleRect = handle;
-            _slider.targetGraphic = handleImage;
-            _slider.direction = Slider.Direction.LeftToRight;
+            if (sliderPrefab == null)
+            {
+                RectTransform track = Child("Track", sliderRect);
+                Place(track, 0f, -11f, 0f, -7f);
+                var trackImage = track.gameObject.AddComponent<Image>();
+                trackImage.color = SliderTrack;
+                RectTransform fillArea = Child("FillArea", sliderRect);
+                Place(fillArea, 0f, -11f, 0f, -7f);
+                RectTransform fill = Child("Fill", fillArea);
+                Stretch(fill, 0f);
+                var fillImage = fill.gameObject.AddComponent<Image>();
+                fillImage.color = SliderFill;
+                RectTransform handleArea = Child("HandleArea", sliderRect);
+                Place(handleArea, 6f, -18f, -6f, 0f);
+                RectTransform handle = Child("Handle", handleArea);
+                handle.sizeDelta = new Vector2(14f, 18f);
+                var handleImage = handle.gameObject.AddComponent<Image>();
+                handleImage.color = SliderFill;
+                _slider.fillRect = fill;
+                _slider.handleRect = handle;
+                _slider.targetGraphic = handleImage;
+                _slider.direction = Slider.Direction.LeftToRight;
+            }
             _slider.onValueChanged.AddListener(v => { if (!_syncing) Interaction.QuantityValue = Mathf.RoundToInt(v); });
             y -= 28f;
 

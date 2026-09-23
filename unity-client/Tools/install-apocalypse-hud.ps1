@@ -38,7 +38,28 @@ $names = @(
     'SPR_HUD_Apocalypse_Map_Player_01.png',
     'SairaCondensed-Regular.ttf',
     'Button_Apocalypse_HotBar_Item_01.prefab',
-    'HUD_Apocalypse_HealthBar_01.prefab'
+    'HUD_Apocalypse_HealthBar_01.prefab',
+    'Button_Apocalypse_Simple.prefab',
+    'Button_Apocalypse_ActionBar_Item_01.prefab',
+    'Slider_Apocalypse_Horizontal.prefab',
+    'HUD_Apocalypse_Hotbar_01.prefab',
+    'HUD_Apocalypse_WeaponWheel_01.prefab',
+    'HUD_Apocalypse_CurrentWeapon_01.prefab',
+    'HUD_Apocalypse_HealthStats_01.prefab',
+    'HUD_Apocalypse_StatsList_01.prefab',
+    'HUD_Apocalypse_Minimap_Box_02.prefab',
+    'HUD_Apocalypse_WorldSpace_EnemyInfo_01.prefab',
+    'HUD_Apocalypse_Event_BossBar_01.prefab',
+    'HUD_Apocalypse_WorldSpace_DamageToaster_01.prefab',
+    'HUD_Apocalypse_Interact_ContextSensitive_01.prefab',
+    'HUD_Apocalypse_ItemPickupInfo_01.prefab',
+    'HUD_Apocalypse_Objective_01.prefab',
+    'HUD_Apocalypse_Event_TimedAction_01.prefab',
+    'HUD_Apocalypse_EventLog_01.prefab',
+    'HUD_Apocalypse_Event_Tooltip_01.prefab',
+    'HUD_Apocalypse_Comms_01.prefab',
+    'HUD_Apocalypse_Event_Loading_01.prefab',
+    'HUD_Apocalypse_Event_Saving_01.prefab'
 )
 
 $wanted = @{}

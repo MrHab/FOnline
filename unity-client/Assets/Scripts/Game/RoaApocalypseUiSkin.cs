@@ -153,6 +153,7 @@ namespace RealmOfAshes.Game
 
             if (image.GetComponent<Button>() != null)
             {
+                RoaApocalypseUiKit.DecorateButton(image.GetComponent<Button>());
                 bool quickSlot = image.transform.parent != null &&
                     image.transform.parent.name == "Quickbar";
                 Sprite sprite = quickSlot

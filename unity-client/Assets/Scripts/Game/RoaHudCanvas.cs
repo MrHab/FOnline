@@ -931,12 +931,12 @@ namespace RealmOfAshes.Game
             for (int i = 0; i < _slotButtons.Length; i++)
             {
                 int slot = i;
-                RectTransform slotRect = Rect("Slot" + i, panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                                              new Vector2(0f, 1f), new Vector2(9f + i * 69f, -7f), new Vector2(64f, 38f));
-                Image image = slotRect.gameObject.AddComponent<Image>();
-                image.color = new Color(0.10f, 0.10f, 0.08f, 0.96f);
-                Button button = slotRect.gameObject.AddComponent<Button>();
-                button.targetGraphic = image;
+                Button button = RoaApocalypseUiKit.CreateSlotButton(panel, "Slot" + i);
+                RectTransform slotRect = (RectTransform)button.transform;
+                slotRect.anchorMin = slotRect.anchorMax = new Vector2(0f, 1f);
+                slotRect.pivot = new Vector2(0f, 1f);
+                slotRect.anchoredPosition = new Vector2(12f + i * 69f, -2f);
+                slotRect.sizeDelta = new Vector2(44f, 44f);
                 ColorBlock colors = button.colors;
                 colors.highlightedColor = new Color(0.30f, 0.24f, 0.11f, 1f);
                 colors.pressedColor = new Color(0.48f, 0.35f, 0.13f, 1f);
@@ -1555,7 +1555,15 @@ namespace RealmOfAshes.Game
                 _slotTexts[i].text = _quickbar.SlotLabel(i, item);
                 Image image = _slotButtons[i].targetGraphic as Image;
                 if (image == null) continue;
-                if (_quickbar.IsSlotActive(i)) image.color = new Color(0.24f, 0.47f, 0.20f, 0.98f);
+                Transform selection = _slotButtons[i].transform.Find("Item/Selected");
+                if (selection != null)
+                {
+                    selection.gameObject.SetActive(_quickbar.IsSlotActive(i));
+                    image.color = !string.IsNullOrEmpty(item) && !_quickbar.IsSlotAvailable(i)
+                        ? new Color(0.55f, 0.55f, 0.55f, 0.82f) : Color.white;
+                }
+                else if (_quickbar.IsSlotActive(i))
+                    image.color = new Color(0.24f, 0.47f, 0.20f, 0.98f);
                 else if (!string.IsNullOrEmpty(item) && !_quickbar.IsSlotAvailable(i))
                     image.color = new Color(0.18f, 0.18f, 0.17f, 0.82f);
                 else image.color = new Color(0.10f, 0.10f, 0.08f, 0.96f);

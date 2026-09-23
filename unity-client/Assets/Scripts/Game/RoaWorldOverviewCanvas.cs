@@ -783,7 +783,9 @@ namespace RealmOfAshes.Game
         {
             _panel = Child("Panel", rootRect);
             Place(_panel, 0.5f, 0.5f, 0.5f, 0.5f, new Vector2(-530f, -350f), new Vector2(530f, 350f));
-            _panel.gameObject.AddComponent<Image>().color = PanelBg;
+            Image panelImage = _panel.gameObject.AddComponent<Image>();
+            panelImage.color = PanelBg;
+            RoaApocalypseUiKit.StyleWindow(panelImage, true);
             var outline = _panel.gameObject.AddComponent<Outline>();
             outline.effectColor = PanelBorder;
             outline.effectDistance = new Vector2(1.5f, -1.5f);

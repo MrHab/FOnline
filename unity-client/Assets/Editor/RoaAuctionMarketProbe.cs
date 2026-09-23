@@ -31,6 +31,11 @@ namespace RealmOfAshes.EditorTools
                 if (state == PlayModeStateChange.EnteredEditMode) {
                     SessionState.SetBool(Key, false);
                     if (Application.isBatchMode) EditorApplication.Exit(SessionState.GetInt(Key + ".result", 1));
+                    else {
+                        string scene = SessionState.GetString(Key + ".scene", string.Empty);
+                        SessionState.EraseString(Key + ".scene");
+                        if (!string.IsNullOrEmpty(scene)) EditorApplication.delayCall += () => EditorSceneManager.OpenScene(scene);
+                    }
                 }
             };
         }
@@ -41,6 +46,7 @@ namespace RealmOfAshes.EditorTools
             if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Exit Play Mode first.");
             for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
                 if (UnityEngine.SceneManagement.SceneManager.GetSceneAt(i).isDirty) throw new InvalidOperationException("Save scenes before running the probe.");
+            SessionState.SetString(Key + ".scene", UnityEngine.SceneManagement.SceneManager.GetActiveScene().path);
             Directory.CreateDirectory(Output);
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             SessionState.SetBool(Key, true);
@@ -62,16 +68,39 @@ namespace RealmOfAshes.EditorTools
             return new JObject {
                 ["marketName"] = "Створ", ["taxPct"] = 0.08, ["setupFeePct"] = 0.025,
                 ["listingLifetimeHours"] = 720, ["durationChoicesHours"] = new JArray(24, 72, 168, 720),
-                ["categories"] = new JArray(new JObject { ["id"] = "ammo", ["label"] = "Патроны", ["count"] = 1 },
-                    new JObject { ["id"] = "aid", ["label"] = "Медицина", ["count"] = 1 }),
-                ["items"] = new JArray(new JObject { ["itemId"] = "ammo9", ["category"] = "ammo", ["sellQty"] = 40, ["sellPrice"] = 12, ["buyQty"] = 10, ["buyPrice"] = 8 },
-                    new JObject { ["itemId"] = "medkit", ["category"] = "aid", ["sellQty"] = 0, ["buyQty"] = 0 }),
+                ["categories"] = new JArray(new JObject { ["id"] = "ammo", ["label"] = "Патроны", ["count"] = 4 },
+                    new JObject { ["id"] = "aid", ["label"] = "Медицина", ["count"] = 3 },
+                    new JObject { ["id"] = "materials", ["label"] = "Материалы", ["count"] = 2 },
+                    new JObject { ["id"] = "tools", ["label"] = "Инструменты", ["count"] = 1 }),
+                ["items"] = new JArray(new JObject { ["itemId"] = "ammo9", ["category"] = "ammo", ["sellQty"] = 40, ["sellPrice"] = 12, ["buyQty"] = 14, ["buyPrice"] = 9 },
+                    new JObject { ["itemId"] = "medkit", ["category"] = "aid", ["sellQty"] = 0, ["buyQty"] = 0 },
+                    new JObject { ["itemId"] = "ammo556", ["category"] = "ammo", ["sellQty"] = 50, ["sellPrice"] = 18 },
+                    new JObject { ["itemId"] = "energyCell", ["category"] = "ammo", ["sellQty"] = 15, ["sellPrice"] = 32 },
+                    new JObject { ["itemId"] = "shotgunShell", ["category"] = "ammo", ["sellQty"] = 12, ["sellPrice"] = 21 },
+                    new JObject { ["itemId"] = "stim", ["category"] = "aid", ["sellQty"] = 7, ["sellPrice"] = 28 },
+                    new JObject { ["itemId"] = "antibiotics", ["category"] = "aid", ["sellQty"] = 3, ["sellPrice"] = 46 },
+                    new JObject { ["itemId"] = "scrap", ["category"] = "materials", ["sellQty"] = 85, ["sellPrice"] = 8 },
+                    new JObject { ["itemId"] = "ore", ["category"] = "materials", ["sellQty"] = 20, ["sellPrice"] = 11 },
+                    new JObject { ["itemId"] = "repairKit", ["category"] = "tools", ["sellQty"] = 4, ["sellPrice"] = 75 }),
                 ["orders"] = new JArray(
-                    new JObject { ["id"] = "lot_1", ["itemId"] = "ammo9", ["side"] = "sell", ["qty"] = 40, ["price"] = 12, ["mine"] = false, ["ownerName"] = "Торговец", ["remainingSeconds"] = 86400 },
-                    new JObject { ["id"] = "buy_2", ["itemId"] = "ammo9", ["side"] = "buy", ["qty"] = 10, ["price"] = 8, ["mine"] = true, ["filled"] = 3, ["remainingSeconds"] = 86400 }),
+                    new JObject { ["id"] = "lot_1", ["itemId"] = "ammo9", ["category"] = "ammo", ["side"] = "sell", ["qty"] = 40, ["price"] = 12, ["mine"] = false, ["ownerName"] = "Торговец", ["remainingSeconds"] = 86400 },
+                    new JObject { ["id"] = "buy_2", ["itemId"] = "ammo9", ["category"] = "ammo", ["side"] = "buy", ["qty"] = 10, ["price"] = 8, ["mine"] = true, ["filled"] = 3, ["remainingSeconds"] = 86400 },
+                    new JObject { ["id"] = "buy_3", ["itemId"] = "ammo9", ["category"] = "ammo", ["side"] = "buy", ["qty"] = 4, ["price"] = 9, ["mine"] = false, ["ownerName"] = "Скупщик", ["remainingSeconds"] = 86400 },
+                    new JObject { ["id"] = "lot_4", ["itemId"] = "ammo556", ["category"] = "ammo", ["side"] = "sell", ["qty"] = 50, ["price"] = 18, ["remainingSeconds"] = 72000 },
+                    new JObject { ["id"] = "lot_5", ["itemId"] = "energyCell", ["category"] = "ammo", ["side"] = "sell", ["qty"] = 15, ["price"] = 32, ["remainingSeconds"] = 50000 },
+                    new JObject { ["id"] = "lot_6", ["itemId"] = "shotgunShell", ["category"] = "ammo", ["side"] = "sell", ["qty"] = 12, ["price"] = 21, ["remainingSeconds"] = 45000 },
+                    new JObject { ["id"] = "lot_7", ["itemId"] = "stim", ["category"] = "aid", ["side"] = "sell", ["qty"] = 7, ["price"] = 28, ["remainingSeconds"] = 60000 },
+                    new JObject { ["id"] = "lot_8", ["itemId"] = "antibiotics", ["category"] = "aid", ["side"] = "sell", ["qty"] = 3, ["price"] = 46, ["remainingSeconds"] = 61000 },
+                    new JObject { ["id"] = "lot_9", ["itemId"] = "scrap", ["category"] = "materials", ["side"] = "sell", ["qty"] = 85, ["price"] = 8, ["remainingSeconds"] = 63000 },
+                    new JObject { ["id"] = "lot_10", ["itemId"] = "ore", ["category"] = "materials", ["side"] = "sell", ["qty"] = 20, ["price"] = 11, ["remainingSeconds"] = 64000 },
+                    new JObject { ["id"] = "lot_11", ["itemId"] = "repairKit", ["category"] = "tools", ["side"] = "sell", ["qty"] = 4, ["price"] = 75, ["remainingSeconds"] = 65000 }),
                 ["shelf"] = new JObject { ["silver"] = 55, ["items"] = new JArray(), ["sales"] = 1 },
                 ["historyItemId"] = "ammo9", ["history"] = new JArray(24, 168, 672).Select(hours => new JObject {
                     ["hours"] = (int)hours, ["qty"] = 125, ["average"] = 11.4, ["min"] = 8, ["max"] = 14 }).Aggregate(new JArray(), (array, row) => { array.Add(row); return array; }),
+                ["historySeries"] = new JArray(new JObject { ["at"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 3600000L * 3600000L,
+                    ["qty"] = 25, ["average"] = 12.4, ["min"] = 12, ["max"] = 13, ["trades"] = 3 },
+                    new JObject { ["at"] = (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 3600000L - 5) * 3600000L,
+                    ["qty"] = 10, ["average"] = 9.2, ["min"] = 8, ["max"] = 10, ["trades"] = 2 }),
                 ["activity"] = new JArray(new JObject { ["itemId"] = "ammo9", ["kind"] = "sold", ["qty"] = 5, ["price"] = 12,
                     ["tax"] = 4, ["at"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() })
             };
@@ -81,10 +110,10 @@ namespace RealmOfAshes.EditorTools
         {
             try {
                 foreach (bool mobile in new[] { false, true })
-                    foreach (string mode in new[] { "catalog", "buy", "edit", "journal" })
+                    foreach (string mode in new[] { "listing", "catalog", "buy", "sell", "sellorder", "buyorder", "edit", "journal" })
                         await Capture(mode, mobile);
                 RoaAuctionSinCaptureProbe.Run();
-                File.WriteAllText(Path.Combine(Output, "result.txt"), "PASS: catalogue search, partial quantity, editing, history and journal in Play Mode at 1440x810 and 844x390.");
+                File.WriteAllText(Path.Combine(Output, "result.txt"), "PASS: listing filters, catalogue search, four item actions, quantity, price history, editing and journal at 1440x810 and 844x390.");
                 SessionState.SetInt(Key + ".result", 0);
                 Debug.Log("[AUCTION MARKET] PASS: runtime interactions and desktop/mobile captures.");
             }
@@ -116,11 +145,17 @@ namespace RealmOfAshes.EditorTools
                 Set(screen, "_state", state); Set(screen, "_durationHours", 720);
                 Set(screen, "_snapshotAt", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
                 Set(screen, "_tab", mode == "edit" ? "Mine" : mode == "journal" ? "Journal" : "Buy");
-                if (mode == "buy" || mode == "edit") {
-                    var order = state["orders"][mode == "buy" ? 0 : 1] as JObject;
+                if (mode == "catalog") Set(screen, "_availability", 2);
+                if (mode == "buy" || mode == "sell" || mode == "edit") {
+                    var order = state["orders"][mode == "buy" ? 0 : mode == "sell" ? 2 : 1] as JObject;
                     Call(screen, "SelectOrder", order, mode == "edit");
-                    Require(((InputField)Get(screen, "_qtyInput")).text == (mode == "buy" ? "1" : "10"), "Quantity does not match the selected operation.");
-                    ((InputField)Get(screen, "_qtyInput")).text = "3";
+                    InputField quantity = (InputField)Get(screen, mode == "edit" ? "_qtyInput" : "_modalQty");
+                    Require(quantity.text == (mode == "edit" ? "10" : "1"), "Quantity does not match the selected operation.");
+                    quantity.text = "3";
+                }
+                if (mode == "sellorder" || mode == "buyorder") {
+                    Call(screen, "SelectItem", "ammo9");
+                    Call(screen, "ChooseMarketMode", mode == "sellorder" ? 2 : 3);
                 }
                 var canvas = host.GetComponentInChildren<Canvas>();
                 RoaUiScale.Apply(canvas.GetComponent<CanvasScaler>(), mobile);
@@ -129,12 +164,36 @@ namespace RealmOfAshes.EditorTools
                 if (mode == "catalog") {
                     ((InputField)Get(screen, "_searchInput")).text = RoaItemData.Name("medkit");
                     await Task.Yield(); await Task.Yield();
-                    Require(((RectTransform)Get(screen, "_list")).Cast<Transform>().Count(child => child.gameObject.activeSelf) == 1,
+                    host.GetComponentsInChildren<Button>().First(button => button.name == "CategoryFilter").onClick.Invoke();
+                    host.GetComponentsInChildren<Button>().First(button => button.name == "Option"
+                        && button.GetComponentInChildren<Text>()?.text == "Медицина").onClick.Invoke();
+                    Require((string)Get(screen, "_category") == "aid", "The category filter must change the listing.");
+                    await Task.Yield(); await Task.Yield();
+                    Require(((RectTransform)Get(screen, "_list")).Cast<Transform>().Count(child => child.name == "Item" && child.gameObject.activeSelf) == 1,
                         "Search must find an item with no active listings.");
                 }
+                if (mode == "listing") {
+                    Require((int)Get(screen, "_pageCount") == 2, "Nine listings must span two pages.");
+                    ((Button)Get(screen, "_nextPage")).onClick.Invoke();
+                    Require((int)Get(screen, "_page") == 1, "Next page must change the visible listings.");
+                    ((Button)Get(screen, "_previousPage")).onClick.Invoke();
+                    await Task.Yield(); await Task.Yield();
+                    Require(((RectTransform)Get(screen, "_list")).Cast<Transform>().Count(child => child.name == "Item") == 7,
+                        "A market page must display seven individual offers.");
+                }
+                if (mode == "buy") {
+                    Require(host.GetComponentsInChildren<RectTransform>().Count(rect => rect.name == "TradeHour") == 2,
+                        "Price chart must draw the completed trade buckets.");
+                    host.GetComponentsInChildren<Button>().First(button => button.GetComponentInChildren<Text>()?.text == "7 ДНЕЙ").onClick.Invoke();
+                    Require((int)Get(screen, "_historyHours") == 168, "History period control must change the chart range.");
+                    host.GetComponentsInChildren<Button>().First(button => button.GetComponentInChildren<Text>()?.text == "24 ЧАСА").onClick.Invoke();
+                    await Task.Yield(); await Task.Yield();
+                }
                 string all = string.Join("\n", host.GetComponentsInChildren<Text>().Select(text => text.text));
-                Require(all.Contains(mode == "buy" ? "КУПИТЬ 3 ШТ" : mode == "edit" ? "СОХРАНИТЬ ИЗМЕНЕНИЯ"
-                    : mode == "journal" ? "Продано" : RoaItemData.Name("medkit")), "Missing action in " + mode);
+                Require(all.Contains(mode == "buy" ? "К оплате: 36" : mode == "edit" ? "СОХРАНИТЬ ИЗМЕНЕНИЯ"
+                    : mode == "journal" ? "Продано" : mode == "catalog" ? RoaItemData.Name("medkit")
+                    : mode == "listing" ? "КУПИТЬ С РЫНКА" : mode == "sellorder" ? "ВЫСТАВИТЬ НА ПРОДАЖУ"
+                    : mode == "sell" ? "ПРОДАТЬ" : "ПОСТАВИТЬ ЗАЯВКУ"), "Missing action in " + mode);
                 if (mode == "buy") Require(all.Contains("К оплате: 36"), "Partial purchase total must be 36.");
                 if (mode == "edit") Require(all.Contains("Вернётся: 56"), "Edit must preview the correct reserve refund.");
                 Camera camera = cameraObject.AddComponent<Camera>(); camera.enabled = false;

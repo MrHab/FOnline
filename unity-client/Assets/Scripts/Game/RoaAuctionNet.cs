@@ -60,7 +60,7 @@ namespace RealmOfAshes.Game
         /// Ставится только на предметы без износа и собственных свойств.
         /// </summary>
         public static bool BuyOrder(RoaSocketClient socket, string itemId, int qty, int price,
-                                    int durationHours, Action<JObject> completed)
+                                    int durationHours, Action<JObject> completed, bool deliverToInventory = true)
         {
             return Send(socket, new Dictionary<string, object>
             {
@@ -69,12 +69,14 @@ namespace RealmOfAshes.Game
                 ["qty"] = Math.Max(1, qty),
                 ["price"] = Math.Max(1, price),
                 ["durationHours"] = Math.Max(0, durationHours),
+                ["deliverToInventory"] = deliverToInventory,
                 ["requestId"] = NewRequestId("market-buy")
             }, completed);
         }
 
         /// <summary>Купить сейчас с конкретного ордера на продажу.</summary>
-        public static bool BuyNow(RoaSocketClient socket, string orderId, int qty, Action<JObject> completed, int expectedPrice = 0)
+        public static bool BuyNow(RoaSocketClient socket, string orderId, int qty, Action<JObject> completed,
+                                  int expectedPrice = 0, bool deliverToInventory = true)
         {
             return Send(socket, new Dictionary<string, object>
             {
@@ -82,7 +84,8 @@ namespace RealmOfAshes.Game
                 ["orderId"] = orderId ?? string.Empty,
                 ["qty"] = Math.Max(1, qty),
                 ["requestId"] = NewRequestId("market-buynow"),
-                ["expectedPrice"] = expectedPrice
+                ["expectedPrice"] = expectedPrice,
+                ["deliverToInventory"] = deliverToInventory
             }, completed);
         }
 

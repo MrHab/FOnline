@@ -53,10 +53,37 @@ namespace RealmOfAshes.Game
         private RectTransform _categoryColumn;
         private RectTransform _list;
         private RectTransform _detail;
+        private RectTransform _scrollArea;
+        private ScrollRect _listScroll;
+        private RectTransform _toolbar;
+        private RectTransform _pageBar;
+        private Text _pageLabel;
+        private Button _previousPage;
+        private Button _nextPage;
         private InputField _priceInput;
         private InputField _qtyInput;
         private InputField _searchInput;
         private int _sort;
+        private int _page;
+        private int _pageCount = 1;
+        private int _availability;
+        private int _priceBand;
+        private string _typeFilter = "all";
+        private RectTransform _filterPopup;
+        private Text _categoryFilterLabel;
+        private Text _typeFilterLabel;
+        private Text _availabilityFilterLabel;
+        private Text _priceFilterLabel;
+        private RectTransform _marketModal;
+        private RectTransform _modalLeft;
+        private RectTransform _modalRight;
+        private InputField _modalQty;
+        private InputField _modalPrice;
+        private readonly List<GameObject> _modalRows = new List<GameObject>();
+        private int _modalMode;
+        private int _historyHours = 24;
+        private bool _buyToBag = true;
+        private string _saleRuntimeId = string.Empty;
         private bool _actionBusy;
 
         private readonly List<GameObject> _rows = new List<GameObject>();
@@ -289,6 +316,7 @@ namespace RealmOfAshes.Game
             else _note = ack?["error"]?.ToString() ?? "Аукционер отклонил действие.";
             _refreshAt = Time.unscaledTime + 6f;
             Rebuild();
+            if (!string.IsNullOrEmpty(_itemId)) RequestState();
         }
 
         private static string ActionNote(JObject ack)
@@ -313,7 +341,8 @@ namespace RealmOfAshes.Game
                     if ((ack["shelved"]?.Value<int>() ?? 0) > 0) note += " Часть не влезла в рюкзак и ждёт на полке.";
                     return note;
                 }
-                case "buyNow": return "Куплено " + qty + " шт за " + RoaPlural.Marks((ack["cost"]?.Value<int>() ?? 0)) + ".";
+                case "buyNow": return "Куплено " + qty + " шт за " + RoaPlural.Marks((ack["cost"]?.Value<int>() ?? 0)) + "."
+                    + ((ack["shelved"]?.Value<int>() ?? 0) > 0 ? " Покупка ждёт на полке." : string.Empty);
                 case "sellNow": return "Продано " + qty + " шт, на руки " + RoaPlural.Marks((ack["proceeds"]?.Value<int>() ?? 0)) + ".";
                 case "cancel": return "Ордер отменён, товар и марки ждут на полке.";
                 case "update": return "Ордер обновлён. Сбор " + (ack["setupFee"]?.Value<int>() ?? 0)
@@ -433,6 +462,11 @@ namespace RealmOfAshes.Game
             return rows.Count > 0 ? (rows[0]["price"]?.Value<int>() ?? 0) : 0;
         }
 
+        private JObject BestAvailableOrder(string itemId, string side)
+        {
+            return Book(itemId, side).FirstOrDefault(row => row["mine"]?.Value<bool>() != true);
+        }
+
         private JObject SelectedOrder()
         {
             if (string.IsNullOrEmpty(_orderId)) return null;
@@ -451,7 +485,14 @@ namespace RealmOfAshes.Game
             if (mine) _tab = Tab.Mine;
             _priceInput.text = (order["price"]?.Value<int>() ?? 1).ToString();
             _qtyInput.text = mine ? (order["qty"]?.Value<int>() ?? 1).ToString() : "1";
+            if (!mine && _modalQty != null)
+            {
+                _modalMode = order["side"]?.ToString() == "buy" ? 1 : 0;
+                _modalQty.text = "1";
+                _modalPrice.text = _priceInput.text;
+            }
             Rebuild();
+            if (!mine) RequestState();
         }
 
         private bool ValidOrderForm => FormPrice >= (_state?["limits"]?["minPrice"]?.Value<int>() ?? 1)
@@ -581,24 +622,34 @@ namespace RealmOfAshes.Game
             categoryLayout.childControlWidth = true;
 
             // Центр: товары книги, строки ордеров или полка.
-            RectTransform scrollArea = Child("Scroll", _panel);
-            Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(222f, 32f), new Vector2(-396f, -116f));
-            RectTransform toolbar = Child("SearchBar", _panel);
-            Place(toolbar, 0f, 1f, 1f, 1f, new Vector2(222f, -108f), new Vector2(-396f, -76f));
-            _searchInput = NumberInput("Search", toolbar, "Поиск предмета…");
+            _scrollArea = Child("Scroll", _panel);
+            Place(_scrollArea, 0f, 0f, 1f, 1f, new Vector2(222f, 32f), new Vector2(-396f, -116f));
+            _toolbar = Child("MarketFilters", _panel);
+            Place(_toolbar, 0f, 1f, 1f, 1f, new Vector2(222f, -110f), new Vector2(-14f, -76f));
+            _searchInput = NumberInput("Search", _toolbar, "Поиск предмета…");
             _searchInput.contentType = InputField.ContentType.Standard;
             _searchInput.characterLimit = 64;
-            Place((RectTransform)_searchInput.transform, 0f, 0f, 1f, 1f, Vector2.zero, new Vector2(-145f, 0f));
-            _searchInput.onValueChanged.AddListener(value => Rebuild());
-            Button sortButton = TextButton("Sort", toolbar, "По имени ↓", 12, out Text sortText);
-            Place((RectTransform)sortButton.transform, 1f, 0f, 1f, 1f, new Vector2(-140f, 0f), Vector2.zero);
-            sortButton.onClick.AddListener(() => {
-                _sort = (_sort + 1) % 3;
-                sortText.text = new[] { "По имени ↓", "Дешевле ↓", "Выкуп дороже ↓" }[_sort];
-                Rebuild();
-            });
-            var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
-            RectTransform viewport = Child("Viewport", scrollArea);
+            Place((RectTransform)_searchInput.transform, 0f, 0f, 0.31f, 1f, Vector2.zero, new Vector2(-5f, 0f));
+            _searchInput.onValueChanged.AddListener(value => { _page = 0; ResetBrowseScroll(); Rebuild(); });
+            AddFilterButton("CategoryFilter", 0.31f, 0.49f, out _categoryFilterLabel,
+                () => ShowFilterMenu(_categoryFilterLabel, CategoryChoices(), value => { _category = value; _typeFilter = "all"; _page = 0; ResetBrowseScroll(); Rebuild(); }));
+            AddFilterButton("TypeFilter", 0.49f, 0.68f, out _typeFilterLabel,
+                () => ShowFilterMenu(_typeFilterLabel, TypeChoices(), value => {
+                    _typeFilter = value; if (value.StartsWith("tier:")) _availability = 0;
+                    _page = 0; ResetBrowseScroll(); Rebuild();
+                }));
+            AddFilterButton("AvailabilityFilter", 0.68f, 0.84f, out _availabilityFilterLabel,
+                () => ShowFilterMenu(_availabilityFilterLabel, new[] { new KeyValuePair<string, string>("0", "Продают"),
+                    new KeyValuePair<string, string>("1", "Выкупают"), new KeyValuePair<string, string>("2", "Все товары") },
+                    value => { _availability = int.Parse(value); _page = 0; ResetBrowseScroll(); Rebuild(); }));
+            AddFilterButton("PriceFilter", 0.84f, 1f, out _priceFilterLabel,
+                () => ShowFilterMenu(_priceFilterLabel, new[] { new KeyValuePair<string, string>("0", "Любая цена"),
+                    new KeyValuePair<string, string>("1", "До 100"), new KeyValuePair<string, string>("2", "101–500"),
+                    new KeyValuePair<string, string>("3", "От 501") },
+                    value => { _priceBand = int.Parse(value); _page = 0; ResetBrowseScroll(); Rebuild(); }));
+            var scroll = _scrollArea.gameObject.AddComponent<ScrollRect>();
+            _listScroll = scroll;
+            RectTransform viewport = Child("Viewport", _scrollArea);
             Stretch(viewport, 0f);
             viewport.gameObject.AddComponent<RectMask2D>();
             _list = Child("Content", viewport);
@@ -621,6 +672,17 @@ namespace RealmOfAshes.Game
             scroll.viewport = viewport;
             RoaUiScroll.Configure(scroll);
 
+            _pageBar = Child("PageBar", _panel);
+            Place(_pageBar, 0f, 0f, 1f, 0f, new Vector2(222f, 34f), new Vector2(-14f, 66f));
+            _previousPage = TextButton("Previous", _pageBar, "◀", 14, out Text previousText);
+            Place((RectTransform)_previousPage.transform, 0f, 0f, 0f, 1f, Vector2.zero, new Vector2(42f, 0f));
+            _previousPage.onClick.AddListener(() => { if (_page > 0) { _page--; ResetBrowseScroll(); Rebuild(); } });
+            _pageLabel = Label("Page", _pageBar, 12, TextAnchor.MiddleCenter, InkDim);
+            Place(_pageLabel.rectTransform, 0f, 0f, 0f, 1f, new Vector2(45f, 0f), new Vector2(155f, 0f));
+            _nextPage = TextButton("Next", _pageBar, "▶", 14, out Text nextText);
+            Place((RectTransform)_nextPage.transform, 0f, 0f, 0f, 1f, new Vector2(158f, 0f), new Vector2(200f, 0f));
+            _nextPage.onClick.AddListener(() => { if (_page + 1 < _pageCount) { _page++; ResetBrowseScroll(); Rebuild(); } });
+
             // Правая колонка: форма ордера или карточка выбранного ордера.
             _detail = Child("Detail", _panel);
             Place(_detail, 1f, 0f, 1f, 1f, new Vector2(-388f, 32f), new Vector2(-14f, -76f));
@@ -640,6 +702,108 @@ namespace RealmOfAshes.Game
             qtyCaption.text = "Количество";
             _priceInput.gameObject.SetActive(false);
             _qtyInput.gameObject.SetActive(false);
+            EnsureMarketModal();
+        }
+
+        private void AddFilterButton(string name, float left, float right, out Text caption, Action open)
+        {
+            Button button = TextButton(name, _toolbar, string.Empty, 12, out caption);
+            Place((RectTransform)button.transform, left, 0f, right, 1f,
+                new Vector2(3f, 0f), new Vector2(-3f, 0f));
+            button.GetComponent<Image>().color = RowBg;
+            button.onClick.AddListener(() => open());
+        }
+
+        private IEnumerable<KeyValuePair<string, string>> CategoryChoices()
+        {
+            yield return new KeyValuePair<string, string>("all", "Все категории");
+            foreach (JObject row in (_state?["categories"] as JArray ?? new JArray()).OfType<JObject>())
+                yield return new KeyValuePair<string, string>(row["id"]?.ToString() ?? "misc", row["label"]?.ToString() ?? "Разное");
+        }
+
+        private IEnumerable<KeyValuePair<string, string>> TypeChoices()
+        {
+            yield return new KeyValuePair<string, string>("all", "Все типы");
+            if (_category == "all") yield break;
+            if (_category == "artifacts")
+            {
+                foreach (int tier in Orders.OfType<JObject>().Where(row => row["category"]?.ToString() == "artifacts")
+                    .Select(ArtifactTier).Where(value => value > 0).Distinct().OrderBy(value => value))
+                    yield return new KeyValuePair<string, string>("tier:" + tier, "Ранг " + tier);
+                yield break;
+            }
+            foreach (string type in MarketItems.OfType<JObject>()
+                .Where(row => row["category"]?.ToString() == _category)
+                .Select(row => MarketType(row["itemId"]?.ToString())).Distinct().OrderBy(value => value))
+                yield return new KeyValuePair<string, string>(type, type);
+        }
+
+        private static int ArtifactTier(JObject row)
+        {
+            JArray records = row?["artifacts"] as JArray;
+            return records != null && records.Count > 0 ? records[0]?["tier"]?.Value<int>() ?? 0 : 0;
+        }
+
+        private static string MarketType(string itemId)
+        {
+            string category = RoaItemData.Category(itemId);
+            if (category == "weapons")
+            {
+                string ammo = RoaItemData.AmmoType(itemId);
+                return string.IsNullOrEmpty(ammo) ? "Ближний бой" : RoaItemData.Name(ammo);
+            }
+            if (category == "armor" || category == "tools")
+            {
+                string slot = RoaItemData.Slot(itemId);
+                switch (slot)
+                {
+                    case "armor": return "Броня корпуса";
+                    case "helmet": return "Шлемы";
+                    case "boots": return "Обувь";
+                    case "backpack": return "Рюкзаки";
+                    case "weapon": return "Инструменты добычи";
+                    case "detector": return "Детекторы";
+                    case "artifactBelt": return "Контейнеры артефактов";
+                    case "vehicle": return "Транспорт";
+                    default: return "Расходное";
+                }
+            }
+            if (category == "ammo") return RoaItemData.Name(itemId);
+            if (category == "artifacts") return "Артефакт";
+            if (category == "materials") return "Материал";
+            if (category == "aid") return "Медицина";
+            if (category == "strategic") return "Стратегическое";
+            return "Разное";
+        }
+
+        private void ShowFilterMenu(Text source, IEnumerable<KeyValuePair<string, string>> choices, Action<string> select)
+        {
+            if (_filterPopup != null) Destroy(_filterPopup.gameObject);
+            var options = choices.ToList();
+            _filterPopup = Child("Options", _toolbar);
+            _filterPopup.gameObject.AddComponent<Image>().color = PanelBg;
+            _filterPopup.gameObject.AddComponent<Outline>().effectColor = PanelBorder;
+            float x = ((RectTransform)source.transform.parent).anchorMin.x;
+            float width = Mathf.Max(155f, (float)Screen.width * 0.13f);
+            _filterPopup.anchorMin = _filterPopup.anchorMax = new Vector2(x, 0f);
+            _filterPopup.pivot = new Vector2(0f, 1f);
+            _filterPopup.anchoredPosition = new Vector2(3f, -4f);
+            _filterPopup.sizeDelta = new Vector2(width, options.Count * 30f + 8f);
+            RectTransform openedMenu = _filterPopup;
+            for (int i = 0; i < options.Count; i++)
+            {
+                KeyValuePair<string, string> option = options[i];
+                Button button = TextButton("Option", _filterPopup, option.Value, 12, out Text label);
+                label.alignment = TextAnchor.MiddleLeft;
+                Place((RectTransform)button.transform, 0f, 1f, 1f, 1f,
+                    new Vector2(5f, -7f - (i + 1) * 30f), new Vector2(-5f, -7f - i * 30f));
+                button.onClick.AddListener(() => {
+                    if (openedMenu != null) Destroy(openedMenu.gameObject);
+                    if (_filterPopup == openedMenu) _filterPopup = null;
+                    select(option.Key);
+                });
+            }
+            _toolbar.SetAsLastSibling();
         }
 
         // ------------------------------------------------------------------
@@ -648,6 +812,20 @@ namespace RealmOfAshes.Game
         private void Rebuild()
         {
             if (_root == null || !_root.activeSelf) return;
+
+            bool browse = _tab == Tab.Buy && string.IsNullOrEmpty(_itemId);
+            bool modal = (_tab == Tab.Buy || _tab == Tab.Sell) && !string.IsNullOrEmpty(_itemId);
+            bool buyTab = _tab == Tab.Buy;
+            _pageBar.gameObject.SetActive(browse);
+            _detail.gameObject.SetActive(!browse && !modal);
+            Place(_scrollArea, 0f, 0f, 1f, 1f, new Vector2(222f, browse ? 70f : 32f),
+                new Vector2(browse ? -14f : -396f, browse ? -158f : -116f));
+            Place(_toolbar, 0f, 1f, 1f, 1f, new Vector2(222f, -110f), new Vector2(buyTab ? -14f : -396f, -76f));
+            Place((RectTransform)_searchInput.transform, 0f, 0f, buyTab ? 0.31f : 1f, 1f,
+                Vector2.zero, new Vector2(buyTab ? -5f : 0f, 0f));
+            foreach (Transform child in _toolbar)
+                if (child != _searchInput.transform && child != _filterPopup) child.gameObject.SetActive(buyTab);
+            UpdateFilterLabels();
 
             // Экономика v3: у каждой столицы своя книга, сервер называет её.
             string marketName = _state?["marketName"]?.ToString();
@@ -671,19 +849,362 @@ namespace RealmOfAshes.Game
             switch (_tab)
             {
                 case Tab.Sell:
-                    if (string.IsNullOrEmpty(_itemId)) BuildBackpackPage(); else BuildBookPage();
+                    BuildBackpackPage();
                     break;
                 case Tab.Mine: BuildMyOrdersPage(); break;
                 case Tab.Shelf: BuildShelfPage(); break;
                 case Tab.Sin: BuildSinPage(); break;
                 case Tab.Journal: BuildJournalPage(); break;
                 default:
-                    if (string.IsNullOrEmpty(_itemId)) BuildMarketPage(); else BuildBookPage();
+                    BuildMarketPage();
                     break;
             }
 
-            RebuildDetail();
+            if (!modal) RebuildDetail();
+            _marketModal.gameObject.SetActive(modal);
+            if (modal) { _marketModal.SetAsLastSibling(); RebuildMarketModal(); }
             TickTimers();
+        }
+
+        private void UpdateFilterLabels()
+        {
+            string category = CategoryChoices().FirstOrDefault(row => row.Key == _category).Value;
+            _categoryFilterLabel.text = string.IsNullOrEmpty(category) ? "Категория ▾" : category + " ▾";
+            _typeFilterLabel.text = (_typeFilter == "all" ? "Тип / ранг" : _typeFilter.StartsWith("tier:")
+                ? "Ранг " + _typeFilter.Substring(5) : _typeFilter) + " ▾";
+            _availabilityFilterLabel.text = new[] { "Продают", "Выкупают", "Все товары" }[Mathf.Clamp(_availability, 0, 2)] + " ▾";
+            _priceFilterLabel.text = new[] { "Любая цена", "До 100", "101–500", "От 501" }[Mathf.Clamp(_priceBand, 0, 3)] + " ▾";
+        }
+
+        private void ResetBrowseScroll()
+        {
+            if (_listScroll != null) _listScroll.verticalNormalizedPosition = 1f;
+        }
+
+        private void EnsureMarketModal()
+        {
+            _marketModal = Child("ItemMarket", _panel);
+            Place(_marketModal, 0f, 0f, 1f, 1f, new Vector2(14f, 34f), new Vector2(-14f, -76f));
+            _marketModal.gameObject.AddComponent<Image>().color = PanelBg;
+            _marketModal.gameObject.AddComponent<Outline>().effectColor = PanelBorder;
+            _modalLeft = Child("TradeForm", _marketModal);
+            Place(_modalLeft, 0f, 0f, 0.49f, 1f, new Vector2(12f, 12f), new Vector2(-8f, -72f));
+            _modalRight = Child("BookAndHistory", _marketModal);
+            Place(_modalRight, 0.49f, 0f, 1f, 1f, new Vector2(8f, 12f), new Vector2(-12f, -72f));
+            _modalRight.gameObject.AddComponent<Image>().color = QuietBg;
+            _modalQty = NumberInput("MarketQuantity", _modalLeft, "Количество");
+            Place((RectTransform)_modalQty.transform, 0f, 1f, 1f, 1f,
+                new Vector2(84f, -164f), new Vector2(-56f, -136f));
+            _modalPrice = NumberInput("MarketPrice", _modalLeft, "Цена за штуку");
+            Place((RectTransform)_modalPrice.transform, 0f, 1f, 1f, 1f,
+                new Vector2(84f, -200f), new Vector2(-12f, -172f));
+            _modalQty.text = "1";
+            _modalPrice.text = "1";
+            _marketModal.gameObject.SetActive(false);
+        }
+
+        private Text ModalText(RectTransform parent, string caption, int size, Color color,
+                               float left, float right, float top, float height, TextAnchor align = TextAnchor.MiddleLeft)
+        {
+            Text label = Label("MarketText", parent, size, align, color);
+            Place(label.rectTransform, left, 1f, right, 1f,
+                new Vector2(0f, top - height), new Vector2(0f, top));
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            label.text = caption;
+            _modalRows.Add(label.gameObject);
+            return label;
+        }
+
+        private Button ModalButton(RectTransform parent, string caption, float left, float right,
+                                   float top, float height, bool selected, Action action)
+        {
+            Button button = TextButton("MarketAction", parent, caption, 13, out Text label);
+            Place((RectTransform)button.transform, left, 1f, right, 1f,
+                new Vector2(0f, top - height), new Vector2(0f, top));
+            button.GetComponent<Image>().color = selected ? ButtonBg : RowBg;
+            label.color = selected ? Accent : Ink;
+            button.onClick.AddListener(() => action());
+            _modalRows.Add(button.gameObject);
+            return button;
+        }
+
+        private void ChooseMarketMode(int mode)
+        {
+            _modalMode = mode;
+            string side = mode == 0 ? "sell" : "buy";
+            JObject best = BestAvailableOrder(_itemId, side);
+            _orderId = mode < 2 ? best?["id"]?.ToString() ?? string.Empty : string.Empty;
+            _modalQty.text = "1";
+            _modalPrice.text = (mode == 2 ? Math.Max(1, BestPrice(_itemId, "sell") > 0
+                ? BestPrice(_itemId, "sell") : RoaItemData.BasePrice(_itemId))
+                : Math.Max(1, BestPrice(_itemId, "buy") > 0
+                    ? BestPrice(_itemId, "buy") : RoaItemData.BasePrice(_itemId))).ToString();
+            Rebuild();
+        }
+
+        private void RebuildMarketModal()
+        {
+            ClearRows(_modalRows);
+            _modalQty.gameObject.SetActive(true);
+            _modalPrice.gameObject.SetActive(_modalMode >= 2);
+            string itemName = RoaItemData.Name(_itemId);
+            GameObject itemTile = AddItemTile(_marketModal, _itemId, 20f, 0f, 54f);
+            RectTransform tileRect = (RectTransform)itemTile.transform;
+            tileRect.anchorMin = tileRect.anchorMax = new Vector2(0f, 1f);
+            tileRect.pivot = new Vector2(0f, 1f);
+            tileRect.anchoredPosition = new Vector2(20f, -10f);
+            _modalRows.Add(itemTile);
+            Text itemTitle = ModalText(_marketModal, itemName, 20, Accent, 0f, 0.79f, -15f, 30f);
+            Place(itemTitle.rectTransform, 0f, 1f, 0.79f, 1f, new Vector2(88f, -45f), new Vector2(0f, -15f));
+            Text typeTitle = ModalText(_marketModal, MarketType(_itemId) + " · " + (_state?["marketName"]?.ToString() ?? "рынок"),
+                11, InkDim, 0f, 0.79f, -45f, 18f);
+            Place(typeTitle.rectTransform, 0f, 1f, 0.79f, 1f, new Vector2(88f, -63f), new Vector2(0f, -45f));
+            Button close = ModalButton(_marketModal, "✕", 0.93f, 0.99f, -14f, 35f, false, () => {
+                _itemId = string.Empty; _orderId = string.Empty; _note = string.Empty; Rebuild();
+            });
+            close.GetComponent<Image>().color = QuietBg;
+            for (int i = 0; i < 4; i++)
+            {
+                int mode = i;
+                string label = new[] { "Купить", "Продать", "Заявка на продажу", "Заявка на покупку" }[i];
+                ModalButton(_modalLeft, (_modalMode == i ? "●  " : "○  ") + label,
+                    0.02f, 0.98f, -6f - i * 30f, 28f, _modalMode == i, () => ChooseMarketMode(mode));
+            }
+            ModalText(_modalLeft, "Количество", 12, InkDim, 0.02f, 0.25f, -136f, 28f);
+            ModalButton(_modalLeft, "−", 0.85f, 0.91f, -136f, 28f, false, () => {
+                _modalQty.text = Math.Max(1, ParseNumber(_modalQty.text, 1) - 1).ToString(); Rebuild();
+            });
+            ModalButton(_modalLeft, "+", 0.92f, 0.98f, -136f, 28f, false, () => {
+                _modalQty.text = Math.Min(500, ParseNumber(_modalQty.text, 1) + 1).ToString(); Rebuild();
+            });
+            if (_modalMode >= 2) ModalText(_modalLeft, "Цена за шт.", 12, InkDim, 0.02f, 0.25f, -172f, 28f);
+            JObject selected = SelectedOrder();
+            string side = _modalMode == 0 ? "sell" : "buy";
+            if (_modalMode < 2 && (selected == null || selected["side"]?.ToString() != side
+                || selected["mine"]?.Value<bool>() == true))
+            {
+                selected = BestAvailableOrder(_itemId, side);
+                _orderId = selected?["id"]?.ToString() ?? string.Empty;
+            }
+            if (_modalMode == 0 && selected != null && selected["artifactCount"]?.Value<int>() > 0)
+            {
+                string artifact = AuctionArtifactLine(selected).Trim().Replace("\n", " · ");
+                if (!string.IsNullOrEmpty(artifact)) ModalText(_modalLeft, artifact, 11, InkDim,
+                    0.02f, 0.98f, -172f, 30f);
+            }
+            int quantity = ParseNumber(_modalQty.text, 0);
+            int price = _modalMode < 2 ? selected?["price"]?.Value<int>() ?? 0 : ParseNumber(_modalPrice.text, 0);
+            if (_modalMode < 2 && (selected?["artifactCount"]?.Value<int>() ?? 0) == 0)
+            {
+                JObject daily = (_state?["history"] as JArray ?? new JArray()).OfType<JObject>()
+                    .FirstOrDefault(row => row["hours"]?.Value<int>() == 24);
+                double averagePrice = daily?["average"]?.Value<double>() ?? 0;
+                if (averagePrice > 0 && price > 0)
+                {
+                    double difference = (price / averagePrice - 1) * 100;
+                    ModalText(_modalLeft, "Цена " + Math.Abs(difference).ToString("0.#") + "% "
+                        + (difference <= 0 ? "ниже" : "выше") + " средней за сутки", 11,
+                        difference <= 0 ? Good : Warn, 0.02f, 0.98f, -172f, 28f);
+                }
+            }
+            long total = (long)quantity * price;
+            long fee = (long)Math.Floor(total * SetupFeePct);
+            long tax = (long)Math.Floor(total * TaxPct);
+            bool ready = quantity > 0 && quantity <= (_state?["limits"]?["maxQtyPerOrder"]?.Value<int>() ?? 500);
+            if (_modalMode == 0 || _modalMode == 1)
+            {
+                int available = selected?["qty"]?.Value<int>() ?? 0;
+                ready &= selected != null && quantity <= available;
+                ready &= _modalMode == 0 ? total <= Marks : quantity <= Backpack(_itemId);
+                ModalText(_modalLeft, selected == null ? "Подходящих заявок сейчас нет." :
+                    "Выбрано: " + available + " шт по " + price + " марок · "
+                    + (selected["ownerName"]?.ToString() ?? "торговец"), 12, InkDim,
+                    0.02f, 0.98f, -207f, 30f);
+            }
+            else
+            {
+                ready &= price >= (_state?["limits"]?["minPrice"]?.Value<int>() ?? 1)
+                    && price <= (_state?["limits"]?["maxPrice"]?.Value<int>() ?? 200000);
+                ready &= _modalMode == 2 ? quantity <= Backpack(_itemId) && fee <= Marks
+                    && (Fungible(_itemId) || quantity == 1) : Fungible(_itemId) && total + fee <= Marks;
+                ModalText(_modalLeft, _modalMode == 2 ? "В рюкзаке: " + Backpack(_itemId)
+                    + " · полностью отремонтируйте снаряжение" : Fungible(_itemId)
+                    ? "Марки будут зарезервированы до сделки или отмены."
+                    : "Заявка на выкуп недоступна для снаряжения и артефактов.",
+                    11, InkDim, 0.02f, 0.98f, -207f, 30f);
+                AddMarketDurationButtons();
+            }
+            if ((_modalMode == 1 || _modalMode == 2)
+                && (RoaItemData.Category(_itemId) == "artifacts" || RoaItemData.ConditionMode(_itemId) == "runtime"))
+            {
+                List<string> instances = SaleInstances(_itemId);
+                if (!instances.Contains(_saleRuntimeId)) _saleRuntimeId = instances.FirstOrDefault() ?? string.Empty;
+                int index = instances.IndexOf(_saleRuntimeId);
+                string descriptor = instances.Count == 0 ? "В рюкзаке нет доступного экземпляра"
+                    : "Экземпляр " + (index + 1) + "/" + instances.Count
+                        + " · состояние " + Inventory.BagConditionPercent(_saleRuntimeId).ToString("0.#") + "%";
+                if (RoaItemData.Category(_itemId) == "artifacts" && instances.Count > 0)
+                {
+                    JObject artifact = Inventory.ArtifactsFor(_itemId)
+                        .FirstOrDefault(row => row["id"]?.ToString() == _saleRuntimeId);
+                    descriptor = "Артефакт " + (index + 1) + "/" + instances.Count
+                        + " · ранг " + (artifact?["tier"]?.ToString() ?? "?");
+                }
+                ModalButton(_modalLeft, descriptor + (instances.Count > 1 ? "  ▶" : string.Empty),
+                    0.02f, 0.98f, -285f, 24f, false, () => {
+                        if (instances.Count > 1) { _saleRuntimeId = instances[(index + 1) % instances.Count]; Rebuild(); }
+                    });
+                if (RoaItemData.Category(_itemId) == "artifacts") ready &= instances.Count > 0;
+            }
+            if (_modalMode == 0 || _modalMode == 3)
+                ModalButton(_modalLeft, (_buyToBag ? "☑" : "□") + " Купленное сразу в рюкзак",
+                    0.02f, 0.98f, -285f, 24f, _buyToBag, () => { _buyToBag = !_buyToBag; Rebuild(); });
+            ready &= !_actionBusy;
+            string summary = _modalMode == 0 ? "К оплате: " + total + " марок · у вас " + Marks
+                : _modalMode == 1 ? "Налог: " + tax + " · получите " + (total - tax) + " марок"
+                : _modalMode == 2 ? "Сбор: " + fee + " · после налога получите " + (total - tax - fee)
+                : "Резерв: " + total + " · сбор: " + fee + " · всего " + (total + fee);
+            Text summaryLabel = ModalText(_modalLeft, summary, 13, ready ? Accent : Warn, 0.02f, 0.98f, -310f, 32f);
+            Place(summaryLabel.rectTransform, 0.02f, 0f, 0.98f, 0f,
+                new Vector2(0f, 50f), new Vector2(0f, 82f));
+            Button submit = ModalButton(_modalLeft, ready ? new[] { "КУПИТЬ", "ПРОДАТЬ", "ВЫСТАВИТЬ НА ПРОДАЖУ", "ПОСТАВИТЬ ЗАЯВКУ" }[_modalMode]
+                : _actionBusy ? "ОПЕРАЦИЯ ВЫПОЛНЯЕТСЯ…" : "ПРОВЕРЬТЕ ЦЕНУ, КОЛИЧЕСТВО И БАЛАНС", 0.02f, 0.98f,
+                -320f, 35f, ready, () => {
+                    if (ready) SubmitMarketModal(selected, quantity, price);
+                });
+            Place((RectTransform)submit.transform, 0.02f, 0f, 0.98f, 0f,
+                new Vector2(0f, 8f), new Vector2(0f, 43f));
+            RebuildMarketBook();
+            RebuildHistoryChart();
+        }
+
+        private void AddMarketDurationButtons()
+        {
+            ModalText(_modalLeft, "Срок заявки", 11, InkDim, 0.02f, 0.98f, -238f, 18f);
+            int i = 0;
+            foreach (JToken token in _state?["durationChoicesHours"] as JArray ?? new JArray())
+            {
+                int hours = token.Value<int>();
+                if (hours <= 0) continue;
+                int choice = hours;
+                ModalButton(_modalLeft, hours >= 24 ? (hours / 24) + " д" : hours + " ч",
+                    0.02f + i * 0.24f, 0.24f + i * 0.24f, -258f, 25f, _durationHours == hours,
+                    () => { _durationHours = choice; Rebuild(); });
+                i++;
+            }
+        }
+
+        private void SubmitMarketModal(JObject selected, int qty, int price)
+        {
+            if (Interaction == null || Interaction.Socket == null) return;
+            if (_modalMode == 0 && selected != null)
+                SendMarket(done => RoaAuctionNet.BuyNow(Interaction.Socket, selected["id"]?.ToString(), qty, done,
+                    price, _buyToBag));
+            else if (_modalMode == 1 && selected != null)
+                SendMarket(done => RoaAuctionNet.SellNow(Interaction.Socket, selected["id"]?.ToString(), qty,
+                    _saleRuntimeId, done, price));
+            else if (_modalMode == 2)
+                SendMarket(done => RoaAuctionNet.SellOrder(Interaction.Socket, _itemId, qty, price,
+                    _durationHours, _saleRuntimeId, done));
+            else if (_modalMode == 3)
+                SendMarket(done => RoaAuctionNet.BuyOrder(Interaction.Socket, _itemId, qty, price,
+                    _durationHours, done, _buyToBag));
+        }
+
+        private void RebuildMarketBook()
+        {
+            ModalText(_modalRight, "ПРОДАЮТ", 14, Accent, 0.03f, 0.49f, -9f, 24f);
+            ModalText(_modalRight, "ВЫКУПАЮТ", 14, Good, 0.51f, 0.97f, -9f, 24f);
+            AddMarketBookColumn("sell", 0.03f, 0.49f);
+            AddMarketBookColumn("buy", 0.51f, 0.97f);
+        }
+
+        private void AddMarketBookColumn(string side, float left, float right)
+        {
+            List<JObject> orders = Book(_itemId, side);
+            if (orders.Count == 0)
+            {
+                ModalText(_modalRight, "Нет заявок", 11, InkDim, left, right, -40f, 26f);
+                return;
+            }
+            for (int i = 0; i < Math.Min(6, orders.Count); i++)
+            {
+                JObject order = orders[i];
+                string id = order["id"]?.ToString() ?? string.Empty;
+                bool mine = order["mine"]?.Value<bool>() == true;
+                bool selected = id == _orderId;
+                string label = (order["price"]?.Value<int>() ?? 0) + " марок   ·   "
+                    + (order["qty"]?.Value<int>() ?? 0) + " шт" + (mine ? "  (мой)" : string.Empty);
+                Button button = ModalButton(_modalRight, label, left, right,
+                    -40f - i * 26f, 24f, selected, () => SelectOrder(order, false));
+                button.interactable = !mine;
+                if (mine) button.GetComponent<Image>().color = QuietBg;
+            }
+        }
+
+        private void RebuildHistoryChart()
+        {
+            ModalText(_modalRight, "ИСТОРИЯ СДЕЛОК", 13, Accent, 0.03f, 0.97f, -205f, 22f);
+            JObject summary = (_state?["history"] as JArray ?? new JArray()).OfType<JObject>()
+                .FirstOrDefault(row => row["hours"]?.Value<int>() == _historyHours);
+            int volume = summary?["qty"]?.Value<int>() ?? 0;
+            float average = summary?["average"]?.Value<float>() ?? 0f;
+            ModalText(_modalRight, volume > 0
+                ? "Средняя " + average.ToString("0.##") + " · " + volume + " шт · "
+                    + summary["min"] + "–" + summary["max"] + " марок"
+                : "За выбранный срок сделок не было", 11, InkDim, 0.03f, 0.97f, -228f, 20f);
+            RectTransform chart = Child("PriceChart", _modalRight);
+            Place(chart, 0f, 0f, 1f, 1f, new Vector2(12f, 65f), new Vector2(-12f, -252f));
+            chart.gameObject.AddComponent<Image>().color = RowBg;
+            _modalRows.Add(chart.gameObject);
+            for (int i = 1; i < 4; i++)
+            {
+                RectTransform grid = Child("Grid", chart);
+                Place(grid, 0f, i / 4f, 1f, i / 4f, Vector2.zero, new Vector2(0f, 1f));
+                grid.gameObject.AddComponent<Image>().color = new Color(InkDim.r, InkDim.g, InkDim.b, 0.12f);
+            }
+            if (_state?["historyItemId"]?.ToString() == _itemId && volume > 0)
+            {
+                int slots = _historyHours == 24 ? 24 : 28;
+                long hourMs = 3600000L;
+                long end = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / hourMs * hourMs;
+                long first = end - (_historyHours - 1L) * hourMs;
+                double[] weighted = new double[slots];
+                int[] quantities = new int[slots];
+                foreach (JObject row in (_state?["historySeries"] as JArray ?? new JArray()).OfType<JObject>())
+                {
+                    long at = row["at"]?.Value<long>() ?? 0L;
+                    if (at < first || at > end) continue;
+                    int index = (int)((at - first) * slots / (_historyHours * hourMs));
+                    index = Mathf.Clamp(index, 0, slots - 1);
+                    int qty = row["qty"]?.Value<int>() ?? 0;
+                    weighted[index] += (row["average"]?.Value<double>() ?? 0) * qty;
+                    quantities[index] += qty;
+                }
+                double max = 0;
+                for (int i = 0; i < slots; i++) if (quantities[i] > 0) max = Math.Max(max, weighted[i] / quantities[i]);
+                for (int i = 0; i < slots; i++)
+                {
+                    if (quantities[i] <= 0 || max <= 0) continue;
+                    float height = Mathf.Max(0.035f, (float)(weighted[i] / quantities[i] / max));
+                    RectTransform bar = Child("TradeHour", chart);
+                    float left = (i + 0.16f) / slots;
+                    float right = (i + 0.84f) / slots;
+                    Place(bar, left, 0f, right, height, new Vector2(0f, 2f), new Vector2(0f, -2f));
+                    bar.gameObject.AddComponent<Image>().color = Accent;
+                }
+            }
+            int[] choices = { 672, 168, 24 };
+            for (int i = 0; i < choices.Length; i++)
+            {
+                int hours = choices[i];
+                Button period = ModalButton(_modalRight, hours == 24 ? "24 ЧАСА" : hours == 168 ? "7 ДНЕЙ" : "28 ДНЕЙ",
+                    0.03f + i * 0.32f, 0.32f + i * 0.32f,
+                    -300f, 28f, _historyHours == hours,
+                    () => { _historyHours = hours; Rebuild(); });
+                Place((RectTransform)period.transform, 0.03f + i * 0.32f, 0f,
+                    0.32f + i * 0.32f, 0f, new Vector2(0f, 9f), new Vector2(0f, 37f));
+            }
         }
 
         private void RebuildTabs()
@@ -719,6 +1240,7 @@ namespace RealmOfAshes.Game
             Tab captured = tab;
             button.onClick.AddListener(() =>
             {
+                if (_filterPopup != null) { Destroy(_filterPopup.gameObject); _filterPopup = null; }
                 _tab = captured;
                 _itemId = string.Empty;
                 _orderId = string.Empty;
@@ -774,7 +1296,7 @@ namespace RealmOfAshes.Game
             Place(text.rectTransform, 0f, 0f, 1f, 1f, new Vector2(10f, 0f), new Vector2(-8f, 0f));
             text.text = label + "  " + count;
             string captured = id;
-            button.onClick.AddListener(() => { _category = captured; Rebuild(); });
+            button.onClick.AddListener(() => { _category = captured; _typeFilter = "all"; _page = 0; ResetBrowseScroll(); Rebuild(); });
             _categoryRows.Add(row);
         }
 
@@ -782,65 +1304,141 @@ namespace RealmOfAshes.Game
 
         private void BuildMarketPage()
         {
-            int shown = 0;
-            var rows = MarketItems.OfType<JObject>().Where(row => MatchesSearch(row["itemId"]?.ToString()));
-            rows = _sort == 1 ? rows.OrderBy(row => (row["sellPrice"]?.Value<int>() ?? 0) > 0 ? row["sellPrice"].Value<int>() : int.MaxValue)
-                : _sort == 2 ? rows.OrderByDescending(row => row["buyPrice"]?.Value<int>() ?? 0)
-                : rows.OrderBy(row => RoaItemData.Name(row["itemId"]?.ToString()));
-            foreach (JToken token in rows)
+            AddHeading(_availability == 1 ? "ЗАЯВКИ НА ВЫКУП" : _availability == 2 ? "КАТАЛОГ РЫНКА" : "КУПИТЬ С РЫНКА");
+            if (_state == null) { AddNote(_pending ? "Аукционер раскладывает книгу…" : "Рынок не ответил."); return; }
+            IEnumerable<JObject> rows = _availability == 2 ? MarketItems.OfType<JObject>()
+                : Orders.OfType<JObject>().Where(row => row["side"]?.ToString() == (_availability == 0 ? "sell" : "buy"));
+            rows = rows.Where(row =>
             {
-                JObject row = token as JObject;
-                if (row == null) continue;
-                if (_category != "all" && (row["category"]?.ToString() ?? "misc") != _category) continue;
-                shown += 1;
-                AddMarketItemRow(row);
-            }
-            if (shown == 0)
-            {
-                AddNote(_state == null
-                    ? (_pending ? "Аукционер раскладывает книгу…" : "Рынок не ответил.")
-                    : "По запросу ничего не найдено. Измените поиск или категорию.");
-            }
+                string itemId = row["itemId"]?.ToString() ?? string.Empty;
+                if (!MatchesSearch(itemId) || (_category != "all" && row["category"]?.ToString() != _category)) return false;
+                if (_typeFilter != "all" && (_typeFilter.StartsWith("tier:")
+                    ? ArtifactTier(row).ToString() != _typeFilter.Substring(5) : MarketType(itemId) != _typeFilter)) return false;
+                int price = BrowsePrice(row);
+                return _priceBand == 0 || (_priceBand == 1 && price > 0 && price <= 100)
+                    || (_priceBand == 2 && price >= 101 && price <= 500) || (_priceBand == 3 && price >= 501);
+            });
+            if (_sort == 0) rows = rows.OrderBy(row => BrowsePrice(row) > 0 ? BrowsePrice(row) : int.MaxValue)
+                .ThenBy(row => RoaItemData.Name(row["itemId"]?.ToString()));
+            else if (_sort == 1) rows = rows.OrderByDescending(BrowsePrice)
+                .ThenBy(row => RoaItemData.Name(row["itemId"]?.ToString()));
+            else if (_sort == 2) rows = rows.OrderBy(row => row["remainingSeconds"]?.Value<int>() ?? int.MaxValue);
+            else rows = rows.OrderBy(row => RoaItemData.Name(row["itemId"]?.ToString()));
+            List<JObject> visible = rows.ToList();
+            _pageCount = Mathf.Max(1, (visible.Count + 6) / 7);
+            _page = Mathf.Clamp(_page, 0, _pageCount - 1);
+            _pageLabel.text = (_page + 1) + " / " + _pageCount + " · " + visible.Count + " предложений";
+            _previousPage.interactable = _page > 0;
+            _nextPage.interactable = _page + 1 < _pageCount;
+            AddBrowseColumns();
+            foreach (JObject row in visible.Skip(_page * 7).Take(7)) AddMarketItemRow(row);
+            if (visible.Count == 0) AddNote(_availability == 0
+                ? "Продаж по фильтру нет. Выберите «Все товары», чтобы поставить заявку на выкуп."
+                : "По запросу ничего не найдено. Измените фильтры или поиск.");
+        }
+
+        private int BrowsePrice(JObject row)
+        {
+            if (_availability != 2) return row["price"]?.Value<int>() ?? 0;
+            int sale = row["sellPrice"]?.Value<int>() ?? 0;
+            return sale > 0 ? sale : row["buyPrice"]?.Value<int>() ?? 0;
+        }
+
+        private void AddBrowseColumns()
+        {
+            var go = new GameObject("Columns", typeof(RectTransform));
+            go.transform.SetParent(_list, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 30f;
+            RectTransform rect = (RectTransform)go.transform;
+            Button item = TextButton("ItemSort", rect, "ПРЕДМЕТ", 11, out Text itemText);
+            Place((RectTransform)item.transform, 0f, 0f, 0.45f, 1f, Vector2.zero, Vector2.zero);
+            itemText.alignment = TextAnchor.MiddleLeft;
+            item.onClick.AddListener(() => { _sort = 3; _page = 0; ResetBrowseScroll(); Rebuild(); });
+            Button time = TextButton("TimeSort", rect, "ВРЕМЯ", 11, out Text timeText);
+            Place((RectTransform)time.transform, 0.45f, 0f, 0.67f, 1f, Vector2.zero, Vector2.zero);
+            time.interactable = _availability != 2;
+            time.onClick.AddListener(() => { _sort = 2; _page = 0; ResetBrowseScroll(); Rebuild(); });
+            Button price = TextButton("PriceSort", rect, _sort == 1 ? "ЦЕНА ↓" : "ЦЕНА ↑", 11, out Text priceText);
+            Place((RectTransform)price.transform, 0.67f, 0f, 0.85f, 1f, Vector2.zero, Vector2.zero);
+            price.onClick.AddListener(() => { _sort = _sort == 0 ? 1 : 0; _page = 0; ResetBrowseScroll(); Rebuild(); });
+            _rows.Add(go);
         }
 
         private void AddMarketItemRow(JObject row)
         {
             string itemId = row["itemId"]?.ToString() ?? string.Empty;
-            int sellQty = row["sellQty"]?.Value<int>() ?? 0;
-            int sellPrice = row["sellPrice"]?.Value<int>() ?? 0;
-            int buyQty = row["buyQty"]?.Value<int>() ?? 0;
-            int buyPrice = row["buyPrice"]?.Value<int>() ?? 0;
+            bool catalog = _availability == 2;
+            int quantity = catalog ? Math.Max(row["sellQty"]?.Value<int>() ?? 0,
+                row["buyQty"]?.Value<int>() ?? 0) : row["qty"]?.Value<int>() ?? 0;
+            int price = BrowsePrice(row);
 
             var go = new GameObject("Item", typeof(RectTransform));
             go.transform.SetParent(_list, false);
-            go.AddComponent<LayoutElement>().preferredHeight = 38f;
+            go.AddComponent<LayoutElement>().preferredHeight = 59f;
             var back = go.AddComponent<Image>();
             back.color = row["mine"]?.Value<bool>() == true ? RowSelected : RowBg;
             var button = go.AddComponent<Button>();
             button.targetGraphic = back;
             var rect = (RectTransform)go.transform;
 
+            AddItemTile(rect, itemId, 9f, 6f, 47f);
             Text name = Label("Name", rect, 14, TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
-            Place(name.rectTransform, 0f, 0f, 0.44f, 1f, new Vector2(10f, 0f), new Vector2(-4f, 0f));
+            Place(name.rectTransform, 0f, 0f, 0.45f, 1f, new Vector2(66f, 11f), new Vector2(-4f, -5f));
             name.text = RoaItemData.Name(itemId);
-
-            Text sell = Label("Sell", rect, 12, TextAnchor.MiddleLeft, sellQty > 0 ? Ink : InkDim);
-            Place(sell.rectTransform, 0.44f, 0f, 0.72f, 1f, new Vector2(0f, 0f), new Vector2(-4f, 0f));
-            sell.text = sellQty > 0 ? "продают " + sellQty + " шт от " + sellPrice : "не продают";
-
-            Text buy = Label("Buy", rect, 12, TextAnchor.MiddleLeft, buyQty > 0 ? Good : InkDim);
-            Place(buy.rectTransform, 0.72f, 0f, 1f, 1f, new Vector2(0f, 0f), new Vector2(-10f, 0f));
-            buy.text = buyQty > 0 ? "выкупают " + buyQty + " шт по " + buyPrice : "нет заявок";
-
-            string captured = itemId;
-            button.onClick.AddListener(() => SelectItem(captured));
+            Text category = Label("Category", rect, 10, TextAnchor.MiddleLeft, InkDim);
+            Place(category.rectTransform, 0f, 0f, 0.45f, 1f, new Vector2(66f, 1f), new Vector2(-4f, -27f));
+            string detail = MarketType(itemId);
+            if (RoaItemData.Category(itemId) == "artifacts" && row["artifacts"] is JArray artifacts
+                && artifacts.Count > 0 && artifacts[0]?["tier"] != null)
+                detail += " · ранг " + artifacts[0]["tier"];
+            category.text = detail + " · " + (quantity > 0 ? quantity + " шт" : "нет предложений");
+            Text timer = Label("Time", rect, 12, TextAnchor.MiddleCenter, InkDim);
+            Place(timer.rectTransform, 0.45f, 0f, 0.67f, 1f, Vector2.zero, Vector2.zero);
+            if (catalog) timer.text = "—";
+            else _timers.Add(new KeyValuePair<Text, long>(timer, DeadlineFor(row)));
+            Text cost = Label("Price", rect, 15, TextAnchor.MiddleCenter, price > 0 ? Accent : InkDim, FontStyle.Bold);
+            Place(cost.rectTransform, 0.67f, 0f, 0.85f, 1f, Vector2.zero, Vector2.zero);
+            cost.text = price > 0 ? price + " марок" : "—";
+            Button buy = TextButton("Open", rect, catalog ? "ОТКРЫТЬ" : _availability == 0 ? "КУПИТЬ" : "ПРОДАТЬ", 12, out Text buyText);
+            Place((RectTransform)buy.transform, 0.85f, 0f, 1f, 1f, new Vector2(4f, 12f), new Vector2(-10f, -12f));
+            buy.GetComponent<Image>().color = ButtonBg;
+            buyText.color = Accent;
+            button.onClick.AddListener(() => OpenBrowseRow(row, catalog));
+            buy.onClick.AddListener(() => OpenBrowseRow(row, catalog));
             _rows.Add(go);
+        }
+
+        private void OpenBrowseRow(JObject row, bool catalog)
+        {
+            if (catalog) { SelectItem(row["itemId"]?.ToString() ?? string.Empty); return; }
+            SelectOrder(row, false);
+        }
+
+        private GameObject AddItemTile(RectTransform parent, string itemId, float x, float y, float size)
+        {
+            RectTransform tile = Child("ItemTile", parent);
+            tile.anchorMin = tile.anchorMax = new Vector2(0f, 0f);
+            tile.pivot = Vector2.zero;
+            tile.anchoredPosition = new Vector2(x, y);
+            tile.sizeDelta = new Vector2(size, size);
+            tile.gameObject.AddComponent<Image>().color = RowSelected;
+            tile.gameObject.AddComponent<Outline>().effectColor = PanelBorder;
+            string category = RoaItemData.Category(itemId);
+            string initials = category == "weapons" ? "ОР" : category == "armor" ? "БР"
+                : category == "ammo" ? "ПТ" : category == "artifacts" ? "АР"
+                : category == "aid" ? "МД" : category == "materials" ? "РС" : "ВЩ";
+            Text glyph = Label("Symbol", tile, 15, TextAnchor.MiddleCenter, Accent, FontStyle.Bold);
+            Stretch(glyph.rectTransform, 0f);
+            glyph.text = initials;
+            return tile.gameObject;
         }
 
         private void SelectItem(string itemId)
         {
+            if (_filterPopup != null) { Destroy(_filterPopup.gameObject); _filterPopup = null; }
             _itemId = itemId;
             _orderId = string.Empty;
+            _saleRuntimeId = SaleInstances(itemId).FirstOrDefault() ?? string.Empty;
             _note = string.Empty;
             // Предложение по умолчанию: цена из книги, иначе каталожная.
             int suggested = _tab == Tab.Sell
@@ -848,6 +1446,15 @@ namespace RealmOfAshes.Game
                 : (BestPrice(itemId, "buy") > 0 ? BestPrice(itemId, "buy") : Mathf.Max(1, RoaItemData.BasePrice(itemId)));
             _priceInput.text = suggested.ToString();
             _qtyInput.text = _tab == Tab.Sell && Fungible(itemId) ? Mathf.Min(500, Mathf.Max(1, Backpack(itemId))).ToString() : "1";
+            if (_modalQty != null)
+            {
+                _modalQty.text = "1";
+                _modalPrice.text = suggested.ToString();
+                bool selling = _tab == Tab.Sell;
+                JObject best = BestAvailableOrder(itemId, selling ? "buy" : "sell");
+                _modalMode = selling ? (best != null ? 1 : 2) : (best != null ? 0 : 3);
+                _orderId = best?["id"]?.ToString() ?? string.Empty;
+            }
             Rebuild();
             RequestState();
         }
@@ -856,6 +1463,17 @@ namespace RealmOfAshes.Game
         {
             string query = _searchInput != null ? _searchInput.text.Trim() : string.Empty;
             return query.Length == 0 || RoaItemData.Name(itemId).IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private List<string> SaleInstances(string itemId)
+        {
+            if (Inventory == null || string.IsNullOrEmpty(itemId)) return new List<string>();
+            if (RoaItemData.Category(itemId) == "artifacts")
+                return Inventory.ArtifactsFor(itemId).Where(row => !Inventory.ArtifactEquipped(row["id"]?.ToString()))
+                    .Select(row => row["id"]?.ToString()).Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
+            if (RoaItemData.ConditionMode(itemId) == "runtime")
+                return Inventory.BagInstanceIds(itemId, Backpack(itemId)).Distinct().ToList();
+            return new List<string>();
         }
 
         // --- рюкзак для продажи -------------------------------------------

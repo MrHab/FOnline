@@ -14,7 +14,8 @@
 // Время инжектируется — проверки без ожидания.
 
 const STORE_VERSION = 4;
-const { normalizeHistory, normalizeActivity, recordActivity, recordTrade, publicHistory, publicActivity } = require('./market-history');
+const { normalizeHistory, normalizeActivity, recordActivity, recordTrade,
+  publicHistory, publicHistorySeries, publicActivity } = require('./market-history');
 
 // Категории повторяют каталог предметов (src/server/kromka-items.js), чтобы
 // сервер клал в ордер собственную категорию предмета без отдельной таблицы.
@@ -687,6 +688,7 @@ function publicMarket(store = {}, viewerCharacterId = '', rules = DEFAULT_RULES,
     mineCount: orders.filter(row => row.mine).length,
     historyItemId: cleanId(options.itemId),
     history: publicHistory(store, options.itemId, now),
+    historySeries: publicHistorySeries(store, options.itemId, now),
     activity: publicActivity(store, cleanId(viewerCharacterId, 96)),
     shelf: {
       silver: shelf.silver,

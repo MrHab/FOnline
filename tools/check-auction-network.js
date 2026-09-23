@@ -185,6 +185,8 @@ const servicePosition = (locationId, service) => {
   const history = await market('trade', { action: 'state', itemId: 'ammo9' });
   assert.equal(history.auction.history[0].qty, 20);
   assert.equal(history.auction.history[0].average, 10);
+  assert(history.auction.historySeries.some(row => row.qty === 20 && row.average === 10),
+    'The item card receives chart points from completed local trades.');
   assert(history.auction.items.some(row => row.sellQty === 0 && row.buyQty === 0), 'Unlisted catalogue items can be selected.');
   assert(history.auction.activity.some(row => row.kind === 'sold'));
   assert.equal((await market('target', { action: 'state', itemId: 'ammo9' })).auction.history[0].qty, 0);
@@ -210,6 +212,14 @@ const servicePosition = (locationId, service) => {
   assert.equal(fill.balanceDelta, 40 - 60 - 2);
   assert.equal(fill.auction.shelf.items.reduce((sum, row) => sum + row.qty, 0), 4);
   await market('trade', { action: 'cancel', orderId: rest.orderId, requestId: 'edit-cleanup' });
+
+  const shelfOffer = await market('trade', { action: 'sell', itemId: 'ammo9', qty: 2, price: 25, requestId: 'shelf-offer' });
+  const buyerBeforeShelf = qty(demand.self, 'ammo9');
+  const shelfBuy = await market('harvest', { action: 'buyNow', orderId: shelfOffer.orderId,
+    qty: 2, deliverToInventory: false, requestId: 'shelf-buy' });
+  assert.equal(shelfBuy.shelved, 2, 'The chosen delivery destination is returned in the receipt.');
+  assert.equal(qty(shelfBuy.self, 'ammo9'), buyerBeforeShelf, 'Buying to the shelf does not add weight to the backpack.');
+  assert(shelfBuy.auction.shelf.items.some(row => row.itemId === 'ammo9' && row.qty === 2 && row.reason === 'bought'));
 
   // --- торгуют только торговцы-люди -----------------------------------------
   const scrapActors = accounts.target.join.worldState?.enemies || [];

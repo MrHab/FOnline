@@ -40,12 +40,16 @@ assert.equal(m.shelfFor(store, 'seller').silver, 221 + 295);
 const view = m.publicMarket(store, 'buyer', rules, now + 6, { itemId: 'ammo9', catalog: [{ itemId: 'empty', category: 'misc' }] });
 assert.equal(view.history[0].qty, 7);
 assert.equal(view.history[0].average, 80);
+assert.deepEqual(view.historySeries.map(row => [row.qty, row.average]), [[7, 80]],
+  'The chart uses only completed trades and volume-weighted prices.');
 assert(view.items.some(row => row.itemId === 'empty' && row.sellQty === 0));
 assert(view.activity.every(row => !('owner' in row)));
 assert(!view.activity.some(row => row.kind === 'sold'), 'A buyer cannot read seller receipts.');
 assert.deepEqual(m.publicMarket(m.normalizeMarketStore(JSON.parse(JSON.stringify(store))), 'buyer', rules, now + 6,
   { itemId: 'ammo9', catalog: [{ itemId: 'empty', category: 'misc' }] }), view, 'Restart preserves history and receipts.');
 assert.equal(publicHistory(store, 'ammo9', now + 29 * day)[2].qty, 0);
+assert.equal(m.publicMarket(store, 'buyer', rules, now + 29 * day, { itemId: 'ammo9' }).historySeries.length, 0,
+  'The public chart respects the same retention limit as summary statistics.');
 const otherCity = m.normalizeMarketStore({});
 assert.equal(publicHistory(otherCity, 'ammo9', now)[0].qty, 0);
 for (const key of ['constructor', '__proto__', 'toString', '', 'unknown']) {

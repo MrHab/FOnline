@@ -69,9 +69,22 @@ function publicHistory(store, itemId, now) {
   });
 }
 
+// The item screen draws its chart from completed trades, never from asking
+// prices. Keep the response sparse and bounded to the same 28-day retention as
+// the persisted hourly aggregates; gaps are filled by the client.
+function publicHistorySeries(store, itemId, now) {
+  const key = id(itemId);
+  const source = store.history && Object.prototype.hasOwnProperty.call(store.history, key) ? store.history[key] : null;
+  const first = Math.floor(now / HOUR) * HOUR - 671 * HOUR;
+  return (Array.isArray(source) ? source : []).filter(row => row.at >= first && row.at <= now)
+    .map(row => ({ at: row.at, qty: row.qty, average: Math.round(row.value / row.qty * 100) / 100,
+      min: row.min, max: row.max, trades: row.trades }));
+}
+
 function publicActivity(store, owner) {
   return (store.activity || []).filter(row => row.owner === owner).slice(-50).reverse()
     .map(({ owner: ignored, ...row }) => row);
 }
 
-module.exports = { normalizeHistory, normalizeActivity, recordActivity, recordTrade, publicHistory, publicActivity };
+module.exports = { normalizeHistory, normalizeActivity, recordActivity, recordTrade,
+  publicHistory, publicHistorySeries, publicActivity };

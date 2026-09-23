@@ -28530,7 +28530,7 @@ io.on('connection', (socket) => {
     }
     if (!['sell', 'buy', 'buyNow', 'sellNow', 'update', 'cancel', 'claim'].includes(action)) return fail('Неизвестное действие аукциона.');
     const transaction = beginCriticalAction(p, 'auctionAction', data,
-      ['action', 'itemId', 'qty', 'price', 'durationHours', 'orderId', 'itemRuntimeId', 'expectedPrice', 'expectedQty']);
+      ['action', 'itemId', 'qty', 'price', 'durationHours', 'orderId', 'itemRuntimeId', 'expectedPrice', 'expectedQty', 'deliverToInventory']);
     if (!transaction.ok) return fail(transaction.error);
     if (transaction.replay) {
       if (typeof ack === 'function') ack({ ...transaction.result, auction: auctionState(), self: publicAuthoritativePlayerState(p) });
@@ -28623,8 +28623,10 @@ io.on('connection', (socket) => {
       // исполненному ордеру не должен пропасть из-за веса.
       let shelved = 0;
       for (const bought of placed.bought) {
-        const carryCheck = serverLimitItemsByCarry(p, data, [{ id: bought.itemId, qty: bought.qty }], { apply: false });
-        const fits = Math.max(0, Math.min(bought.qty, carryCheck.items.find(entry => entry.id === bought.itemId)?.qty || 0));
+        const carryCheck = data.deliverToInventory === false ? null
+          : serverLimitItemsByCarry(p, data, [{ id: bought.itemId, qty: bought.qty }], { apply: false });
+        const fits = carryCheck ? Math.max(0, Math.min(bought.qty,
+          carryCheck.items.find(entry => entry.id === bought.itemId)?.qty || 0)) : 0;
         if (fits > 0) {
           serverInventoryAdd(p, bought.itemId, fits);
           if (bought.records?.length) serverRestoreWeaponRuntimeRecords(p, bought.records);
@@ -28649,17 +28651,25 @@ io.on('connection', (socket) => {
       const take = Math.max(1, Math.min(want > 0 ? want : order.qty, order.qty));
       const cost = take * order.price;
       if (serverInventoryQty(p.inventory, 'silver') < cost) return fail(`Не хватает марок: нужно ${cost}.`);
-      const carryCheck = serverLimitItemsByCarry(p, data, [{ id: order.itemId, qty: take }], { apply: false });
-      if (!carryCheck.items.some(entry => entry.id === order.itemId && entry.qty >= take)) return fail('Нет места или грузоподъёмности для покупки.');
+      const carryCheck = data.deliverToInventory === false ? null
+        : serverLimitItemsByCarry(p, data, [{ id: order.itemId, qty: take }], { apply: false });
+      if (carryCheck && !carryCheck.items.some(entry => entry.id === order.itemId && entry.qty >= take))
+        return fail('Нет места или грузоподъёмности для покупки.');
       const bought = marketTakeSellOrder(store, orderId, p.characterId, take, auctionRules, now);
       if (!bought.ok) return fail(bought.error);
       serverInventoryRemove(p, 'silver', bought.cost);
-      serverInventoryAdd(p, bought.order.itemId, bought.qty);
-      serverRestoreWeaponRuntimeRecords(p, bought.records || []);
+      if (data.deliverToInventory === false) {
+        marketCreditShelfItems(store, p.characterId,
+          [{ itemId: bought.order.itemId, qty: bought.qty, records: bought.records || [], reason: 'bought' }], now);
+      } else {
+        serverInventoryAdd(p, bought.order.itemId, bought.qty);
+        serverRestoreWeaponRuntimeRecords(p, bought.records || []);
+      }
       sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
       payload = {
         ok: true, action, orderId, itemId: bought.order.itemId, qty: bought.qty,
-        price: bought.price, cost: bought.cost, tax: bought.tax
+        price: bought.price, cost: bought.cost, tax: bought.tax,
+        shelved: data.deliverToInventory === false ? bought.qty : 0
       };
     } else if (action === 'sellNow') {
       // Мгновенная продажа в конкретный ордер на выкуп.

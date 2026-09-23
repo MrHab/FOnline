@@ -35,8 +35,11 @@ namespace RealmOfAshes.EditorTools
                     "mobile chat launcher is missing");
                 panel.parent.gameObject.SetActive(true);
                 RectTransform chatRect = (RectTransform)panel;
-                chatRect.localScale = Vector3.one * 0.50f;
-                chatRect.anchoredPosition = new Vector2(14f, 270f);
+                bool mobileCapture = string.Equals(
+                    Environment.GetEnvironmentVariable("ROA_CHAT_CAPTURE_MOBILE"), "1",
+                    StringComparison.Ordinal);
+                chatRect.localScale = Vector3.one * (mobileCapture ? 0.68f : 0.50f);
+                chatRect.anchoredPosition = new Vector2(mobileCapture ? 8f : 14f, 14f);
                 for (int i = 0; i < 5; i++)
                     Require(panel.Find("Header/Channel_" +
                         new[] { "world", "local", "faction", "group", "clan" }[i]) != null,
@@ -68,7 +71,8 @@ namespace RealmOfAshes.EditorTools
                 canvas.renderMode = RenderMode.ScreenSpaceCamera;
                 canvas.worldCamera = camera;
                 canvas.planeDistance = 1f;
-                target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+                target = new RenderTexture(mobileCapture ? 896 : 1280,
+                    mobileCapture ? 414 : 720, 24, RenderTextureFormat.ARGB32);
                 target.Create();
                 camera.targetTexture = target;
                 foreach (RectMask2D mask in host.GetComponentsInChildren<RectMask2D>(true))

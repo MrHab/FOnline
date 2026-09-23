@@ -67,9 +67,8 @@ namespace RealmOfAshes.Game
             if (_launcherObject != null)
                 _launcherObject.SetActive(mobile && !_expanded);
             var rect = (RectTransform)_panel.transform;
-            rect.localScale = Vector3.one * (mobile ? 0.40f : 0.50f);
-            rect.anchoredPosition = new Vector2(mobile ? 8f : 14f,
-                mobile ? 185f : 270f);
+            rect.localScale = Vector3.one * (mobile ? 0.68f : 0.50f);
+            rect.anchoredPosition = new Vector2(mobile ? 8f : 14f, 14f);
 
             if (_input == null) return;
             if (Input.GetKeyDown(KeyCode.Escape) && _expanded)
@@ -218,7 +217,7 @@ namespace RealmOfAshes.Game
             RectTransform rect = (RectTransform)tab.transform;
             rect.anchorMin = rect.anchorMax = new Vector2(0f, 0f);
             rect.pivot = new Vector2(0f, 0f);
-            rect.anchoredPosition = new Vector2(14f, 110f);
+            rect.anchoredPosition = new Vector2(14f, 14f);
             rect.sizeDelta = new Vector2(178f, 72f);
             rect.localScale = Vector3.one * 0.55f;
             Animator animator = tab.GetComponent<Animator>();

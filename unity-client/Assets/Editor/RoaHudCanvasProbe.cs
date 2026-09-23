@@ -103,40 +103,36 @@ namespace RealmOfAshes.EditorTools
                     && mobileHud.MapScale < desktopHud.MapScale,
                 "mobile identity or minimap panels did not release combat space");
             Require(RoaHudCanvas.ResolveFocusMode(false, false, false)
-                        == RoaHudCanvas.HudFocusMode.Exploration
+                        == RoaHudCanvas.HudFocusMode.Detailed
                     && RoaHudCanvas.ResolveFocusMode(true, false, false)
-                        == RoaHudCanvas.HudFocusMode.Combat
+                        == RoaHudCanvas.HudFocusMode.Detailed
                     && RoaHudCanvas.ResolveFocusMode(false, true, false)
                         == RoaHudCanvas.HudFocusMode.Detailed
                     && RoaHudCanvas.ResolveFocusMode(false, true, false, false)
-                        == RoaHudCanvas.HudFocusMode.Activity
+                        == RoaHudCanvas.HudFocusMode.Detailed
                     && RoaHudCanvas.ResolveFocusMode(true, true, false, false)
-                        == RoaHudCanvas.HudFocusMode.Combat
+                        == RoaHudCanvas.HudFocusMode.Detailed
                     && RoaHudCanvas.ShowsIdentity(RoaHudCanvas.HudFocusMode.Detailed)
-                    && !RoaHudCanvas.ShowsIdentity(RoaHudCanvas.HudFocusMode.Combat)
+                    && RoaHudCanvas.ShowsIdentity(RoaHudCanvas.HudFocusMode.Combat)
                     && RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Combat,
                         false, false, false)
-                    && !RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Activity,
+                    && RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Activity,
                         false, false, false)
-                    && !RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Combat,
+                    && RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Combat,
                         true, false, false)
                     && RoaCombat.IsCombatPresentationActive(6.9f, 7f)
                     && !RoaCombat.IsCombatPresentationActive(7f, 7f),
-                "contextual combat focus no longer has deterministic lifetime or manual detail access");
+                "the HUD must retain one visible arrangement through combat and activity");
             float desktopCompactTop = (RoaHudCanvas.CompactConsolePosition(false).y
                 + 66f * RoaHudCanvas.CompactConsoleScale(false)) / desktopReference.y;
             float mobileCompactTop = (RoaHudCanvas.CompactConsolePosition(true).y
                 + 66f * RoaHudCanvas.CompactConsoleScale(true)) / mobileReference.y;
             Require(desktopCompactTop < 0.10f && mobileCompactTop < 0.11f
                     && RoaHudCanvas.QuickbarFocusPosition(false,
-                        RoaHudCanvas.HudFocusMode.Exploration).y
-                        > RoaHudCanvas.CompactConsolePosition(false).y
-                            + 66f * RoaHudCanvas.CompactConsoleScale(false)
+                        RoaHudCanvas.HudFocusMode.Exploration).y == 14f
                     && RoaHudCanvas.QuickbarFocusPosition(true,
-                        RoaHudCanvas.HudFocusMode.Exploration).y
-                        > RoaHudCanvas.CompactConsolePosition(true).y
-                            + 66f * RoaHudCanvas.CompactConsoleScale(true),
-                "exploration strip obscures the world or overlaps the quickbar");
+                        RoaHudCanvas.HudFocusMode.Combat).y == 75f,
+                "the fixed action bar left its bottom-centre reference position");
             Vector2 recoveredConsole = RoaHudCanvas.ClampBottomPanelPosition(
                 new Vector2(0f, -56f), new Vector2(560f, 66f), 0.94f,
                 new Vector2(1920f, 1080f));
@@ -177,10 +173,11 @@ namespace RealmOfAshes.EditorTools
                     Transform minimap = hierarchyProbe.transform.Find(
                         "AdaptiveGameplayHud/SafeArea/Minimap");
                     Transform readyFrame = minimap != null
-                        ? minimap.Find("ApocalypseHudMinimapFrame/SPR_Frame") : null;
+                        ? minimap.Find("ApocalypseMinimapDevice/SPR_Frame") : null;
                     Require(readyFrame != null &&
-                        !minimap.Find("ApocalypseHudMinimapFrame/Minimap_Contents").gameObject.activeSelf,
-                        "the Synty minimap frame must show live map data instead of the sample map");
+                        !minimap.Find("ApocalypseMinimapDevice/Minimap_Contents/Map_Container/Map").gameObject.activeSelf
+                        && !minimap.Find("ApocalypseMinimapDevice/Minimap_Contents/Map_Icon_Player").gameObject.activeSelf,
+                        "the Synty minimap must show live map data instead of sample markers");
                 }
                 if (Resources.Load<GameObject>("ApocalypseHud/Screen_HUD_Apocalypse_ARPG_01") != null)
                 {
@@ -258,6 +255,9 @@ namespace RealmOfAshes.EditorTools
         {
             string path = Environment.GetEnvironmentVariable("ROA_HUD_CAPTURE");
             if (string.IsNullOrWhiteSpace(path)) return;
+            bool mobileCapture = string.Equals(Environment.GetEnvironmentVariable(
+                "ROA_HUD_CAPTURE_MOBILE"), "1", StringComparison.Ordinal);
+            if (mobileCapture) Screen.SetResolution(896, 414, false);
             GameObject host = null;
             GameObject cameraObject = null;
             RenderTexture target = null;
@@ -299,8 +299,17 @@ namespace RealmOfAshes.EditorTools
                 assigned[0] = "pistol";
                 assigned[1] = "medkit";
                 assigned[2] = "water";
+                RoaMinimap minimap = host.AddComponent<RoaMinimap>();
+                minimap.enabled = false;
+                RoaMobileControls mobile = null;
+                if (mobileCapture)
+                {
+                    mobile = host.AddComponent<RoaMobileControls>();
+                    mobile.enabled = false;
+                    mobile.ForceVisible = true;
+                }
                 RoaHudCanvas canvasOwner = host.AddComponent<RoaHudCanvas>();
-                canvasOwner.Configure(hud, quickbar, null, null, null);
+                canvasOwner.Configure(hud, quickbar, minimap, null, mobile);
                 MethodInfo update = typeof(RoaHudCanvas).GetMethod("Update",
                     BindingFlags.Instance | BindingFlags.NonPublic);
                 Require(update != null, "HUD capture cannot invoke presentation update");
@@ -335,8 +344,20 @@ namespace RealmOfAshes.EditorTools
                 safe.anchorMax = Vector2.one;
                 safe.offsetMin = Vector2.zero;
                 safe.offsetMax = Vector2.zero;
+                Transform quest = safe.Find("ApocalypseCurrentQuest");
+                if (quest != null)
+                {
+                    quest.gameObject.SetActive(true);
+                    var title = quest.Find("Content/HUD_ChapterHeader/Content/Label_Location")
+                        ?.GetComponent<TMPro.TextMeshProUGUI>();
+                    if (title != null) title.text = "ПУТЬ К ЛАГЕРЮ";
+                    var line = quest.Find("Content/Objective_List/Objective_Item_00/Content/Text/Label_Objective")
+                        ?.GetComponent<TMPro.TextMeshProUGUI>();
+                    if (line != null) line.text = "Найти вход в поселение";
+                }
 
-                target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32)
+                target = new RenderTexture(mobileCapture ? 896 : 1280,
+                    mobileCapture ? 414 : 720, 24, RenderTextureFormat.ARGB32)
                 {
                     name = "HudCanvasCapture",
                     antiAliasing = 4
@@ -347,7 +368,8 @@ namespace RealmOfAshes.EditorTools
                     if (label != null && label.enabled) label.ForceMeshUpdate(true, true);
                 foreach (UnityEngine.UI.RectMask2D mask in
                     host.GetComponentsInChildren<UnityEngine.UI.RectMask2D>(true))
-                    if (mask.GetComponentsInChildren<TMPro.TMP_Text>(true).Length > 0)
+                    if (mask.name != "Map"
+                        && mask.GetComponentsInChildren<TMPro.TMP_Text>(true).Length > 0)
                         mask.enabled = false;
                 Canvas.ForceUpdateCanvases();
                 Debug.Log("[ROA PROBE] Capture layout: canvas "

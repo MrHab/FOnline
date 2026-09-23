@@ -100,7 +100,7 @@ namespace RealmOfAshes.Game
                 }
                 _slotButtons[i] = button;
                 _slotTexts[i] = Label("LiveSlotLabel", slot,
-                    Vector2.zero, new Vector2(120f, 120f), 18,
+                    Vector2.zero, new Vector2(120f, 120f), 28,
                     TextAnchor.LowerCenter, Color.white, FontStyle.Bold);
                 Stretch(_slotTexts[i].rectTransform, new Vector2(5f, 3f));
             }
@@ -123,7 +123,7 @@ namespace RealmOfAshes.Game
             if (xp != null)
             {
                 _apocalypseXpLabel = Label("LiveXp", xp, Vector2.zero,
-                    new Vector2(400f, 40f), 20, TextAnchor.MiddleCenter,
+                    new Vector2(400f, 40f), 30, TextAnchor.MiddleCenter,
                     Color.white, FontStyle.Bold);
                 Stretch(_apocalypseXpLabel.rectTransform, Vector2.zero);
             }
@@ -190,8 +190,8 @@ namespace RealmOfAshes.Game
                 RectTransform rect = (RectTransform)_apocalypseQuest.transform;
                 rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
                 rect.pivot = new Vector2(1f, 1f);
-                rect.anchoredPosition = new Vector2(-16f, -247f);
-                rect.localScale = Vector3.one * 0.36f;
+                rect.anchoredPosition = new Vector2(-16f, -225f);
+                rect.localScale = Vector3.one * 0.27f;
                 _apocalypseQuestTitle = rect.Find(
                     "Content/HUD_ChapterHeader/Content/Label_Location")
                     ?.GetComponent<TextMeshProUGUI>();
@@ -219,7 +219,7 @@ namespace RealmOfAshes.Game
                 RectTransform rect = (RectTransform)_apocalypseApLamps.transform;
                 rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
                 rect.pivot = new Vector2(0.5f, 0f);
-                rect.anchoredPosition = new Vector2(0f, 210f);
+                rect.anchoredPosition = new Vector2(0f, 145f);
                 rect.localScale = Vector3.one * 0.42f;
                 Transform actionBar = rect.Find("ActionBar");
                 if (actionBar != null)
@@ -258,6 +258,7 @@ namespace RealmOfAshes.Game
                 apLabelRect.pivot = new Vector2(0.5f, 0f);
                 apLabelRect.anchoredPosition = new Vector2(0f, -15f);
                 _apocalypseApLabel.raycastTarget = false;
+                _apocalypseApLabel.enabled = false;
                 _apocalypseApLamps.SetActive(false);
             }
 
@@ -295,9 +296,9 @@ namespace RealmOfAshes.Game
                 _apocalypseHealth = Instantiate(healthPrefab, _safeRoot, false);
                 _apocalypseHealth.name = "ApocalypseHealthAndEffects";
                 RectTransform rect = (RectTransform)_apocalypseHealth.transform;
-                rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
-                rect.pivot = new Vector2(0f, 1f);
-                rect.anchoredPosition = new Vector2(12f, -94f);
+                rect.anchorMin = rect.anchorMax = new Vector2(0f, 0f);
+                rect.pivot = new Vector2(0f, 0f);
+                rect.anchoredPosition = new Vector2(18f, 88f);
                 rect.localScale = Vector3.one * 0.45f;
                 Transform healthSlider = rect.Find("Content/HealthBar/Slider");
                 if (healthSlider != null)
@@ -334,7 +335,7 @@ namespace RealmOfAshes.Game
                 rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
                 rect.pivot = new Vector2(0.5f, 1f);
                 rect.anchoredPosition = new Vector2(0f, -6f);
-                rect.localScale = Vector3.one * 0.42f;
+                rect.localScale = Vector3.one * 0.30f;
                 _apocalypseCompassTape = rect.Find("Content/Compass_Content") as RectTransform;
                 Transform sampleIcons = rect.Find("Content/Compass_Content/Mask/Icons");
                 if (sampleIcons != null) sampleIcons.gameObject.SetActive(false);
@@ -397,10 +398,15 @@ namespace RealmOfAshes.Game
         private void RefreshApocalypseReferenceOverlays(bool worldHud, bool mobile)
         {
             bool visible = worldHud && _hud != null && _hud.HasState;
-            RefreshApocalypseCurrentQuest(visible && !mobile);
+            if (_apocalypseQuest != null)
+                _apocalypseQuest.transform.localScale = Vector3.one * (mobile ? 0.32f : 0.27f);
+            RefreshApocalypseCurrentQuest(visible);
             if (_apocalypseApLamps != null)
             {
-                _apocalypseApLamps.SetActive(visible && !mobile);
+                _apocalypseApLamps.SetActive(visible);
+                RectTransform lamps = (RectTransform)_apocalypseApLamps.transform;
+                lamps.localScale = Vector3.one * (mobile ? 0.32f : 0.42f);
+                lamps.anchoredPosition = new Vector2(0f, mobile ? 180f : 145f);
                 if (visible)
                 {
                     int lit = _hud.MaxAp > 0 ? Mathf.CeilToInt(
@@ -415,7 +421,7 @@ namespace RealmOfAshes.Game
             }
             if (_apocalypseWeapon != null)
             {
-                _apocalypseWeapon.SetActive(visible && !mobile);
+                _apocalypseWeapon.SetActive(visible && _hud.WeaponId != "fists");
                 if (visible)
                 {
                     if (_apocalypseWeaponName != null)
@@ -450,7 +456,7 @@ namespace RealmOfAshes.Game
             }
             if (_apocalypseCompass != null)
             {
-                _apocalypseCompass.SetActive(visible && !mobile);
+                _apocalypseCompass.SetActive(visible);
                 if (_apocalypseCompassTape != null && _minimap != null && _minimap.HasPlayer)
                 {
                     float heading = Mathf.DeltaAngle(0f, _minimap.PlayerHeading);

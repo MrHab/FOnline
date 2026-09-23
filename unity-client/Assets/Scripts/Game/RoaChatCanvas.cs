@@ -22,6 +22,7 @@ namespace RealmOfAshes.Game
         private RoaGameBootstrap _bootstrap;
         private RoaSocketClient _socket;
         private GameObject _canvasObject;
+        private GameObject _launcherObject;
         private GameObject _panel;
         private RectTransform _content;
         private GameObject _rowTemplate;
@@ -31,6 +32,7 @@ namespace RealmOfAshes.Game
         private int _selected;
         private bool _pending;
         private bool _subscribed;
+        private bool _expanded;
 
         public void Configure(RoaGameBootstrap bootstrap, RoaSocketClient socket)
         {
@@ -52,22 +54,28 @@ namespace RealmOfAshes.Game
             if (!inGame)
             {
                 if (_canvasObject != null) _canvasObject.SetActive(false);
+                if (_launcherObject != null) _launcherObject.SetActive(false);
+                _expanded = false;
                 return;
             }
             if (_canvasObject == null) Build();
             if (_canvasObject == null) return;
-            if (!_canvasObject.activeSelf) _canvasObject.SetActive(true);
+            if (_canvasObject.activeSelf != _expanded) _canvasObject.SetActive(_expanded);
 
             bool mobile = Application.isMobilePlatform;
+            if (_launcherObject != null)
+                _launcherObject.SetActive(mobile && !_expanded);
             var rect = (RectTransform)_panel.transform;
             rect.localScale = Vector3.one * (mobile ? 0.40f : 0.50f);
             rect.anchoredPosition = new Vector2(mobile ? 8f : 14f,
-                mobile ? 225f : 270f);
+                mobile ? 185f : 270f);
 
             if (_input == null) return;
-            if (Input.GetKeyDown(KeyCode.Escape) && _input.isFocused)
+            if (Input.GetKeyDown(KeyCode.Escape) && _expanded)
             {
                 _input.DeactivateInputField();
+                _expanded = false;
+                _canvasObject.SetActive(false);
                 if (EventSystem.current != null)
                     EventSystem.current.SetSelectedGameObject(null);
             }
@@ -75,9 +83,17 @@ namespace RealmOfAshes.Game
                 && !RoaPipboyCanvas.TypingInInputField()
                 && EventSystem.current != null)
             {
-                _input.Select();
-                _input.ActivateInputField();
+                OpenChat();
             }
+        }
+
+        private void OpenChat()
+        {
+            _expanded = true;
+            _canvasObject.SetActive(true);
+            if (_launcherObject != null) _launcherObject.SetActive(false);
+            _input.Select();
+            _input.ActivateInputField();
         }
 
         private void Build()
@@ -181,6 +197,38 @@ namespace RealmOfAshes.Game
             _status.raycastTarget = false;
             RoaApocalypseTmpFonts.Apply(_panel);
             SelectChannel(0);
+            BuildMobileLauncher();
+            _canvasObject.SetActive(false);
+        }
+
+        private void BuildMobileLauncher()
+        {
+            if (_tabs[0] == null) return;
+            _launcherObject = new GameObject("ApocalypseChatLauncher",
+                typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler),
+                typeof(GraphicRaycaster));
+            _launcherObject.transform.SetParent(transform, false);
+            Canvas canvas = _launcherObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 32;
+            RoaUiScale.Apply(_launcherObject.GetComponent<CanvasScaler>());
+            GameObject tab = Instantiate(_tabs[0].gameObject, _launcherObject.transform, false);
+            tab.name = "OpenChat";
+            RectTransform rect = (RectTransform)tab.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(0f, 0f);
+            rect.pivot = new Vector2(0f, 0f);
+            rect.anchoredPosition = new Vector2(14f, 110f);
+            rect.sizeDelta = new Vector2(178f, 72f);
+            rect.localScale = Vector3.one * 0.55f;
+            Animator animator = tab.GetComponent<Animator>();
+            if (animator != null) animator.enabled = false;
+            TextMeshProUGUI label = tab.transform.Find("Title")?.GetComponent<TextMeshProUGUI>();
+            if (label != null) label.text = "ЧАТ";
+            Button button = tab.GetComponent<Button>();
+            button.onClick = new Button.ButtonClickedEvent();
+            button.onClick.AddListener(OpenChat);
+            RoaApocalypseTmpFonts.Apply(tab);
+            _launcherObject.SetActive(false);
         }
 
         private void SelectChannel(int index)

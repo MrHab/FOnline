@@ -159,11 +159,12 @@ assert(hudCanvas.includes('public enum HudFocusMode')
   && hudCanvas.includes('BuildCompactWeaponConsole();')
   && hudCanvas.includes('RefreshHudFocus(worldHud, mobile, focus);')
   && hudCanvas.includes('ClampBottomPanelPosition(')
-  && hudCanvas.includes('Time.unscaledDeltaTime * 6.5f')
+  && hudCanvas.includes('_compactConsolePanel.SetActive(false);')
+  && !hudCanvas.includes('Input.GetKey(KeyCode.LeftAlt)')
   && hudCanvas.includes('AppendOccupiedScreenRect(_compactConsolePanel, output);')
-  && hudProbe.includes('exploration strip obscures the world or overlaps the quickbar')
+  && hudProbe.includes('the HUD must retain one visible arrangement through combat and activity')
   && hudProbe.includes('contextual exploration console is incomplete'),
-  'Unity HUD lost contextual exploration/activity/combat/detail focus or its compact information strip');
+  'Unity HUD lost its fixed Apocalypse arrangement or fallback information strip');
 assert(nameplates.includes('public static bool IsImportantNpc(')
   && nameplates.includes('case "merchant":')
   && nameplates.includes('case "quartermaster":')

@@ -74,6 +74,8 @@ namespace RealmOfAshes.Game
             public RectTransform Rect;
             public RawImage Back;
             public RawImage Icon;
+            public Image SyntyIcon;
+            public GameObject SyntySelection;
             public Text Label;
             public int BaseFontSize;
             public RoaMobileControlPress Press;
@@ -88,6 +90,7 @@ namespace RealmOfAshes.Game
         private static readonly Color Normal = new Color(0.78f, 0.74f, 0.62f, 0.94f);
         private static readonly Color Selected = new Color(1f, 0.82f, 0.43f, 1f);
         private static readonly Color Fire = new Color(1f, 0.50f, 0.32f, 1f);
+        private static GameObject _syntyButtonPrefab;
 
         public RoaMobileControls Controls;
         public RoaBoltThrower BoltThrower;
@@ -274,7 +277,13 @@ namespace RealmOfAshes.Game
 
         public bool ButtonHasIcon(string id)
         {
-            return _buttons.TryGetValue(id, out ButtonView view) && view.Icon.enabled;
+            return _buttons.TryGetValue(id, out ButtonView view) &&
+                (view.Icon.enabled || view.SyntyIcon != null && view.SyntyIcon.enabled);
+        }
+
+        public bool ButtonUsesSyntyPrefab(string id)
+        {
+            return _buttons.TryGetValue(id, out ButtonView view) && view.SyntyIcon != null;
         }
 
         public bool SimulatePressForProbe(string id, bool pressed)
@@ -469,6 +478,8 @@ namespace RealmOfAshes.Game
             RoaMobileControlPress press = root.GetComponent<RoaMobileControlPress>();
             press.Configure(back, fire ? Fire : Normal, clicked, pressed);
 
+            Image syntyIcon = AddSyntyButtonVisual(rect, iconPath, out GameObject syntySelection);
+
             var iconRoot = new GameObject("Icon", typeof(RectTransform), typeof(RawImage));
             iconRoot.transform.SetParent(root.transform, false);
             RectTransform iconRect = (RectTransform)iconRoot.transform;
@@ -485,7 +496,7 @@ namespace RealmOfAshes.Game
             // RawImage без текстуры рисует сплошной белый квадрат поверх диска:
             // без спрайта кнопка остаётся текстовой, с подписью по центру.
             bool hasIcon = icon.texture != null;
-            icon.enabled = hasIcon;
+            icon.enabled = hasIcon && syntyIcon == null;
 
             var labelRoot = new GameObject("Label", typeof(RectTransform), typeof(Text));
             labelRoot.transform.SetParent(root.transform, false);
@@ -509,9 +520,64 @@ namespace RealmOfAshes.Game
 
             _buttons[id] = new ButtonView
             {
-                Id = id, Rect = rect, Back = back, Icon = icon, Label = text,
+                Id = id, Rect = rect, Back = back, Icon = icon, SyntyIcon = syntyIcon,
+                SyntySelection = syntySelection, Label = text,
                 BaseFontSize = text.fontSize, Press = press
             };
+        }
+
+        private static Image AddSyntyButtonVisual(RectTransform parent, string iconPath,
+                                                  out GameObject selection)
+        {
+            selection = null;
+            if (_syntyButtonPrefab == null)
+                _syntyButtonPrefab = Resources.Load<GameObject>(
+                    "ApocalypseHud/Button_Apocalypse_HotBar_Item_01");
+            if (_syntyButtonPrefab == null) return null;
+
+            GameObject visual = Instantiate(_syntyButtonPrefab, parent, false);
+            visual.name = "ApocalypseHudControlVisual";
+            RectTransform frame = visual.GetComponent<RectTransform>();
+            frame.anchorMin = Vector2.zero;
+            frame.anchorMax = Vector2.one;
+            frame.offsetMin = Vector2.zero;
+            frame.offsetMax = Vector2.zero;
+            frame.SetAsFirstSibling();
+
+            foreach (Button button in visual.GetComponentsInChildren<Button>(true))
+                button.enabled = false;
+            foreach (Animator animator in visual.GetComponentsInChildren<Animator>(true))
+                animator.enabled = false;
+            foreach (Graphic graphic in visual.GetComponentsInChildren<Graphic>(true))
+            {
+                graphic.raycastTarget = false;
+                if (!(graphic is Image)) graphic.enabled = false;
+            }
+            CanvasGroup group = visual.AddComponent<CanvasGroup>();
+            group.interactable = false;
+            group.blocksRaycasts = false;
+
+            Transform input = visual.transform.Find("Input");
+            if (input != null) input.gameObject.SetActive(false);
+            Transform highlighted = visual.transform.Find("Highlighted");
+            if (highlighted != null) highlighted.gameObject.SetActive(false);
+            Transform selected = visual.transform.Find("Selected");
+            if (selected != null)
+            {
+                selection = selected.gameObject;
+                selection.SetActive(false);
+            }
+
+            Sprite iconSprite = Resources.Load<Sprite>(iconPath);
+            foreach (Image image in visual.GetComponentsInChildren<Image>(true))
+            {
+                if (image.sprite == null ||
+                    image.sprite.name != "ICON_SM_Wep_Pistol_Metal_01") continue;
+                image.sprite = iconSprite;
+                image.enabled = iconSprite != null;
+                return iconSprite != null ? image : null;
+            }
+            return null;
         }
 
         private static string LegacyIconPath(string id)
@@ -665,6 +731,7 @@ namespace RealmOfAshes.Game
             if (!_buttons.TryGetValue(id, out ButtonView view)) return;
             Color color = fire ? Fire : selected ? Selected : Normal;
             view.Press.SetNormalColor(color);
+            if (view.SyntySelection != null) view.SyntySelection.SetActive(selected);
         }
 
         private static Rect Intersect(Rect a, Rect b)

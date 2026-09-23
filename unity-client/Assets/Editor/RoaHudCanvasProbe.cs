@@ -164,6 +164,14 @@ namespace RealmOfAshes.EditorTools
                         && compactConsole.Find("Weapon") != null
                         && compactConsole.Find("Ammo") != null,
                     "contextual exploration console is incomplete");
+                if (Resources.Load<GameObject>("ApocalypseHud/HUD_Apocalypse_HealthBar_01") != null)
+                {
+                    Transform readyHealth = compactConsole.Find("ApocalypseHudHealthBar/Slider");
+                    Require(readyHealth != null &&
+                        readyHealth.GetComponent<UnityEngine.UI.Slider>() != null &&
+                        !readyHealth.GetComponent<UnityEngine.UI.Slider>().interactable,
+                        "the Synty health bar was not installed as a read-only live HUD element");
+                }
             }
             finally
             {

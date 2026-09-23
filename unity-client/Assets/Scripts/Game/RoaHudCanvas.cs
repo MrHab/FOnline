@@ -234,6 +234,7 @@ namespace RealmOfAshes.Game
         private Text _compactWeaponState;
         private Text _compactAmmo;
         private Image _compactHpFill;
+        private Slider _syntyCompactHealth;
         private HudFocusMode _focusMode;
         private bool _focusInitialized;
         private float _consoleBlend;
@@ -746,7 +747,67 @@ namespace RealmOfAshes.Game
             _compactHpFill = hpFill.gameObject.AddComponent<Image>();
             _compactHpFill.raycastTarget = false;
 
-            _compactHp = Label("Hp", panel, new Vector2(12f, -8f), new Vector2(126f, 23f),
+            GameObject healthPrefab = Resources.Load<GameObject>(
+                "ApocalypseHud/HUD_Apocalypse_HealthBar_01");
+            bool hasSyntyHealth = healthPrefab != null;
+            if (hasSyntyHealth)
+            {
+                GameObject health = Instantiate(healthPrefab, panel, false);
+                health.name = "ApocalypseHudHealthBar";
+                RectTransform healthRect = health.GetComponent<RectTransform>();
+                healthRect.anchorMin = healthRect.anchorMax = new Vector2(0f, 1f);
+                healthRect.pivot = new Vector2(0f, 1f);
+                healthRect.anchoredPosition = new Vector2(8f, -7f);
+                healthRect.sizeDelta = new Vector2(138f, 28f);
+                RectTransform healthIcon = health.transform.Find("Icon") as RectTransform;
+                if (healthIcon != null)
+                {
+                    healthIcon.anchorMin = healthIcon.anchorMax = new Vector2(0f, 0.5f);
+                    healthIcon.pivot = new Vector2(0f, 0.5f);
+                    healthIcon.anchoredPosition = Vector2.zero;
+                    healthIcon.sizeDelta = new Vector2(18f, 18f);
+                }
+                foreach (Graphic graphic in health.GetComponentsInChildren<Graphic>(true))
+                    graphic.raycastTarget = false;
+                _syntyCompactHealth = health.GetComponentInChildren<Slider>(true);
+                if (_syntyCompactHealth != null)
+                {
+                    RectTransform sliderRect = _syntyCompactHealth.transform as RectTransform;
+                    sliderRect.anchorMin = sliderRect.anchorMax = Vector2.zero;
+                    sliderRect.pivot = Vector2.zero;
+                    sliderRect.anchoredPosition = new Vector2(25f, 1f);
+                    sliderRect.sizeDelta = new Vector2(108f, 8f);
+                    RectTransform sliderBackground = sliderRect.Find("Background") as RectTransform;
+                    if (sliderBackground != null)
+                    {
+                        Stretch(sliderBackground, Vector2.zero);
+                        Image barBackground = sliderBackground.GetComponent<Image>();
+                        if (barBackground != null)
+                            barBackground.color = new Color(0.23f, 0.18f, 0.12f, 1f);
+                    }
+                    RectTransform fillArea = sliderRect.Find("Fill Area") as RectTransform;
+                    if (fillArea != null) Stretch(fillArea, Vector2.zero);
+                    if (_syntyCompactHealth.fillRect != null)
+                    {
+                        Image barFill = _syntyCompactHealth.fillRect.GetComponent<Image>();
+                        if (barFill != null)
+                            barFill.color = new Color(0.90f, 0.62f, 0.30f, 1f);
+                    }
+                    if (_syntyCompactHealth.handleRect != null)
+                    {
+                        _syntyCompactHealth.handleRect.gameObject.SetActive(false);
+                        _syntyCompactHealth.handleRect = null;
+                    }
+                    _syntyCompactHealth.interactable = false;
+                    _syntyCompactHealth.minValue = 0f;
+                    _syntyCompactHealth.maxValue = 1f;
+                }
+                hpTrack.gameObject.SetActive(false);
+            }
+
+            _compactHp = Label("Hp", panel,
+                new Vector2(hasSyntyHealth ? 34f : 12f, hasSyntyHealth ? -6f : -8f),
+                new Vector2(hasSyntyHealth ? 108f : 126f, hasSyntyHealth ? 16f : 23f),
                 13, TextAnchor.MiddleLeft, HpHealthy, FontStyle.Bold);
             _compactAp = Label("Ap", panel, new Vector2(12f, -32f), new Vector2(126f, 20f),
                 11, TextAnchor.MiddleLeft, ConsoleAccent, FontStyle.Bold);
@@ -1366,6 +1427,7 @@ namespace RealmOfAshes.Game
                 : hpRatio <= 0.55f ? HpWarning : HpHealthy;
             _compactHpFill.color = _compactHp.color;
             SetFill(_compactHpFill, hpRatio);
+            if (_syntyCompactHealth != null) _syntyCompactHealth.value = hpRatio;
             _compactAp.text = "ОД  " + Mathf.FloorToInt(_hud.Ap) + "/" + Mathf.Max(1, _hud.MaxAp)
                 + "   БРОНЯ " + _hud.ArmorThreshold;
             _compactWeapon.text = weapon.Name;

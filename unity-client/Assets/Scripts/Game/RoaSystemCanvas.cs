@@ -441,13 +441,14 @@ namespace RealmOfAshes.Game
 
         private static Button UiButton(string name, RectTransform parent, string caption, int size, System.Action onClick)
         {
-            var go = RoaApocalypseUiKit.CreateButtonRoot(parent, name);
-            var image = go.GetComponent<Image>();
-            if (image.sprite == null) image.color = ButtonBg;
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var image = go.AddComponent<Image>();
+            image.color = ButtonBg;
             Outline outline = go.AddComponent<Outline>();
             outline.effectColor = ButtonBorder;
             outline.effectDistance = new Vector2(1f, -1f);
-            var button = go.GetComponent<Button>();
+            var button = go.AddComponent<Button>();
             button.targetGraphic = image;
             Text label = Label("Label", (RectTransform)go.transform, size, TextAnchor.MiddleCenter, ButtonInk);
             Stretch(label.rectTransform, 8f);

@@ -359,7 +359,6 @@ namespace RealmOfAshes.EditorTools
 
                 Canvas canvas = host.GetComponentInChildren<Canvas>(true);
                 Require(canvas != null, "HUD capture canvas was not built");
-                host.AddComponent<RoaApocalypseUiSkin>().ApplyTo(canvas);
                 cameraObject = new GameObject("HudCaptureCamera");
                 Camera camera = cameraObject.AddComponent<Camera>();
                 camera.enabled = false;

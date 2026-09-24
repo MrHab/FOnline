@@ -46,7 +46,18 @@ namespace RealmOfAshes.EditorTools
                         out RoaAuthCanvas auth, out host, out cameraObject, out target);
                     RoaCreatorCardLayoutProbe.Invoke(auth, "RebuildBody", "login");
                     RoaCreatorCardLayoutProbe.Invoke(auth, "RefreshTexts", "login");
-                    host.AddComponent<RoaApocalypseUiSkin>().ApplyTo(canvas);
+                    if (host.GetComponentInChildren<RoaApocalypseUiSkin>(true) != null)
+                        throw new Exception("The periodic Apocalypse reskin still runs on the login screen.");
+                    Transform card = canvas.transform.Find("CharacterScreen/CharacterCard");
+                    if (card == null || card.GetComponent<Image>()?.sprite != null
+                        || card.Find("ApocalypseHudFrame") != null)
+                        throw new Exception("The login card did not return to its original appearance.");
+                    bool foundLegacyButton = false;
+                    foreach (Button button in card.GetComponentsInChildren<Button>(true))
+                        if (button.name == "SubmitLogin" && button.GetComponent<Image>()?.sprite == null)
+                            foundLegacyButton = true;
+                    if (!foundLegacyButton)
+                        throw new Exception("The login button did not return to its original appearance.");
                     RoaCreatorCardLayoutProbe.ToCaptureLayer(canvas);
                     Canvas.ForceUpdateCanvases();
                     string path = Path.Combine(output, "apocalypse-auth-" + size.Name + ".png");

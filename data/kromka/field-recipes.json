@@ -1,6 +1,6 @@
 {
   "schema": "kromka.fieldRecipes.v1",
-  "version": 1,
+  "version": 2,
   "recipes": [
     {
       "id": "ammo9craft",
@@ -205,7 +205,7 @@
     },
     {
       "id": "knifecraft",
-      "name": "Нож 01",
+      "name": "Нож «Тихий»",
       "station": "weapon_bench",
       "inputs": {
         "ore": 2,
@@ -220,7 +220,7 @@
     },
     {
       "id": "pistolcraft",
-      "name": "Пистолет 01",
+      "name": "Пистолет «Искра»",
       "station": "weapon_bench",
       "inputs": {
         "weaponParts": 1,
@@ -236,7 +236,7 @@
     },
     {
       "id": "revolvercraft",
-      "name": "Револьвер 01",
+      "name": "Револьвер «Шериф»",
       "station": "weapon_bench",
       "inputs": {
         "ore": 4,
@@ -252,7 +252,7 @@
     },
     {
       "id": "sawedoffcraft",
-      "name": "Дробовик (обрез) 01",
+      "name": "Дробовик «Коротыш»",
       "station": "weapon_bench",
       "inputs": {
         "scrap": 5,
@@ -267,7 +267,7 @@
     },
     {
       "id": "smgcraft",
-      "name": "Пистолет-пулемёт 01",
+      "name": "ПП «Шорох»",
       "station": "weapon_bench",
       "inputs": {
         "scrap": 8,
@@ -283,7 +283,7 @@
     },
     {
       "id": "riflecraft",
-      "name": "Охотничья винтовка 01",
+      "name": "Винтовка «След»",
       "station": "weapon_bench",
       "inputs": {
         "weaponParts": 2,
@@ -299,7 +299,7 @@
     },
     {
       "id": "assaultcraft",
-      "name": "Штурмовая винтовка 01",
+      "name": "Автомат «Рубеж»",
       "station": "weapon_bench",
       "inputs": {
         "ore": 6,
@@ -314,7 +314,7 @@
     },
     {
       "id": "machineguncraft",
-      "name": "Пулемёт 01",
+      "name": "Пулемёт «Гром»",
       "station": "weapon_bench",
       "inputs": {
         "ore": 10,
@@ -329,7 +329,7 @@
     },
     {
       "id": "lasercraft",
-      "name": "Гибридное оружие 01",
+      "name": "Гибрид «Разряд»",
       "station": "energy_bench",
       "inputs": {
         "ore": 5,
@@ -344,7 +344,7 @@
     },
     {
       "id": "flamercraft",
-      "name": "Огнемёт 01",
+      "name": "Огнемёт «Жар»",
       "station": "weapon_bench",
       "inputs": {
         "ore": 9,
@@ -360,7 +360,7 @@
     },
     {
       "id": "plasmacraft",
-      "name": "Гибридное оружие 02",
+      "name": "Гибрид «Заря»",
       "station": "energy_bench",
       "inputs": {
         "ore": 10,
@@ -376,7 +376,7 @@
     },
     {
       "id": "shotguncraft",
-      "name": "Дробовик 01",
+      "name": "Дробовик «Град»",
       "station": "weapon_bench",
       "inputs": {
         "ore": 7,
@@ -391,7 +391,7 @@
     },
     {
       "id": "rocketcrafter",
-      "name": "Ракетная установка 01",
+      "name": "Ракетомёт «Пепел»",
       "station": "weapon_bench",
       "inputs": {
         "ore": 14,
@@ -407,7 +407,7 @@
     },
     {
       "id": "leathercraft",
-      "name": "Кожаная куртка",
+      "name": "Куртка «Пыль»",
       "station": "repair_bench",
       "inputs": {
         "scrap": 5,
@@ -422,7 +422,7 @@
     },
     {
       "id": "metalarmorcraft",
-      "name": "Металлическая броня",
+      "name": "Панцирь «Лом»",
       "station": "repair_bench",
       "inputs": {
         "scrap": 12,
@@ -437,7 +437,7 @@
     },
     {
       "id": "ballisticvestcraft",
-      "name": "Бронежилет",
+      "name": "Жилет «Застава»",
       "station": "repair_bench",
       "inputs": {
         "scrap": 10,
@@ -453,7 +453,7 @@
     },
     {
       "id": "combatarmorcraft",
-      "name": "Боевая броня",
+      "name": "Комплект «Штурм»",
       "station": "repair_bench",
       "inputs": {
         "scrap": 18,
@@ -469,7 +469,7 @@
     },
     {
       "id": "hazmatsuitcraft",
-      "name": "Костюм химзащиты",
+      "name": "Костюм «Фильтр»",
       "station": "chem_station",
       "inputs": {
         "chemicals": 10,
@@ -484,7 +484,7 @@
     },
     {
       "id": "heavyarmorcraft",
-      "name": "Тяжёлая броня",
+      "name": "Панцирь «Бастион»",
       "station": "repair_bench",
       "inputs": {
         "scrap": 26,
@@ -500,7 +500,7 @@
     },
     {
       "id": "energysuitcraft",
-      "name": "Энергозащитный костюм",
+      "name": "Костюм «Изолятор»",
       "station": "energy_bench",
       "inputs": {
         "electronics": 16,
@@ -516,7 +516,7 @@
     },
     {
       "id": "prewarhelmetcraft",
-      "name": "Довоенный боевой шлем",
+      "name": "Шлем «Реликт»",
       "station": "energy_bench",
       "inputs": {
         "scrap": 6,
@@ -531,7 +531,7 @@
     },
     {
       "id": "weldedhelmetcraft",
-      "name": "Сварной шлем",
+      "name": "Шлем «Сварщик»",
       "station": "tool_bench",
       "inputs": {
         "scrap": 4
@@ -545,7 +545,7 @@
     },
     {
       "id": "helmetcraft",
-      "name": "Стальной шлем",
+      "name": "Шлем «Караул»",
       "station": "repair_bench",
       "inputs": {
         "scrap": 4
@@ -559,7 +559,7 @@
     },
     {
       "id": "tacticalhelmetcraft",
-      "name": "Тактический шлем",
+      "name": "Шлем «Дозор»",
       "station": "repair_bench",
       "inputs": {
         "scrap": 6,
@@ -574,7 +574,7 @@
     },
     {
       "id": "assaulthelmetcraft",
-      "name": "Штурмовой шлем",
+      "name": "Шлем «Штурм»",
       "station": "repair_bench",
       "inputs": {
         "scrap": 8,
@@ -589,7 +589,7 @@
     },
     {
       "id": "bootscraft",
-      "name": "Армейские ботинки",
+      "name": "Ботинки «Тропа»",
       "station": "tool_bench",
       "inputs": {
         "scrap": 3,
@@ -604,7 +604,7 @@
     },
     {
       "id": "scoutbootscraft",
-      "name": "Разведботинки",
+      "name": "Ботинки «След»",
       "station": "tool_bench",
       "inputs": {
         "scrap": 4,
@@ -619,7 +619,7 @@
     },
     {
       "id": "assaultbootscraft",
-      "name": "Штурмовые ботинки",
+      "name": "Ботинки «Натиск»",
       "station": "tool_bench",
       "inputs": {
         "scrap": 5,
@@ -634,7 +634,7 @@
     },
     {
       "id": "reinforcedbootscraft",
-      "name": "Усиленные ботинки",
+      "name": "Ботинки «Крепь»",
       "station": "repair_bench",
       "inputs": {
         "scrap": 6,
@@ -649,7 +649,7 @@
     },
     {
       "id": "backpackcraft",
-      "name": "Рюкзак",
+      "name": "Рюкзак «Странник»",
       "station": "tool_bench",
       "inputs": {
         "scrap": 5,
@@ -664,7 +664,7 @@
     },
     {
       "id": "pickaxecraft",
-      "name": "Кирка",
+      "name": "Лопата «Пласт»",
       "station": "tool_bench",
       "inputs": {
         "ore": 2,
@@ -679,7 +679,7 @@
     },
     {
       "id": "axecraft",
-      "name": "Топор",
+      "name": "Топор «Пролом»",
       "station": "tool_bench",
       "inputs": {
         "ore": 1,
@@ -694,7 +694,7 @@
     },
     {
       "id": "handpumpcraft",
-      "name": "Ручной насос",
+      "name": "Ключ «Поток»",
       "station": "tool_bench",
       "inputs": {
         "ore": 3,

@@ -94,6 +94,73 @@ function isProjectile(name) {
   return /_Ammo_|_Rocket_0\d$|_Spear_0\d$|_Rocket_Fireworks_|_Rocket_IED_/.test(name);
 }
 
+const toolNames = Object.freeze({
+  pickaxe: 'Лопата «Пласт»',
+  axe: 'Топор «Пролом»',
+  handPump: 'Ключ «Поток»'
+});
+const legacyWeaponNames = Object.freeze({
+  pistol: 'Пистолет «Искра»',
+  revolver: 'Револьвер «Шериф»',
+  smg: 'ПП «Шорох»',
+  rifle: 'Винтовка «След»',
+  assaultRifle: 'Автомат «Рубеж»',
+  machineGun: 'Пулемёт «Гром»',
+  laserPistol: 'Гибрид «Разряд»',
+  plasmaRifle: 'Гибрид «Заря»',
+  shotgun: 'Дробовик «Град»',
+  rocketLauncher: 'Ракетомёт «Пепел»',
+  knife: 'Нож «Тихий»',
+  flamethrower: 'Огнемёт «Жар»'
+});
+const toolDescriptions = Object.freeze({
+  pickaxe: 'Тяжёлая лопата вскрывает рудные жилы и завалы.',
+  axe: 'Пожарный топор рубит древесину и пробивает преграды.',
+  handPump: 'Трубный ключ помогает обслуживать насосы и добывать нефть.'
+});
+const equipment = Object.freeze({
+  leather: ['Куртка «Пыль»', 'Лёгкая одежда следопыта. Бережёт от мелких осколков.', 1],
+  metalArmor: ['Панцирь «Лом»', 'Сборная защита из найденных стальных пластин.', 2],
+  ballisticVest: ['Жилет «Застава»', 'Бронекомплект для патрулей и охраны караванов.', 3],
+  combatArmor: ['Комплект «Штурм»', 'Усиленная форма для боя в городских руинах.', 4],
+  hazmatSuit: ['Костюм «Фильтр»', 'Герметичный костюм для заражённых кварталов.', 1],
+  heavyArmor: ['Панцирь «Бастион»', 'Тяжёлая защита для передовой.', 5],
+  energySuit: ['Костюм «Изолятор»', 'Защитный костюм для работы с разрядами и радиацией.', 2],
+  weldedHelmet: ['Шлем «Сварщик»', 'Простая защита головы из металлолома.', 1],
+  helmet: ['Шлем «Караул»', 'Полевая защита головы.', 2],
+  tacticalHelmet: ['Шлем «Дозор»', 'Закрытый шлем патрульного.', 3],
+  assaultHelmet: ['Шлем «Штурм»', 'Усиленный шлем передового отряда.', 4],
+  preWarHelmet: ['Шлем «Реликт»', 'Редкая защитная каска прежней армии.', 5],
+  boots: ['Ботинки «Тропа»', 'Прочная обувь для переходов по пустоши.', 1],
+  scoutBoots: ['Ботинки «След»', 'Лёгкая обувь разведчика.', 2],
+  reinforcedBoots: ['Ботинки «Крепь»', 'Усиленная обувь для тяжёлого груза.', 3],
+  assaultBoots: ['Ботинки «Натиск»', 'Защитная обувь штурмового отряда.', 4],
+  backpack: ['Рюкзак «Странник»', 'Вместительный походный рюкзак увеличивает грузоподъёмность.', 2]
+});
+
+function weaponTier(row, base) {
+  if (row.kind === 'mounted') return 5;
+  if (row.kind === 'throwable') return 2;
+  const tiers = { knife: 1, axe: 1, pistol: 1, rifle: 2, revolver: 2,
+    sawedOffShotgun: 2, shotgun: 3, assaultRifle: 3, machineGun: 3,
+    smg: 3, laserPistol: 4, flamethrower: 4, plasmaRifle: 5,
+    rocketLauncher: 5 };
+  return tiers[row.combatId] || base?.tier || 2;
+}
+
+function weaponDescription(row) {
+  const role = row.kind === 'mounted' ? 'Тяжёлая установка'
+    : row.kind === 'throwable' ? 'Бросковый боеприпас'
+    : row.rigId === 'knife' || row.rigId === 'axe' ? 'Оружие ближнего боя'
+    : 'Огнестрельное оружие';
+  return `${row.name}. ${role} из уцелевших деталей для службы на Кромке.`;
+}
+
+function formatItem(item) {
+  return '    { ' + JSON.stringify(item).slice(1, -1)
+    .replace(/":/g, '": ').replace(/,"/g, ', "') + ' },';
+}
+
 function build() {
   const entries = [];
   for (const group of ['Guns', 'Melee', 'Misc', 'Weapons']) {
@@ -124,8 +191,20 @@ function build() {
   catalog.items = catalog.items.filter(item => !item.id.startsWith('polygon'));
   for (const row of entries) {
     const legacy = catalog.items.find(item => item.id === row.itemId);
-    if (legacy && legacy.category === 'weapons') legacy.name = row.name;
+    if (!legacy) continue;
+    legacy.name = toolNames[row.itemId] || legacyWeaponNames[row.itemId] || row.name;
+    row.name = legacy.name;
+    legacy.description = toolDescriptions[row.itemId] || weaponDescription(row);
+    legacy.tier = weaponTier(row, legacy);
   }
+  for (const item of catalog.items) {
+    const authored = equipment[item.id];
+    if (authored) [item.name, item.description, item.tier] = authored;
+  }
+  const sawedOff = catalog.items.find(item => item.id === 'sawedOffShotgun');
+  sawedOff.name = 'Дробовик «Коротыш»';
+  sawedOff.description = 'Компактный дробовик для боя на короткой дистанции.';
+  sawedOff.tier = 2;
   const templates = Object.fromEntries(catalog.items.map(item => [item.id, item]));
   const newItems = entries.filter(row => !templates[row.itemId]).map(row => {
     const base = templates[row.combatId];
@@ -140,7 +219,9 @@ function build() {
       hands: row.kind === 'throwable' ? 1 : base.hands,
       compatibleSlots: row.kind === 'throwable' ? ['weapon'] : base.compatibleSlots,
       modificationSlots: row.kind === 'throwable' ? [] : base.modificationSlots,
-      acquisition: ['craft', 'trade', 'loot']
+      acquisition: ['craft', 'trade', 'loot'],
+      description: weaponDescription(row),
+      tier: weaponTier(row, base)
     };
   });
   const itemById = new Map([...catalog.items, ...newItems].map(item => [item.id, item]));
@@ -151,24 +232,14 @@ function build() {
   const manifest = { schema: 'kromka.apocalypseWeapons.v1', weapons: entries };
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
   let withoutGenerated = original.replace(/^    \{ "id": "polygon[^\r\n]*\r?\n/gm, '');
-  for (const row of entries) {
-    if (!Object.values(existing).includes(row.itemId)
-        || templates[row.itemId].category !== 'weapons') continue;
-    const escaped = row.itemId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const line = new RegExp('(^    \\{ "id": "' + escaped + '", "name": ")[^\"]*', 'm');
-    withoutGenerated = withoutGenerated.replace(line, '$1' + row.name);
-  }
-  withoutGenerated = withoutGenerated.replace(
-    /(^    \{ "id": "sawedOffShotgun", "name": ")[^"]*/m,
-    '$1Дробовик (обрез) 01');
-  for (const [id, name] of Object.entries({
-    pickaxe: 'Кирка', axe: 'Топор', handPump: 'Ручной насос'
-  })) {
-    const line = new RegExp('(^    \\{ "id": "' + id + '", "name": ")[^"]*', 'm');
-    withoutGenerated = withoutGenerated.replace(line, '$1' + name);
-  }
-  const entryLines = newItems.map(item => '    { ' + JSON.stringify(item).slice(1, -1)
-    .replace(/":/g, '": ').replace(/,"/g, ', "') + ' },').join('\n');
+  const updated = new Map(catalog.items.map(item => [item.id, item]));
+  withoutGenerated = withoutGenerated.replace(/^    \{ "id": "([^\"]+)"[^\r\n]*\},?$/gm,
+    (line, id) => {
+      const item = updated.get(id);
+      return item && (item.description || equipment[id] || toolNames[id])
+        ? formatItem(item) : line;
+    });
+  const entryLines = newItems.map(formatItem).join('\n');
   const fistLine = /^    \{ "id": "fists"/m;
   if (!fistLine.test(withoutGenerated)) throw new Error('Cannot find fists insertion point');
   fs.writeFileSync(itemsPath, withoutGenerated.replace(fistLine, entryLines + '\n    { "id": "fists"'));
@@ -176,7 +247,8 @@ function build() {
   fieldCatalog.recipes = fieldCatalog.recipes.filter(recipe => !recipe.id.startsWith('polygon'));
   for (const recipe of fieldCatalog.recipes) {
     const item = itemById.get(recipe.output.id);
-    if (item?.category === 'weapons' && recipe.output.id !== 'fists')
+    if (item && ['weapons', 'armor', 'tools'].includes(item.category)
+        && recipe.output.id !== 'fists')
       recipe.name = item.name;
   }
   const recipeByOutput = new Map(fieldCatalog.recipes.map(recipe => [recipe.output.id, recipe]));
@@ -194,6 +266,15 @@ function build() {
   });
   fieldCatalog.recipes.push(...variantRecipes);
   fs.writeFileSync(fieldRecipesPath, JSON.stringify(fieldCatalog, null, 2) + '\n');
+  const craftPath = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaCraftingData.cs');
+  const craftSource = fs.readFileSync(craftPath, 'utf8');
+  fs.writeFileSync(craftPath, craftSource.replace(
+    /Recipe\("([^"]+)", "[^"]*", "([^"]+)"/g,
+    (match, recipeId, outputId) => {
+      const item = itemById.get(outputId);
+      return item && ['weapons', 'armor', 'tools'].includes(item.category)
+        ? `Recipe("${recipeId}", "${item.name}", "${outputId}"` : match;
+    }));
   process.stdout.write(`PolygonApocalypse weapons: ${entries.length} models, ${newItems.length} new items.\n`);
 }
 

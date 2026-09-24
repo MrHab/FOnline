@@ -5568,7 +5568,7 @@ function serverGearPower(p = {}) {
     const equippedId = String(p.equipment?.[slot] || '');
     if (!equippedId) continue;
     const baseId = serverBaseItemId(equippedId);
-    const tier = Number(GEAR_ITEM_TIERS[baseId] || 0);
+    const tier = Number(KROMKA_ITEM_INDEXES.byId[baseId]?.tier || GEAR_ITEM_TIERS[baseId] || 0);
     if (!tier) continue;
     const condition = Math.max(1, Math.min(100, Number(serverPlayerItemCondition(p, baseId) ?? 100)));
     total += GEAR_TIER_POINTS[tier] * weight * condition / 100;

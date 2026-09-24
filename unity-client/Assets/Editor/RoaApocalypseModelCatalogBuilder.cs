@@ -74,7 +74,7 @@ namespace RealmOfAshes.EditorTools
                 prefab = Require("Weapons/Guns/SM_Wep_Shotgun_01"),
                 rigId = "sawedOffShotgun",
                 combatId = "sawedOffShotgun",
-                displayName = "Обрез",
+                displayName = "Дробовик «Коротыш»",
                 weight = 2.4f
             });
 

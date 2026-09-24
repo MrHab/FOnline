@@ -87,7 +87,10 @@ namespace RealmOfAshes.Game
         public static Row Get(string itemOrRuntimeId)
         {
             string id = RoaArmorData.BaseId(itemOrRuntimeId ?? string.Empty);
-            if (Rows.TryGetValue(id, out Row row)) return row;
+            string description = RoaItemData.Description(id);
+            if (Rows.TryGetValue(id, out Row row))
+                return string.IsNullOrEmpty(description) ? row
+                    : new Row(row.Type, description, row.Stat, row.Hands, row.HasAmmo, row.Usable);
             if (!Rows.TryGetValue(RoaApocalypseModels.WeaponCombatId(id), out row)) return null;
             if (!id.StartsWith("polygon", StringComparison.Ordinal)) return row;
             var entries = RoaApocalypseModels.WeaponEntries;
@@ -104,7 +107,7 @@ namespace RealmOfAshes.Game
                 if (id.StartsWith("polygonVeh", StringComparison.Ordinal)
                     || id.StartsWith("polygonAAGun", StringComparison.Ordinal))
                     stat = Regex.Replace(stat, @"треб\. Сила [0-9]+", "треб. Сила 8");
-                return new Row(row.Type, entry.displayName + ". Боевые характеристики показаны ниже.",
+                return new Row(row.Type, string.IsNullOrEmpty(description) ? entry.displayName : description,
                     stat, row.Hands, row.HasAmmo, false);
             }
             return row;

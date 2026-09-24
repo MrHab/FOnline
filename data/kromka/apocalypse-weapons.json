@@ -3,7 +3,7 @@
   "weapons": [
     {
       "itemId": "assaultRifle",
-      "name": "Штурмовая винтовка 01",
+      "name": "Автомат «Рубеж»",
       "prefab": "Weapons/Guns/SM_Wep_AssaultRifle_01",
       "rigId": "assaultRifle",
       "combatId": "assaultRifle",
@@ -30,7 +30,7 @@
     },
     {
       "itemId": "rifle",
-      "name": "Охотничья винтовка 01",
+      "name": "Винтовка «След»",
       "prefab": "Weapons/Guns/SM_Wep_HuntingRifle_01",
       "rigId": "rifle",
       "combatId": "rifle",
@@ -48,7 +48,7 @@
     },
     {
       "itemId": "laserPistol",
-      "name": "Гибридное оружие 01",
+      "name": "Гибрид «Разряд»",
       "prefab": "Weapons/Guns/SM_Wep_Hybrid_01",
       "rigId": "laserPistol",
       "combatId": "laserPistol",
@@ -57,7 +57,7 @@
     },
     {
       "itemId": "plasmaRifle",
-      "name": "Гибридное оружие 02",
+      "name": "Гибрид «Заря»",
       "prefab": "Weapons/Guns/SM_Wep_Hybrid_02",
       "rigId": "plasmaRifle",
       "combatId": "plasmaRifle",
@@ -75,7 +75,7 @@
     },
     {
       "itemId": "machineGun",
-      "name": "Пулемёт 01",
+      "name": "Пулемёт «Гром»",
       "prefab": "Weapons/Guns/SM_Wep_MachineGun_01",
       "rigId": "machineGun",
       "combatId": "machineGun",
@@ -129,7 +129,7 @@
     },
     {
       "itemId": "pistol",
-      "name": "Пистолет 01",
+      "name": "Пистолет «Искра»",
       "prefab": "Weapons/Guns/SM_Wep_Pistol_01",
       "rigId": "pistol",
       "combatId": "pistol",
@@ -138,7 +138,7 @@
     },
     {
       "itemId": "revolver",
-      "name": "Револьвер 01",
+      "name": "Револьвер «Шериф»",
       "prefab": "Weapons/Guns/SM_Wep_Revolver_01",
       "rigId": "revolver",
       "combatId": "revolver",
@@ -183,7 +183,7 @@
     },
     {
       "itemId": "rocketLauncher",
-      "name": "Ракетная установка 01",
+      "name": "Ракетомёт «Пепел»",
       "prefab": "Weapons/Guns/SM_Wep_RocketLauncher_01",
       "rigId": "rocketLauncher",
       "combatId": "rocketLauncher",
@@ -192,7 +192,7 @@
     },
     {
       "itemId": "shotgun",
-      "name": "Дробовик 01",
+      "name": "Дробовик «Град»",
       "prefab": "Weapons/Guns/SM_Wep_Shotgun_01",
       "rigId": "shotgun",
       "combatId": "shotgun",
@@ -237,7 +237,7 @@
     },
     {
       "itemId": "smg",
-      "name": "Пистолет-пулемёт 01",
+      "name": "ПП «Шорох»",
       "prefab": "Weapons/Guns/SM_Wep_SubMGun_01",
       "rigId": "smg",
       "combatId": "smg",
@@ -354,7 +354,7 @@
     },
     {
       "itemId": "axe",
-      "name": "Топор 01",
+      "name": "Топор «Пролом»",
       "prefab": "Weapons/Melee/SM_Wep_FireAxe_01",
       "rigId": "axe",
       "combatId": "axe",
@@ -390,7 +390,7 @@
     },
     {
       "itemId": "knife",
-      "name": "Нож 01",
+      "name": "Нож «Тихий»",
       "prefab": "Weapons/Melee/SM_Wep_Melee_HuntingKnife_01",
       "rigId": "knife",
       "combatId": "knife",
@@ -417,7 +417,7 @@
     },
     {
       "itemId": "handPump",
-      "name": "Трубный ключ 01",
+      "name": "Ключ «Поток»",
       "prefab": "Weapons/Melee/SM_Wep_PipeWrench_01",
       "rigId": "handPump",
       "combatId": "handPump",
@@ -453,7 +453,7 @@
     },
     {
       "itemId": "pickaxe",
-      "name": "Лопата 01",
+      "name": "Лопата «Пласт»",
       "prefab": "Weapons/Melee/SM_Wep_Spade_01",
       "rigId": "pickaxe",
       "combatId": "pickaxe",
@@ -525,7 +525,7 @@
     },
     {
       "itemId": "flamethrower",
-      "name": "Огнемёт 01",
+      "name": "Огнемёт «Жар»",
       "prefab": "Weapons/Misc/SM_Wep_FlameThrower_01",
       "rigId": "flamethrower",
       "combatId": "flamethrower",

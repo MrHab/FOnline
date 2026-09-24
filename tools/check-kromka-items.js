@@ -25,6 +25,8 @@ const recipeIndexes = fieldRecipeCatalogIndexes(recipes);
 for (const weapon of packWeapons) {
   const item = indexes.byId[weapon.itemId];
   assert(item, `${weapon.itemId}: pack model has no playable item`);
+  assert(item.description && item.tier >= 1 && item.tier <= 5,
+    `${weapon.itemId}: pack item has no description or tier`);
   if (weapon.itemId.startsWith('polygon')) {
     assert.strictEqual(item.category, 'weapons', `${weapon.itemId}: pack weapon is outside the weapon catalog`);
     const recipe = recipeIndexes.byId[weapon.itemId + 'craft'];
@@ -33,6 +35,17 @@ for (const weapon of packWeapons) {
   }
   if (item.category === 'weapons')
     assert.strictEqual(item.name, weapon.name, `${weapon.itemId}: old display name remains`);
+}
+for (const id of [...new Set([...packWeapons.map(row => row.itemId),
+  'sawedOffShotgun', 'backpack', 'leather', 'metalArmor', 'ballisticVest',
+  'combatArmor', 'hazmatSuit', 'heavyArmor', 'energySuit', 'boots',
+  'scoutBoots', 'reinforcedBoots', 'assaultBoots', 'helmet', 'tacticalHelmet'])]) {
+  const icon = fs.readFileSync(path.join(ROOT,
+    'unity-client/Assets/Resources/RealmUi/items', `item_${id}.png`));
+  assert(icon.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')),
+    `${id}: inventory art is not a PNG`);
+  assert(icon.readUInt32BE(16) === 256 && icon.readUInt32BE(20) === 256,
+    `${id}: inventory art is not a full-size rendered model`);
 }
 const server = read('server.js');
 const itemData = read('unity-client/Assets/Scripts/Game/RoaItemData.cs');

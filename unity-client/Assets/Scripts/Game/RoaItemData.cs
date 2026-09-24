@@ -15,6 +15,8 @@ namespace RealmOfAshes.Game
         {
             public readonly string Id;
             public readonly string Name;
+            public readonly string Description;
+            public readonly int Tier;
             public readonly float Weight;
             public readonly int BasePrice;
             public readonly int StackLimit;
@@ -29,12 +31,14 @@ namespace RealmOfAshes.Game
             public Definition(string id, string name, float weight, int basePrice = 0,
                               int stackLimit = 0, string category = "", string slot = "",
                               string conditionMode = "none", string[] compatibleSlots = null,
-                              string ammoType = "")
+                              string ammoType = "", string description = "", int tier = 0)
             {
                 CompatibleSlots = compatibleSlots ?? EmptySlots;
                 AmmoType = ammoType ?? string.Empty;
                 Id = id;
                 Name = name;
+                Description = description;
+                Tier = tier;
                 Weight = weight;
                 BasePrice = basePrice;
                 StackLimit = stackLimit;
@@ -60,6 +64,18 @@ namespace RealmOfAshes.Game
             string id = RoaInventory.BaseId(itemOrRuntimeId);
             Definition definition;
             return ById.TryGetValue(id, out definition) ? definition.Weight : 0f;
+        }
+
+        public static string Description(string itemOrRuntimeId)
+        {
+            return ById.TryGetValue(RoaInventory.BaseId(itemOrRuntimeId), out Definition definition)
+                ? definition.Description : string.Empty;
+        }
+
+        public static int Tier(string itemOrRuntimeId)
+        {
+            return ById.TryGetValue(RoaInventory.BaseId(itemOrRuntimeId), out Definition definition)
+                ? definition.Tier : 0;
         }
 
         public static bool Contains(string itemOrRuntimeId)
@@ -150,16 +166,19 @@ namespace RealmOfAshes.Game
                         .Where(entry => !string.IsNullOrEmpty(entry)).ToArray()
                     : EmptySlots;
                 string ammoType = row?["ammoType"]?.ToString() ?? string.Empty;
+                string description = row?["description"]?.ToString() ?? string.Empty;
+                int tier = row?["tier"]?.ToObject<int?>() ?? 0;
                 if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name)
                     || weight < 0f || basePrice < 0 || stackLimit < 0
                     || string.IsNullOrEmpty(category) || string.IsNullOrEmpty(conditionMode)
+                    || tier < 0 || tier > 5
                     || next.ContainsKey(id))
                 {
                     error = "Каталог предметов содержит повреждённую строку: " + id;
                     return false;
                 }
                 next[id] = new Definition(id, name, weight, basePrice, stackLimit,
-                    category, slot, conditionMode, compatibleSlots, ammoType);
+                    category, slot, conditionMode, compatibleSlots, ammoType, description, tier);
             }
             if (!next.ContainsKey("fists") || !next.ContainsKey("silver")
                 || !next.ContainsKey("artifactDetectorMk1") || !next.ContainsKey("artifactBelt2"))
@@ -182,19 +201,19 @@ namespace RealmOfAshes.Game
         private static Dictionary<string, Definition> Build()
         {
             var result = new Dictionary<string, Definition>();
-            Add(result, "pistol", "Пистолет 01", 1.5f);
-            Add(result, "revolver", "Револьвер 01", 2f);
-            Add(result, "sawedOffShotgun", "Дробовик (обрез) 01", 2.4f);
-            Add(result, "smg", "Пистолет-пулемёт 01", 3.2f);
-            Add(result, "rifle", "Охотничья винтовка 01", 4f);
-            Add(result, "assaultRifle", "Штурмовая винтовка 01", 4.8f);
-            Add(result, "machineGun", "Пулемёт 01", 8.8f);
-            Add(result, "laserPistol", "Гибридное оружие 01", 2.2f);
-            Add(result, "flamethrower", "Огнемёт 01", 7.4f);
-            Add(result, "plasmaRifle", "Гибридное оружие 02", 5.1f);
-            Add(result, "shotgun", "Дробовик 01", 4.2f);
-            Add(result, "rocketLauncher", "Ракетная установка 01", 9.6f);
-            Add(result, "knife", "Нож 01", 0.5f);
+            Add(result, "pistol", "Пистолет «Искра»", 1.5f);
+            Add(result, "revolver", "Револьвер «Шериф»", 2f);
+            Add(result, "sawedOffShotgun", "Дробовик «Коротыш»", 2.4f);
+            Add(result, "smg", "ПП «Шорох»", 3.2f);
+            Add(result, "rifle", "Винтовка «След»", 4f);
+            Add(result, "assaultRifle", "Автомат «Рубеж»", 4.8f);
+            Add(result, "machineGun", "Пулемёт «Гром»", 8.8f);
+            Add(result, "laserPistol", "Гибрид «Разряд»", 2.2f);
+            Add(result, "flamethrower", "Огнемёт «Жар»", 7.4f);
+            Add(result, "plasmaRifle", "Гибрид «Заря»", 5.1f);
+            Add(result, "shotgun", "Дробовик «Град»", 4.2f);
+            Add(result, "rocketLauncher", "Ракетомёт «Пепел»", 9.6f);
+            Add(result, "knife", "Нож «Тихий»", 0.5f);
             IReadOnlyList<RoaApocalypseModels.WeaponEntry> apocalypseWeapons =
                 RoaApocalypseModels.WeaponEntries;
             if (apocalypseWeapons != null)
@@ -205,23 +224,23 @@ namespace RealmOfAshes.Game
                         Add(result, entry.itemId, entry.displayName, entry.weight);
             Add(result, "fists", "Кулаки", 0f);
 
-            Add(result, "leather", "Кожаная куртка", 3f);
-            Add(result, "metalArmor", "Металлическая броня", 7.5f);
-            Add(result, "ballisticVest", "Бронежилет", 5.5f);
-            Add(result, "combatArmor", "Боевая броня", 9f);
-            Add(result, "hazmatSuit", "Костюм химзащиты", 4.2f);
-            Add(result, "heavyArmor", "Тяжёлая броня", 14f);
-            Add(result, "energySuit", "Энергозащитный костюм", 6.8f);
-            Add(result, "weldedHelmet", "Сварной шлем", 2.4f);
-            Add(result, "helmet", "Стальной шлем", 2f);
-            Add(result, "tacticalHelmet", "Тактический шлем", 1.9f);
-            Add(result, "assaultHelmet", "Штурмовой шлем", 2.8f);
-            Add(result, "preWarHelmet", "Довоенный боевой шлем", 2.6f);
-            Add(result, "boots", "Армейские ботинки", 1.5f);
-            Add(result, "scoutBoots", "Разведботинки", 1.1f);
-            Add(result, "reinforcedBoots", "Усиленные ботинки", 2.2f);
-            Add(result, "assaultBoots", "Штурмовые ботинки", 2.6f);
-            Add(result, "backpack", "Рюкзак", 1.2f);
+            Add(result, "leather", "Куртка «Пыль»", 3f);
+            Add(result, "metalArmor", "Панцирь «Лом»", 7.5f);
+            Add(result, "ballisticVest", "Жилет «Застава»", 5.5f);
+            Add(result, "combatArmor", "Комплект «Штурм»", 9f);
+            Add(result, "hazmatSuit", "Костюм «Фильтр»", 4.2f);
+            Add(result, "heavyArmor", "Панцирь «Бастион»", 14f);
+            Add(result, "energySuit", "Костюм «Изолятор»", 6.8f);
+            Add(result, "weldedHelmet", "Шлем «Сварщик»", 2.4f);
+            Add(result, "helmet", "Шлем «Караул»", 2f);
+            Add(result, "tacticalHelmet", "Шлем «Дозор»", 1.9f);
+            Add(result, "assaultHelmet", "Шлем «Штурм»", 2.8f);
+            Add(result, "preWarHelmet", "Шлем «Реликт»", 2.6f);
+            Add(result, "boots", "Ботинки «Тропа»", 1.5f);
+            Add(result, "scoutBoots", "Ботинки «След»", 1.1f);
+            Add(result, "reinforcedBoots", "Ботинки «Крепь»", 2.2f);
+            Add(result, "assaultBoots", "Ботинки «Натиск»", 2.6f);
+            Add(result, "backpack", "Рюкзак «Странник»", 1.2f);
 
             Add(result, "ammo9", "Патроны 9mm", 0.025f);
             Add(result, "ammo556", "Патроны .223", 0.04f);
@@ -253,9 +272,9 @@ namespace RealmOfAshes.Game
             Add(result, "blue", "Кассета сини", 0.4f);
             Add(result, "trophy", "Трофей", 0.5f);
             Add(result, "water", "Фляга воды", 1f);
-            Add(result, "pickaxe", "Кирка", 3f);
-            Add(result, "axe", "Топор", 2.5f);
-            Add(result, "handPump", "Ручной насос", 2.7f);
+            Add(result, "pickaxe", "Лопата «Пласт»", 3f);
+            Add(result, "axe", "Топор «Пролом»", 2.5f);
+            Add(result, "handPump", "Ключ «Поток»", 2.7f);
             Add(result, "repairKit", "Ремкомплект", 1.5f);
             Add(result, "artifactDetectorMk1", "Детектор МК-1", 0.8f);
             Add(result, "artifactDetectorMk2", "Детектор МК-2", 0.9f);

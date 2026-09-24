@@ -49,6 +49,8 @@ namespace RealmOfAshes.Game
         public static int Tier(string itemOrRuntimeId)
         {
             string id = RoaInventory.BaseId(itemOrRuntimeId ?? string.Empty);
+            int authored = RoaItemData.Tier(id);
+            if (authored > 0) return authored;
             return Tiers.TryGetValue(id, out int tier)
                 || Tiers.TryGetValue(RoaApocalypseModels.WeaponCombatId(id), out tier) ? tier : 0;
         }

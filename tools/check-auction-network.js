@@ -14,6 +14,7 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
 const zoneWalk = require('./lib/zone-walk');
+const itemCatalog = require('../data/kromka/items.json');
 const accounts = {};
 
 const qty = (self, id) => (self.inventory || []).filter(row => row.id === id).reduce((sum, row) => sum + row.qty, 0);
@@ -142,6 +143,13 @@ const servicePosition = (locationId, service) => {
   assert.equal(opened.auction.shelf.silver, 9, 'марки общей полки переехали');
   assert.deepEqual(opened.auction.shelf.items.map(row => [row.itemId, row.qty]), [['ammo9', 5]],
     'выставленные патроны вернулись на полку');
+  const availableItemIds = new Set(opened.auction.items.map(row => row.itemId));
+  const newEquipment = itemCatalog.items.filter(row => row.id.startsWith('polygon')
+    || row.category === 'armor' || row.category === 'tools');
+  assert(newEquipment.length > 0, 'каталог нового снаряжения не пуст');
+  for (const item of newEquipment) {
+    assert(availableItemIds.has(item.id), `${item.id}: новый предмет отсутствует в каталоге аукциона`);
+  }
 
   // --- ордер столицы виден только в ней -----------------------------------
   const wornSale = await market('trade', { action: 'sell', itemId: 'leather', qty: 1, price: 100, requestId: 'worn-sale' }, false);

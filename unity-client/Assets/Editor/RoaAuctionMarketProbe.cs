@@ -68,11 +68,16 @@ namespace RealmOfAshes.EditorTools
             return new JObject {
                 ["marketName"] = "Створ", ["taxPct"] = 0.08, ["setupFeePct"] = 0.025,
                 ["listingLifetimeHours"] = 720, ["durationChoicesHours"] = new JArray(24, 72, 168, 720),
-                ["categories"] = new JArray(new JObject { ["id"] = "ammo", ["label"] = "Патроны", ["count"] = 4 },
+                ["categories"] = new JArray(new JObject { ["id"] = "weapons", ["label"] = "Оружие", ["count"] = 1 },
+                    new JObject { ["id"] = "armor", ["label"] = "Броня", ["count"] = 1 },
+                    new JObject { ["id"] = "ammo", ["label"] = "Патроны", ["count"] = 4 },
                     new JObject { ["id"] = "aid", ["label"] = "Медицина", ["count"] = 3 },
                     new JObject { ["id"] = "materials", ["label"] = "Материалы", ["count"] = 2 },
-                    new JObject { ["id"] = "tools", ["label"] = "Инструменты", ["count"] = 1 }),
+                    new JObject { ["id"] = "tools", ["label"] = "Инструменты", ["count"] = 2 }),
                 ["items"] = new JArray(new JObject { ["itemId"] = "ammo9", ["category"] = "ammo", ["sellQty"] = 40, ["sellPrice"] = 12, ["buyQty"] = 14, ["buyPrice"] = 9 },
+                    new JObject { ["itemId"] = "polygonAssaultRifle02", ["category"] = "weapons", ["sellQty"] = 0, ["buyQty"] = 0 },
+                    new JObject { ["itemId"] = "ballisticVest", ["category"] = "armor", ["sellQty"] = 0, ["buyQty"] = 0 },
+                    new JObject { ["itemId"] = "pickaxe", ["category"] = "tools", ["sellQty"] = 0, ["buyQty"] = 0 },
                     new JObject { ["itemId"] = "medkit", ["category"] = "aid", ["sellQty"] = 0, ["buyQty"] = 0 },
                     new JObject { ["itemId"] = "ammo556", ["category"] = "ammo", ["sellQty"] = 50, ["sellPrice"] = 18 },
                     new JObject { ["itemId"] = "energyCell", ["category"] = "ammo", ["sellQty"] = 15, ["sellPrice"] = 32 },
@@ -148,7 +153,8 @@ namespace RealmOfAshes.EditorTools
                 Set(screen, "_state", state); Set(screen, "_durationHours", 720);
                 Set(screen, "_snapshotAt", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
                 Set(screen, "_tab", mode == "edit" ? "Mine" : mode == "journal" ? "Journal" : "Buy");
-                if (mode == "catalog") Set(screen, "_availability", 2);
+                Require((int)Get(screen, "_availability") == 2, "The market must open with the full item catalog.");
+                if (mode == "listing") Set(screen, "_availability", 0);
                 if (mode == "verified") {
                     var verified = JObject.Parse(File.ReadAllText(Path.Combine(Output, "verified-state.json")));
                     Require(verified["itemId"]?.ToString() == "ammo9", "The live capture must be for ammo9.");
@@ -172,6 +178,14 @@ namespace RealmOfAshes.EditorTools
                 Call(screen, "Rebuild");
                 await Task.Yield(); await Task.Yield();
                 if (mode == "catalog") {
+                    foreach (string id in new[] { "polygonAssaultRifle02", "ballisticVest", "pickaxe" }) {
+                        ((InputField)Get(screen, "_searchInput")).text = RoaItemData.Name(id);
+                        await Task.Yield(); await Task.Yield();
+                        Require(((RectTransform)Get(screen, "_list")).Cast<Transform>()
+                            .Any(child => child.name == "Item" && child.GetComponentsInChildren<Text>()
+                                .Any(text => text.text == RoaItemData.Name(id))),
+                            "The full market catalog must find " + id + " without an active offer.");
+                    }
                     ((InputField)Get(screen, "_searchInput")).text = RoaItemData.Name("medkit");
                     await Task.Yield(); await Task.Yield();
                     host.GetComponentsInChildren<Button>().First(button => button.name == "CategoryFilter").onClick.Invoke();

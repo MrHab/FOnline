@@ -242,7 +242,20 @@ namespace RealmOfAshes.Game
             foreach (Transform node in _visual.GetComponentsInChildren<Transform>(true))
                 if (node.name == boneName) { bone = node; break; }
             if (bone == null) return;
-            current = Instantiate(prefab, bone, false);
+            // Synty attachment meshes are authored in character-space bind pose.
+            // Place them at the visual root first, then keep that world placement
+            // while parenting to the animated bone.
+            current = Instantiate(prefab, _visual.transform, false);
+            var attachmentRenderers = current.GetComponentsInChildren<Renderer>(true);
+            if (attachmentRenderers.Length > 0)
+            {
+                Bounds bounds = WorldBounds(attachmentRenderers);
+                Vector3 center = boneName == "Spine_03"
+                    ? bone.position - transform.forward * 0.22f
+                    : bone.position + transform.up * 0.08f;
+                current.transform.position += center - bounds.center;
+            }
+            current.transform.SetParent(bone, true);
             current.name = "PolygonApocalypse_" + boneName + "_Accessory";
             foreach (Transform node in current.GetComponentsInChildren<Transform>(true))
                 node.gameObject.layer = gameObject.layer;

@@ -57,6 +57,9 @@ namespace RealmOfAshes.EditorTools
                 RoaCharacterView character = host.GetComponentInChildren<RoaCharacterView>(true);
                 if (character == null || !character.Ready)
                     throw new InvalidOperationException("Character body did not load.");
+                Animation driver = character.GetComponentInChildren<Animation>(true);
+                if (driver == null || driver.cullingType != AnimationCullingType.AlwaysAnimate)
+                    throw new InvalidOperationException("The hidden source rig does not animate the pack body.");
                 // Outfits can change after the player has travelled. Keep the
                 // preview camera with the actor while moving both in world space.
                 host.transform.position = new Vector3(13f, 0f, -9f);
@@ -88,8 +91,43 @@ namespace RealmOfAshes.EditorTools
                 foreach (Transform node in character.GetComponentsInChildren<Transform>(true))
                     if (node.name == "PolygonApocalypse_Spine_03_Accessory") attached = true;
                 if (!attached) throw new InvalidOperationException("Pack backpack attachment is missing.");
+                foreach (Transform node in character.GetComponentsInChildren<Transform>(true))
+                    if (node.name == "Equipment:backpack")
+                        foreach (Renderer renderer in node.GetComponentsInChildren<Renderer>(true))
+                            if (renderer.enabled)
+                                throw new InvalidOperationException("Legacy backpack is still visible: " + renderer.name);
+                Transform accessory = null;
+                foreach (Transform node in character.GetComponentsInChildren<Transform>(true))
+                    if (node.name == "PolygonApocalypse_Spine_03_Accessory") accessory = node;
+                Renderer pack = accessory?.GetComponentInChildren<Renderer>(true);
+                if (pack == null) throw new InvalidOperationException("Pack backpack mesh is missing.");
+                Vector3 packCenter = character.transform.InverseTransformPoint(pack.bounds.center);
+                if (Mathf.Abs(packCenter.x) > 0.18f || packCenter.y < 1.05f
+                    || packCenter.y > 1.7f || packCenter.z > -0.12f)
+                    throw new InvalidOperationException("Pack backpack is not on the back: "
+                        + packCenter.ToString("F3"));
                 character.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
                 Capture(preview, readback, "ApocalypseEquipmentBack.png");
+                character.transform.localRotation = Quaternion.identity;
+                Transform packAnkle = null;
+                foreach (Transform node in character.transform.Find(RoaApocalypseVisuals.ChildName)
+                    .GetComponentsInChildren<Transform>(true))
+                    if (node.name == "Ankle_L") { packAnkle = node; break; }
+                if (packAnkle == null || driver["walk"] == null)
+                    throw new InvalidOperationException("Pack ankle or walk clip is missing.");
+                driver.Play("walk");
+                driver["walk"].time = driver["walk"].length * 0.1f;
+                driver.Sample();
+                character.GetComponent<RoaApocalypseCharacterSkin>().SyncPose();
+                Vector3 firstAnkle = character.transform.InverseTransformPoint(packAnkle.position);
+                Capture(preview, readback, "ApocalypseWalkA.png");
+                driver["walk"].time = driver["walk"].length * 0.6f;
+                driver.Sample();
+                character.GetComponent<RoaApocalypseCharacterSkin>().SyncPose();
+                Vector3 secondAnkle = character.transform.InverseTransformPoint(packAnkle.position);
+                Capture(preview, readback, "ApocalypseWalkB.png");
+                if (Vector3.Distance(firstAnkle, secondAnkle) < 0.12f)
+                    throw new InvalidOperationException("Pack body did not follow the walking pose.");
                 Debug.Log("[ROA APOCALYPSE] Equipment probe PASS: armor and backpack visible.");
             }
             catch (Exception error) { Debug.LogError("[ROA APOCALYPSE] Equipment probe FAIL " + error); }

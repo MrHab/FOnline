@@ -1059,7 +1059,10 @@ namespace RealmOfAshes.Game
                 _apocalypseSkin = GetComponent<RoaApocalypseCharacterSkin>();
                 if (_apocalypseSkin == null)
                     _apocalypseSkin = gameObject.AddComponent<RoaApocalypseCharacterSkin>();
-                _apocalypseSkin.Bind(apocalypseBody);
+                if (_apocalypseSkin.Bind(apocalypseBody))
+                    // The hidden GLB rig still drives the visible pack skin.
+                    // Renderer-based culling would stop its clips entirely.
+                    _animation.cullingType = AnimationCullingType.AlwaysAnimate;
             }
 
             _animation.wrapMode = WrapMode.Loop;

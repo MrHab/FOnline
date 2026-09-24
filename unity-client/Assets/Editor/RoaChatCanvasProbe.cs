@@ -40,9 +40,8 @@ namespace RealmOfAshes.EditorTools
                     StringComparison.Ordinal);
                 Require(chatRect.sizeDelta == new Vector2(600f, 420f),
                     "chat should fit beside the HUD action bar");
-                chatRect.localScale = Vector3.one * (mobileCapture ? 0.58f : 0.40f);
-                chatRect.anchoredPosition = new Vector2(mobileCapture ? 8f : 14f,
-                    mobileCapture ? 145f : 115f);
+                chatRect.localScale = Vector3.one * (mobileCapture ? 0.58f : 0.36f);
+                chatRect.anchoredPosition = new Vector2(mobileCapture ? 8f : 14f, 14f);
                 for (int i = 0; i < 5; i++)
                     Require(panel.Find("Header/Channel_" +
                         new[] { "world", "local", "faction", "group", "clan" }[i]) != null,

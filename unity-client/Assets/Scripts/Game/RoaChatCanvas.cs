@@ -67,9 +67,8 @@ namespace RealmOfAshes.Game
             if (_launcherObject != null)
                 _launcherObject.SetActive(mobile && !_expanded);
             var rect = (RectTransform)_panel.transform;
-            rect.localScale = Vector3.one * (mobile ? 0.58f : 0.40f);
-            rect.anchoredPosition = new Vector2(mobile ? 8f : 14f,
-                mobile ? 145f : 115f);
+            rect.localScale = Vector3.one * (mobile ? 0.58f : 0.36f);
+            rect.anchoredPosition = new Vector2(mobile ? 8f : 14f, 14f);
 
             if (_input == null) return;
             if (Input.GetKeyDown(KeyCode.Escape) && _expanded)

@@ -20,6 +20,9 @@ namespace RealmOfAshes.Game
         private TextMeshProUGUI _syntyPromptObject;
         private TextMeshProUGUI _syntyPromptAction;
         private TextMeshProUGUI[] _syntyPromptKeys;
+        private RectTransform _syntyPromptBackground;
+        private GameObject _syntyPromptKeyButton;
+        private bool _syntyPromptNeedsCenter;
         private bool _syntyPrompt;
         private string _lastInteractionPrompt = string.Empty;
 
@@ -68,6 +71,15 @@ namespace RealmOfAshes.Game
                     ?.GetComponent<TextMeshProUGUI>();
                 _syntyPromptAction = sourceRect.Find("Content/Input_Action/txtAction")
                     ?.GetComponent<TextMeshProUGUI>();
+                _syntyPromptBackground = sourceRect.Find("Content/SPR_Background") as RectTransform;
+                Transform keyButton = sourceRect.Find("Content/Input_Action/Input_KeyButton");
+                _syntyPromptKeyButton = keyButton != null ? keyButton.gameObject : null;
+                Transform controllerKey = keyButton?.Find("Input_Button");
+                if (controllerKey != null) controllerKey.gameObject.SetActive(false);
+                Transform darkKey = keyButton?.Find("Input_Key_Dark_Grunge");
+                if (darkKey != null) darkKey.gameObject.SetActive(false);
+                Transform keyboardKey = keyButton?.Find("Input_Key_White_Minimal");
+                if (keyboardKey != null) keyboardKey.gameObject.SetActive(true);
                 _syntyPromptKeys = sourceRect.GetComponentsInChildren<TextMeshProUGUI>(true);
                 foreach (Animator animator in sourceRect.GetComponentsInChildren<Animator>(true))
                     animator.enabled = false;
@@ -78,6 +90,7 @@ namespace RealmOfAshes.Game
                 _interactionPromptGroup.blocksRaycasts = false;
                 _interactionPromptGroup.interactable = false;
                 _syntyPrompt = true;
+                _syntyPromptNeedsCenter = true;
                 _interactionPrompt.SetActive(false);
                 return;
             }
@@ -128,6 +141,24 @@ namespace RealmOfAshes.Game
             rect.localScale = Vector3.one * (_syntyPrompt
                 ? (mobile ? SyntyPromptMobileScale : SyntyPromptDesktopScale)
                 : (mobile ? 0.86f : 1f));
+            if (_syntyPrompt)
+            {
+                if (_syntyPromptKeyButton != null) _syntyPromptKeyButton.SetActive(!mobile);
+                _syntyPromptNeedsCenter = true;
+            }
+        }
+
+        private void CenterSyntyPrompt()
+        {
+            if (_syntyPromptBackground == null || _safeRoot == null) return;
+            Canvas.ForceUpdateCanvases();
+            Bounds bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(
+                _safeRoot, _syntyPromptBackground);
+            RectTransform rect = (RectTransform)_interactionPrompt.transform;
+            Vector2 position = rect.anchoredPosition;
+            position.x += _safeRoot.rect.center.x - bounds.center.x;
+            rect.anchoredPosition = position;
+            _syntyPromptNeedsCenter = false;
         }
 
         private void RefreshInteractionPrompt(bool worldHud)
@@ -172,8 +203,9 @@ namespace RealmOfAshes.Game
                 if (hint != _lastInteractionPrompt)
                 {
                     _lastInteractionPrompt = hint;
-                    _interactionPrompt.transform.localScale *= 1.035f;
+                    _syntyPromptNeedsCenter = true;
                 }
+                if (_syntyPrompt && _syntyPromptNeedsCenter) CenterSyntyPrompt();
             }
             else
             {
@@ -188,8 +220,7 @@ namespace RealmOfAshes.Game
                 ? (_mobile != null && _mobile.ControlsEnabled
                     ? SyntyPromptMobileScale : SyntyPromptDesktopScale)
                 : (_mobile != null && _mobile.ControlsEnabled ? 0.86f : 1f);
-            _interactionPrompt.transform.localScale = Vector3.Lerp(_interactionPrompt.transform.localScale,
-                Vector3.one * layoutScale, 1f - Mathf.Exp(-12f * Time.unscaledDeltaTime));
+            _interactionPrompt.transform.localScale = Vector3.one * layoutScale;
             if (!show && _interactionPromptGroup.alpha <= 0.001f) _interactionPrompt.SetActive(false);
         }
     }

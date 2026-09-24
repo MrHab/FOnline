@@ -286,7 +286,8 @@ namespace RealmOfAshes.Game
                     break;
                 }
             }
-            Font wanted = !cyrillic && _displayFont != null ? _displayFont : RoaUiFont.Default;
+            Font wanted = !cyrillic && !label.name.StartsWith("LiveSlotLabel_")
+                && _displayFont != null ? _displayFont : RoaUiFont.Default;
             if (label.font != wanted) label.font = wanted;
 
             Color color = label.color;

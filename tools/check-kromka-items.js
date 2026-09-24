@@ -100,6 +100,6 @@ assert(craftingData.includes('public static bool ApplyCatalog(JObject catalog, o
 assert(bootstrap.includes('StartCoroutine(FetchItemCatalog())')
   && bootstrap.includes('RoaCraftingData.ApplyCatalog(fieldRecipes'),
   'Unity does not load both item and recipe catalogs');
-assert(quickbar.includes('public const int SlotCount = 8;'), 'Unity quickbar is not fixed to eight reference slots');
+assert(quickbar.includes('public const int SlotCount = 6;'), 'Unity quickbar is not fixed to six reference slots');
 
-console.log(`KRM-17 item authority OK: ${catalog.items.length} items, ${recipes.recipes.length} field recipes, 9 equipment slots and 8 quick slots.`);
+console.log(`KRM-17 item authority OK: ${catalog.items.length} items, ${recipes.recipes.length} field recipes, 9 equipment slots and 6 quick slots.`);

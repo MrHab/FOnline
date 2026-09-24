@@ -442,7 +442,7 @@ HP/AP, уровень и XP, травмы, инвентарь, экипиров�
 `join`; подробнее — в
 [«Аккаунты и персонажи»](AUTH_AND_CHARACTERS.md).
 
-Unity-клиент пользуется HTTP-сохранением только для восьми быстрых слотов:
+Unity-клиент пользуется HTTP-сохранением только для шести быстрых слотов:
 `RoaAuthClient.SaveQuickbar` запрашивает свежий документ персонажа, меняет в
 нём `quickbarSlots` и отправляет `POST /api/characters/:id/save` с
 `characterLeaseId` и `clientInstanceId`. Авторитетные поля сервер при слиянии

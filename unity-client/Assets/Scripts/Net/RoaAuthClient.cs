@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RealmOfAshes.Game;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -309,8 +310,8 @@ namespace RealmOfAshes.Net
             }
 
             var serializedSlots = new JArray();
-            int count = slots != null ? Mathf.Min(8, slots.Count) : 0;
-            for (int i = 0; i < 8; i++)
+            int count = slots != null ? Mathf.Min(RoaQuickbar.SlotCount, slots.Count) : 0;
+            for (int i = 0; i < RoaQuickbar.SlotCount; i++)
             {
                 string id = i < count ? (slots[i] ?? string.Empty).Trim() : string.Empty;
                 serializedSlots.Add(string.IsNullOrEmpty(id) ? JValue.CreateNull() : new JValue(id));

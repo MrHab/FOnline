@@ -17021,7 +17021,33 @@ function spawnAuthoredLocationActors(room, loc) {
   const controllingSites = wastelandSitesForLocation(loc, room);
   const controllingSite = controllingSites.length === 1 ? controllingSites[0] : null;
   let count = 0;
-  loc.objects.forEach((row, index) => {
+  const authoredRows = loc.objects.slice();
+  const merchants = authoredRows.filter(row => locationDefinitionObjectIsNpc(row)
+    && authoredNpcDefaultRole(row) === 'merchant');
+  const hasOrdinaryMerchant = merchants.some(row => {
+    const entity = locationDefinitionObjectEntity(row);
+    return entity.spawnedBy !== 'named' && entity.spawnedBy !== 'onboarding'
+      && (!Array.isArray(entity.quests) || entity.quests.length === 0);
+  });
+  const authoredQuestMerchant = merchants.find(row => {
+    const entity = locationDefinitionObjectEntity(row);
+    return entity.spawnedBy !== 'named' && Array.isArray(entity.quests) && entity.quests.length > 0;
+  });
+  if (!hasOrdinaryMerchant && authoredQuestMerchant
+    && (locationIsFactionCapital(loc) || WORLD_ECONOMY.npcTradeHubs.includes(loc.id))) {
+    const questRow = authoredQuestMerchant;
+    const entity = locationDefinitionObjectEntity(questRow);
+    const point = locationObjectPosition(questRow);
+    const id = `${String(questRow.id || 'merchant').slice(0, 48)}_shop`;
+    authoredRows.push({
+      ...questRow,
+      id,
+      name: 'Торговец',
+      position: { x: point.x + 6, y: point.y || 0, z: point.z },
+      entity: { ...entity, npcId: id, spawnedBy: '', quests: [], noTraderQuests: true }
+    });
+  }
+  authoredRows.forEach((row, index) => {
     if (!locationDefinitionObjectIsNpc(row)) return;
     // Именных и учебных НПС ставят их каталоги; строка — только их место и облик.
     const rowOwner = String(locationDefinitionObjectEntity(row).spawnedBy || '');
@@ -17134,9 +17160,7 @@ function spawnAuthoredLocationActors(room, loc) {
     actor.dialogueProfile = merchantActor
       ? String(entity.dialogueProfile || trade.dialogueProfile || entity.traderProfile || entity.tradeProfile || entity.profile || (locationTraderActor ? loc.trader?.dialogueProfile : '') || '').slice(0, 64)
       : String(entity.dialogueProfile || '').slice(0, 64);
-    actor.traderQuests = merchantActor
-      ? (explicitQuests.length ? explicitQuests : (Array.isArray(trade.quests) && trade.quests.length ? trade.quests.slice() : (locationTraderActor && Array.isArray(loc.trader?.quests) ? loc.trader.quests.slice() : [])))
-      : explicitQuests;
+    actor.traderQuests = entity.noTraderQuests ? [] : explicitQuests;
     actor.traderMarket = trade.market || null;
     if (serverNpcIsNaturalCreature(actor, actor)) normalizeServerNaturalCreatureState(actor);
     else materializeAuthoredNpcRoutine(room, loc, actor, Date.now());
@@ -18524,7 +18548,9 @@ function spawnWastelandSiteWorkers(room, loc) {
         actor.traderId = `${site.id || loc.id}_${role}`.slice(0, 64);
         actor.traderProfile = String(trade.traderProfile || role).slice(0, 64);
         actor.dialogueProfile = String(trade.dialogueProfile || role || '').slice(0, 64);
-        actor.traderQuests = Array.isArray(trade.quests) ? trade.quests.slice() : [];
+        // Работник поселения продаёт товары; поручения профиля принадлежат
+        // именным персонажам и не превращают каждого торговца в квестового NPC.
+        actor.traderQuests = [];
         actor.traderMarket = trade.market || null;
         count++;
       }
@@ -18914,7 +18940,7 @@ function publicEnemy(e, viewer = null) {
     visual: String(e.visual || '').slice(0, 32),
     modelKey,
     species: String(e.species || '').slice(0, 32),
-    canDialogue: !naturalCreature && serverNpcHasDialogue(e),
+    canDialogue: naturalCreature ? false : serverNpcHasDialogue(e),
     worldBoss: !!e.worldBossId,
     shieldNode: !!e.shieldNodeOf,
     shielded: !!e.worldBossId && e.shielded === true,

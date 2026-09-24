@@ -453,7 +453,7 @@
     },
     {
       "itemId": "pickaxe",
-      "name": "Оружие 01",
+      "name": "Лопата 01",
       "prefab": "Weapons/Melee/SM_Wep_Spade_01",
       "rigId": "pickaxe",
       "combatId": "pickaxe",

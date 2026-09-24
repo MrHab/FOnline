@@ -182,25 +182,26 @@ namespace RealmOfAshes.Game
         private static Dictionary<string, Definition> Build()
         {
             var result = new Dictionary<string, Definition>();
-            Add(result, "pistol", "9mm пистолет", 1.5f);
-            Add(result, "revolver", "Ржавый револьвер", 2f);
-            Add(result, "sawedOffShotgun", "Обрез", 2.4f);
-            Add(result, "smg", "Самодельный ПП", 3.2f);
-            Add(result, "rifle", "Охотничья винтовка", 4f);
-            Add(result, "assaultRifle", "Ржавый автомат", 4.8f);
-            Add(result, "machineGun", "Самодельный пулемёт", 8.8f);
-            Add(result, "laserPistol", "Лазерный пистолет", 2.2f);
-            Add(result, "flamethrower", "Огнемёт", 7.4f);
-            Add(result, "plasmaRifle", "Плазменное ружьё", 5.1f);
-            Add(result, "shotgun", "Дробовик", 4.2f);
-            Add(result, "rocketLauncher", "Ракетница", 9.6f);
-            Add(result, "knife", "Боевой нож", 0.5f);
+            Add(result, "pistol", "Пистолет 01", 1.5f);
+            Add(result, "revolver", "Револьвер 01", 2f);
+            Add(result, "sawedOffShotgun", "Дробовик (обрез) 01", 2.4f);
+            Add(result, "smg", "Пистолет-пулемёт 01", 3.2f);
+            Add(result, "rifle", "Охотничья винтовка 01", 4f);
+            Add(result, "assaultRifle", "Штурмовая винтовка 01", 4.8f);
+            Add(result, "machineGun", "Пулемёт 01", 8.8f);
+            Add(result, "laserPistol", "Гибридное оружие 01", 2.2f);
+            Add(result, "flamethrower", "Огнемёт 01", 7.4f);
+            Add(result, "plasmaRifle", "Гибридное оружие 02", 5.1f);
+            Add(result, "shotgun", "Дробовик 01", 4.2f);
+            Add(result, "rocketLauncher", "Ракетная установка 01", 9.6f);
+            Add(result, "knife", "Нож 01", 0.5f);
             IReadOnlyList<RoaApocalypseModels.WeaponEntry> apocalypseWeapons =
                 RoaApocalypseModels.WeaponEntries;
             if (apocalypseWeapons != null)
                 foreach (RoaApocalypseModels.WeaponEntry entry in apocalypseWeapons)
                     if (entry != null && entry.itemId != null
-                        && entry.itemId.StartsWith("polygon", System.StringComparison.Ordinal))
+                        && entry.itemId != "pickaxe" && entry.itemId != "axe"
+                        && entry.itemId != "handPump")
                         Add(result, entry.itemId, entry.displayName, entry.weight);
             Add(result, "fists", "Кулаки", 0f);
 

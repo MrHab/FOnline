@@ -16,11 +16,24 @@ const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 const json = relative => JSON.parse(read(relative));
 
 const catalog = normalizeItemCatalog(json('data/kromka/items.json'));
-const throwableIds = new Set(json('data/kromka/apocalypse-weapons.json').weapons
+const packWeapons = json('data/kromka/apocalypse-weapons.json').weapons;
+const throwableIds = new Set(packWeapons
   .filter(row => row.kind === 'throwable').map(row => row.itemId));
 const indexes = itemCatalogIndexes(catalog);
 const recipes = normalizeFieldRecipeCatalog(json('data/kromka/field-recipes.json'), catalog);
 const recipeIndexes = fieldRecipeCatalogIndexes(recipes);
+for (const weapon of packWeapons) {
+  const item = indexes.byId[weapon.itemId];
+  assert(item, `${weapon.itemId}: pack model has no playable item`);
+  if (weapon.itemId.startsWith('polygon')) {
+    assert.strictEqual(item.category, 'weapons', `${weapon.itemId}: pack weapon is outside the weapon catalog`);
+    const recipe = recipeIndexes.byId[weapon.itemId + 'craft'];
+    assert(recipe && recipe.output.id === weapon.itemId && recipe.station === 'weapon_bench',
+      `${weapon.itemId}: pack weapon has no workbench recipe`);
+  }
+  if (item.category === 'weapons')
+    assert.strictEqual(item.name, weapon.name, `${weapon.itemId}: old display name remains`);
+}
 const server = read('server.js');
 const itemData = read('unity-client/Assets/Scripts/Game/RoaItemData.cs');
 const itemCategories = read('unity-client/Assets/Scripts/Game/RoaItemCategories.cs');

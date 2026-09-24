@@ -205,7 +205,7 @@
     },
     {
       "id": "knifecraft",
-      "name": "Боевой нож",
+      "name": "Нож 01",
       "station": "weapon_bench",
       "inputs": {
         "ore": 2,
@@ -220,7 +220,7 @@
     },
     {
       "id": "pistolcraft",
-      "name": "9mm пистолет",
+      "name": "Пистолет 01",
       "station": "weapon_bench",
       "inputs": {
         "weaponParts": 1,
@@ -236,7 +236,7 @@
     },
     {
       "id": "revolvercraft",
-      "name": "Ржавый револьвер",
+      "name": "Револьвер 01",
       "station": "weapon_bench",
       "inputs": {
         "ore": 4,
@@ -252,7 +252,7 @@
     },
     {
       "id": "sawedoffcraft",
-      "name": "Обрез",
+      "name": "Дробовик (обрез) 01",
       "station": "weapon_bench",
       "inputs": {
         "scrap": 5,
@@ -267,7 +267,7 @@
     },
     {
       "id": "smgcraft",
-      "name": "Самодельный ПП",
+      "name": "Пистолет-пулемёт 01",
       "station": "weapon_bench",
       "inputs": {
         "scrap": 8,
@@ -283,7 +283,7 @@
     },
     {
       "id": "riflecraft",
-      "name": "Охотничья винтовка",
+      "name": "Охотничья винтовка 01",
       "station": "weapon_bench",
       "inputs": {
         "weaponParts": 2,
@@ -299,7 +299,7 @@
     },
     {
       "id": "assaultcraft",
-      "name": "Ржавый автомат",
+      "name": "Штурмовая винтовка 01",
       "station": "weapon_bench",
       "inputs": {
         "ore": 6,
@@ -314,7 +314,7 @@
     },
     {
       "id": "machineguncraft",
-      "name": "Самодельный пулемёт",
+      "name": "Пулемёт 01",
       "station": "weapon_bench",
       "inputs": {
         "ore": 10,
@@ -329,7 +329,7 @@
     },
     {
       "id": "lasercraft",
-      "name": "Лазерный пистолет",
+      "name": "Гибридное оружие 01",
       "station": "energy_bench",
       "inputs": {
         "ore": 5,
@@ -344,7 +344,7 @@
     },
     {
       "id": "flamercraft",
-      "name": "Огнемёт",
+      "name": "Огнемёт 01",
       "station": "weapon_bench",
       "inputs": {
         "ore": 9,
@@ -360,7 +360,7 @@
     },
     {
       "id": "plasmacraft",
-      "name": "Плазменное ружьё",
+      "name": "Гибридное оружие 02",
       "station": "energy_bench",
       "inputs": {
         "ore": 10,
@@ -376,7 +376,7 @@
     },
     {
       "id": "shotguncraft",
-      "name": "Дробовик",
+      "name": "Дробовик 01",
       "station": "weapon_bench",
       "inputs": {
         "ore": 7,
@@ -391,7 +391,7 @@
     },
     {
       "id": "rocketcrafter",
-      "name": "Ракетница",
+      "name": "Ракетная установка 01",
       "station": "weapon_bench",
       "inputs": {
         "ore": 14,
@@ -736,6 +736,934 @@
       "output": {
         "id": "electronics",
         "qty": 2
+      }
+    },
+    {
+      "id": "polygonAssaultRifle02craft",
+      "name": "Штурмовая винтовка 02",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 6,
+        "wood": 3
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonAssaultRifle02",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonAssaultRifle03craft",
+      "name": "Штурмовая винтовка 03",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 6,
+        "wood": 3
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonAssaultRifle03",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonHuntingRifleClean01craft",
+      "name": "Охотничья винтовка (чистое) 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonHuntingRifleClean01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonHybrid03craft",
+      "name": "Гибридное оружие 03",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 10,
+        "wood": 2,
+        "silver": 10
+      },
+      "silverFee": 5,
+      "workSeconds": 11,
+      "output": {
+        "id": "polygonHybrid03",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonMachineGun02craft",
+      "name": "Пулемёт 02",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 10,
+        "wood": 4
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonMachineGun02",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonMinigun01craft",
+      "name": "Миниган 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 10,
+        "wood": 4
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonMinigun01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonMinigunClean01craft",
+      "name": "Миниган (чистое) 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 10,
+        "wood": 4
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonMinigunClean01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonNailgun01craft",
+      "name": "Гвоздомёт 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "scrap": 8,
+        "weaponParts": 3,
+        "wood": 2
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonNailgun01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonNailgunClean01craft",
+      "name": "Гвоздомёт (чистое) 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "scrap": 8,
+        "weaponParts": 3,
+        "wood": 2
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonNailgunClean01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonRevolver02craft",
+      "name": "Револьвер 02",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 4,
+        "scrap": 4,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonRevolver02",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonRifle01craft",
+      "name": "Винтовка 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonRifle01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonRifle02craft",
+      "name": "Винтовка 02",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonRifle02",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonRifle03craft",
+      "name": "Винтовка 03",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonRifle03",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonSniperRifle01craft",
+      "name": "Снайперская винтовка 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonSniperRifle01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonSniperRifle02craft",
+      "name": "Снайперская винтовка 02",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonSniperRifle02",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonSniperRiflePneumatic01craft",
+      "name": "Пневматическая снайперская винтовка 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonSniperRiflePneumatic01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonSpearGun01craft",
+      "name": "Гарпунное ружьё 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonSpearGun01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonSubMGun02craft",
+      "name": "Пистолет-пулемёт 02",
+      "station": "weapon_bench",
+      "inputs": {
+        "scrap": 8,
+        "weaponParts": 3,
+        "wood": 2
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonSubMGun02",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonSubMGun03craft",
+      "name": "Пистолет-пулемёт 03",
+      "station": "weapon_bench",
+      "inputs": {
+        "scrap": 8,
+        "weaponParts": 3,
+        "wood": 2
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonSubMGun03",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonSubMGunClean03craft",
+      "name": "Пистолет-пулемёт (чистое) 03",
+      "station": "weapon_bench",
+      "inputs": {
+        "scrap": 8,
+        "weaponParts": 3,
+        "wood": 2
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonSubMGunClean03",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonBatMetal01craft",
+      "name": "Металлическая бита 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonBatMetal01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonBatWood01craft",
+      "name": "Деревянная бита 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonBatWood01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonBatWood02craft",
+      "name": "Деревянная бита 02",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonBatWood02",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonBaton01craft",
+      "name": "Дубинка 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonBaton01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonBaton02craft",
+      "name": "Дубинка 02",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonBaton02",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonButcher01craft",
+      "name": "Мясницкий тесак 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonButcher01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonCross01craft",
+      "name": "Боевой крест 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonCross01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonCrowbar01craft",
+      "name": "Лом 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonCrowbar01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonCrutch01craft",
+      "name": "Костыль 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonCrutch01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonHammer01craft",
+      "name": "Молот 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonHammer01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonKatana01craft",
+      "name": "Катана 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonKatana01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonMeleeGolfClub01craft",
+      "name": "Клюшка 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonMeleeGolfClub01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonMeleeMachete01craft",
+      "name": "Мачете 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonMeleeMachete01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonMeleeSpearWood01craft",
+      "name": "Копьё 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonMeleeSpearWood01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonPipe01craft",
+      "name": "Труба 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonPipe01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonPlank01craft",
+      "name": "Доска 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonPlank01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonRebarClub01craft",
+      "name": "Арматурная дубина 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonRebarClub01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonWoodAxe01craft",
+      "name": "Дровяной топор 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonWoodAxe01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonWrench01craft",
+      "name": "Ключ 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonWrench01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonBombGasCan01craft",
+      "name": "Бомба из канистры 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 14,
+        "wood": 4,
+        "silver": 14
+      },
+      "silverFee": 7,
+      "workSeconds": 16,
+      "output": {
+        "id": "polygonBombGasCan01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonBombPropane01craft",
+      "name": "Пропановая бомба 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 14,
+        "wood": 4,
+        "silver": 14
+      },
+      "silverFee": 7,
+      "workSeconds": 16,
+      "output": {
+        "id": "polygonBombPropane01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonChainSaw01craft",
+      "name": "Бензопила 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonChainSaw01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonCrossBow01craft",
+      "name": "Арбалет 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonCrossBow01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonCrossBowClean01craft",
+      "name": "Арбалет (чистое) 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonCrossBowClean01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonFlareGun01craft",
+      "name": "Сигнальный пистолет 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 1,
+        "scrap": 4,
+        "ammoParts": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 4,
+      "output": {
+        "id": "polygonFlareGun01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonFlashbang01craft",
+      "name": "Светошумовая граната 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 14,
+        "wood": 4,
+        "silver": 14
+      },
+      "silverFee": 7,
+      "workSeconds": 16,
+      "output": {
+        "id": "polygonFlashbang01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonGrenade01craft",
+      "name": "Граната 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 14,
+        "wood": 4,
+        "silver": 14
+      },
+      "silverFee": 7,
+      "workSeconds": 16,
+      "output": {
+        "id": "polygonGrenade01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonMolotov01craft",
+      "name": "Коктейль Молотова 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 14,
+        "wood": 4,
+        "silver": 14
+      },
+      "silverFee": 7,
+      "workSeconds": 16,
+      "output": {
+        "id": "polygonMolotov01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonNailBomb01craft",
+      "name": "Бомба с гвоздями 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 14,
+        "wood": 4,
+        "silver": 14
+      },
+      "silverFee": 7,
+      "workSeconds": 16,
+      "output": {
+        "id": "polygonNailBomb01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonPipeBomb01craft",
+      "name": "Трубная бомба 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 14,
+        "wood": 4,
+        "silver": 14
+      },
+      "silverFee": 7,
+      "workSeconds": 16,
+      "output": {
+        "id": "polygonPipeBomb01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonSignShield01craft",
+      "name": "Щит 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonSignShield01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonTrimmer01craft",
+      "name": "Триммер 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonTrimmer01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonTrimmerClean01craft",
+      "name": "Триммер (чистое) 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "polygonTrimmerClean01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonAAGun01craft",
+      "name": "Зенитная установка 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 10,
+        "wood": 4
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonAAGun01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonVehAA01craft",
+      "name": "Транспортная зенитная установка 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 10,
+        "wood": 4
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonVehAA01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonVehHarpoon01craft",
+      "name": "Транспортный гарпун 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "polygonVehHarpoon01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonVehMachineGun01craft",
+      "name": "Транспортный пулемёт 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 10,
+        "wood": 4
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonVehMachineGun01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonVehMiniGun01craft",
+      "name": "Транспортный миниган 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 10,
+        "wood": 4
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "polygonVehMiniGun01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonVehRocketLauncher01craft",
+      "name": "Транспортная ракетная установка 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 14,
+        "wood": 4,
+        "silver": 14
+      },
+      "silverFee": 7,
+      "workSeconds": 16,
+      "output": {
+        "id": "polygonVehRocketLauncher01",
+        "qty": 1
+      }
+    },
+    {
+      "id": "polygonVehSawLauncher01craft",
+      "name": "Транспортная пильная установка 01",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 14,
+        "wood": 4,
+        "silver": 14
+      },
+      "silverFee": 7,
+      "workSeconds": 16,
+      "output": {
+        "id": "polygonVehSawLauncher01",
+        "qty": 1
       }
     }
   ]

@@ -9,6 +9,7 @@ const root = path.resolve(__dirname, '..');
 const prefabRoot = path.join(root, 'unity-client', 'Assets', 'Synty', 'PolygonApocalypse', 'Prefabs', 'Weapons');
 const manifestPath = path.join(root, 'data', 'kromka', 'apocalypse-weapons.json');
 const itemsPath = path.join(root, 'data', 'kromka', 'items.json');
+const fieldRecipesPath = path.join(root, 'data', 'kromka', 'field-recipes.json');
 
 const existing = Object.freeze({
   SM_Wep_Pistol_01: 'pistol',
@@ -54,7 +55,7 @@ const labels = [
   [/Bat_Metal/, 'Металлическая бита'], [/Bat_Wood/, 'Деревянная бита'],
   [/Baton/, 'Дубинка'], [/Bat/, 'Бита'],
   [/Crowbar/, 'Лом'], [/PipeWrench/, 'Трубный ключ'], [/Wrench/, 'Ключ'],
-  [/Butcher/, 'Мясницкий тесак'], [/Cross/, 'Боевой крест'],
+  [/Butcher/, 'Мясницкий тесак'], [/Cross/, 'Боевой крест'], [/Spade/, 'Лопата'],
   [/Crutch/, 'Костыль'], [/GolfClub/, 'Клюшка'], [/RebarClub/, 'Арматурная дубина'],
   [/Plank/, 'Доска'], [/Pipe/, 'Труба'], [/Spear/, 'Копьё'],
   [/Veh_/, 'Транспортное оружие'], [/AAGun/, 'Зенитная установка']
@@ -121,12 +122,17 @@ function build() {
   const original = fs.readFileSync(itemsPath, 'utf8');
   const catalog = JSON.parse(original);
   catalog.items = catalog.items.filter(item => !item.id.startsWith('polygon'));
+  for (const row of entries) {
+    const legacy = catalog.items.find(item => item.id === row.itemId);
+    if (legacy && legacy.category === 'weapons') legacy.name = row.name;
+  }
   const templates = Object.fromEntries(catalog.items.map(item => [item.id, item]));
   const newItems = entries.filter(row => !templates[row.itemId]).map(row => {
     const base = templates[row.combatId];
     if (!base) throw new Error(`Missing item template ${row.combatId}`);
+    const { harvestTool, ...weaponTemplate } = base;
     return {
-      ...base, id: row.itemId, name: row.name,
+      ...weaponTemplate, id: row.itemId, name: row.name, category: 'weapons',
       weight: row.kind === 'throwable' ? 0.65
         : Number((base.weight * (row.kind === 'mounted' ? 1.8 : 1)).toFixed(2)),
       basePrice: row.kind === 'throwable' ? 36
@@ -134,7 +140,7 @@ function build() {
       hands: row.kind === 'throwable' ? 1 : base.hands,
       compatibleSlots: row.kind === 'throwable' ? ['weapon'] : base.compatibleSlots,
       modificationSlots: row.kind === 'throwable' ? [] : base.modificationSlots,
-      acquisition: ['trade', 'loot']
+      acquisition: ['craft', 'trade', 'loot']
     };
   });
   const itemById = new Map([...catalog.items, ...newItems].map(item => [item.id, item]));
@@ -144,12 +150,50 @@ function build() {
   }
   const manifest = { schema: 'kromka.apocalypseWeapons.v1', weapons: entries };
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
-  const withoutGenerated = original.replace(/^    \{ "id": "polygon[^\r\n]*\r?\n/gm, '');
+  let withoutGenerated = original.replace(/^    \{ "id": "polygon[^\r\n]*\r?\n/gm, '');
+  for (const row of entries) {
+    if (!Object.values(existing).includes(row.itemId)
+        || templates[row.itemId].category !== 'weapons') continue;
+    const escaped = row.itemId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const line = new RegExp('(^    \\{ "id": "' + escaped + '", "name": ")[^\"]*', 'm');
+    withoutGenerated = withoutGenerated.replace(line, '$1' + row.name);
+  }
+  withoutGenerated = withoutGenerated.replace(
+    /(^    \{ "id": "sawedOffShotgun", "name": ")[^"]*/m,
+    '$1Дробовик (обрез) 01');
+  for (const [id, name] of Object.entries({
+    pickaxe: 'Кирка', axe: 'Топор', handPump: 'Ручной насос'
+  })) {
+    const line = new RegExp('(^    \\{ "id": "' + id + '", "name": ")[^"]*', 'm');
+    withoutGenerated = withoutGenerated.replace(line, '$1' + name);
+  }
   const entryLines = newItems.map(item => '    { ' + JSON.stringify(item).slice(1, -1)
     .replace(/":/g, '": ').replace(/,"/g, ', "') + ' },').join('\n');
   const fistLine = /^    \{ "id": "fists"/m;
   if (!fistLine.test(withoutGenerated)) throw new Error('Cannot find fists insertion point');
   fs.writeFileSync(itemsPath, withoutGenerated.replace(fistLine, entryLines + '\n    { "id": "fists"'));
+  const fieldCatalog = JSON.parse(fs.readFileSync(fieldRecipesPath, 'utf8'));
+  fieldCatalog.recipes = fieldCatalog.recipes.filter(recipe => !recipe.id.startsWith('polygon'));
+  for (const recipe of fieldCatalog.recipes) {
+    const item = itemById.get(recipe.output.id);
+    if (item?.category === 'weapons' && recipe.output.id !== 'fists')
+      recipe.name = item.name;
+  }
+  const recipeByOutput = new Map(fieldCatalog.recipes.map(recipe => [recipe.output.id, recipe]));
+  const variantRecipes = entries.filter(row => row.itemId.startsWith('polygon')).map(row => {
+    const base = recipeByOutput.get(row.combatId);
+    const inputs = base ? { ...base.inputs } : row.kind === 'throwable'
+      ? { scrap: 2, chemicals: 1 } : { weaponParts: 3, scrap: 6 };
+    return {
+      id: row.itemId + 'craft', name: row.name,
+      station: 'weapon_bench', inputs,
+      silverFee: base?.silverFee ?? 3,
+      workSeconds: base?.workSeconds ?? 5,
+      output: { id: row.itemId, qty: 1 }
+    };
+  });
+  fieldCatalog.recipes.push(...variantRecipes);
+  fs.writeFileSync(fieldRecipesPath, JSON.stringify(fieldCatalog, null, 2) + '\n');
   process.stdout.write(`PolygonApocalypse weapons: ${entries.length} models, ${newItems.length} new items.\n`);
 }
 

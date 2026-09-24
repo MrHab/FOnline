@@ -6528,7 +6528,11 @@ const SERVER_WEAPONS = {
 };
 
 for (const row of KROMKA_APOCALYPSE_WEAPONS) {
-  if (!row || !row.itemId || !row.combatId || SERVER_WEAPONS[row.itemId]) continue;
+  if (!row || !row.itemId || !row.combatId) continue;
+  if (SERVER_WEAPONS[row.itemId]) {
+    SERVER_WEAPONS[row.itemId].name = row.name || SERVER_WEAPONS[row.itemId].name;
+    continue;
+  }
   const rig = SERVER_WEAPONS[row.combatId];
   const item = KROMKA_ITEM_INDEXES.byId[row.itemId];
   if (!rig || !item) throw new Error(`Invalid PolygonApocalypse weapon: ${row.itemId}`);
@@ -6543,6 +6547,7 @@ for (const row of KROMKA_APOCALYPSE_WEAPONS) {
     } : {})
   };
 }
+SERVER_WEAPONS.sawedOffShotgun.name = KROMKA_ITEM_INDEXES.byId.sawedOffShotgun.name;
 
 const SERVER_WEAPON_MODIFICATION_SLOTS = new Set(['barrel', 'scope', 'magazine', 'forend']);
 const SERVER_WEAPON_MODIFICATION_CATALOG = Object.freeze({

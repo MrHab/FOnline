@@ -11,6 +11,8 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed partial class RoaHudCanvas
     {
+        private const float SyntyPromptDesktopScale = 0.36f;
+        private const float SyntyPromptMobileScale = 0.36f;
         private GameObject _interactionPrompt;
         private CanvasGroup _interactionPromptGroup;
         private Text _interactionPromptKey;
@@ -61,7 +63,7 @@ namespace RealmOfAshes.Game
                 sourceRect.anchorMin = sourceRect.anchorMax = new Vector2(0.5f, 0f);
                 sourceRect.pivot = new Vector2(0.5f, 0f);
                 sourceRect.anchoredPosition = new Vector2(0f, 216f);
-                sourceRect.localScale = Vector3.one * 0.58f;
+                sourceRect.localScale = Vector3.one * SyntyPromptDesktopScale;
                 _syntyPromptObject = sourceRect.Find("Content/Label_Object")
                     ?.GetComponent<TextMeshProUGUI>();
                 _syntyPromptAction = sourceRect.Find("Content/Input_Action/txtAction")
@@ -124,7 +126,8 @@ namespace RealmOfAshes.Game
             RectTransform rect = (RectTransform)_interactionPrompt.transform;
             rect.anchoredPosition = new Vector2(0f, mobile ? 302f : 216f);
             rect.localScale = Vector3.one * (_syntyPrompt
-                ? (mobile ? 0.48f : 0.58f) : (mobile ? 0.86f : 1f));
+                ? (mobile ? SyntyPromptMobileScale : SyntyPromptDesktopScale)
+                : (mobile ? 0.86f : 1f));
         }
 
         private void RefreshInteractionPrompt(bool worldHud)
@@ -182,7 +185,8 @@ namespace RealmOfAshes.Game
             _interactionPromptGroup.alpha = Mathf.MoveTowards(_interactionPromptGroup.alpha, target,
                 Time.unscaledDeltaTime * 8f);
             float layoutScale = _syntyPrompt
-                ? (_mobile != null && _mobile.ControlsEnabled ? 0.48f : 0.58f)
+                ? (_mobile != null && _mobile.ControlsEnabled
+                    ? SyntyPromptMobileScale : SyntyPromptDesktopScale)
                 : (_mobile != null && _mobile.ControlsEnabled ? 0.86f : 1f);
             _interactionPrompt.transform.localScale = Vector3.Lerp(_interactionPrompt.transform.localScale,
                 Vector3.one * layoutScale, 1f - Mathf.Exp(-12f * Time.unscaledDeltaTime));

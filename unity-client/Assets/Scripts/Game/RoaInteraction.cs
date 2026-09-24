@@ -1757,20 +1757,18 @@ namespace RealmOfAshes.Game
 
         private GameObject CreateResourceMarker(string id, JObject row)
         {
-            var root = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            var root = new GameObject("Resource:" + id);
             root.name = "Resource:" + id;
             root.transform.SetParent(transform, false);
-            root.transform.localScale = new Vector3(0.42f, 0.32f, 0.42f);
-            Destroy(root.GetComponent<Collider>());
-
-            Renderer renderer = root.GetComponent<Renderer>();
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            if (renderer != null && shader != null)
-            {
-                var material = new Material(shader);
-                material.color = ResourceColor(row?["type"]?.ToString());
-                renderer.sharedMaterial = material;
-            }
+            string type = row?["type"]?.ToString();
+            string modelKey = type == "ore" ? "ore_outcrop"
+                : type == "wood" ? "tutorialWood"
+                : type == "food" || type == "medicine" ? "garden_patch"
+                : type == "water" ? "water_tank"
+                : type == "oil" || type == "chemicals" ? "rust_barrel_v1"
+                : type == "electronics" || type == "ammoParts" || type == "weaponParts" ? "storage_chest"
+                : "scrap_heap";
+            RoaApocalypseVisuals.CreateGrounded(root.transform, RoaApocalypseModels.Environment(modelKey));
             return root;
         }
 
@@ -1819,29 +1817,7 @@ namespace RealmOfAshes.Game
 
         private static GameObject CreateContainerPlaceholder(Transform parent, JObject row)
         {
-            if ((row["defId"]?.ToString() ?? string.Empty) == "yard_supply"
-                || (row["name"]?.ToString() ?? string.Empty).Contains("снаряжения Глеба"))
-                return RoaTutorialProps.Build("crate", parent);
-            var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            marker.name = "UnityContainerMarker";
-            marker.transform.SetParent(parent, false);
-            marker.transform.localPosition = new Vector3(0f, 0.38f, 0f);
-            marker.transform.localScale = new Vector3(0.9f, 0.76f, 0.72f);
-            Destroy(marker.GetComponent<Collider>());
-
-            Renderer renderer = marker.GetComponent<Renderer>();
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            if (renderer != null && shader != null)
-            {
-                var material = new Material(shader);
-                bool locked = row["locked"]?.ToObject<bool>() == true
-                    || row["terminalLocked"]?.ToObject<bool>() == true;
-                material.color = locked
-                    ? new Color(0.42f, 0.28f, 0.18f)
-                    : new Color(0.38f, 0.42f, 0.32f);
-                renderer.sharedMaterial = material;
-            }
-            return marker;
+            return RoaTutorialProps.Build("crate", parent);
         }
 
         // Плата арендатора и сама аренда меняются без участия игрока: снимок

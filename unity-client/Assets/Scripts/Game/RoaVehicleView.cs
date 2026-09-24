@@ -85,7 +85,6 @@ namespace RealmOfAshes.Game
             root.transform.SetParent(parent, false);
             var view = root.AddComponent<RoaVehicleView>();
             view.ItemId = itemId ?? string.Empty;
-            root.transform.localScale = Vector3.one * 0.001f;
             _ = view.Load(baseUrl);
             return view;
         }
@@ -273,7 +272,6 @@ namespace RealmOfAshes.Game
             {
                 _appear = Mathf.MoveTowards(_appear, 1f, dt / AppearSeconds);
             }
-            transform.localScale = Vector3.one * Mathf.Max(0.001f, Presence);
         }
 
         private void Update()

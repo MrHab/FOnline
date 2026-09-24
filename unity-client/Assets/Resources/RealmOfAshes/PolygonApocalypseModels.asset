@@ -861,6 +861,38 @@ MonoBehaviour:
     prefab: {fileID: 1513997905505002, guid: 46133089344458744b67372c6e18592d, type: 3}
   - modelKey: workshop_bench
     prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: roadblockBarricade
+    prefab: {fileID: 1627071915366092, guid: b092211bc2fc70a44b2d0923759d5c16, type: 3}
+  - modelKey: wastelandDoor
+    prefab: {fileID: 1955552677593894, guid: fab28ef8ce113454e9b6d3935ecd88a2, type: 3}
+  - modelKey: bed
+    prefab: {fileID: 1762450614453468, guid: 016ad3349798a984b85484ddf70a27dc, type: 3}
+  - modelKey: streetLamp
+    prefab: {fileID: 1010640589526748, guid: 131667f2eefb9b249b180d8b167153db, type: 3}
+  - modelKey: generator
+    prefab: {fileID: 1225048615775740, guid: 464f78a898f604d4aa6188472f930185, type: 3}
+  - modelKey: waterPump
+    prefab: {fileID: 1617334352007710, guid: 46811183dfd86f843b4fd9934f288d43, type: 3}
+  - modelKey: storageChest
+    prefab: {fileID: 1147856548608730, guid: 5396a093575259c498a56449c2d6a0cb, type: 3}
+  - modelKey: craftStationRepair
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: craftStationChem
+    prefab: {fileID: 1977311790363920, guid: 855aa742b30e06d4598bd9cb0efad304, type: 3}
+  - modelKey: relayConsole
+    prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+  - modelKey: radioTower
+    prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+  - modelKey: planter
+    prefab: {fileID: 1822765171362998, guid: 3a58129ae5b98e54194c0043f168413f, type: 3}
+  - modelKey: tutorialTruck
+    prefab: {fileID: 1594861037966584, guid: 0450a127987e4124aa4c55845a477bf0, type: 3}
+  - modelKey: tutorialGate
+    prefab: {fileID: 1631585018466870, guid: db612fd44244f8841a97cbfe57c6d84b, type: 3}
+  - modelKey: tutorialTarget
+    prefab: {fileID: 1459172237601850, guid: 5fe2677ad5b95d349aa164b1a58bf0a3, type: 3}
+  - modelKey: tutorialWood
+    prefab: {fileID: 1789185446098736, guid: ce95f4e7bd2eaff4fb6400242652e280, type: 3}
   defaultEnvironment: {fileID: 1980102390720548, guid: 9b425efa126d5aa48aeda3fa09c70785, type: 3}
   roadEnvironment: {fileID: 1549825329564326, guid: 4d7a1cef4b51c604a83e17a8a5dc96ed, type: 3}
   plantEnvironment: {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}

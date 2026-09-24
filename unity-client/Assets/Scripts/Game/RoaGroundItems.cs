@@ -226,7 +226,7 @@ namespace RealmOfAshes.Game
                 item = new GroundItem { Id = id };
                 _items[id] = item;
                 item.Marker = CreateMarker();
-                item.Renderer = item.Marker.GetComponent<MeshRenderer>();
+                item.Renderer = item.Marker.GetComponentInChildren<MeshRenderer>();
             }
 
             item.ItemId = row["itemId"]?.ToString() ?? string.Empty;
@@ -257,14 +257,15 @@ namespace RealmOfAshes.Game
         /// </summary>
         private GameObject CreateMarker()
         {
-            var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var marker = new GameObject("GroundItem");
             marker.name = "GroundItem";
             marker.transform.SetParent(transform, false);
-            marker.transform.localScale = new Vector3(0.22f, 0.08f, 0.22f);
-
-            Object.Destroy(marker.GetComponent<Collider>());
-
-            var renderer = marker.GetComponent<MeshRenderer>();
+            var placeholder = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            placeholder.name = "LoadingPlaceholder";
+            placeholder.transform.SetParent(marker.transform, false);
+            placeholder.transform.localScale = new Vector3(0.22f, 0.08f, 0.22f);
+            Object.Destroy(placeholder.GetComponent<Collider>());
+            var renderer = placeholder.GetComponent<MeshRenderer>();
             Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
             if (shader != null && renderer != null)
             {
@@ -286,6 +287,22 @@ namespace RealmOfAshes.Game
         private void BeginVisualLoad(GroundItem item)
         {
             if (item == null || item.Visual != null || item.VisualLoading) return;
+            GameObject packPrefab = RoaApocalypseModels.Weapon(item.ItemId)
+                ?? RoaApocalypseModels.Vehicle(item.ItemId)
+                ?? RoaApocalypseModels.Item(item.ItemId);
+            if (packPrefab != null)
+            {
+                GameObject packVisual = RoaApocalypseVisuals.CreateGrounded(item.Marker.transform, packPrefab);
+                if (packVisual != null)
+                {
+                    packVisual.name = "GroundItemModel:" + item.ItemId;
+                    packVisual.transform.localPosition += Vector3.down * 0.095f;
+                    item.Visual = packVisual;
+                    item.VisualRenderers = InitiallyVisibleRenderers(packVisual);
+                    ApplyVisibility(item);
+                    return;
+                }
+            }
             string kind;
             if (string.IsNullOrEmpty(ModelPath(item.ItemId, out kind))) return;
             item.VisualLoading = true;
@@ -352,8 +369,7 @@ namespace RealmOfAshes.Game
 
                 item.Visual = holder;
                 // Visibility updates must not re-enable the hidden legacy meshes.
-                item.VisualRenderers = (packVisual != null ? packVisual : holder)
-                    .GetComponentsInChildren<Renderer>(true);
+                item.VisualRenderers = InitiallyVisibleRenderers(packVisual != null ? packVisual : holder);
                 item.VisualFailures = 0;
                 item.VisualRetryAt = 0f;
                 ApplyVisibility(item);
@@ -379,6 +395,14 @@ namespace RealmOfAshes.Game
             item.VisualFailures++;
             float delay = Mathf.Min(12f, 1.5f * Mathf.Pow(2f, Mathf.Min(3, item.VisualFailures - 1)));
             item.VisualRetryAt = Time.unscaledTime + delay;
+        }
+
+        private static Renderer[] InitiallyVisibleRenderers(GameObject visual)
+        {
+            var result = new List<Renderer>();
+            foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true))
+                if (renderer.enabled && renderer.gameObject.activeInHierarchy) result.Add(renderer);
+            return result.ToArray();
         }
 
         private bool VisualRequestIsCurrent(GroundItem item, string itemId, int request)

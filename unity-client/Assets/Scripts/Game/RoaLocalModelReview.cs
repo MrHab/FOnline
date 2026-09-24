@@ -17,10 +17,10 @@ namespace RealmOfAshes.Game
         private static readonly string[] Boots={"none","boots","scoutBoots","reinforcedBoots","assaultBoots"};
         private static readonly string[] Helmets={"none","helmet","tacticalHelmet","assaultHelmet","preWarHelmet","weldedHelmet"};
         private static readonly string[] Weapons={"pistol","rifle","assaultRifle","machineGun","laserPistol","flamethrower","plasmaRifle","shotgun","rocketLauncher","revolver","sawedOffShotgun","smg","knife","pickaxe","axe","handPump","medkit"};
-        private static readonly string[] Offhands={"none","pistol","revolver","sawedOffShotgun","laserPistol","knife","medkit"};
+        private static readonly string[] Offhands={"none","pistol","revolver","sawedOffShotgun","laserPistol","polygonRevolver02","polygonFlareGun01","knife","medkit"};
         private static readonly string[] Items={"medkit","blue","artifactDetectorMk1","artifactDetectorMk2","artifactDetectorMk3","artifactBelt2","artifactBelt3","artifactBelt4","artifactContainer","artifactSpring","artifactVein","artifactNode","artifactDrop","artifactBloodkin","artifactShell","artifactWarmer","artifactSieve","artifactThunderer","artifactHusher","artifactAnchor","artifactDew","artifactMemory","artifactUnknown"};
         private string _origin, _status="Загрузка…";
-        private int _body=4, _armor=7, _boots=4, _helmet=2, _tier=2, _weapon, _offhand, _item, _request;
+        private int _body=0, _armor=7, _boots=4, _helmet=2, _tier=2, _weapon, _offhand, _item, _request;
         private float _angle;
         private bool _itemMode, _dead;
         private RoaCharacterPreview _preview;

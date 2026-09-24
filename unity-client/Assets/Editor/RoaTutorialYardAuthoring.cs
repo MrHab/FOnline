@@ -77,9 +77,10 @@ namespace RealmOfAshes.EditorTools
                     collider.center = new Vector3(0, .58f, 0);
                     collider.size = new Vector3(3.2f, 1.16f, .8f);
                 }
+                bool importedPackArt = obj.transform.Find(RoaApocalypseVisuals.ChildName) != null;
                 foreach (var renderer in obj.GetComponentsInChildren<Renderer>())
                 {
-                    if (cover) continue; // Imported barrier already uses its persistent textured URP material.
+                    if (cover || importedPackArt) continue; // Keep the pack's authored materials.
                     var source = renderer.sharedMaterial;
                     renderer.sharedMaterial = MaterialFor(source.name, source.color);
                     UnityEngine.Object.DestroyImmediate(source);

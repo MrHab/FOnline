@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.IO;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
@@ -63,11 +64,61 @@ namespace RealmOfAshes.EditorTools
                     throw new InvalidOperationException("Fallback size changed with its gameplay root.");
                 Debug.Log("[ROA APOCALYPSE] Environment fallback passed: "
                     + keys.Length + " roles, collision retained, old mesh hidden.");
+
+                string basePath = Path.GetFullPath(Path.Combine(Application.dataPath,
+                    "../../data/kromka/base-building.json"));
+                JArray profiles = JObject.Parse(File.ReadAllText(basePath))["objects"] as JArray;
+                int built = 0;
+                foreach (JToken profile in profiles ?? new JArray())
+                {
+                    string modelKey = profile["model"]?.ToString();
+                    GameObject basePrefab = RoaApocalypseModels.Environment(modelKey);
+                    if (basePrefab == null) throw new InvalidOperationException("Missing base model: " + modelKey);
+                    GameObject holder = new GameObject("BaseProbe:" + modelKey);
+                    try
+                    {
+                        GameObject placed = RoaApocalypseVisuals.CreateGrounded(holder.transform, basePrefab);
+                        AssertGrounded(placed, holder.transform, basePrefab, modelKey);
+                        built++;
+                    }
+                    finally { UnityEngine.Object.DestroyImmediate(holder); }
+                }
+                string[] tutorialKinds = { "truck", "gate", "cot", "target", "bench", "crate", "cover", "ore", "wood" };
+                foreach (string kind in tutorialKinds)
+                {
+                    GameObject holder = new GameObject("TutorialProbe:" + kind);
+                    try
+                    {
+                        GameObject tutorial = RoaTutorialProps.Build(kind, holder.transform);
+                        if (tutorial.transform.Find(RoaApocalypseVisuals.ChildName) == null)
+                            throw new InvalidOperationException("Tutorial still uses primitives: " + kind);
+                    }
+                    finally { UnityEngine.Object.DestroyImmediate(holder); }
+                }
+                Debug.Log("[ROA APOCALYPSE] Native runtime props passed: " + built
+                    + " personal-base models and " + tutorialKinds.Length + " tutorial models.");
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(original);
             }
+        }
+
+        private static void AssertGrounded(GameObject visual, Transform root, GameObject prefab, string key)
+        {
+            if (visual == null || Vector3.Distance(visual.transform.lossyScale, prefab.transform.localScale) > 0.001f)
+                throw new InvalidOperationException("Runtime model changed size: " + key);
+            Bounds bounds = default;
+            bool found = false;
+            foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
+                if (!found) { bounds = renderer.bounds; found = true; }
+                else bounds.Encapsulate(renderer.bounds);
+            }
+            if (!found) throw new InvalidOperationException("Runtime model has no visible renderers: " + key);
+            if (Mathf.Abs(bounds.min.y - root.position.y) > 0.02f)
+                throw new InvalidOperationException("Runtime model is not grounded: " + key + " at " + bounds.min.y);
         }
     }
 }

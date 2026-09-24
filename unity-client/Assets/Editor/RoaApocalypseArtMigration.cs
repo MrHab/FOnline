@@ -74,7 +74,23 @@ namespace RealmOfAshes.EditorTools
             { "wasteland_shack", "Buildings/SM_Bld_Junk_Shelter_02" },
             { "watch_post", "Buildings/SM_Bld_RadioTower_01" },
             { "water_tank", "Buildings/SM_Bld_WaterTank_01" },
-            { "workshop_bench", "Props/SM_Prop_Workbench_01" }
+            { "workshop_bench", "Props/SM_Prop_Workbench_01" },
+            { "roadblockBarricade", "Props/SM_Prop_Barricade_01" },
+            { "wastelandDoor", "Buildings/SM_Bld_Door_Barricaded_01" },
+            { "bed", "Props/SM_Prop_Bedframe_01" },
+            { "streetLamp", "Props/SM_Prop_Lamp_01" },
+            { "generator", "Props/SM_Prop_Generator_01" },
+            { "waterPump", "Props/SM_Prop_Barrel_Water_01" },
+            { "storageChest", "Props/SM_Prop_Crate_Large_01" },
+            { "craftStationRepair", "Props/SM_Prop_Workbench_01" },
+            { "craftStationChem", "Props/SM_Prop_Medical_Shelf_01" },
+            { "relayConsole", "Props/SM_Prop_Radio_01" },
+            { "radioTower", "Props/SM_Prop_Radio_01" },
+            { "planter", "Environment/SM_Env_Overgrowth_01" },
+            { "tutorialTruck", "Vehicles/SM_Veh_Army_Truck_01" },
+            { "tutorialGate", "Props/SM_Prop_Wall_Quarantine_Gate_01" },
+            { "tutorialTarget", "Props/SM_Prop_Target_01" },
+            { "tutorialWood", "Props/SM_Prop_Log_01" }
         };
 
         internal static IEnumerable<KeyValuePair<string, string>> EnvironmentModels => Models;

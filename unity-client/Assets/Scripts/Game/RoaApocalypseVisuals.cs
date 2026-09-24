@@ -8,6 +8,29 @@ namespace RealmOfAshes.Game
     {
         public const string ChildName = "PolygonApocalypse_Visual";
 
+        public static GameObject CreateGrounded(Transform parent, GameObject prefab)
+        {
+            if (parent == null || prefab == null) return null;
+            GameObject visual = Object.Instantiate(prefab, parent, false);
+            visual.name = ChildName;
+            SetNativeWorldScale(visual.transform, prefab.transform.localScale);
+            visual.AddComponent<RoaApocalypseNativeScale>().Configure(prefab.transform.localScale);
+            foreach (Collider collider in visual.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+            foreach (Animator animator in visual.GetComponentsInChildren<Animator>(true)) animator.enabled = false;
+            Bounds bounds = LocalBounds(parent, visual.GetComponentsInChildren<Renderer>(true));
+            visual.transform.localPosition = new Vector3(-bounds.center.x, -bounds.min.y, -bounds.center.z);
+            Bounds rendered = default;
+            bool found = false;
+            foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
+                if (!found) { rendered = renderer.bounds; found = true; }
+                else rendered.Encapsulate(renderer.bounds);
+            }
+            if (found) visual.transform.position += Vector3.up * (parent.position.y - rendered.min.y);
+            return visual;
+        }
+
         public static GameObject AttachStatic(Transform original, GameObject prefab, float yaw = 0f,
             float pitch = 0f)
         {

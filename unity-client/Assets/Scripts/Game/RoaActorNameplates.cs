@@ -32,6 +32,7 @@ namespace RealmOfAshes.Game
             public string Faction;
             public int Hp;
             public int MaxHp;
+            public int Level;
             public int Tier;
             public Vector3 World;
             public bool Hostile;
@@ -133,6 +134,9 @@ namespace RealmOfAshes.Game
                 default: return "I";
             }
         }
+
+        public static string BadgeText(Entry entry) => entry.IsPlayer
+            ? Mathf.Max(1, entry.Level).ToString() : RomanTier(entry.Tier);
 
         public void Configure(RoaSocketClient socket, RoaEnemies enemies,
                               RoaRemotePlayers remotePlayers, Camera worldCamera)
@@ -430,8 +434,7 @@ namespace RealmOfAshes.Game
                         Name = string.IsNullOrEmpty(Hud.Name) ? "Странник" : Hud.Name,
                         Hp = Hud.Hp,
                         MaxHp = Hud.MaxHp,
-                        Tier = EquipmentTier(Socket?.Session?.Self?["equipment"] as JObject,
-                            Hud.WeaponId),
+                        Level = Hud.Level,
                         World = Player.transform.position + Vector3.up * 2.05f,
                         IsPlayer = true,
                         IsSelf = true
@@ -470,7 +473,7 @@ namespace RealmOfAshes.Game
                                 ? "Союзник" : entry.Name;
                         }
                         if (plate.ApocalypseLevel != null)
-                            plate.ApocalypseLevel.text = RomanTier(entry.Tier);
+                            plate.ApocalypseLevel.text = BadgeText(entry);
                         if (plate.ApocalypseHealth != null)
                         {
                             plate.ApocalypseHealth.interactable = false;

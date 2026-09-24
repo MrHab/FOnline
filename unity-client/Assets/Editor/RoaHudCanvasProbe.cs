@@ -47,6 +47,11 @@ namespace RealmOfAshes.EditorTools
                         { ["armor"] = "combatArmor", ["weapon"] = "pistol" }) == 4
                     && RoaActorNameplates.RomanTier(4) == "IV",
                 "nameplate tier does not follow equipped items");
+            Require(RoaActorNameplates.BadgeText(new RoaActorNameplates.Entry
+                        { Tier = 4, Level = 99 }) == "IV"
+                    && RoaActorNameplates.BadgeText(new RoaActorNameplates.Entry
+                        { IsPlayer = true, Level = 12, Tier = 4 }) == "12",
+                "NPC tiers or player levels use the wrong nameplate badge");
             GameObject gateRoot = new GameObject("VisibilityGateProbe");
             try
             {
@@ -567,8 +572,11 @@ namespace RealmOfAshes.EditorTools
                     enemyName.gameObject.SetActive(i == 0);
                     enemyName.text = "ремонтник";
                     allyName.transform.parent.gameObject.SetActive(i == 1);
-                    allyName.text = "охранник";
-                    level.text = i == 0 ? "IV" : "II";
+                    allyName.text = "Игрок";
+                    level.text = i == 0
+                        ? RoaActorNameplates.BadgeText(new RoaActorNameplates.Entry { Tier = 4 })
+                        : RoaActorNameplates.BadgeText(new RoaActorNameplates.Entry
+                            { IsPlayer = true, Level = 12 });
                     health.minValue = 0f;
                     health.maxValue = 1f;
                     health.value = i == 0 ? 0.72f : 0.9f;

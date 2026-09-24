@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
@@ -50,8 +51,40 @@ namespace RealmOfAshes.Editor
                 "старый пистолет-пулемёт не получил модель пака");
             Require(RoaApocalypseModels.Weapon("pickaxe")?.name == "SM_Wep_Spade_01",
                 "инструмент добычи не получил модель пака");
+            string[] armors =
+            {
+                "leather", "metalArmor", "ballisticVest", "combatArmor",
+                "heavyArmor", "hazmatSuit", "energySuit"
+            };
+            var male = new HashSet<GameObject>();
+            var female = new HashSet<GameObject>();
+            var armorIcons = new HashSet<Hash128>();
+            foreach (string id in armors)
+            {
+                GameObject malePrefab = RoaApocalypseModels.CharacterOutfit(false, id);
+                GameObject femalePrefab = RoaApocalypseModels.CharacterOutfit(true, id);
+                Require(malePrefab != null && male.Add(malePrefab),
+                    "мужская броня повторяет модель: " + id);
+                Require(femalePrefab != null && female.Add(femalePrefab),
+                    "женская броня повторяет модель: " + id);
+                Texture2D texture = Resources.Load<Texture2D>("RealmUi/items/item_" + id);
+                Require(texture != null && armorIcons.Add(texture.imageContentsHash),
+                    "значок брони повторяет другую модель: " + id);
+            }
+            var helmets = new HashSet<GameObject>();
+            foreach (string id in new[]
+                { "weldedHelmet", "helmet", "tacticalHelmet", "assaultHelmet", "preWarHelmet" })
+            {
+                GameObject prefab = RoaApocalypseModels.Item(id);
+                Require(prefab != null && helmets.Add(prefab),
+                    "шлем отсутствует или повторяет модель: " + id);
+            }
+            foreach (string id in new[]
+                { "boots", "scoutBoots", "reinforcedBoots", "assaultBoots" })
+                Require(RoaApocalypseModels.Footwear(id) != null,
+                    "нет модели защиты ног: " + id);
             Debug.Log("[ROA APOCALYPSE] Inventory art PASS: " + count
-                + " catalog items, new names, descriptions, tiers and pack prefabs.");
+                + " catalog items, unique armor/helmet visuals and pack prefabs.");
         }
 
         private static void Require(bool condition, string message)

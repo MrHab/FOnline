@@ -563,16 +563,6 @@ MonoBehaviour:
     prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
   - itemId: weaponParts
     prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
-  - itemId: metalArmor
-    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
-  - itemId: ballisticVest
-    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
-  - itemId: combatArmor
-    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
-  - itemId: heavyArmor
-    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
-  - itemId: energySuit
-    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
   - itemId: chemicals
     prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
   - itemId: spectrumSample
@@ -591,20 +581,16 @@ MonoBehaviour:
     prefab: {fileID: 1210496204973002, guid: 55e31d9d98e7506428bd5fc800ea4122, type: 3}
   - itemId: trophy
     prefab: {fileID: 1515035654734784, guid: f5e52fc0c8d68eb4bb6f0a7fa8b6650a, type: 3}
-  - itemId: leather
-    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
-  - itemId: hazmatSuit
-    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
   - itemId: boots
-    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
-  - itemId: assaultBoots
-    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
-  - itemId: reinforcedBoots
-    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
+    prefab: {fileID: 1589785312988966, guid: 6f9d0770a1ad4b448850c6a1eb3d3b48, type: 3}
   - itemId: scoutBoots
-    prefab: {fileID: 1419842700032774, guid: e840bcfb57a564f47982a45198f87725, type: 3}
+    prefab: {fileID: 1329138557878446, guid: 8932795ce9ec8384590fd132f3bf331c, type: 3}
+  - itemId: reinforcedBoots
+    prefab: {fileID: 1085804807959586, guid: d7ba3e6a0b81e8c4fad5a40aae9c2dcc, type: 3}
+  - itemId: assaultBoots
+    prefab: {fileID: 1999848875218898, guid: 09098669b8359654fb104508fd7fc9b7, type: 3}
   - itemId: backpack
-    prefab: {fileID: 1326644470446332, guid: 29bbdad2089078346a5cb0efbe9d593e, type: 3}
+    prefab: {fileID: 1564870888801122, guid: ac097a787546bb24ebc0fce58ca8224d, type: 3}
   - itemId: artifactDetectorMk1
     prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
   - itemId: artifactDetectorMk2
@@ -645,16 +631,73 @@ MonoBehaviour:
     prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
   - itemId: artifactUnknown
     prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
-  - itemId: preWarHelmet
-    prefab: {fileID: 1239577106600078, guid: 684bfe2b1f62271498ed7c75f412de2c, type: 3}
   - itemId: weldedHelmet
-    prefab: {fileID: 1239577106600078, guid: 684bfe2b1f62271498ed7c75f412de2c, type: 3}
+    prefab: {fileID: 1162636574902710, guid: 403bac682a691c146a5d697d2e324167, type: 3}
   - itemId: helmet
-    prefab: {fileID: 1239577106600078, guid: 684bfe2b1f62271498ed7c75f412de2c, type: 3}
+    prefab: {fileID: 1262996259358930, guid: 7dea907e69fa1db4888c36ce5482a775, type: 3}
   - itemId: tacticalHelmet
-    prefab: {fileID: 1239577106600078, guid: 684bfe2b1f62271498ed7c75f412de2c, type: 3}
+    prefab: {fileID: 1261275721562882, guid: 65109d3ce3670da4598172f14c39a8b2, type: 3}
   - itemId: assaultHelmet
-    prefab: {fileID: 1239577106600078, guid: 684bfe2b1f62271498ed7c75f412de2c, type: 3}
+    prefab: {fileID: 1153852152701694, guid: cfe86ff67def9cd4bb8dc14105e1b710, type: 3}
+  - itemId: preWarHelmet
+    prefab: {fileID: 1492510654237128, guid: 141fc51930b1a2c4b85d8d213c3bf3a8, type: 3}
+  - itemId: leather
+    prefab: {fileID: 1274019000965958, guid: af169be12f376ce46a3e6b4bee8b8ffe, type: 3}
+  - itemId: metalArmor
+    prefab: {fileID: 1962457702341656, guid: aab8f459d9f6f1840a3731182032078d, type: 3}
+  - itemId: ballisticVest
+    prefab: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+  - itemId: combatArmor
+    prefab: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
+  - itemId: heavyArmor
+    prefab: {fileID: 1728781680953640, guid: e8efe5fb8015b9f4e985cffca51976f4, type: 3}
+  - itemId: hazmatSuit
+    prefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
+  - itemId: energySuit
+    prefab: {fileID: 1074360255325880, guid: bb3dc6915a06dcb4796c2e62d7d40669, type: 3}
+  armor:
+  - itemId: leather
+    malePrefab: {fileID: 1274019000965958, guid: af169be12f376ce46a3e6b4bee8b8ffe, type: 3}
+    femalePrefab: {fileID: 1297223418881080, guid: 20d863b9f1bb8464f96d58e9319f7088, type: 3}
+  - itemId: metalArmor
+    malePrefab: {fileID: 1962457702341656, guid: aab8f459d9f6f1840a3731182032078d, type: 3}
+    femalePrefab: {fileID: 1904041790429094, guid: 027cd57972e60824ca74f44e0d80ea9a, type: 3}
+  - itemId: ballisticVest
+    malePrefab: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+    femalePrefab: {fileID: 1330945090685230, guid: 863a55b2639294147b8c2bb8a2147ae9, type: 3}
+  - itemId: combatArmor
+    malePrefab: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
+    femalePrefab: {fileID: 1975523430147412, guid: b1b8d24198898074e9e7a0a14af7ba95, type: 3}
+  - itemId: heavyArmor
+    malePrefab: {fileID: 1728781680953640, guid: e8efe5fb8015b9f4e985cffca51976f4, type: 3}
+    femalePrefab: {fileID: 1264826857531514, guid: 0ac3d11c8cf5cc84e842a38373f754e8, type: 3}
+  - itemId: hazmatSuit
+    malePrefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
+    femalePrefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
+  - itemId: energySuit
+    malePrefab: {fileID: 1074360255325880, guid: bb3dc6915a06dcb4796c2e62d7d40669, type: 3}
+    femalePrefab: {fileID: 1096376965629970, guid: 5ca4581ce598741409bac0c6f1bcf24c, type: 3}
+  footwear:
+  - itemId: boots
+    leftKnee: {fileID: 1589785312988966, guid: 6f9d0770a1ad4b448850c6a1eb3d3b48, type: 3}
+    rightKnee: {fileID: 1796539692946910, guid: dff42a07df203be44b39ee8207193c3b, type: 3}
+    leftThigh: {fileID: 0}
+    rightThigh: {fileID: 0}
+  - itemId: scoutBoots
+    leftKnee: {fileID: 1329138557878446, guid: 8932795ce9ec8384590fd132f3bf331c, type: 3}
+    rightKnee: {fileID: 1999848875218898, guid: 09098669b8359654fb104508fd7fc9b7, type: 3}
+    leftThigh: {fileID: 0}
+    rightThigh: {fileID: 0}
+  - itemId: reinforcedBoots
+    leftKnee: {fileID: 0}
+    rightKnee: {fileID: 0}
+    leftThigh: {fileID: 1085804807959586, guid: d7ba3e6a0b81e8c4fad5a40aae9c2dcc, type: 3}
+    rightThigh: {fileID: 1018390642978870, guid: 586908b2d1b1fd747af3f38eb93c48c8, type: 3}
+  - itemId: assaultBoots
+    leftKnee: {fileID: 1329138557878446, guid: 8932795ce9ec8384590fd132f3bf331c, type: 3}
+    rightKnee: {fileID: 1999848875218898, guid: 09098669b8359654fb104508fd7fc9b7, type: 3}
+    leftThigh: {fileID: 1085804807959586, guid: d7ba3e6a0b81e8c4fad5a40aae9c2dcc, type: 3}
+    rightThigh: {fileID: 1018390642978870, guid: 586908b2d1b1fd747af3f38eb93c48c8, type: 3}
   creatures:
   - modelKey: traderNpc
     prefab: {fileID: 1109315531109580, guid: 978e4e824620a0f40a841eccaf23a994, type: 3}

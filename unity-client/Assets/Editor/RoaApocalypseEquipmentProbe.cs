@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
@@ -43,6 +44,9 @@ namespace RealmOfAshes.EditorTools
             GameObject host = null;
             Texture2D readback = null;
             RenderTexture previous = RenderTexture.active;
+            string report = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "../Temp/ApocalypseEquipmentProbe.txt"));
+            if (File.Exists(report)) File.Delete(report);
             try
             {
                 if (!Application.isPlaying)
@@ -133,6 +137,66 @@ namespace RealmOfAshes.EditorTools
                 character.UpdateLocomotion(Vector3.zero, 0f, false, false);
                 character.SetAim(character.transform.position + character.transform.forward * 5f
                     + Vector3.up * 1.3f, true);
+                var skin = character.GetComponent<RoaApocalypseCharacterSkin>();
+                var seenArmor = new HashSet<GameObject>();
+                string[] armorSamples =
+                {
+                    "leather", "metalArmor", "ballisticVest", "combatArmor",
+                    "heavyArmor", "hazmatSuit", "energySuit"
+                };
+                foreach (string armorId in armorSamples)
+                {
+                    await character.EquipItems("http://127.0.0.1:3000", new JObject
+                    {
+                        ["armor"] = armorId, ["helmet"] = "helmet",
+                        ["backpack"] = "backpack", ["boots"] = "boots"
+                    });
+                    skin.SyncPose();
+                    GameObject expected = RoaApocalypseModels.CharacterOutfit(false, armorId);
+                    if (!character.HasLoadedEquipment("armor", armorId)
+                        || skin.ActivePrefab != expected || !seenArmor.Add(skin.ActivePrefab))
+                        throw new InvalidOperationException("Armor did not change to its own model: " + armorId);
+                    if (armorId == "ballisticVest")
+                        Capture(preview, readback, "ApocalypseBallisticVest.png");
+                    if (armorId == "combatArmor")
+                        Capture(preview, readback, "ApocalypseCombatArmor.png");
+                }
+                string[] helmetSamples =
+                {
+                    "weldedHelmet", "helmet", "tacticalHelmet",
+                    "assaultHelmet", "preWarHelmet"
+                };
+                var seenHelmets = new HashSet<GameObject>();
+                foreach (string helmetId in helmetSamples)
+                {
+                    await character.EquipItems("http://127.0.0.1:3000", new JObject
+                    {
+                        ["armor"] = "combatArmor", ["helmet"] = helmetId,
+                        ["backpack"] = "backpack", ["boots"] = "boots"
+                    });
+                    skin.SyncPose();
+                    if (skin.ActiveHelmetPrefab != RoaApocalypseModels.Item(helmetId)
+                        || !seenHelmets.Add(skin.ActiveHelmetPrefab))
+                        throw new InvalidOperationException("Helmet did not change to its own model: " + helmetId);
+                }
+                string[] bootSamples =
+                {
+                    "boots", "scoutBoots", "reinforcedBoots", "assaultBoots"
+                };
+                int[] expectedParts = { 2, 2, 2, 4 };
+                for (int i = 0; i < bootSamples.Length; i++)
+                {
+                    await character.EquipItems("http://127.0.0.1:3000", new JObject
+                    {
+                        ["armor"] = "combatArmor", ["helmet"] = "helmet",
+                        ["backpack"] = "backpack", ["boots"] = bootSamples[i]
+                    });
+                    skin.SyncPose();
+                    if (skin.ActiveFootwearId != bootSamples[i]
+                        || skin.ActiveFootwearParts != expectedParts[i])
+                        throw new InvalidOperationException("Footwear did not change: " + bootSamples[i]);
+                }
+                Debug.Log("[ROA APOCALYPSE] Wardrobe PASS: seven armor models, five helmets, four footwear variants.");
                 string[] weaponSamples =
                 {
                     "polygonAssaultRifle02", "polygonRevolver02", "polygonKatana01",
@@ -174,9 +238,16 @@ namespace RealmOfAshes.EditorTools
                     if (weaponId == "polygonGrenade01")
                         Capture(preview, readback, "ApocalypseWeaponGrenade.png");
                 }
+                await ValidateFemaleArmor();
+                File.WriteAllText(report,
+                    "PASS: seven distinct armor bodies for each sex, five helmets, four footwear variants, backpack and weapons.");
                 Debug.Log("[ROA APOCALYPSE] Equipment probe PASS: armor, backpack and five pack weapons visible.");
             }
-            catch (Exception error) { Debug.LogError("[ROA APOCALYPSE] Equipment probe FAIL " + error); }
+            catch (Exception error)
+            {
+                File.WriteAllText(report, "FAIL: " + error);
+                Debug.LogError("[ROA APOCALYPSE] Equipment probe FAIL " + error);
+            }
             finally
             {
                 RenderTexture.active = previous;
@@ -187,6 +258,51 @@ namespace RealmOfAshes.EditorTools
                     _enteredPlayMode = false;
                     EditorApplication.ExitPlaymode();
                 }
+            }
+        }
+
+        private static async Task ValidateFemaleArmor()
+        {
+            GameObject host = null;
+            Texture2D readback = null;
+            try
+            {
+                host = new GameObject("ApocalypseFemaleWardrobeProbe");
+                var preview = host.AddComponent<RoaCharacterPreview>();
+                preview.Show("http://127.0.0.1:3000", new CharacterAppearance
+                    { Sex = "female", HairId = "short_crop", HairColorId = "hair_08" }, 360, 450);
+                DateTime deadline = DateTime.UtcNow.AddSeconds(60);
+                while (!preview.IsReady && DateTime.UtcNow < deadline) await Task.Delay(100);
+                if (!preview.IsReady) throw new TimeoutException("Female character preview did not load.");
+                RoaCharacterView character = host.GetComponentInChildren<RoaCharacterView>(true);
+                RoaApocalypseCharacterSkin skin = character?.GetComponent<RoaApocalypseCharacterSkin>();
+                if (character == null || skin == null)
+                    throw new InvalidOperationException("Female character skin is missing.");
+                readback = new Texture2D(preview.Texture.width, preview.Texture.height,
+                    TextureFormat.RGBA32, false);
+                var seen = new HashSet<GameObject>();
+                foreach (string armorId in new[]
+                    { "leather", "metalArmor", "ballisticVest", "combatArmor",
+                      "heavyArmor", "hazmatSuit", "energySuit" })
+                {
+                    await character.EquipItems("http://127.0.0.1:3000", new JObject
+                    {
+                        ["armor"] = armorId, ["helmet"] = "helmet",
+                        ["backpack"] = "backpack", ["boots"] = "boots"
+                    });
+                    skin.SyncPose();
+                    if (!character.HasLoadedEquipment("armor", armorId)
+                        || skin.ActivePrefab != RoaApocalypseModels.CharacterOutfit(true, armorId)
+                        || !seen.Add(skin.ActivePrefab))
+                        throw new InvalidOperationException("Female armor did not change: " + armorId);
+                    Capture(preview, readback, "ApocalypseFemale_" + armorId + ".png");
+                }
+                Debug.Log("[ROA APOCALYPSE] Female wardrobe PASS: seven distinct armor models.");
+            }
+            finally
+            {
+                if (readback != null) UnityEngine.Object.Destroy(readback);
+                if (host != null) UnityEngine.Object.Destroy(host);
             }
         }
 

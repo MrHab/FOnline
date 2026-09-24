@@ -26,6 +26,30 @@ namespace RealmOfAshes.Game
         private RoaCharacterView _view;
         private GameObject _backpack;
         private GameObject _helmet;
+        private GameObject _helmetPrefab;
+        private readonly List<GameObject> _footwear = new List<GameObject>();
+        private string _footwearId;
+
+        public GameObject ActivePrefab => _activePrefab;
+        public GameObject ActiveHelmetPrefab => _helmetPrefab;
+        public string ActiveFootwearId => _footwearId;
+        public int ActiveFootwearParts => _footwear.Count;
+
+        private static readonly string[] ArmorIds =
+        {
+            "leather", "metalArmor", "ballisticVest", "combatArmor",
+            "heavyArmor", "hazmatSuit", "energySuit"
+        };
+
+        private static readonly string[] HelmetIds =
+        {
+            "weldedHelmet", "helmet", "tacticalHelmet", "assaultHelmet", "preWarHelmet"
+        };
+
+        private static readonly string[] FootwearIds =
+        {
+            "boots", "scoutBoots", "reinforcedBoots", "assaultBoots"
+        };
 
         public bool Bind(GameObject prefab)
         {
@@ -77,6 +101,14 @@ namespace RealmOfAshes.Game
                 animator.enabled = false;
             foreach (Collider collider in _visual.GetComponentsInChildren<Collider>(true))
                 collider.enabled = false;
+            foreach (Renderer renderer in _visual.GetComponentsInChildren<Renderer>(true))
+            {
+                string name = renderer.name;
+                if (name.Contains("Backpack") || name.Contains("Bedroll")
+                    || name.Contains("SupplyBag") || name.Contains("Helmet")
+                    || name.Contains("_Hat_") || name.Contains("_Mask_"))
+                    renderer.enabled = false;
+            }
             foreach (Transform child in _visual.GetComponentsInChildren<Transform>(true))
                 child.gameObject.layer = gameObject.layer;
             foreach (Transform target in _visual.GetComponentsInChildren<Transform>(true))
@@ -188,16 +220,8 @@ namespace RealmOfAshes.Game
         private void RefreshOutfit()
         {
             if (_view == null) return;
-            string outfit = "default";
-            if (_view.HasLoadedEquipment("armor", "hazmatSuit")) outfit = "hazmat";
-            else if (_view.HasLoadedEquipment("armor", "energySuit")
-                || _view.HasLoadedEquipment("armor", "heavyArmor")
-                || _view.HasLoadedEquipment("armor", "combatArmor")
-                || _view.HasLoadedEquipment("armor", "ballisticVest")
-                || _view.HasLoadedEquipment("armor", "metalArmor")) outfit = "soldier";
-            else if (_view.HasLoadedEquipment("helmet", "tacticalHelmet")
-                || _view.HasLoadedEquipment("helmet", "assaultHelmet")) outfit = "riot";
-            GameObject next = RoaApocalypseModels.CharacterOutfit(_female, outfit) ?? _basePrefab;
+            string armorId = LoadedItem("armor", ArmorIds);
+            GameObject next = RoaApocalypseModels.CharacterOutfit(_female, armorId) ?? _basePrefab;
             if (next == _activePrefab) return;
             _visual.SetActive(false);
             if (Application.isPlaying) Destroy(_visual);
@@ -205,6 +229,9 @@ namespace RealmOfAshes.Game
             _visual = null;
             _backpack = null;
             _helmet = null;
+            _helmetPrefab = null;
+            _footwear.Clear();
+            _footwearId = null;
             _bones.Clear();
             Bind(next, _rigRoot);
             HideLegacyVisuals();
@@ -214,14 +241,50 @@ namespace RealmOfAshes.Game
         {
             if (_view == null || _visual == null) return;
             bool showBackpack = _view.HasLoadedEquipment("backpack", "backpack");
-            bool showHelmet = _activePrefab == _basePrefab
-                && (_view.HasLoadedEquipment("helmet", "preWarHelmet")
-                    || _view.HasLoadedEquipment("helmet", "weldedHelmet")
-                    || _view.HasLoadedEquipment("helmet", "helmet"));
+            string helmetId = LoadedItem("helmet", HelmetIds);
+            GameObject helmetPrefab = RoaApocalypseModels.Item(helmetId);
+            if (_helmet != null && helmetPrefab != _helmetPrefab)
+                SetAccessory(ref _helmet, false, null, "Head");
+            _helmetPrefab = helmetPrefab;
             SetAccessory(ref _backpack, showBackpack,
                 RoaApocalypseModels.BackpackAttachment, "Spine_03");
-            SetAccessory(ref _helmet, showHelmet,
-                RoaApocalypseModels.HelmetAttachment, "Head");
+            SetAccessory(ref _helmet, helmetPrefab != null, helmetPrefab, "Head");
+            RefreshFootwear();
+        }
+
+        private void RefreshFootwear()
+        {
+            string itemId = LoadedItem("boots", FootwearIds);
+            if (itemId == _footwearId) return;
+            foreach (GameObject part in _footwear)
+            {
+                if (part == null) continue;
+                part.SetActive(false);
+                if (Application.isPlaying) Destroy(part);
+                else DestroyImmediate(part);
+            }
+            _footwear.Clear();
+            _footwearId = itemId;
+            RoaApocalypseModels.FootwearEntry selected = RoaApocalypseModels.Footwear(itemId);
+            if (selected == null) return;
+            AddFootwearPart(selected.leftKnee, "LowerLeg_L");
+            AddFootwearPart(selected.rightKnee, "LowerLeg_R");
+            AddFootwearPart(selected.leftThigh, "UpperLeg_L");
+            AddFootwearPart(selected.rightThigh, "UpperLeg_R");
+        }
+
+        private void AddFootwearPart(GameObject prefab, string boneName)
+        {
+            GameObject current = null;
+            SetAccessory(ref current, prefab != null, prefab, boneName);
+            if (current != null) _footwear.Add(current);
+        }
+
+        private string LoadedItem(string slot, string[] ids)
+        {
+            foreach (string id in ids)
+                if (_view.HasLoadedEquipment(slot, id)) return id;
+            return null;
         }
 
         private void SetAccessory(ref GameObject current, bool visible, GameObject prefab, string boneName)
@@ -252,7 +315,11 @@ namespace RealmOfAshes.Game
                 Bounds bounds = WorldBounds(attachmentRenderers);
                 Vector3 center = boneName == "Spine_03"
                     ? bone.position - transform.forward * 0.22f
-                    : bone.position + transform.up * 0.08f;
+                    : boneName.StartsWith("LowerLeg")
+                        ? bone.position - transform.up * 0.06f
+                        : boneName.StartsWith("UpperLeg")
+                            ? bone.position - transform.up * 0.18f
+                            : bone.position + transform.up * 0.08f;
                 current.transform.position += center - bounds.center;
             }
             current.transform.SetParent(bone, true);

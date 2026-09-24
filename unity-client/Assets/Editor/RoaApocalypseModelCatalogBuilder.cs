@@ -78,6 +78,30 @@ namespace RealmOfAshes.EditorTools
                 weight = 2.4f
             });
 
+            // Every armor ID gets a different visible body for both character
+            // sexes. The sealed hazmat suit hides body shape and serves both.
+            // A shared "soldier" bucket made changing armor invisible.
+            var armor = new List<RoaApocalypseModels.ArmorEntry>
+            {
+                Armor("leather", "SM_Chr_Biker_Male_01", "SM_Chr_Punk_Female_01"),
+                Armor("metalArmor", "SM_Chr_Criminal_Male_01", "SM_Chr_Mechanic_Female_01"),
+                Armor("ballisticVest", "SM_Chr_Soldier_Male_01", "SM_Chr_Eastern_Female_01"),
+                Armor("combatArmor", "SM_Chr_RiotCop_Male_01", "SM_Chr_Soldier_Female_01"),
+                Armor("heavyArmor", "SM_Chr_Business_Male_01", "SM_Chr_Emo_Female_01"),
+                Armor("hazmatSuit", "SM_Chr_Hazmat_Male_01", "SM_Chr_Hazmat_Male_01"),
+                Armor("energySuit", "SM_Chr_Press_Male_01", "SM_Chr_Cool_Female_01")
+            };
+            if (new HashSet<GameObject>(armor.ConvertAll(row => row.malePrefab)).Count != armor.Count
+                || new HashSet<GameObject>(armor.ConvertAll(row => row.femalePrefab)).Count != armor.Count)
+                throw new InvalidOperationException("PolygonApocalypse armor must use distinct body prefabs.");
+            var footwear = new List<RoaApocalypseModels.FootwearEntry>
+            {
+                Footwear("boots", "Sports", false),
+                Footwear("scoutBoots", "Metal", false),
+                Footwear("reinforcedBoots", null, true),
+                Footwear("assaultBoots", "Metal", true)
+            };
+
             // The world can drop any of these items at runtime. Reuse a small
             // set of recognisable pack props where it has no exact counterpart.
             var itemPaths = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -92,19 +116,28 @@ namespace RealmOfAshes.EditorTools
             AddItems(itemPaths, "Item/SM_Item_Pills_01", "stim", "antibiotics");
             AddItems(itemPaths, "Item/SM_Item_Duffle_Bag_01", "doctorBag");
             AddItems(itemPaths, "Props/SM_Prop_Medical_Container_01", "artifactContainer", "repairKit");
-            AddItems(itemPaths, "Props/SM_Prop_ToolBox_01", "ore", "scrap", "alloyPlate", "weaponParts", "metalArmor", "ballisticVest", "combatArmor", "heavyArmor", "energySuit");
+            AddItems(itemPaths, "Props/SM_Prop_ToolBox_01", "ore", "scrap", "alloyPlate", "weaponParts");
             AddItems(itemPaths, "Props/SM_Prop_Chemical_01", "chemicals", "spectrumSample", "stabilizerCatalyst");
             AddItems(itemPaths, "Item/SM_Item_Log_01", "wood");
             AddItems(itemPaths, "Item/SM_Item_Can_01", "food");
             AddItems(itemPaths, "Item/SM_Item_Drink_Bottle_01", "water");
             AddItems(itemPaths, "Item/SM_Item_Shop_Goods_01", "silver", "blue");
             AddItems(itemPaths, "Props/SM_Prop_Skull_01", "trophy");
-            AddItems(itemPaths, "Props/SM_Prop_CardboardBox_01", "leather", "hazmatSuit", "boots", "assaultBoots", "reinforcedBoots", "scoutBoots");
-            AddItems(itemPaths, "Item/SM_Item_Duffle_Bag_01", "backpack");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Armour_Knee_Sports_L_01", "boots");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Armour_Knee_Metal_L_01", "scoutBoots");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Armour_Thigh_Metal_L_01", "reinforcedBoots");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Armour_Knee_Metal_R_01", "assaultBoots");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Backpack_01", "backpack");
             AddItems(itemPaths, "Props/SM_Prop_Radio_01", "artifactDetectorMk1", "artifactDetectorMk2", "artifactDetectorMk3");
             AddItems(itemPaths, "Props/SM_Prop_Ammo_Box_Belt_01", "artifactBelt2", "artifactBelt3", "artifactBelt4");
             AddItems(itemPaths, "Props/SM_Prop_Chemical_02", "artifactSpring", "artifactVein", "artifactNode", "artifactDrop", "artifactBloodkin", "artifactShell", "artifactWarmer", "artifactSieve", "artifactThunderer", "artifactHusher", "artifactAnchor", "artifactDew", "artifactMemory", "artifactUnknown");
-            AddItems(itemPaths, "Props/SM_Prop_Tool_Bucket_01", "preWarHelmet", "weldedHelmet", "helmet", "tacticalHelmet", "assaultHelmet");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Mask_Hockey_01", "weldedHelmet");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_FootballHelmet_01", "helmet");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Soldier_Male_Helmet_01", "tacticalHelmet");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_RiotCop_Male_Helmet_01", "assaultHelmet");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Hunter_Male_Hat_01", "preWarHelmet");
+            foreach (RoaApocalypseModels.ArmorEntry row in armor)
+                itemPaths[row.itemId] = "Characters/" + row.malePrefab.name;
             var items = new List<RoaApocalypseModels.ItemEntry>();
             foreach (KeyValuePair<string, string> pair in itemPaths)
                 items.Add(new RoaApocalypseModels.ItemEntry { itemId = pair.Key, prefab = Require(pair.Value) });
@@ -152,7 +185,8 @@ namespace RealmOfAshes.EditorTools
                 Require("Characters/SM_Chr_RiotCop_Male_01"),
                 Require("Characters/Attachments/SM_Chr_Attach_Backpack_01"),
                 Require("Characters/Attachments/SM_Chr_Attach_FootballHelmet_01"),
-                Require("Vehicles/SM_Veh_Motorbike_Apoco_01"), weapons, items, creatures,
+                Require("Vehicles/SM_Veh_Motorbike_Apoco_01"),
+                weapons, items, armor, footwear, creatures,
                 environment,
                 Require("Props/SM_Prop_TrashPile_01"),
                 Require("Environment/SM_Env_Road_Dirt_Straight_01"),
@@ -208,6 +242,31 @@ namespace RealmOfAshes.EditorTools
         private static void AddItems(Dictionary<string, string> paths, string prefab, params string[] ids)
         {
             foreach (string id in ids) paths.Add(id, prefab);
+        }
+
+        private static RoaApocalypseModels.ArmorEntry Armor(
+            string itemId, string malePrefab, string femalePrefab)
+        {
+            return new RoaApocalypseModels.ArmorEntry
+            {
+                itemId = itemId,
+                malePrefab = Require("Characters/" + malePrefab),
+                femalePrefab = Require("Characters/" + femalePrefab)
+            };
+        }
+
+        private static RoaApocalypseModels.FootwearEntry Footwear(
+            string itemId, string kneeStyle, bool thigh)
+        {
+            string root = "Characters/Attachments/SM_Chr_Attach_Armour_";
+            return new RoaApocalypseModels.FootwearEntry
+            {
+                itemId = itemId,
+                leftKnee = kneeStyle == null ? null : Require(root + "Knee_" + kneeStyle + "_L_01"),
+                rightKnee = kneeStyle == null ? null : Require(root + "Knee_" + kneeStyle + "_R_01"),
+                leftThigh = thigh ? Require(root + "Thigh_Metal_L_01") : null,
+                rightThigh = thigh ? Require(root + "Thigh_Metal_R_01") : null
+            };
         }
 
         private static void AddCreatures(List<RoaApocalypseModels.CreatureEntry> entries,

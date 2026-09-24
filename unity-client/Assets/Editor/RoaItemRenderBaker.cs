@@ -212,17 +212,15 @@ namespace RealmOfAshes.EditorTools
             if (weapon != null) { kind = "weapon"; return weapon; }
             switch (itemId)
             {
-                case "leather": kind = "equipment"; return RoaApocalypseModels.CharacterOutfit(false, "default");
-                case "metalArmor": case "combatArmor": kind = "equipment";
-                    return RoaApocalypseModels.CharacterOutfit(false, "soldier");
-                case "ballisticVest": case "heavyArmor": kind = "equipment";
-                    return RoaApocalypseModels.CharacterOutfit(false, "riot");
-                case "hazmatSuit": case "energySuit": kind = "equipment";
-                    return RoaApocalypseModels.CharacterOutfit(false, "hazmat");
+                case "leather": case "metalArmor": case "ballisticVest":
+                case "combatArmor": case "heavyArmor": case "hazmatSuit":
+                case "energySuit":
+                    kind = "equipment";
+                    return RoaApocalypseModels.CharacterOutfit(false, itemId);
                 case "backpack": kind = "equipment"; return RoaApocalypseModels.BackpackAttachment;
                 case "weldedHelmet": case "helmet": case "tacticalHelmet":
                 case "assaultHelmet": case "preWarHelmet": kind = "equipment";
-                    return RoaApocalypseModels.HelmetAttachment;
+                    return RoaApocalypseModels.Item(itemId);
                 case "boots": kind = "footwear";
                     return RoaApocalypseModels.CharacterOutfit(false, "default");
                 case "scoutBoots": kind = "footwear";

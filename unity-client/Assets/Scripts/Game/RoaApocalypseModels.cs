@@ -28,6 +28,24 @@ namespace RealmOfAshes.Game
         }
 
         [Serializable]
+        public sealed class ArmorEntry
+        {
+            public string itemId;
+            public GameObject malePrefab;
+            public GameObject femalePrefab;
+        }
+
+        [Serializable]
+        public sealed class FootwearEntry
+        {
+            public string itemId;
+            public GameObject leftKnee;
+            public GameObject rightKnee;
+            public GameObject leftThigh;
+            public GameObject rightThigh;
+        }
+
+        [Serializable]
         public sealed class CreatureEntry
         {
             public string modelKey;
@@ -53,6 +71,8 @@ namespace RealmOfAshes.Game
         [SerializeField] private GameObject motorbike;
         [SerializeField] private List<WeaponEntry> weapons = new List<WeaponEntry>();
         [SerializeField] private List<ItemEntry> items = new List<ItemEntry>();
+        [SerializeField] private List<ArmorEntry> armor = new List<ArmorEntry>();
+        [SerializeField] private List<FootwearEntry> footwear = new List<FootwearEntry>();
         [SerializeField] private List<CreatureEntry> creatures = new List<CreatureEntry>();
         [SerializeField] private List<EnvironmentEntry> environment = new List<EnvironmentEntry>();
         [SerializeField] private GameObject defaultEnvironment;
@@ -69,6 +89,8 @@ namespace RealmOfAshes.Game
         private Dictionary<string, string> _weaponRigs;
         private Dictionary<string, string> _weaponCombats;
         private Dictionary<string, GameObject> _items;
+        private Dictionary<string, ArmorEntry> _armor;
+        private Dictionary<string, FootwearEntry> _footwear;
         private Dictionary<string, CreatureEntry> _creatures;
         private Dictionary<string, GameObject> _environment;
 
@@ -87,6 +109,15 @@ namespace RealmOfAshes.Game
         {
             RoaApocalypseModels palette = Instance;
             if (palette == null) return null;
+            if (palette._armor == null)
+            {
+                palette._armor = new Dictionary<string, ArmorEntry>(StringComparer.Ordinal);
+                foreach (ArmorEntry entry in palette.armor)
+                    if (entry != null && !string.IsNullOrEmpty(entry.itemId))
+                        palette._armor[entry.itemId] = entry;
+            }
+            if (palette._armor.TryGetValue(outfit ?? string.Empty, out ArmorEntry selected))
+                return femaleBody ? selected.femalePrefab : selected.malePrefab;
             if (outfit == "hazmat") return femaleBody ? palette.femaleSoldier : palette.maleHazmat;
             if (outfit == "riot") return femaleBody ? palette.femaleSoldier : palette.maleRiot;
             if (outfit == "soldier") return femaleBody ? palette.femaleSoldier : palette.maleSoldier;
@@ -126,6 +157,22 @@ namespace RealmOfAshes.Game
         }
 
         public static IReadOnlyList<WeaponEntry> WeaponEntries => Instance?.weapons;
+        public static IReadOnlyList<ArmorEntry> ArmorEntries => Instance?.armor;
+
+        public static FootwearEntry Footwear(string itemId)
+        {
+            RoaApocalypseModels palette = Instance;
+            if (palette == null || string.IsNullOrEmpty(itemId)) return null;
+            if (palette._footwear == null)
+            {
+                palette._footwear = new Dictionary<string, FootwearEntry>(StringComparer.Ordinal);
+                foreach (FootwearEntry entry in palette.footwear)
+                    if (entry != null && !string.IsNullOrEmpty(entry.itemId))
+                        palette._footwear[entry.itemId] = entry;
+            }
+            return palette._footwear.TryGetValue(itemId, out FootwearEntry selected)
+                ? selected : null;
+        }
 
         private void EnsureWeapons()
         {
@@ -218,6 +265,7 @@ namespace RealmOfAshes.Game
             GameObject soldierFemale, GameObject hazmatMale, GameObject riotMale,
             GameObject backpackModel, GameObject helmetModel, GameObject motorcycleModel,
             IEnumerable<WeaponEntry> weaponModels, IEnumerable<ItemEntry> itemModels,
+            IEnumerable<ArmorEntry> armorModels, IEnumerable<FootwearEntry> footwearModels,
             IEnumerable<CreatureEntry> creatureModels, IEnumerable<EnvironmentEntry> environmentModels,
             GameObject defaultEnvironmentModel, GameObject roadModel, GameObject plantModel,
             GameObject buildingModel, GameObject barrierModel, GameObject towerModel,
@@ -234,6 +282,8 @@ namespace RealmOfAshes.Game
             motorbike = motorcycleModel;
             weapons = new List<WeaponEntry>(weaponModels);
             items = new List<ItemEntry>(itemModels);
+            armor = new List<ArmorEntry>(armorModels);
+            footwear = new List<FootwearEntry>(footwearModels);
             creatures = new List<CreatureEntry>(creatureModels);
             environment = new List<EnvironmentEntry>(environmentModels);
             defaultEnvironment = defaultEnvironmentModel;
@@ -248,6 +298,8 @@ namespace RealmOfAshes.Game
             _weaponRigs = null;
             _weaponCombats = null;
             _items = null;
+            _armor = null;
+            _footwear = null;
             _creatures = null;
             _environment = null;
             _instance = null;

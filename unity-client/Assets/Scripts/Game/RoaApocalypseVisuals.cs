@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace RealmOfAshes.Game
 {
-    /// <summary>Fits new art to the old rig while keeping its gameplay sockets.</summary>
+    /// <summary>Places pack art at its native world size on existing gameplay sockets.</summary>
     public static class RoaApocalypseVisuals
     {
         public const string ChildName = "PolygonApocalypse_Visual";
@@ -33,6 +33,7 @@ namespace RealmOfAshes.Game
             GameObject replacement = Object.Instantiate(prefab, original, false);
             replacement.name = ChildName;
             replacement.transform.localRotation = Quaternion.Euler(pitch, yaw, 0f);
+            SetNativeWorldScale(replacement.transform, prefab.transform.localScale);
             foreach (Animator animator in replacement.GetComponentsInChildren<Animator>(true))
                 animator.enabled = false;
             foreach (Collider collider in replacement.GetComponentsInChildren<Collider>(true))
@@ -50,41 +51,21 @@ namespace RealmOfAshes.Game
                 return null;
             }
 
-            if (pitch > 0f)
-            {
-                float oldFootprint = Mathf.Max(oldBounds.size.x, oldBounds.size.z);
-                float newFootprint = Mathf.Max(newBounds.size.x, newBounds.size.z);
-                float scale = Mathf.Clamp(Mathf.Min(
-                    oldBounds.size.y / Mathf.Max(newBounds.size.y, 0.01f),
-                    oldFootprint / Mathf.Max(newFootprint, 0.01f)), 0.05f, 8f);
-                replacement.transform.localScale = Vector3.one * scale;
-            }
-            else if (prefab.name.Contains("Grenade") || prefab.name.Contains("Flashbang")
-                || prefab.name.Contains("Molotov") || prefab.name.Contains("Bomb"))
-            {
-                float targetSize = prefab.name.Contains("Grenade") || prefab.name.Contains("Flashbang")
-                    ? 0.18f : prefab.name.Contains("Molotov") ? 0.28f : 0.3f;
-                float longest = Mathf.Max(newBounds.size.x, newBounds.size.y, newBounds.size.z);
-                replacement.transform.localScale = Vector3.one
-                    * Mathf.Clamp(targetSize / Mathf.Max(longest, 0.01f), 0.05f, 8f);
-            }
-            else if (prefab.name.StartsWith("SM_Wep_"))
-            {
-                // A sword, a grenade and a rifle must keep their own silhouette.
-                // Stretching every axis to the legacy rig turned long blades into
-                // knife-sized clubs and flattened many firearm variants.
-                float scale = oldBounds.size.magnitude
-                    / Mathf.Max(newBounds.size.magnitude, 0.01f);
-                replacement.transform.localScale = Vector3.one * Mathf.Clamp(scale, 0.05f, 8f);
-            }
-            else replacement.transform.localScale = new Vector3(
-                    Mathf.Clamp(oldBounds.size.x / Mathf.Max(newBounds.size.x, 0.01f), 0.05f, 8f),
-                    Mathf.Clamp(oldBounds.size.y / Mathf.Max(newBounds.size.y, 0.01f), 0.05f, 8f),
-                    Mathf.Clamp(oldBounds.size.z / Mathf.Max(newBounds.size.z, 0.01f), 0.05f, 8f));
-            Bounds fitted = LocalBounds(original, newRenderers);
-            replacement.transform.localPosition = oldBounds.center - fitted.center;
+            // Imported assets retain their authored scale. Only their position
+            // changes to align with the existing world or gameplay socket.
+            replacement.transform.localPosition = oldBounds.center - newBounds.center;
             foreach (Renderer renderer in legacy) renderer.enabled = false;
             return replacement;
+        }
+
+        public static void SetNativeWorldScale(Transform visual, Vector3 authoredScale)
+        {
+            if (visual == null || visual.parent == null) return;
+            Vector3 inherited = visual.parent.lossyScale;
+            visual.localScale = new Vector3(
+                Mathf.Abs(inherited.x) > 0.0001f ? authoredScale.x / inherited.x : authoredScale.x,
+                Mathf.Abs(inherited.y) > 0.0001f ? authoredScale.y / inherited.y : authoredScale.y,
+                Mathf.Abs(inherited.z) > 0.0001f ? authoredScale.z / inherited.z : authoredScale.z);
         }
 
         private static bool ActiveWithin(Transform node, Transform root)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Kromka.Authoring;
+using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -125,6 +126,35 @@ namespace RealmOfAshes.EditorTools
             Debug.Log("[ROA APOCALYPSE] " + count + " additional map models migrated.");
         }
 
+        [MenuItem("Realm of Ashes/PolygonApocalypse/Restore native size in sample scenes")]
+        public static void RestoreNativeSizeSamples()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Visual migration requires Edit Mode.");
+            int count = NormalizeSceneVisuals(MapScene);
+            count += NormalizeSceneVisuals(SceneRoot + "/tutorialCaravanYard.unity");
+            count += NormalizeSceneVisuals(SceneRoot + "/personalBase.unity");
+            count += NormalizeSceneVisuals(SceneRoot + "/randomRuinedRoad.unity");
+            count += NormalizeSceneVisuals(SceneRoot + "/z_15_06.unity");
+            Debug.Log("[ROA APOCALYPSE] Restored native size for " + count + " sample visuals.");
+        }
+
+        [MenuItem("Realm of Ashes/PolygonApocalypse/Restore native size in all scenes")]
+        public static void RestoreNativeSizeAll()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Visual migration requires Edit Mode.");
+            int count = NormalizeRecoveredPrefabs();
+            count += NormalizeSceneVisuals(MapScene);
+            foreach (string scene in AssetDatabase.FindAssets("t:Scene", new[] { SceneRoot })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(path => path.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(path => path, StringComparer.Ordinal))
+                count += NormalizeSceneVisuals(scene);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[ROA APOCALYPSE] Restored native size for " + count + " scene/prefab visuals.");
+        }
+
         [MenuItem("Realm of Ashes/PolygonApocalypse/Open city demo")]
         public static void OpenCityDemo()
         {
@@ -198,6 +228,99 @@ namespace RealmOfAshes.EditorTools
             return changed;
         }
 
+        private static int NormalizeRecoveredPrefabs()
+        {
+            int changed = 0;
+            foreach (string path in AssetDatabase.FindAssets("t:Prefab", new[] { RecoveredRoot })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(path => path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(path => path, StringComparer.Ordinal))
+            {
+                GameObject root = PrefabUtility.LoadPrefabContents(path);
+                try
+                {
+                    int count = NormalizeVisuals(root);
+                    if (count == 0) continue;
+                    PrefabUtility.SaveAsPrefabAsset(root, path);
+                    changed += count;
+                }
+                finally { PrefabUtility.UnloadPrefabContents(root); }
+            }
+            return changed;
+        }
+
+        private static int NormalizeSceneVisuals(string path)
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null) return 0;
+            Scene existing = SceneManager.GetSceneByPath(path);
+            bool alreadyOpen = existing.IsValid() && existing.isLoaded;
+            Scene scene = alreadyOpen ? existing : EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+            try
+            {
+                int count = 0;
+                foreach (GameObject root in scene.GetRootGameObjects()) count += NormalizeVisuals(root);
+                if (count == 0) return 0;
+                EditorSceneManager.MarkSceneDirty(scene);
+                if (!EditorSceneManager.SaveScene(scene)) throw new IOException("Could not save " + path);
+                return count;
+            }
+            finally { if (!alreadyOpen) EditorSceneManager.CloseScene(scene, true); }
+        }
+
+        private static int NormalizeVisuals(GameObject root)
+        {
+            int changed = 0;
+            foreach (Transform existing in root.GetComponentsInChildren<Transform>(true))
+            {
+                Transform visual = existing;
+                if (visual == null) continue;
+                if (visual.name != ReplacementName || visual.parent == null) continue;
+                GameObject source = PrefabUtility.GetCorrespondingObjectFromSource(visual.gameObject);
+                if (source == null || !InPack(visual.gameObject)) continue;
+                Transform parent = visual.parent;
+                KromkaPlacedObjectAuthoring marker = parent.GetComponent<KromkaPlacedObjectAuthoring>();
+                string expected = marker == null ? null : ExactModel(marker.ServerArchetypeId)
+                    ?? Guess(marker.ServerArchetypeId + " " + marker.name, marker.Role);
+                GameObject correct = expected == null ? source : Load(expected);
+                if (correct == null) throw new InvalidOperationException("Missing PolygonApocalypse model: " + expected);
+                Vector3 inherited = visual.parent.lossyScale;
+                Vector3 target = new Vector3(
+                    Mathf.Abs(inherited.x) > 0.0001f ? correct.transform.localScale.x / inherited.x : correct.transform.localScale.x,
+                    Mathf.Abs(inherited.y) > 0.0001f ? correct.transform.localScale.y / inherited.y : correct.transform.localScale.y,
+                    Mathf.Abs(inherited.z) > 0.0001f ? correct.transform.localScale.z / inherited.z : correct.transform.localScale.z);
+                if (source == correct && (visual.localScale - target).sqrMagnitude < 0.000001f) continue;
+
+                // Keep the authored object's footprint and ground contact while
+                // restoring the Synty prefab's original dimensions.
+                Renderer[] old = parent.GetComponentsInChildren<Renderer>(true)
+                    .Where(renderer => renderer is MeshRenderer || renderer is SkinnedMeshRenderer)
+                    .Where(renderer => !InPack(renderer.gameObject)
+                        && !UnderReplacement(renderer.transform)
+                        && (marker == null || renderer.GetComponentInParent<KromkaPlacedObjectAuthoring>() == marker))
+                    .ToArray();
+                Renderer[] fresh = visual.GetComponentsInChildren<Renderer>(true)
+                    .Where(renderer => renderer.enabled && renderer.gameObject.activeSelf).ToArray();
+                Bounds before = old.Length > 0 ? LocalBounds(parent, old) : LocalBounds(parent, fresh);
+                if (source != correct)
+                {
+                    UnityEngine.Object.DestroyImmediate(visual.gameObject);
+                    GameObject replacement = (GameObject)PrefabUtility.InstantiatePrefab(correct, parent.gameObject.scene);
+                    replacement.name = ReplacementName;
+                    replacement.transform.SetParent(parent, false);
+                    visual = replacement.transform;
+                    foreach (Collider collider in replacement.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+                    fresh = replacement.GetComponentsInChildren<Renderer>(true)
+                        .Where(renderer => renderer.enabled && renderer.gameObject.activeSelf).ToArray();
+                }
+                RoaApocalypseVisuals.SetNativeWorldScale(visual, correct.transform.localScale);
+                Bounds after = LocalBounds(parent, fresh);
+                visual.localPosition += new Vector3(before.center.x - after.center.x,
+                    before.min.y - after.min.y, before.center.z - after.center.z);
+                changed++;
+            }
+            return changed;
+        }
+
         private static int MigrateScene(string path, bool globalMap)
         {
             if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null) return 0;
@@ -229,7 +352,7 @@ namespace RealmOfAshes.EditorTools
             {
                 if (marker.Role == "terrain" || marker.Role == "anomaly") continue;
                 string key = marker.ServerArchetypeId;
-                string model = Models.TryGetValue(key, out string exact) ? exact : Guess(key + " " + marker.name, marker.Role);
+                string model = ExactModel(key) ?? Guess(key + " " + marker.name, marker.Role);
                 if (model != null && ReplaceVisual(marker.transform, model, 35f)) changed++;
             }
             foreach (GameObject top in scene.GetRootGameObjects())
@@ -393,7 +516,7 @@ namespace RealmOfAshes.EditorTools
             if (Has(name, "machine", "factory", "industrial", "furnace", "processing")) return "Buildings/SM_Bld_Industrial_Small_01";
             if (Has(name, "house", "shelter", "shack", "module", "settlement")) return "Buildings/SM_Bld_Junk_Shelter_01";
             if (Has(name, "market", "trader", "awning", "canopy")) return "Buildings/SM_Bld_Market_Medium_01";
-            if (Has(name, "vehicle", "truck", "car", "bus", "wreck")) return "Props/SM_Prop_Car_Wrecked_01";
+            if (Has(name, "vehicle", "truck", "bus", "wreck") || HasWord(name, "car")) return "Props/SM_Prop_Car_Wrecked_01";
             if (Has(name, "tree", "deadwood", "shelterbelt")) return "Environment/SM_Env_Tree_Dead_01";
             if (Has(name, "bush", "grass", "garden", "vegetation")) return "Environment/SM_Env_Bushes_01";
             if (Has(name, "rock", "ore", "cliff", "mountain", "boulder", "strata", "slag")) return "Environment/SM_Env_Rock_01";
@@ -409,6 +532,28 @@ namespace RealmOfAshes.EditorTools
 
         private static bool Has(string text, params string[] fragments) =>
             fragments.Any(fragment => text.Contains(fragment));
+
+        private static bool HasWord(string text, string word)
+        {
+            for (int start = text.IndexOf(word, StringComparison.Ordinal); start >= 0;
+                start = text.IndexOf(word, start + word.Length, StringComparison.Ordinal))
+            {
+                bool left = start == 0 || !char.IsLetter(text[start - 1]);
+                int end = start + word.Length;
+                bool right = end == text.Length || !char.IsLetter(text[end]);
+                if (left && right) return true;
+            }
+            return false;
+        }
+
+        private static string ExactModel(string key)
+        {
+            string normalized = new string((key ?? string.Empty).Where(char.IsLetterOrDigit).ToArray());
+            foreach (KeyValuePair<string, string> pair in Models)
+                if (string.Equals(new string(pair.Key.Where(char.IsLetterOrDigit).ToArray()),
+                    normalized, StringComparison.OrdinalIgnoreCase)) return pair.Value;
+            return null;
+        }
 
         private static bool InPack(GameObject value)
         {
@@ -437,7 +582,7 @@ namespace RealmOfAshes.EditorTools
             art.transform.SetParent(root, false);
             art.transform.localPosition = Vector3.zero;
             art.transform.localRotation = Quaternion.identity;
-            art.transform.localScale = Vector3.one;
+            RoaApocalypseVisuals.SetNativeWorldScale(art.transform, prefab.transform.localScale);
             foreach (Collider collider in art.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
             Renderer[] fresh = art.GetComponentsInChildren<Renderer>(true)
                 .Where(renderer => renderer.enabled && renderer.gameObject.activeSelf)
@@ -448,13 +593,10 @@ namespace RealmOfAshes.EditorTools
                 UnityEngine.Object.DestroyImmediate(art);
                 throw new InvalidOperationException("PolygonApocalypse prefab has no usable bounds: " + model);
             }
-            Vector3 size = new Vector3(
-                Mathf.Clamp(before.size.x / Mathf.Max(source.size.x, 0.01f), 0.02f, 80f),
-                Mathf.Clamp(before.size.y / Mathf.Max(source.size.y, 0.01f), 0.02f, 80f),
-                Mathf.Clamp(before.size.z / Mathf.Max(source.size.z, 0.01f), 0.02f, 80f));
-            art.transform.localScale = size;
-            Bounds fitted = LocalBounds(root, fresh);
-            art.transform.localPosition = before.center - fitted.center;
+            // Keep the authored footprint and ground contact without changing
+            // the pack mesh's original dimensions.
+            art.transform.localPosition = new Vector3(before.center.x - source.center.x,
+                before.min.y - source.min.y, before.center.z - source.center.z);
             foreach (Renderer renderer in old) renderer.enabled = false;
             return true;
         }

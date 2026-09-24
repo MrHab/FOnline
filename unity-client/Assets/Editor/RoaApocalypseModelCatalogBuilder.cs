@@ -87,13 +87,14 @@ namespace RealmOfAshes.EditorTools
                 Armor("metalArmor", "SM_Chr_Criminal_Male_01", "SM_Chr_Mechanic_Female_01"),
                 Armor("ballisticVest", "SM_Chr_Soldier_Male_01", "SM_Chr_Eastern_Female_01"),
                 Armor("combatArmor", "SM_Chr_RiotCop_Male_01", "SM_Chr_Soldier_Female_01"),
-                Armor("heavyArmor", "SM_Chr_Business_Male_01", "SM_Chr_Emo_Female_01"),
+                // Bastion uses frontline uniforms plus separate metal plates;
+                // the old business/emo bodies were visibly unarmored.
+                Armor("heavyArmor", "SM_Chr_RiotCop_Male_01", "SM_Chr_Soldier_Female_01"),
                 Armor("hazmatSuit", "SM_Chr_Hazmat_Male_01", "SM_Chr_Hazmat_Male_01"),
                 Armor("energySuit", "SM_Chr_Press_Male_01", "SM_Chr_Cool_Female_01")
             };
-            if (new HashSet<GameObject>(armor.ConvertAll(row => row.malePrefab)).Count != armor.Count
-                || new HashSet<GameObject>(armor.ConvertAll(row => row.femalePrefab)).Count != armor.Count)
-                throw new InvalidOperationException("PolygonApocalypse armor must use distinct body prefabs.");
+            // The permanent player body no longer changes with armor. A donor
+            // uniform may be shared; each item's garment and plates stay distinct.
             var footwear = new List<RoaApocalypseModels.FootwearEntry>
             {
                 Footwear("boots", "Sports", false),

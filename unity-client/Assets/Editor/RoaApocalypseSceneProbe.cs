@@ -13,14 +13,14 @@ namespace RealmOfAshes.EditorTools
     {
         private static readonly string[] Samples =
         {
-            "personalBase", "randomRuinedRoad", "tutorialCaravanYard"
+            "personalBase", "randomRuinedRoad", "tutorialCaravanYard", "z_15_06"
         };
 
         [MenuItem("Realm of Ashes/PolygonApocalypse/Capture sample locations")]
         public static void CaptureSamples()
         {
             string output = Path.GetFullPath(Path.Combine(Application.dataPath,
-                "../Temp/ApocalypseSceneProbe"));
+                "../Library/ApocalypseSceneProbe"));
             Directory.CreateDirectory(output);
             using (var report = new StreamWriter(Path.Combine(output, "report.txt"), false))
             foreach (string id in Samples)

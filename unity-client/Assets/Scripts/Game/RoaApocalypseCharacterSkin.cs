@@ -22,6 +22,11 @@ namespace RealmOfAshes.Game
         private Transform _rigRoot;
         private GameObject _basePrefab;
         private GameObject _activePrefab;
+        private SkinnedMeshRenderer _bodyRenderer;
+        private Mesh _originalBodyMesh;
+        private GameObject _armorRoot;
+        private string _armorId;
+        private readonly List<GameObject> _armorParts = new List<GameObject>();
         private bool _female;
         private RoaCharacterView _view;
         private GameObject _backpack;
@@ -31,6 +36,8 @@ namespace RealmOfAshes.Game
         private string _footwearId;
 
         public GameObject ActivePrefab => _activePrefab;
+        public string ActiveArmorId => _armorId;
+        public int ActiveArmorParts => _armorParts.Count;
         public GameObject ActiveHelmetPrefab => _helmetPrefab;
         public string ActiveFootwearId => _footwearId;
         public int ActiveFootwearParts => _footwear.Count;
@@ -89,14 +96,20 @@ namespace RealmOfAshes.Game
                 if (renderer.enabled) originalRenderers.Add(renderer);
             }
 
-            // Rebinding an outfit happens after the legacy renderers were hidden.
-            // Read their current world bounds each time: a cached world-space
-            // position leaves the new skin behind when the actor has moved.
+            // Align the permanent pack body to the existing gameplay rig.
             Bounds oldBounds = bodyRenderer != null
                 ? bodyRenderer.bounds : WorldBounds(sourceRenderers);
 
             _visual = Instantiate(prefab, transform, false);
             _visual.name = RoaApocalypseVisuals.ChildName;
+            RoaApocalypseVisuals.SetNativeWorldScale(_visual.transform, prefab.transform.localScale);
+            foreach (SkinnedMeshRenderer renderer in _visual.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if (renderer.name == prefab.name)
+                {
+                    _bodyRenderer = renderer;
+                    _originalBodyMesh = renderer.sharedMesh;
+                    break;
+                }
             foreach (Animator animator in _visual.GetComponentsInChildren<Animator>(true))
                 animator.enabled = false;
             foreach (Collider collider in _visual.GetComponentsInChildren<Collider>(true))
@@ -147,9 +160,6 @@ namespace RealmOfAshes.Game
                 var newBounds = WorldBounds(fresh);
                 if (newBounds.size.y > 0.01f && oldBounds.size.y > 0.01f)
                 {
-                    float ratio = Mathf.Clamp(oldBounds.size.y / newBounds.size.y, 0.7f, 1.4f);
-                    _visual.transform.localScale *= ratio;
-                    newBounds = WorldBounds(fresh);
                     Vector3 offset = new Vector3(oldBounds.center.x - newBounds.center.x,
                         oldBounds.min.y - newBounds.min.y, oldBounds.center.z - newBounds.center.z);
                     _visual.transform.position += offset;
@@ -168,8 +178,16 @@ namespace RealmOfAshes.Game
         {
             if (_visual == null || _rigRoot == null) return;
             foreach (Renderer renderer in _rigRoot.GetComponentsInChildren<Renderer>(true))
-                if (renderer != null && renderer.enabled && !IsHeldItem(renderer.transform))
+                if (HidesOriginalRenderer(renderer) && renderer.enabled)
                     renderer.enabled = false;
+        }
+
+        // The visibility gate must not revive the hidden source body or armor.
+        public bool HidesOriginalRenderer(Renderer renderer)
+        {
+            return _visual != null && _rigRoot != null && renderer != null
+                && renderer.transform.IsChildOf(_rigRoot)
+                && !IsHeldItem(renderer.transform);
         }
 
         private static bool IsHeldItem(Transform node)
@@ -198,7 +216,7 @@ namespace RealmOfAshes.Game
         public void SyncPose()
         {
             if (_visual == null) return;
-            RefreshOutfit();
+            RefreshArmor();
             RefreshAccessories();
             foreach (BonePair pair in _bones)
                 if (pair.Source != null && pair.Target != null)
@@ -217,24 +235,104 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private void RefreshOutfit()
+        private void RefreshArmor()
         {
-            if (_view == null) return;
-            string armorId = LoadedItem("armor", ArmorIds);
-            GameObject next = RoaApocalypseModels.CharacterOutfit(_female, armorId) ?? _basePrefab;
-            if (next == _activePrefab) return;
-            _visual.SetActive(false);
-            if (Application.isPlaying) Destroy(_visual);
-            else DestroyImmediate(_visual);
-            _visual = null;
-            _backpack = null;
-            _helmet = null;
-            _helmetPrefab = null;
-            _footwear.Clear();
-            _footwearId = null;
-            _bones.Clear();
-            Bind(next, _rigRoot);
-            HideLegacyVisuals();
+            if (_view == null || _bodyRenderer == null) return;
+            string itemId = LoadedItem("armor", ArmorIds);
+            if (itemId == _armorId) return;
+            if (_armorRoot != null)
+            {
+                _armorRoot.SetActive(false);
+                if (Application.isPlaying) Destroy(_armorRoot);
+                else DestroyImmediate(_armorRoot);
+                _armorRoot = null;
+            }
+            foreach (GameObject part in _armorParts)
+            {
+                if (part == null) continue;
+                part.SetActive(false);
+                if (Application.isPlaying) Destroy(part);
+                else DestroyImmediate(part);
+            }
+            _armorParts.Clear();
+            _bodyRenderer.sharedMesh = _originalBodyMesh;
+            _armorId = null;
+            if (string.IsNullOrEmpty(itemId)) return;
+
+            string body = _female ? "female_medium" : "male_medium";
+            Mesh faceAndHands = Resources.Load<Mesh>("RealmOfAshes/ArmorLayers/base_" + body);
+            Mesh garment = Resources.Load<Mesh>("RealmOfAshes/ArmorLayers/" + itemId + "_" + body);
+            GameObject donor = RoaApocalypseModels.CharacterOutfit(_female, itemId);
+            if (faceAndHands == null || garment == null || donor == null) return;
+            SkinnedMeshRenderer source = null;
+            foreach (SkinnedMeshRenderer renderer in donor.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if (renderer.name == donor.name) { source = renderer; break; }
+            if (source == null) return;
+
+            var targetBones = new Dictionary<string, Transform>();
+            foreach (Transform node in _visual.GetComponentsInChildren<Transform>(true))
+                if (!targetBones.ContainsKey(node.name)) targetBones.Add(node.name, node);
+            Transform[] bones = new Transform[source.bones.Length];
+            for (int i = 0; i < bones.Length; i++)
+                if (source.bones[i] == null || !targetBones.TryGetValue(source.bones[i].name, out bones[i]))
+                    return;
+
+            _armorRoot = new GameObject("PolygonApocalypse_Armor:" + itemId);
+            _armorRoot.transform.SetParent(_visual.transform, false);
+            _armorRoot.layer = gameObject.layer;
+            var layer = _armorRoot.AddComponent<SkinnedMeshRenderer>();
+            layer.sharedMesh = garment;
+            layer.sharedMaterials = source.sharedMaterials;
+            layer.bones = bones;
+            if (source.rootBone != null && targetBones.TryGetValue(source.rootBone.name, out Transform rootBone))
+                layer.rootBone = rootBone;
+            layer.localBounds = garment.bounds;
+            layer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            layer.receiveShadows = false;
+            foreach (MeshRenderer part in donor.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (!part.enabled || !part.gameObject.activeSelf || !part.name.Contains("Armour")) continue;
+                if (itemId == "heavyArmor" && part.name.Contains("Sports")) continue;
+                AttachArmorPart(part.gameObject, part.transform.parent?.name, targetBones);
+            }
+            if (itemId == "heavyArmor")
+            {
+                // Both body variants use the pack's native metal plates; the
+                // female donor outfits have no metal shoulder pieces.
+                AddDonorPart(RoaApocalypseModels.CharacterOutfit(false, "metalArmor"),
+                    "Armour_Shoulder_Metal_L", targetBones);
+                AddDonorPart(RoaApocalypseModels.CharacterOutfit(false, "ballisticVest"),
+                    "Armour_Shoulder_Metal_R", targetBones);
+                RoaApocalypseModels.FootwearEntry plates = RoaApocalypseModels.Footwear("assaultBoots");
+                if (plates != null)
+                {
+                    AttachArmorPart(plates.leftKnee, "LowerLeg_L", targetBones);
+                    AttachArmorPart(plates.rightKnee, "LowerLeg_R", targetBones);
+                    AttachArmorPart(plates.leftThigh, "UpperLeg_L", targetBones);
+                    AttachArmorPart(plates.rightThigh, "UpperLeg_R", targetBones);
+                }
+            }
+            _bodyRenderer.sharedMesh = faceAndHands;
+            _armorId = itemId;
+        }
+
+        private void AddDonorPart(GameObject donor, string name, Dictionary<string, Transform> targetBones)
+        {
+            if (donor == null) return;
+            foreach (MeshRenderer part in donor.GetComponentsInChildren<MeshRenderer>(true))
+                if (part.enabled && part.name.Contains(name))
+                    AttachArmorPart(part.gameObject, part.transform.parent?.name, targetBones);
+        }
+
+        private void AttachArmorPart(GameObject source, string boneName,
+                                     Dictionary<string, Transform> targetBones)
+        {
+            if (source == null || boneName == null || !targetBones.TryGetValue(boneName, out Transform bone)) return;
+            GameObject part = Instantiate(source, bone, false);
+            part.name = "PolygonApocalypse_ArmorPart:" + source.name;
+            foreach (Collider collider in part.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+            foreach (Transform node in part.GetComponentsInChildren<Transform>(true)) node.gameObject.layer = gameObject.layer;
+            _armorParts.Add(part);
         }
 
         private void RefreshAccessories()

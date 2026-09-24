@@ -58,6 +58,9 @@ namespace RealmOfAshes.EditorTools
                 DateTime deadline = DateTime.UtcNow.AddSeconds(60);
                 while (!preview.IsReady && DateTime.UtcNow < deadline) await Task.Delay(100);
                 if (!preview.IsReady) throw new TimeoutException("Character preview did not load.");
+                Camera previewCamera = host.GetComponentInChildren<Camera>(true);
+                if (previewCamera != null)
+                    previewCamera.backgroundColor = new Color(0.36f, 0.39f, 0.35f, 1f);
                 RoaCharacterView character = host.GetComponentInChildren<RoaCharacterView>(true);
                 if (character == null || !character.Ready)
                     throw new InvalidOperationException("Character body did not load.");
@@ -86,7 +89,35 @@ namespace RealmOfAshes.EditorTools
                 }
                 character.UpdateLocomotion(Vector3.zero, 0f, false, false);
                 await Task.Delay(150);
-                character.GetComponent<RoaApocalypseCharacterSkin>()?.SyncPose();
+                RoaApocalypseCharacterSkin activeSkin =
+                    character.GetComponent<RoaApocalypseCharacterSkin>();
+                activeSkin?.SyncPose();
+                RoaVisibilityGate visibility = character.GetComponent<RoaVisibilityGate>();
+                if (visibility == null) visibility = character.gameObject.AddComponent<RoaVisibilityGate>();
+                visibility.SetVisible(false);
+                visibility.SetVisible(true);
+                int hiddenOriginalParts = 0;
+                int visiblePackParts = 0;
+                foreach (Renderer renderer in character.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (activeSkin != null && activeSkin.HidesOriginalRenderer(renderer))
+                    {
+                        hiddenOriginalParts++;
+                        if (renderer.enabled)
+                            throw new InvalidOperationException("Fog restored the duplicate NPC body or gear: "
+                                + renderer.name);
+                    }
+                    else if (renderer.enabled && renderer.gameObject.activeInHierarchy)
+                        visiblePackParts++;
+                }
+                if (hiddenOriginalParts == 0 || visiblePackParts == 0)
+                    throw new InvalidOperationException("Fog visibility check missed a character body.");
+                if (Environment.GetEnvironmentVariable("ROA_EQUIPMENT_GATE_ONLY") == "1")
+                {
+                    File.WriteAllText(report,
+                        "PASS: fog keeps the original body and equipment hidden while the pack body stays visible.");
+                    return;
+                }
                 AssertPackBodyFollowsCharacter(character);
                 readback = new Texture2D(preview.Texture.width, preview.Texture.height,
                     TextureFormat.RGBA32, false);
@@ -138,7 +169,11 @@ namespace RealmOfAshes.EditorTools
                 character.SetAim(character.transform.position + character.transform.forward * 5f
                     + Vector3.up * 1.3f, true);
                 var skin = character.GetComponent<RoaApocalypseCharacterSkin>();
-                var seenArmor = new HashSet<GameObject>();
+                Transform baseVisual = character.transform.Find(RoaApocalypseVisuals.ChildName);
+                GameObject basePrefab = skin.ActivePrefab;
+                await character.EquipWeapon("http://127.0.0.1:3000", "polygonAssaultRifle02");
+                await Task.Delay(180);
+                AssertWeaponVisible(character, "polygonAssaultRifle02");
                 string[] armorSamples =
                 {
                     "leather", "metalArmor", "ballisticVest", "combatArmor",
@@ -152,14 +187,29 @@ namespace RealmOfAshes.EditorTools
                         ["backpack"] = "backpack", ["boots"] = "boots"
                     });
                     skin.SyncPose();
-                    GameObject expected = RoaApocalypseModels.CharacterOutfit(false, armorId);
                     if (!character.HasLoadedEquipment("armor", armorId)
-                        || skin.ActivePrefab != expected || !seenArmor.Add(skin.ActivePrefab))
-                        throw new InvalidOperationException("Armor did not change to its own model: " + armorId);
+                        || skin.ActivePrefab != basePrefab || skin.ActiveArmorId != armorId
+                        || character.transform.Find(RoaApocalypseVisuals.ChildName) != baseVisual)
+                        throw new InvalidOperationException("Armor changed the person or failed to equip: " + armorId
+                            + " loaded=" + character.HasLoadedEquipment("armor", armorId)
+                            + " prefab=" + (skin.ActivePrefab == basePrefab)
+                            + " armor=" + skin.ActiveArmorId
+                            + " visual=" + (character.transform.Find(RoaApocalypseVisuals.ChildName) == baseVisual));
+                    AssertWeaponVisible(character, "polygonAssaultRifle02");
+                    Transform armor = baseVisual.Find("PolygonApocalypse_Armor:" + armorId);
+                    SkinnedMeshRenderer garment = armor?.GetComponent<SkinnedMeshRenderer>();
+                    if (garment == null || !garment.enabled || !garment.gameObject.activeInHierarchy
+                        || garment.gameObject.layer != character.gameObject.layer
+                        || garment.sharedMesh == null || garment.sharedMesh.triangles.Length < 300)
+                        throw new InvalidOperationException("Armor garment is not visible: " + armorId);
+                    if (armorId == "heavyArmor" && skin.ActiveArmorParts < 6)
+                        throw new InvalidOperationException("Bastion is missing native metal plates.");
                     if (armorId == "ballisticVest")
                         Capture(preview, readback, "ApocalypseBallisticVest.png");
                     if (armorId == "combatArmor")
                         Capture(preview, readback, "ApocalypseCombatArmor.png");
+                    if (armorId == "heavyArmor")
+                        Capture(preview, readback, "ApocalypseHeavyArmor.png");
                 }
                 string[] helmetSamples =
                 {
@@ -196,7 +246,7 @@ namespace RealmOfAshes.EditorTools
                         || skin.ActiveFootwearParts != expectedParts[i])
                         throw new InvalidOperationException("Footwear did not change: " + bootSamples[i]);
                 }
-                Debug.Log("[ROA APOCALYPSE] Wardrobe PASS: seven armor models, five helmets, four footwear variants.");
+                Debug.Log("[ROA APOCALYPSE] Wardrobe PASS: seven armor layers, stable character and weapon, five helmets, four footwear variants.");
                 string[] weaponSamples =
                 {
                     "polygonAssaultRifle02", "polygonRevolver02", "polygonKatana01",
@@ -208,16 +258,8 @@ namespace RealmOfAshes.EditorTools
                     await Task.Delay(180);
                     if (character.WeaponId != weaponId)
                         throw new InvalidOperationException("Pack weapon did not equip: " + weaponId);
-                    Transform weapon = null;
-                    foreach (Transform node in character.GetComponentsInChildren<Transform>(true))
-                        if (node.name == "Weapon:" + weaponId) { weapon = node; break; }
-                    Transform visual = weapon?.Find(RoaApocalypseVisuals.ChildName);
-                    bool visible = false;
-                    if (visual != null)
-                        foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true))
-                            if (renderer.enabled) { visible = true; break; }
-                    if (!visible)
-                        throw new InvalidOperationException("Pack weapon visual did not replace GLB: " + weaponId);
+                    Transform visual = AssertWeaponVisible(character, weaponId);
+                    Transform weapon = visual.parent;
                     Bounds visualBounds = RoaApocalypseVisuals.LocalBounds(weapon,
                         visual.GetComponentsInChildren<Renderer>(true));
                     Debug.Log("[ROA APOCALYPSE] " + weaponId + " bounds "
@@ -240,7 +282,7 @@ namespace RealmOfAshes.EditorTools
                 }
                 await ValidateFemaleArmor();
                 File.WriteAllText(report,
-                    "PASS: seven distinct armor bodies for each sex, five helmets, four footwear variants, backpack and weapons.");
+                    "PASS: seven wearable armor layers for each sex, stable person and weapon, five helmets, four footwear variants and backpack.");
                 Debug.Log("[ROA APOCALYPSE] Equipment probe PASS: armor, backpack and five pack weapons visible.");
             }
             catch (Exception error)
@@ -274,13 +316,17 @@ namespace RealmOfAshes.EditorTools
                 DateTime deadline = DateTime.UtcNow.AddSeconds(60);
                 while (!preview.IsReady && DateTime.UtcNow < deadline) await Task.Delay(100);
                 if (!preview.IsReady) throw new TimeoutException("Female character preview did not load.");
+                Camera previewCamera = host.GetComponentInChildren<Camera>(true);
+                if (previewCamera != null)
+                    previewCamera.backgroundColor = new Color(0.36f, 0.39f, 0.35f, 1f);
                 RoaCharacterView character = host.GetComponentInChildren<RoaCharacterView>(true);
                 RoaApocalypseCharacterSkin skin = character?.GetComponent<RoaApocalypseCharacterSkin>();
                 if (character == null || skin == null)
                     throw new InvalidOperationException("Female character skin is missing.");
                 readback = new Texture2D(preview.Texture.width, preview.Texture.height,
                     TextureFormat.RGBA32, false);
-                var seen = new HashSet<GameObject>();
+                Transform baseVisual = character.transform.Find(RoaApocalypseVisuals.ChildName);
+                GameObject basePrefab = skin.ActivePrefab;
                 foreach (string armorId in new[]
                     { "leather", "metalArmor", "ballisticVest", "combatArmor",
                       "heavyArmor", "hazmatSuit", "energySuit" })
@@ -292,18 +338,30 @@ namespace RealmOfAshes.EditorTools
                     });
                     skin.SyncPose();
                     if (!character.HasLoadedEquipment("armor", armorId)
-                        || skin.ActivePrefab != RoaApocalypseModels.CharacterOutfit(true, armorId)
-                        || !seen.Add(skin.ActivePrefab))
-                        throw new InvalidOperationException("Female armor did not change: " + armorId);
+                        || skin.ActivePrefab != basePrefab || skin.ActiveArmorId != armorId
+                        || character.transform.Find(RoaApocalypseVisuals.ChildName) != baseVisual)
+                        throw new InvalidOperationException("Female armor changed the person: " + armorId);
                     Capture(preview, readback, "ApocalypseFemale_" + armorId + ".png");
                 }
-                Debug.Log("[ROA APOCALYPSE] Female wardrobe PASS: seven distinct armor models.");
+                Debug.Log("[ROA APOCALYPSE] Female wardrobe PASS: seven wearable armor layers.");
             }
             finally
             {
                 if (readback != null) UnityEngine.Object.Destroy(readback);
                 if (host != null) UnityEngine.Object.Destroy(host);
             }
+        }
+
+        private static Transform AssertWeaponVisible(RoaCharacterView character, string weaponId)
+        {
+            Transform weapon = null;
+            foreach (Transform node in character.GetComponentsInChildren<Transform>(true))
+                if (node.name == "Weapon:" + weaponId) { weapon = node; break; }
+            Transform visual = weapon?.Find(RoaApocalypseVisuals.ChildName);
+            if (visual != null)
+                foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true))
+                    if (renderer.enabled && renderer.gameObject.activeInHierarchy) return visual;
+            throw new InvalidOperationException("Pack weapon is missing after equipment change: " + weaponId);
         }
 
         private static void AssertPackBodyFollowsCharacter(RoaCharacterView character)

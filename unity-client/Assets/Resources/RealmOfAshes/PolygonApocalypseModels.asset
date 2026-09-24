@@ -650,7 +650,7 @@ MonoBehaviour:
   - itemId: combatArmor
     prefab: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
   - itemId: heavyArmor
-    prefab: {fileID: 1728781680953640, guid: e8efe5fb8015b9f4e985cffca51976f4, type: 3}
+    prefab: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
   - itemId: hazmatSuit
     prefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
   - itemId: energySuit
@@ -669,8 +669,8 @@ MonoBehaviour:
     malePrefab: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
     femalePrefab: {fileID: 1975523430147412, guid: b1b8d24198898074e9e7a0a14af7ba95, type: 3}
   - itemId: heavyArmor
-    malePrefab: {fileID: 1728781680953640, guid: e8efe5fb8015b9f4e985cffca51976f4, type: 3}
-    femalePrefab: {fileID: 1264826857531514, guid: 0ac3d11c8cf5cc84e842a38373f754e8, type: 3}
+    malePrefab: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
+    femalePrefab: {fileID: 1975523430147412, guid: b1b8d24198898074e9e7a0a14af7ba95, type: 3}
   - itemId: hazmatSuit
     malePrefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
     femalePrefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}

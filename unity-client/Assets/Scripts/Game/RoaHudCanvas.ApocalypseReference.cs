@@ -17,9 +17,6 @@ namespace RealmOfAshes.Game
         private Text _apocalypseXpLabel;
         private Text _apocalypseBarLevel;
         private readonly Image[] _apocalypseSlotIcons = new Image[RoaQuickbar.SlotCount];
-        private GameObject _apocalypseHealth;
-        private Slider _apocalypseHealthSlider;
-        private readonly GameObject[] _apocalypseInjuryIcons = new GameObject[5];
         private GameObject _apocalypseWeapon;
         private TextMeshProUGUI _apocalypseWeaponName;
         private TextMeshProUGUI _apocalypseWeaponAmmo;
@@ -33,8 +30,6 @@ namespace RealmOfAshes.Game
         private readonly TextMeshProUGUI[] _apocalypseQuestRows =
             new TextMeshProUGUI[3];
         private readonly GameObject[] _apocalypseQuestItems = new GameObject[3];
-        private static readonly string[] ApocalypseInjuries =
-            { "brokenArm", "brokenLeg", "concussion", "infection", "bleeding" };
         private GameObject _apocalypseLevelUp;
         private Text _apocalypseLevelNumber;
         private Image _apocalypseCursor;
@@ -190,7 +185,7 @@ namespace RealmOfAshes.Game
                 RectTransform rect = (RectTransform)_apocalypseQuest.transform;
                 rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
                 rect.pivot = new Vector2(1f, 1f);
-                rect.anchoredPosition = new Vector2(-16f, -225f);
+                rect.anchoredPosition = new Vector2(8f, -225f);
                 rect.localScale = Vector3.one * 0.27f;
                 _apocalypseQuestTitle = rect.Find(
                     "Content/HUD_ChapterHeader/Content/Label_Location")
@@ -287,42 +282,6 @@ namespace RealmOfAshes.Game
                 foreach (Graphic graphic in rect.GetComponentsInChildren<Graphic>(true))
                     graphic.raycastTarget = false;
                 _apocalypseWeapon.SetActive(false);
-            }
-
-            GameObject healthPrefab = Resources.Load<GameObject>(
-                "ApocalypseHud/HUD_Apocalypse_HealthStats_01");
-            if (healthPrefab != null)
-            {
-                _apocalypseHealth = Instantiate(healthPrefab, _safeRoot, false);
-                _apocalypseHealth.name = "ApocalypseHealthAndEffects";
-                RectTransform rect = (RectTransform)_apocalypseHealth.transform;
-                rect.anchorMin = rect.anchorMax = new Vector2(0f, 0f);
-                rect.pivot = new Vector2(0f, 0f);
-                rect.anchoredPosition = new Vector2(18f, 88f);
-                rect.localScale = Vector3.one * 0.45f;
-                Transform healthSlider = rect.Find("Content/HealthBar/Slider");
-                if (healthSlider != null)
-                {
-                    _apocalypseHealthSlider = healthSlider.GetComponent<Slider>();
-                    if (_apocalypseHealthSlider != null)
-                    {
-                        _apocalypseHealthSlider.interactable = false;
-                        _apocalypseHealthSlider.minValue = 0f;
-                        _apocalypseHealthSlider.maxValue = 1f;
-                    }
-                }
-                for (int i = 0; i < _apocalypseInjuryIcons.Length; i++)
-                {
-                    Transform icon = rect.Find("Content/Stats_List/Stat_Box_0" + i);
-                    if (icon == null) continue;
-                    _apocalypseInjuryIcons[i] = icon.gameObject;
-                    icon.gameObject.SetActive(false);
-                }
-                foreach (Animator animator in rect.GetComponentsInChildren<Animator>(true))
-                    animator.enabled = false;
-                foreach (Graphic graphic in rect.GetComponentsInChildren<Graphic>(true))
-                    graphic.raycastTarget = false;
-                _apocalypseHealth.SetActive(false);
             }
 
             GameObject compassPrefab = Resources.Load<GameObject>(
@@ -438,20 +397,6 @@ namespace RealmOfAshes.Game
                     for (int i = 0; i < _apocalypseBullets.Length; i++)
                         if (_apocalypseBullets[i] != null)
                             _apocalypseBullets[i].isOn = i < _hud.Loaded;
-                }
-            }
-            if (_apocalypseHealth != null)
-            {
-                _apocalypseHealth.SetActive(visible);
-                if (visible)
-                {
-                    if (_apocalypseHealthSlider != null)
-                        _apocalypseHealthSlider.value = _hud.MaxHp > 0
-                            ? Mathf.Clamp01((float)_hud.Hp / _hud.MaxHp) : 0f;
-                    for (int i = 0; i < _apocalypseInjuryIcons.Length; i++)
-                        if (_apocalypseInjuryIcons[i] != null)
-                            _apocalypseInjuryIcons[i].SetActive(
-                                _hud.HasInjury(ApocalypseInjuries[i]));
                 }
             }
             if (_apocalypseCompass != null)

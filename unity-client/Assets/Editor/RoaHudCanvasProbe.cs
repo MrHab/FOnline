@@ -179,21 +179,46 @@ namespace RealmOfAshes.EditorTools
                         && !minimap.Find("ApocalypseMinimapDevice/Minimap_Contents/Map_Icon_Player").gameObject.activeSelf,
                         "the Synty minimap must show live map data instead of sample markers");
                 }
-                if (Resources.Load<GameObject>("ApocalypseHud/Screen_HUD_Apocalypse_ARPG_01") != null)
+                if (Resources.Load<GameObject>("ApocalypseHud/HUD_Apocalypse_HotBar_03") != null)
                 {
                     Transform quickbar = hierarchyProbe.transform.Find(
-                        "AdaptiveGameplayHud/SafeArea/Quickbar/ApocalypseARPGBar");
-                    Transform slots = quickbar != null ? quickbar.Find("Bar_Items") : null;
-                    Require(slots != null && slots.childCount >= RoaQuickbar.SlotCount,
-                        "the ARPG prefab is missing its eight live quick slots");
+                        "AdaptiveGameplayHud/SafeArea/Quickbar/ApocalypseHotBar");
+                    Transform slots = quickbar != null ? quickbar.Find("ActionBar") : null;
+                    Require(slots != null, "the Apocalypse hotbar is missing");
                     for (int i = 0; i < RoaQuickbar.SlotCount; i++)
-                        Require(slots.GetChild(i).GetComponent<UnityEngine.UI.Button>() != null
-                            && slots.GetChild(i).Find("LiveSlotLabel") != null,
-                            "ARPG slot " + i + " has no live button or label");
-                    Transform xp = quickbar.Find("XPBar/HUD_XPBar/Slider_Horizontal");
-                    Require(xp != null && xp.GetComponent<UnityEngine.UI.Slider>() != null
-                        && !xp.GetComponent<UnityEngine.UI.Slider>().interactable,
-                        "the ARPG experience bar must be a live read-only slider");
+                    {
+                        Transform slot = slots.Find("Item_" + i.ToString("00"));
+                        UnityEngine.UI.Text number = quickbar.Find("LiveSlotLabel_" + i)
+                            ?.GetComponent<UnityEngine.UI.Text>();
+                        Require(slot != null && slot.GetComponent<UnityEngine.UI.Button>() != null
+                            && number != null && number.enabled
+                            && number.text == (i + 1).ToString(),
+                            "hotbar slot " + i + " has no button or number plate");
+                    }
+                    MethodInfo refreshLamps = typeof(RoaHudCanvas).GetMethod(
+                        "RefreshApocalypseApLamps", BindingFlags.Instance | BindingFlags.NonPublic);
+                    Require(refreshLamps != null, "action-point lamps cannot be updated");
+                    refreshLamps.Invoke(hierarchyCanvas, new object[] { 9, 4.8f });
+                    Transform lamps = quickbar.Find("ActionPointLamps");
+                    Require(lamps != null && lamps.childCount == 9,
+                        "nine maximum action points must produce nine lamps");
+                    for (int i = 0; i < 9; i++)
+                        Require(lamps.GetChild(i).gameObject.activeSelf
+                            && lamps.GetChild(i).Find("Valve_Active").gameObject.activeSelf == (i < 4),
+                            "each lamp must reflect one current action point");
+                    refreshLamps.Invoke(hierarchyCanvas, new object[] { 6, 2f });
+                    for (int i = 0; i < 9; i++)
+                        Require(lamps.GetChild(i).gameObject.activeSelf == (i < 6)
+                            && (!lamps.GetChild(i).gameObject.activeSelf ||
+                                lamps.GetChild(i).Find("Valve_Active").gameObject.activeSelf == (i < 2)),
+                            "lamp count and illumination must follow changed action points");
+                    refreshLamps.Invoke(hierarchyCanvas, new object[] { 26, 13.4f });
+                    Require(lamps.childCount == 26,
+                        "increased maximum action points must add one lamp per point");
+                    for (int i = 0; i < 26; i++)
+                        Require(lamps.GetChild(i).gameObject.activeSelf
+                            && lamps.GetChild(i).Find("Valve_Active").gameObject.activeSelf == (i < 13),
+                            "lamps must show the new current action points after expansion");
                 }
                 else if (Resources.Load<GameObject>("ApocalypseHud/Button_Apocalypse_HotBar_Item_01") != null)
                 {
@@ -372,6 +397,17 @@ namespace RealmOfAshes.EditorTools
                         && mask.GetComponentsInChildren<TMPro.TMP_Text>(true).Length > 0)
                         mask.enabled = false;
                 Canvas.ForceUpdateCanvases();
+                Transform captureBar = safe.Find("Quickbar/ApocalypseHotBar");
+                if (captureBar != null)
+                {
+                    for (int i = 0; i < RoaQuickbar.SlotCount; i++)
+                    {
+                        UnityEngine.UI.Text number = captureBar.Find("LiveSlotLabel_" + i)
+                            ?.GetComponent<UnityEngine.UI.Text>();
+                        Require(number != null && number.cachedTextGenerator.vertexCount > 0,
+                            "hotbar slot number " + (i + 1) + " is not rendered");
+                    }
+                }
                 Debug.Log("[ROA PROBE] Capture layout: canvas "
                     + ((RectTransform)canvas.transform).rect + ", safe " + safe.rect
                     + ", quick " + safe.Find("Quickbar")?.gameObject.activeSelf

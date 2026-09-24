@@ -7519,12 +7519,20 @@ function sanitizePersistedQuickbar(slots = [], state = {}) {
     ...Object.keys(state.inventory || {}),
     ...Object.values(state.equipment || {}).filter(Boolean)
   ].map(String));
-  return slots.slice(0, 8).map(itemId => {
+  const sanitize = itemId => {
     const id = String(itemId || '').trim();
     if (!id || !allowed.has(id)) return null;
     const base = serverBaseItemId(id);
     return base && SERVER_ITEM_IDS.has(base) ? id : null;
-  });
+  };
+  const migrated = slots.slice(0, 6).map(sanitize);
+  for (const itemId of slots.slice(6)) {
+    const empty = migrated.findIndex(value => !value);
+    if (empty < 0) break;
+    const valid = sanitize(itemId);
+    if (valid) migrated[empty] = valid;
+  }
+  return migrated;
 }
 
 function sanitizePersistedEconomyState(state = {}) {

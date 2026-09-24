@@ -17,6 +17,13 @@ namespace RealmOfAshes.EditorTools
         [MenuItem("Realm of Ashes/Probe/Adaptive HUD")]
         public static void Run()
         {
+            Require(RoaInteraction.DisplayNpcName(JObject.Parse(
+                    "{\"name\":\"Перекрёсток: ополчение у баррикады [Лиги Тракта]\"}")) == "ополчение"
+                && RoaInteraction.DisplayNpcName(JObject.Parse(
+                    "{\"name\":\"Старый Клим\",\"traderQuests\":[\"supplies\"]}")) == "Старый Клим"
+                && RoaInteraction.IsQuestNpc(JObject.Parse(
+                    "{\"kromkaNamedNpcId\":\"story_guide\"}")),
+                "NPC display names or quest dialogue classification changed");
             Require(RoaEnemies.ReadBoolean(JValue.CreateNull(), true)
                     && !RoaEnemies.ReadBoolean(JValue.CreateNull())
                     && RoaEnemies.ReadBoolean(new JValue(true))

@@ -16098,7 +16098,19 @@ function serverNpcTradeResalePrice(itemId = '', market = {}, player = {}) {
     Math.ceil((sellPrice + 1) / (1 - SERVER_TRADE_MAX_BUY_DISCOUNT))));
 }
 
-const SERVER_NPC_TRADE_CLOSED_ERROR = 'Этот человек не торгует. Торговцы есть в столицах фракций и на базах Сердцевины, остальное — на аукционе.';
+const SERVER_NPC_TRADE_CLOSED_ERROR = 'Этот человек не торгует. Квестовые персонажи ведут дела, остальные товары доступны у торговцев и на аукционе.';
+
+function serverNpcHasQuestDialogue(actor = null) {
+  return !!actor && (!!String(actor.kromkaNamedNpcId || '')
+    || !!String(actor.kromkaOnboardingNpcId || '')
+    || (Array.isArray(actor.kromkaQuestIds) && actor.kromkaQuestIds.length > 0)
+    || (Array.isArray(actor.traderQuests) && actor.traderQuests.length > 0));
+}
+
+function serverNpcHasDialogue(actor = null) {
+  return !!actor && actor.canDialogue !== false && (serverNpcHasQuestDialogue(actor)
+    || ['auction', 'medic', 'repair'].includes(String(actor.service || '')));
+}
 
 /**
  * Открыта ли торговля с NPC. В экономике v3 торгуют только торговцы-люди
@@ -16106,7 +16118,7 @@ const SERVER_NPC_TRADE_CLOSED_ERROR = 'Этот человек не торгуе
  * также скупщик Чёрного рынка; остальные мирные NPC не торгуют.
  */
 function serverNpcTradeOpen(actor = null, locationId = '') {
-  if (!actor || serverNpcIsNaturalCreature(actor, actor)) return false;
+  if (!actor || serverNpcIsNaturalCreature(actor, actor) || serverNpcHasQuestDialogue(actor)) return false;
   if (serverIsBlackMarketActor(actor)) return true;
   if (!WORLD_ECONOMY.worldModel.npcTraders) return false;
   if (WORLD_ECONOMY.worldModel.wildTraders) return true;
@@ -18902,7 +18914,7 @@ function publicEnemy(e, viewer = null) {
     visual: String(e.visual || '').slice(0, 32),
     modelKey,
     species: String(e.species || '').slice(0, 32),
-    canDialogue: naturalCreature ? false : e.canDialogue !== false,
+    canDialogue: !naturalCreature && serverNpcHasDialogue(e),
     worldBoss: !!e.worldBossId,
     shieldNode: !!e.shieldNodeOf,
     shielded: !!e.worldBossId && e.shielded === true,
@@ -29994,6 +30006,7 @@ io.on('connection', (socket) => {
     ensureServerFriendlyNpcSocialState(enemy);
     const canTalk = enemy.canDialogue !== false
       && !serverNpcIsNaturalCreature(enemy, enemy)
+      && serverNpcHasDialogue(enemy)
       && !serverActorHostileToPlayer(enemy, p);
     if (!canTalk) return fail('Этот НПС не настроен на разговор.');
     const dialogueInterruptType = npcRoutineDialogueInterruptType(room, enemy, Date.now());

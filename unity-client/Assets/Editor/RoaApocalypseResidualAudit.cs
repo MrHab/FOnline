@@ -37,6 +37,7 @@ namespace RealmOfAshes.EditorTools
                 { "Assets/Scenes/Kromka/Locations" })
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .Where(path => path.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
+                .Concat(new[] { "Assets/Scenes/Kromka/KromkaGlobalMap.unity" })
                 .OrderBy(path => path, StringComparer.Ordinal).ToArray();
             int residual = 0;
             int structural = 0;
@@ -54,6 +55,12 @@ namespace RealmOfAshes.EditorTools
                         {
                             if (!renderer.enabled || !renderer.gameObject.activeInHierarchy
                                 || Excluded(renderer.transform)) continue;
+                            if (path.EndsWith("KromkaGlobalMap.unity", StringComparison.Ordinal)
+                                && RoaApocalypseArtMigration.IsMapSurfaceOrEffect(renderer.transform))
+                            {
+                                structural++;
+                                continue;
+                            }
                             if (Structural(renderer)) { structural++; continue; }
                             sceneCount++;
                             string name = renderer.transform.parent != null
@@ -64,14 +71,14 @@ namespace RealmOfAshes.EditorTools
                         residual += sceneCount;
                         writer.WriteLine(path + ": " + sceneCount);
                         foreach (KeyValuePair<string, int> pair in names
-                            .OrderByDescending(pair => pair.Value).Take(15))
+                            .OrderByDescending(pair => pair.Value))
                             writer.WriteLine("  " + pair.Value + " " + pair.Key);
                     }
                     finally { EditorSceneManager.ClosePreviewScene(scene); }
                 }
                 writer.WriteLine("TOTAL " + scenes.Length + " scenes; " + residual
                     + " remaining prop meshes; " + structural
-                    + " authored road, pipe, rail and boundary meshes retained for terrain shape");
+                    + " authored surfaces, effects and structural meshes retained");
             }
             Debug.Log("[ROA APOCALYPSE] Residual audit: " + scenes.Length + " scenes, "
                 + residual + " prop meshes, " + structural + " structural meshes. " + output);

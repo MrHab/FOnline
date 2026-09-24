@@ -21,6 +21,7 @@ namespace RealmOfAshes.EditorTools
         private const string ReplacementName = "PolygonApocalypse_Visual";
         private const string SceneRoot = "Assets/Scenes/Kromka/Locations";
         private const string MapScene = "Assets/Scenes/Kromka/KromkaGlobalMap.unity";
+        private const string DemoScene = PackRoot + "Scenes/Demo_City_Universal_RenderPipeline.unity";
         private const string RecoveredRoot = "Assets/Prefabs/Kromka/RecoveredEnvironment";
 
         // The left side is the game's authored model key; the right side is a Synty prefab.
@@ -111,6 +112,25 @@ namespace RealmOfAshes.EditorTools
             AssetDatabase.SaveAssets();
             Debug.Log("[ROA APOCALYPSE] Preview: " + prefabs + " prefabs, "
                 + map + " map visuals, " + tutorial + " tutorial visuals.");
+        }
+
+        [MenuItem("Realm of Ashes/PolygonApocalypse/Replace remaining map models")]
+        public static void MigrateRemainingMapModels()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Visual migration requires Edit Mode.");
+            ValidatePack();
+            int count = MigrateScene(MapScene, true);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[ROA APOCALYPSE] " + count + " additional map models migrated.");
+        }
+
+        [MenuItem("Realm of Ashes/PolygonApocalypse/Open city demo")]
+        public static void OpenCityDemo()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Open the demo in Edit Mode.");
+            EditorSceneManager.OpenScene(DemoScene, OpenSceneMode.Single);
         }
 
         // Invoked by an explicit Library request after script compilation. This avoids
@@ -245,17 +265,70 @@ namespace RealmOfAshes.EditorTools
         {
             int changed = 0;
             foreach (GameObject top in scene.GetRootGameObjects())
-            foreach (MeshRenderer renderer in top.GetComponentsInChildren<MeshRenderer>(true))
+            foreach (MeshRenderer renderer in top.GetComponentsInChildren<MeshRenderer>(true).ToArray())
             {
-                if (renderer == null || !renderer.enabled || InPack(renderer.gameObject)) continue;
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy
+                    || InPack(renderer.gameObject) || UnderReplacement(renderer.transform)
+                    || IsMapSurfaceOrEffect(renderer.transform)) continue;
                 string context = Context(renderer.transform);
-                if (UnderNamedMapBase(renderer.transform))
-                    continue;
-                string model = GuessMapAccent(context);
-                if (model != null && ReplaceVisual(renderer.transform, model, 30f)) changed++;
+                Transform target = MapVisualRoot(renderer.transform);
+                string model = renderer.name == "MapMiniature"
+                    ? "Buildings/SM_Bld_Industrial_Small_01"
+                    : GuessMapAccent(context) ?? Guess(context, "map landmark");
+                if (ReplaceVisual(target, model)) changed++;
             }
             return changed;
         }
+
+        private static Transform MapVisualRoot(Transform node)
+        {
+            Transform parent = node.parent;
+            if (parent == null || parent.name.StartsWith("Location_", StringComparison.Ordinal))
+                return node;
+            if (parent.name.IndexOf("_SOURCE", StringComparison.OrdinalIgnoreCase) >= 0
+                || parent.name.IndexOf("_LANDMARK", StringComparison.OrdinalIgnoreCase) >= 0
+                || parent.name.IndexOf("_Pylon_", StringComparison.OrdinalIgnoreCase) >= 0
+                || parent.name.StartsWith("BlackWaterServiceRing_", StringComparison.Ordinal)
+                || parent.name.StartsWith("Colonne_", StringComparison.Ordinal))
+                return parent;
+            GameObject prefabRoot = PrefabUtility.GetNearestPrefabInstanceRoot(node.gameObject);
+            return prefabRoot != null && prefabRoot.transform != node.root
+                && !prefabRoot.name.StartsWith("Location_", StringComparison.Ordinal)
+                ? prefabRoot.transform : node;
+        }
+
+        internal static bool IsMapSurfaceOrEffect(Transform node)
+        {
+            if (UnderNamedMapBase(node)) return true;
+            string name = node.name;
+            if (name.IndexOf("_SURFACE", StringComparison.OrdinalIgnoreCase) >= 0
+                || name.IndexOf("Terrain", StringComparison.OrdinalIgnoreCase) >= 0
+                || name.IndexOf("Scorch", StringComparison.OrdinalIgnoreCase) >= 0
+                || name == "LocationGlow" || name == "BoundaryLine"
+                || name.StartsWith("TerrainApron", StringComparison.Ordinal)) return true;
+            for (Transform item = node; item != null; item = item.parent)
+            {
+                name = item.name;
+                if (IsAuthoredMapStructure(name)
+                    || name == "DistantAshHorizon_AUTHORED"
+                    || name.StartsWith("Fog_Iteration", StringComparison.Ordinal)
+                    || name.StartsWith("Smoke_Iteration", StringComparison.Ordinal)
+                    || name.StartsWith("Dust_Iteration", StringComparison.Ordinal)
+                    || name.StartsWith("ToxicFog_Iteration", StringComparison.Ordinal)
+                    || name.EndsWith("Fog_AUTHORED", StringComparison.Ordinal)) return true;
+            }
+            return false;
+        }
+
+        private static bool IsAuthoredMapStructure(string name) =>
+            name == "RailBridgeApproachFill"
+            || name == "TesmaRailBridge_ContinuousStructure"
+            || name == "GroundSupportedSleepers"
+            || name == "ContinuousFreightRails"
+            || name == "NorthWest_DeadHighway"
+            || name == "Western_BrokenEvacuationRoute"
+            || name.StartsWith("OreArc_Quarry_", StringComparison.Ordinal)
+                && name.EndsWith("_CONTINUOUS", StringComparison.Ordinal);
 
         private static bool UnderNamedMapBase(Transform node)
         {

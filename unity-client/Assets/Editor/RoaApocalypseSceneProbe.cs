@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
 namespace RealmOfAshes.EditorTools
@@ -25,9 +26,24 @@ namespace RealmOfAshes.EditorTools
             foreach (string id in Samples)
             {
                 string path = "Assets/Scenes/Kromka/Locations/" + id + ".unity";
-                Scene scene = EditorSceneManager.OpenPreviewScene(path);
+                Scene scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+                AmbientMode previousMode = RenderSettings.ambientMode;
+                Color previousAmbient = RenderSettings.ambientLight;
+                SphericalHarmonicsL2 previousProbe = RenderSettings.ambientProbe;
+                Light[] activeLights = UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude)
+                    .Where(light => light.enabled).ToArray();
                 try
                 {
+                    foreach (Light activeLight in activeLights) activeLight.enabled = false;
+                    RenderSettings.ambientMode = AmbientMode.Flat;
+                    RenderSettings.ambientLight = new Color(0.20f, 0.18f, 0.15f);
+                    var probe = new SphericalHarmonicsL2();
+                    probe.AddAmbientLight(RenderSettings.ambientLight);
+                    RenderSettings.ambientProbe = probe;
+                    const int captureLayer = 30;
+                    foreach (GameObject root in scene.GetRootGameObjects())
+                    foreach (Transform part in root.GetComponentsInChildren<Transform>(true))
+                        part.gameObject.layer = captureLayer;
                     Renderer[] renderers = scene.GetRootGameObjects()
                         .SelectMany(root => root.GetComponentsInChildren<Renderer>(true))
                         .Where(r => r.enabled && r.gameObject.activeInHierarchy).ToArray();
@@ -42,15 +58,17 @@ namespace RealmOfAshes.EditorTools
                     Camera camera = cameraObject.AddComponent<Camera>();
                     camera.orthographic = true;
                     camera.orthographicSize = size;
+                    camera.cullingMask = 1 << captureLayer;
                     camera.farClipPlane = 1000f;
-                    camera.clearFlags = CameraClearFlags.Skybox;
+                    camera.clearFlags = CameraClearFlags.SolidColor;
+                    camera.backgroundColor = new Color(0.18f, 0.16f, 0.13f);
                     camera.transform.position = bounds.center + new Vector3(0f, size * 1.2f, -size);
                     camera.transform.rotation = Quaternion.Euler(55f, 0f, 0f);
                     var lightObject = new GameObject("ApocalypseSampleLight");
                     SceneManager.MoveGameObjectToScene(lightObject, scene);
                     Light light = lightObject.AddComponent<Light>();
                     light.type = LightType.Directional;
-                    light.intensity = 1.4f;
+                    light.intensity = 0.85f;
                     lightObject.transform.rotation = Quaternion.Euler(48f, -25f, 0f);
                     Capture(camera, Path.Combine(output, id + "-desktop.png"), 1440, 810);
                     Capture(camera, Path.Combine(output, id + "-mobile.png"), 844, 390);
@@ -58,7 +76,15 @@ namespace RealmOfAshes.EditorTools
                     report.WriteLine(id + ": " + newModels + " PolygonApocalypse renderers, "
                         + (renderers.Length - newModels) + " other renderers");
                 }
-                finally { EditorSceneManager.ClosePreviewScene(scene); }
+                finally
+                {
+                    RenderSettings.ambientMode = previousMode;
+                    RenderSettings.ambientLight = previousAmbient;
+                    RenderSettings.ambientProbe = previousProbe;
+                    foreach (Light activeLight in activeLights)
+                        if (activeLight != null) activeLight.enabled = true;
+                    EditorSceneManager.CloseScene(scene, true);
+                }
             }
             Debug.Log("[ROA APOCALYPSE] Sample locations captured: " + output);
         }

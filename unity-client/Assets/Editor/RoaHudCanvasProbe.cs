@@ -308,7 +308,15 @@ namespace RealmOfAshes.EditorTools
                 Set(hud, "_level", 8);
                 Set(hud, "_xp", 630);
                 Set(hud, "_xpNeeded", 1000);
-                Set(hud, "_weapon", "fists");
+                bool weaponCapture = string.Equals(Environment.GetEnvironmentVariable(
+                    "ROA_HUD_CAPTURE_WEAPON"), "1", StringComparison.Ordinal);
+                Set(hud, "_weapon", weaponCapture ? "smg" : "fists");
+                if (weaponCapture)
+                {
+                    Set(hud, "_loaded", 17);
+                    Set(hud, "_magSize", 30);
+                    Set(hud, "_reserveAmmo", 124);
+                }
                 Set(hud, "_armorThreshold", 4);
                 Set(hud, "_condition", 0.72f);
 
@@ -403,6 +411,41 @@ namespace RealmOfAshes.EditorTools
                         && mask.GetComponentsInChildren<TMPro.TMP_Text>(true).Length > 0)
                         mask.enabled = false;
                 Canvas.ForceUpdateCanvases();
+                update.Invoke(canvasOwner, null);
+                Canvas.ForceUpdateCanvases();
+                if (weaponCapture)
+                {
+                    RectTransform weapon = safe.Find("ApocalypseEquippedWeapon")
+                        as RectTransform;
+                    RectTransform quick = safe.Find("Quickbar") as RectTransform;
+                    Require(weapon != null && weapon.gameObject.activeSelf && quick != null,
+                        "equipped weapon or quickbar is missing from the HUD");
+                    var name = weapon.Find("Label_GunName")?.GetComponent<TMPro.TMP_Text>();
+                    var ammo = weapon.Find("Label_AmmoCount")?.GetComponent<TMPro.TMP_Text>();
+                    Require(name != null && ammo != null
+                        && name.text == RoaWeaponData.Get("smg").Name
+                        && ammo.text == "17/124", "equipped weapon text is incorrect");
+                    name.ForceMeshUpdate(true, true);
+                    ammo.ForceMeshUpdate(true, true);
+                    Require(name.textInfo.lineCount == 1 && ammo.textInfo.lineCount == 1,
+                        "equipped weapon name or ammo count wrapped onto multiple lines");
+                    Transform bulletList = weapon.Find("Ammo List");
+                    Require(bulletList != null &&
+                        RectTransformUtility.CalculateRelativeRectTransformBounds(
+                            weapon, ammo.transform).min.y >=
+                        RectTransformUtility.CalculateRelativeRectTransformBounds(
+                            weapon, bulletList).max.y,
+                        "equipped weapon ammo count overlaps the bullet indicator");
+                    Bounds weaponBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(
+                        safe, weapon);
+                    Bounds quickBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(
+                        safe, quick);
+                    Require(Mathf.Abs(weaponBounds.min.y - quickBounds.min.y) < 24f,
+                        "equipped weapon is not aligned with the quick slots");
+                    Require(weaponBounds.max.x <= safe.rect.xMax - 8f
+                        && weaponBounds.min.x >= quickBounds.max.x - 80f,
+                        "equipped weapon is clipped or overlaps the quick slots");
+                }
                 Transform captureBar = safe.Find("Quickbar/ApocalypseHotBar");
                 if (captureBar != null)
                 {

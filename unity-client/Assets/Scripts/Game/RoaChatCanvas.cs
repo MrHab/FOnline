@@ -14,8 +14,8 @@ namespace RealmOfAshes.Game
     {
         private static readonly string[] ChannelIds =
             { "world", "local", "faction", "group", "clan" };
-        private static readonly string[] ChannelNames =
-            { "Мир", "Локальный", "Фракция", "Группа", "Клан" };
+        private static readonly string[] ChannelTabNames =
+            { "Мир", "Лок.", "Фрак.", "Груп.", "Клан" };
         private readonly List<JObject> _history = new List<JObject>();
         private readonly List<GameObject> _rows = new List<GameObject>();
         private readonly Button[] _tabs = new Button[5];
@@ -67,8 +67,9 @@ namespace RealmOfAshes.Game
             if (_launcherObject != null)
                 _launcherObject.SetActive(mobile && !_expanded);
             var rect = (RectTransform)_panel.transform;
-            rect.localScale = Vector3.one * (mobile ? 0.68f : 0.50f);
-            rect.anchoredPosition = new Vector2(mobile ? 8f : 14f, 14f);
+            rect.localScale = Vector3.one * (mobile ? 0.58f : 0.40f);
+            rect.anchoredPosition = new Vector2(mobile ? 8f : 14f,
+                mobile ? 145f : 115f);
 
             if (_input == null) return;
             if (Input.GetKeyDown(KeyCode.Escape) && _expanded)
@@ -118,7 +119,7 @@ namespace RealmOfAshes.Game
             RectTransform rect = (RectTransform)_panel.transform;
             rect.anchorMin = rect.anchorMax = new Vector2(0f, 0f);
             rect.pivot = new Vector2(0f, 0f);
-            rect.sizeDelta = new Vector2(900f, 560f);
+            rect.sizeDelta = new Vector2(600f, 420f);
 
             Transform header = rect.Find("Header");
             Transform first = header != null ? header.GetChild(0) : null;
@@ -137,13 +138,14 @@ namespace RealmOfAshes.Game
                     var title = tab.Find("Title")?.GetComponent<TextMeshProUGUI>();
                     if (title != null)
                     {
-                        title.text = ChannelNames[i];
-                        title.fontSize = 25f;
+                        title.text = ChannelTabNames[i];
+                        title.fontSize = 28f;
                         title.textWrappingMode = TextWrappingModes.NoWrap;
                     }
                     var width = tab.GetComponent<LayoutElement>();
                     if (width == null) width = tab.gameObject.AddComponent<LayoutElement>();
-                    width.preferredWidth = 178f;
+                    width.minWidth = 0f;
+                    width.preferredWidth = 112f;
                     width.flexibleWidth = 1f;
                     Button button = tab.GetComponent<Button>();
                     _tabs[i] = button;
@@ -189,10 +191,10 @@ namespace RealmOfAshes.Game
             var statusRect = (RectTransform)statusObject.transform;
             statusRect.anchorMin = statusRect.anchorMax = new Vector2(0f, 0f);
             statusRect.pivot = new Vector2(0f, 0f);
-            statusRect.anchoredPosition = new Vector2(80f, 14f);
-            statusRect.sizeDelta = new Vector2(630f, 28f);
+            statusRect.anchoredPosition = new Vector2(20f, 105f);
+            statusRect.sizeDelta = new Vector2(560f, 64f);
             _status = statusObject.GetComponent<TextMeshProUGUI>();
-            _status.fontSize = 18f;
+            _status.fontSize = 23f;
             _status.color = new Color(1f, 0.83f, 0.42f);
             _status.raycastTarget = false;
             RoaApocalypseTmpFonts.Apply(_panel);
@@ -306,9 +308,15 @@ namespace RealmOfAshes.Game
                     label.richText = false;
                     label.text = (message.Value<string>("senderName") ?? "Странник")
                         + ": " + (message.Value<string>("text") ?? string.Empty);
+                    label.textWrappingMode = TextWrappingModes.Normal;
                 }
                 LayoutElement layout = row.GetComponent<LayoutElement>();
-                if (layout != null) layout.preferredHeight = 58f;
+                if (layout != null)
+                {
+                    float lineHeight = label != null
+                        ? label.GetPreferredValues(label.text, 500f, 1000f).y : 58f;
+                    layout.preferredHeight = Mathf.Max(58f, lineHeight + 12f);
+                }
                 row.SetActive(true);
                 used++;
             }

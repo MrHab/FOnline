@@ -38,8 +38,11 @@ namespace RealmOfAshes.EditorTools
                 bool mobileCapture = string.Equals(
                     Environment.GetEnvironmentVariable("ROA_CHAT_CAPTURE_MOBILE"), "1",
                     StringComparison.Ordinal);
-                chatRect.localScale = Vector3.one * (mobileCapture ? 0.68f : 0.50f);
-                chatRect.anchoredPosition = new Vector2(mobileCapture ? 8f : 14f, 14f);
+                Require(chatRect.sizeDelta == new Vector2(600f, 420f),
+                    "chat should fit beside the HUD action bar");
+                chatRect.localScale = Vector3.one * (mobileCapture ? 0.58f : 0.40f);
+                chatRect.anchoredPosition = new Vector2(mobileCapture ? 8f : 14f,
+                    mobileCapture ? 145f : 115f);
                 for (int i = 0; i < 5; i++)
                     Require(panel.Find("Header/Channel_" +
                         new[] { "world", "local", "faction", "group", "clan" }[i]) != null,

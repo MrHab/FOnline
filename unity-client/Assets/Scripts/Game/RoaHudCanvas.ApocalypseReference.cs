@@ -185,7 +185,7 @@ namespace RealmOfAshes.Game
                 RectTransform rect = (RectTransform)_apocalypseQuest.transform;
                 rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
                 rect.pivot = new Vector2(1f, 1f);
-                rect.anchoredPosition = new Vector2(8f, -225f);
+                rect.anchoredPosition = new Vector2(108f, -225f);
                 rect.localScale = Vector3.one * 0.27f;
                 _apocalypseQuestTitle = rect.Find(
                     "Content/HUD_ChapterHeader/Content/Label_Location")
@@ -358,7 +358,11 @@ namespace RealmOfAshes.Game
         {
             bool visible = worldHud && _hud != null && _hud.HasState;
             if (_apocalypseQuest != null)
-                _apocalypseQuest.transform.localScale = Vector3.one * (mobile ? 0.32f : 0.27f);
+            {
+                RectTransform quest = (RectTransform)_apocalypseQuest.transform;
+                quest.localScale = Vector3.one * (mobile ? 0.30f : 0.27f);
+                quest.anchoredPosition = new Vector2(mobile ? 160f : 108f, -225f);
+            }
             RefreshApocalypseCurrentQuest(visible);
             if (_apocalypseApLamps != null)
             {

@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace RealmOfAshes.Game
 {
@@ -10,10 +11,19 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed partial class RoaHudCanvas
     {
+        private const float SyntyPromptDesktopScale = 0.36f;
+        private const float SyntyPromptMobileScale = 0.36f;
         private GameObject _interactionPrompt;
         private CanvasGroup _interactionPromptGroup;
         private Text _interactionPromptKey;
         private Text _interactionPromptAction;
+        private TextMeshProUGUI _syntyPromptObject;
+        private TextMeshProUGUI _syntyPromptAction;
+        private TextMeshProUGUI[] _syntyPromptKeys;
+        private RectTransform _syntyPromptBackground;
+        private GameObject _syntyPromptKeyButton;
+        private bool _syntyPromptNeedsCenter;
+        private bool _syntyPrompt;
         private string _lastInteractionPrompt = string.Empty;
 
         public bool InteractionPromptVisible
@@ -24,7 +34,9 @@ namespace RealmOfAshes.Game
 
         public string InteractionPromptText
         {
-            get { return _interactionPromptAction != null ? _interactionPromptAction.text : string.Empty; }
+            get { return _syntyPrompt ? (_syntyPromptObject != null
+                ? _syntyPromptObject.text : string.Empty)
+                : _interactionPromptAction != null ? _interactionPromptAction.text : string.Empty; }
         }
 
         public static void FormatInteractionPrompt(string hint, bool mobile, out string key, out string action)
@@ -44,6 +56,44 @@ namespace RealmOfAshes.Game
 
         private void BuildInteractionPrompt()
         {
+            GameObject prefab = Resources.Load<GameObject>(
+                "ApocalypseHud/HUD_Apocalypse_Interact_ContextSensitive_03");
+            if (prefab != null)
+            {
+                _interactionPrompt = Instantiate(prefab, _safeRoot, false);
+                _interactionPrompt.name = "InteractionPrompt";
+                RectTransform sourceRect = (RectTransform)_interactionPrompt.transform;
+                sourceRect.anchorMin = sourceRect.anchorMax = new Vector2(0.5f, 0f);
+                sourceRect.pivot = new Vector2(0.5f, 0f);
+                sourceRect.anchoredPosition = new Vector2(0f, 216f);
+                sourceRect.localScale = Vector3.one * SyntyPromptDesktopScale;
+                _syntyPromptObject = sourceRect.Find("Content/Label_Object")
+                    ?.GetComponent<TextMeshProUGUI>();
+                _syntyPromptAction = sourceRect.Find("Content/Input_Action/txtAction")
+                    ?.GetComponent<TextMeshProUGUI>();
+                _syntyPromptBackground = sourceRect.Find("Content/SPR_Background") as RectTransform;
+                Transform keyButton = sourceRect.Find("Content/Input_Action/Input_KeyButton");
+                _syntyPromptKeyButton = keyButton != null ? keyButton.gameObject : null;
+                Transform controllerKey = keyButton?.Find("Input_Button");
+                if (controllerKey != null) controllerKey.gameObject.SetActive(false);
+                Transform darkKey = keyButton?.Find("Input_Key_Dark_Grunge");
+                if (darkKey != null) darkKey.gameObject.SetActive(false);
+                Transform keyboardKey = keyButton?.Find("Input_Key_White_Minimal");
+                if (keyboardKey != null) keyboardKey.gameObject.SetActive(true);
+                _syntyPromptKeys = sourceRect.GetComponentsInChildren<TextMeshProUGUI>(true);
+                foreach (Animator animator in sourceRect.GetComponentsInChildren<Animator>(true))
+                    animator.enabled = false;
+                foreach (Graphic graphic in sourceRect.GetComponentsInChildren<Graphic>(true))
+                    graphic.raycastTarget = false;
+                _interactionPromptGroup = _interactionPrompt.AddComponent<CanvasGroup>();
+                _interactionPromptGroup.alpha = 0f;
+                _interactionPromptGroup.blocksRaycasts = false;
+                _interactionPromptGroup.interactable = false;
+                _syntyPrompt = true;
+                _syntyPromptNeedsCenter = true;
+                _interactionPrompt.SetActive(false);
+                return;
+            }
             RectTransform panel = PanelRect("InteractionPrompt", _safeRoot, new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f), new Vector2(0f, 216f), new Vector2(470f, 46f));
             _interactionPrompt = panel.gameObject;
@@ -88,7 +138,27 @@ namespace RealmOfAshes.Game
             if (_interactionPrompt == null) return;
             RectTransform rect = (RectTransform)_interactionPrompt.transform;
             rect.anchoredPosition = new Vector2(0f, mobile ? 302f : 216f);
-            rect.localScale = Vector3.one * (mobile ? 0.86f : 1f);
+            rect.localScale = Vector3.one * (_syntyPrompt
+                ? (mobile ? SyntyPromptMobileScale : SyntyPromptDesktopScale)
+                : (mobile ? 0.86f : 1f));
+            if (_syntyPrompt)
+            {
+                if (_syntyPromptKeyButton != null) _syntyPromptKeyButton.SetActive(!mobile);
+                _syntyPromptNeedsCenter = true;
+            }
+        }
+
+        private void CenterSyntyPrompt()
+        {
+            if (_syntyPromptBackground == null || _safeRoot == null) return;
+            Canvas.ForceUpdateCanvases();
+            Bounds bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(
+                _safeRoot, _syntyPromptBackground);
+            RectTransform rect = (RectTransform)_interactionPrompt.transform;
+            Vector2 position = rect.anchoredPosition;
+            position.x += _safeRoot.rect.center.x - bounds.center.x;
+            rect.anchoredPosition = position;
+            _syntyPromptNeedsCenter = false;
         }
 
         private void RefreshInteractionPrompt(bool worldHud)
@@ -107,8 +177,24 @@ namespace RealmOfAshes.Game
             {
                 bool mobile = _mobile != null && _mobile.ControlsEnabled;
                 FormatInteractionPrompt(hint, mobile, out string key, out string action);
-                _interactionPromptKey.text = key;
-                _interactionPromptAction.text = action;
+                if (_syntyPrompt)
+                {
+                    int colon = action.IndexOf(':');
+                    if (_syntyPromptObject != null)
+                        _syntyPromptObject.text = colon >= 0
+                            ? action.Substring(colon + 1).Trim() : action;
+                    if (_syntyPromptAction != null)
+                        _syntyPromptAction.text = colon >= 0
+                            ? action.Substring(0, colon).Trim() : "Взаимодействовать";
+                    foreach (TextMeshProUGUI label in _syntyPromptKeys)
+                        if (label != null && label.name == "Label_Input_Key")
+                            label.text = key;
+                }
+                else
+                {
+                    _interactionPromptKey.text = key;
+                    _interactionPromptAction.text = action;
+                }
                 if (!_interactionPrompt.activeSelf)
                 {
                     _interactionPrompt.SetActive(true);
@@ -117,8 +203,9 @@ namespace RealmOfAshes.Game
                 if (hint != _lastInteractionPrompt)
                 {
                     _lastInteractionPrompt = hint;
-                    _interactionPrompt.transform.localScale *= 1.035f;
+                    _syntyPromptNeedsCenter = true;
                 }
+                if (_syntyPrompt && _syntyPromptNeedsCenter) CenterSyntyPrompt();
             }
             else
             {
@@ -129,9 +216,11 @@ namespace RealmOfAshes.Game
             float target = show ? 1f : 0f;
             _interactionPromptGroup.alpha = Mathf.MoveTowards(_interactionPromptGroup.alpha, target,
                 Time.unscaledDeltaTime * 8f);
-            float layoutScale = _mobile != null && _mobile.ControlsEnabled ? 0.86f : 1f;
-            _interactionPrompt.transform.localScale = Vector3.Lerp(_interactionPrompt.transform.localScale,
-                Vector3.one * layoutScale, 1f - Mathf.Exp(-12f * Time.unscaledDeltaTime));
+            float layoutScale = _syntyPrompt
+                ? (_mobile != null && _mobile.ControlsEnabled
+                    ? SyntyPromptMobileScale : SyntyPromptDesktopScale)
+                : (_mobile != null && _mobile.ControlsEnabled ? 0.86f : 1f);
+            _interactionPrompt.transform.localScale = Vector3.one * layoutScale;
             if (!show && _interactionPromptGroup.alpha <= 0.001f) _interactionPrompt.SetActive(false);
         }
     }

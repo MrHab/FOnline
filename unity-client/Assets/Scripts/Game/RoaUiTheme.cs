@@ -86,7 +86,9 @@ namespace RealmOfAshes.Game
         {
             if (_instance == this) _instance = null;
             DestroyGenerated(_skin);
-            DestroyGenerated(_frontendBackdrop);
+            if (_frontendBackdrop != null &&
+                _frontendBackdrop.hideFlags == HideFlags.HideAndDontSave)
+                DestroyGenerated(_frontendBackdrop);
         }
 
         private void OnGUI()
@@ -113,23 +115,28 @@ namespace RealmOfAshes.Game
             if (_skin != null) return;
 
             _skin = Instantiate(GUI.skin);
-            _skin.name = "Kromka Web-Parity Skin";
+            _skin.name = "Apocalypse HUD Skin";
             _skin.hideFlags = HideFlags.HideAndDontSave;
 
-            Texture2D panel = Rounded("ui-panel", new Color(0.051f, 0.063f, 0.063f, 0.94f),
-                new Color(0.68f, 0.55f, 0.28f, 0.72f), 8);
+            Texture2D panel = Resources.Load<Texture2D>(
+                "ApocalypseHud/SPR_Apocalypse_Box_Background_01") ??
+                Rounded("ui-panel", new Color(0.051f, 0.063f, 0.063f, 0.94f),
+                    new Color(0.68f, 0.55f, 0.28f, 0.72f), 8);
             Texture2D panelFocused = Rounded("ui-panel-focused", new Color(0.075f, 0.076f, 0.064f, 0.97f),
                 new Color(0.94f, 0.78f, 0.36f, 0.92f), 8);
-            Texture2D card = Rounded("ui-card", new Color(0.094f, 0.106f, 0.094f, 0.94f),
-                new Color(0.40f, 0.36f, 0.24f, 0.76f), 7);
-            Texture2D button = Rounded("ui-button", new Color(0.105f, 0.110f, 0.090f, 0.98f),
-                new Color(0.68f, 0.55f, 0.28f, 0.76f), 7);
+            Texture2D card = panel;
+            Texture2D button = Resources.Load<Texture2D>(
+                "ApocalypseHud/SPR_Apocalypse_Box_Metal_04") ??
+                Rounded("ui-button", new Color(0.105f, 0.110f, 0.090f, 0.98f),
+                    new Color(0.68f, 0.55f, 0.28f, 0.76f), 7);
             Texture2D buttonHover = Rounded("ui-button-hover", new Color(0.22f, 0.20f, 0.14f, 0.99f),
                 new Color(0.94f, 0.78f, 0.36f, 1f), 7);
             Texture2D buttonActive = Rounded("ui-button-active", new Color(0.31f, 0.27f, 0.15f, 1f),
                 new Color(1f, 0.86f, 0.48f, 1f), 7);
-            Texture2D field = Rounded("ui-field", new Color(0.051f, 0.063f, 0.063f, 0.98f),
-                new Color(0.68f, 0.55f, 0.28f, 0.72f), 7);
+            Texture2D field = Resources.Load<Texture2D>(
+                "ApocalypseHud/SPR_Apocalypse_Bar_MetalRusty_01") ??
+                Rounded("ui-field", new Color(0.051f, 0.063f, 0.063f, 0.98f),
+                    new Color(0.68f, 0.55f, 0.28f, 0.72f), 7);
             Texture2D fieldFocused = Rounded("ui-field-focused", new Color(0.067f, 0.077f, 0.067f, 1f),
                 new Color(0.94f, 0.78f, 0.36f, 1f), 7);
             Texture2D transparent = Solid("transparent", Color.clear);
@@ -137,6 +144,8 @@ namespace RealmOfAshes.Game
 
             ConfigureContainer(_skin.box, card, Text, 7, 10);
             ConfigureContainer(_skin.window, panel, Text, 8, 14);
+            if (card.width > 32) _skin.box.border = new RectOffset(60, 60, 60, 60);
+            if (panel.width > 32) _skin.window.border = new RectOffset(60, 60, 60, 60);
             _skin.window.onNormal.background = panelFocused;
             _skin.window.fontSize = 12;
             _skin.window.richText = true;
@@ -148,8 +157,14 @@ namespace RealmOfAshes.Game
             _skin.label.wordWrap = false;
 
             ConfigureButton(_skin.button, button, buttonHover, buttonActive);
+            if (button.width > 32) _skin.button.border = new RectOffset(40, 40, 40, 40);
             ConfigureTextInput(_skin.textField, field, fieldFocused, selection);
             ConfigureTextInput(_skin.textArea, field, fieldFocused, selection);
+            if (field.width > 32)
+            {
+                _skin.textField.border = new RectOffset(50, 50, 30, 30);
+                _skin.textArea.border = new RectOffset(50, 50, 30, 30);
+            }
             _skin.textArea.wordWrap = true;
 
             _skin.toggle.normal.textColor = Text;
@@ -191,7 +206,8 @@ namespace RealmOfAshes.Game
                 wordWrap = true
             };
 
-            _frontendBackdrop = FrontendBackdrop();
+            _frontendBackdrop = Resources.Load<Texture2D>(
+                "ApocalypseHud/SPR_Apocalypse_Box_Background_01") ?? FrontendBackdrop();
         }
 
         private static void ConfigureContainer(GUIStyle style, Texture2D background, Color text,

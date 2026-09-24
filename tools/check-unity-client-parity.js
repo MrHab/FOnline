@@ -159,11 +159,12 @@ assert(hudCanvas.includes('public enum HudFocusMode')
   && hudCanvas.includes('BuildCompactWeaponConsole();')
   && hudCanvas.includes('RefreshHudFocus(worldHud, mobile, focus);')
   && hudCanvas.includes('ClampBottomPanelPosition(')
-  && hudCanvas.includes('Time.unscaledDeltaTime * 6.5f')
+  && hudCanvas.includes('_compactConsolePanel.SetActive(false);')
+  && !hudCanvas.includes('Input.GetKey(KeyCode.LeftAlt)')
   && hudCanvas.includes('AppendOccupiedScreenRect(_compactConsolePanel, output);')
-  && hudProbe.includes('exploration strip obscures the world or overlaps the quickbar')
+  && hudProbe.includes('the HUD must retain one visible arrangement through combat and activity')
   && hudProbe.includes('contextual exploration console is incomplete'),
-  'Unity HUD lost contextual exploration/activity/combat/detail focus or its compact information strip');
+  'Unity HUD lost its fixed Apocalypse arrangement or fallback information strip');
 assert(nameplates.includes('public static bool IsImportantNpc(')
   && nameplates.includes('case "merchant":')
   && nameplates.includes('case "quartermaster":')
@@ -173,10 +174,12 @@ assert(nameplates.includes('public static bool IsImportantNpc(')
   && nameplates.includes('plate.HealthFill.fillAmount = Mathf.Clamp01(ratio)')
   && nameplates.includes('CompactHealthState(entry.Hp, entry.MaxHp)')
   && enemies.includes('RoaActorNameplates.IsImportantNpc(canDialogue,')
-  && enemies.includes('Name = important ?')
+  && enemies.includes('Name = enemy.Snapshot["name"]')
+  && enemies.includes('Level = enemy.Snapshot["level"]')
+  && nameplates.includes('HUD_Apocalypse_WorldSpace_EnemyInfo_01')
   && !enemies.includes('if (enemy.Snapshot["canDialogue"]?.ToObject<bool>() != true) continue;')
   && hudProbe.includes('compact health-bar/name hierarchy is not deterministic'),
-  'Unity actor nameplates lost the role-filtered name and compact health hierarchy');
+  'Unity actor nameplates lost actor names, tiers or compact health hierarchy');
 
 // Unity -> server. Unity normally sends through RoaSocketClient.Emit/EmitWithAck.
 // join/state use the lower transport (EmitAsync) directly. Four UI branches choose
@@ -559,7 +562,7 @@ assert(unityCamera.includes('private const string ZoomPrefsKey = "roa.cameraDist
   && unityCamera.includes('private const string PreviousZoomPrefsKey = "roa.cameraDistance.v3";')
   && unityCamera.includes('private const string LegacyZoomPrefsKey = "roa.cameraDistance.v2";')
   && unityCamera.includes('PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);')
-  && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud ? 0f'),
+  && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud || RoaHudCanvas.PointerOverMinimap'),
   'Unity local camera zoom must persist and ignore wheel input behind open UI');
 // Pip-Boy radio: the client exposes the four Kromka stations, and the
 // selected channel streams real records from the built library

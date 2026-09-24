@@ -2128,7 +2128,8 @@ async function assertTraderLeavesWeaponsToBlackMarket(accounts) {
   const trader = (Array.isArray(account.join.worldState?.enemies) ? account.join.worldState.enemies : [])
     .find(enemy => enemy?.hostileToPlayer === false
       && enemy?.role === 'merchant'
-      && enemy?.traderProfile === 'scrap');
+      && enemy?.traderProfile === 'scrap'
+      && enemy?.tradeOpen === true);
   invariant(trader?.id, 'Scrap Town trader is missing from authoritative world state', account.join.worldState);
   // NPC встаёт на ближайший свободный тайл: если он ушёл от своей точки, доходим шагами.
   const spot = { x: Number(account.join.x || 0), z: Number(account.join.z || 0) };

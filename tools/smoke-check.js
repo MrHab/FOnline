@@ -1403,12 +1403,16 @@ async function assertSocketMultiplayerLifecycle() {
       rocketLauncher: 'rocketAmmo'
     };
     for (const actor of friendlySapientNpcs) {
-      if (actor.canDialogue !== true
-        || !actor.traderId
+      const questNpc = !!actor.kromkaNamedNpcId || !!actor.kromkaOnboardingNpcId
+        || (actor.kromkaQuestIds || []).length > 0 || (actor.traderQuests || []).length > 0;
+      const dialogueService = ['auction', 'medic', 'repair'].includes(actor.service);
+      if ((questNpc || dialogueService) && actor.canDialogue !== true)
+        fail('quest or dialogue service NPC could not speak', JSON.stringify(actor));
+      if (actor.tradeOpen === true && (!actor.traderId
         || !Array.isArray(actor.traderStock)
         || !Array.isArray(actor.traderBuyInterests)
-        || actor.traderBuyInterests.length === 0) {
-        fail('friendly sapient NPC was missing dialogue or barter state', JSON.stringify(actor));
+        || actor.traderBuyInterests.length === 0)) {
+        fail('trading NPC was missing barter state', JSON.stringify(actor));
       }
       if (!Array.isArray(actor.inventory)
         || !actor.inventory.some(row => row?.id === 'silver' && Number(row?.qty || 0) > 0)

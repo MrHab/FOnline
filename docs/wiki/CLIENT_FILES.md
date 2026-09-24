@@ -162,16 +162,31 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 `RoaActivityBeacon`, `RoaActivityZoneMarker`, `RoaActivityFeedback`,
 `RoaCaravanStagingCanvas`, `RoaWorldOverlayCanvas`.
 
-**HUD и UI-инфраструктура** — `RoaHud`, `RoaHudCanvas` (+`.EconomyFeedback`,
+**HUD и UI-инфраструктура** — `RoaHud`, `RoaHudCanvas` (+`.ApocalypseReference`,
+`.EconomyFeedback`,
 `.QuickRadial` — круг быстрых слотов по удержанию E, `.ExitBanner` — подсказка у
 края локации, и partial-файл `RoaHudInteractionPrompt.cs`), `RoaCraftingCanvas`
 (окно станка), `RoaHudLayout`,
 `RoaHudDragHandle` (редактор HUD), `RoaSystemCanvas` (меню, графика,
-обучение), `RoaDialogueCanvas`, `RoaBarterCanvas`, `RoaLootCanvas`,
+обучение), `RoaChatCanvas` (пять серверных каналов на готовом Synty ChatLog),
+`RoaDialogueCanvas`, `RoaBarterCanvas`, `RoaLootCanvas`,
 `RoaStorageCanvas`, `RoaWorkbenchCanvas`, `RoaQuantityCanvas`, `RoaUiTheme`,
+`RoaApocalypseUiSkin` (оформляет создаваемые во время игры окна и добавляет
+визуальные слои готовых кнопок), `RoaApocalypseUiKit` (создаёт кнопки, быстрые
+слоты и рамки из локально установленного пака, сохраняя игровые обработчики),
 `RoaUiPalette`, `RoaUiFont` (Noto Sans с кириллицей для WebGL), `RoaUiScale`
 (единый CanvasScaler: 1440×810, mobile 1280×720), `RoaUiScroll`,
-`RoaUiPrefabTemplate`.
+`RoaUiPrefabTemplate`, `RoaApocalypseItemIcons` и `RoaApocalypseTmpFonts`.
+
+Для оформления Apocalypse HUD владелец пакета импортирует
+**Synty INTERFACE - Apocalypse HUD** в `unity-client/Assets/Synty`, затем
+запускает `unity-client/Tools/install-apocalypse-hud.ps1`. Скрипт переносит
+нужные спрайты и готовые префабы кнопок, слотов, полос, ползунка и виджетов HUD,
+а также связанные шрифты, материалы и анимации с сохранением Unity-ссылок в локальный
+`Assets/Resources/ApocalypseHud`; оба каталога исключены из публичного Git.
+После импорта можно выполнить пробы **Realm of Ashes → Probe → Apocalypse HUD
+Skin** и **Apocalypse HUD Layouts**. Без локально установленного пака клиент
+использует прежние текстуры, а визуальная проба пропускается.
 
 **Мобильное управление** — `RoaMobileControls`, `RoaMobileControlsCanvas`
 (landscape-стик, автоцель по NPC и игрокам в PvP-зоне, тап ракетницей и игровые кнопки).

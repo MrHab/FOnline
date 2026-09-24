@@ -30,6 +30,11 @@ namespace RealmOfAshes.Game
         private readonly Text[] _radialSlotNumbers = new Text[RoaQuickbar.SlotCount];
         private readonly Text[] _radialSlotCounts = new Text[RoaQuickbar.SlotCount];
         private readonly Text[] _radialSlotNames = new Text[RoaQuickbar.SlotCount];
+        private RectTransform _apocalypseWheelBackdrop;
+        private readonly RectTransform[] _apocalypseWheelItems = new RectTransform[RoaQuickbar.SlotCount];
+        private readonly Image[] _apocalypseWheelIcons = new Image[RoaQuickbar.SlotCount];
+        private readonly GameObject[] _apocalypseWheelSelections = new GameObject[RoaQuickbar.SlotCount];
+        private readonly GameObject[] _apocalypseWheelDisabled = new GameObject[RoaQuickbar.SlotCount];
         // Подгонка имени меряет текст генератором, поэтому делается только на смену подписи или раскладки.
         private readonly string[] _radialSlotLabels = new string[RoaQuickbar.SlotCount];
         private int _radialFitKey;
@@ -66,6 +71,36 @@ namespace RealmOfAshes.Game
             _radialFitKey = 0;
             System.Array.Clear(_radialSlotLabels, 0, _radialSlotLabels.Length);
 
+            GameObject wheelPrefab = Resources.Load<GameObject>(
+                "ApocalypseHud/HUD_Apocalypse_WeaponWheel_03");
+            GameObject itemPrefab = null;
+            if (wheelPrefab != null)
+            {
+                GameObject wheel = Instantiate(wheelPrefab, root, false);
+                wheel.name = "ApocalypseWheel";
+                _apocalypseWheelBackdrop = wheel.transform as RectTransform;
+                _apocalypseWheelBackdrop.anchorMin = _apocalypseWheelBackdrop.anchorMax =
+                    new Vector2(0.5f, 0.5f);
+                _apocalypseWheelBackdrop.pivot = new Vector2(0.5f, 0.5f);
+                _apocalypseWheelBackdrop.anchoredPosition = Vector2.zero;
+                Transform content = wheel.transform.Find("Content");
+                if (content != null)
+                {
+                    Transform source = content.Find("Item_00/Item/Item_00");
+                    if (source != null) itemPrefab = source.gameObject;
+                    for (int i = 0; i < 6; i++)
+                    {
+                        Transform sample = content.Find("Item_0" + i);
+                        if (sample != null) sample.gameObject.SetActive(false);
+                    }
+                }
+                foreach (Animator animator in wheel.GetComponentsInChildren<Animator>(true))
+                    animator.enabled = false;
+                foreach (Graphic graphic in wheel.GetComponentsInChildren<Graphic>(true))
+                    graphic.raycastTarget = false;
+                _apocalypseWheelBackdrop.SetAsFirstSibling();
+            }
+
             for (int i = 0; i < _radialSlotRects.Length; i++)
             {
                 RectTransform slot = PanelRect("Slot" + (i + 1), root, new Vector2(0.5f, 0.5f),
@@ -73,6 +108,37 @@ namespace RealmOfAshes.Game
                 _radialSlotRects[i] = slot;
                 _radialSlotImages[i] = slot.GetComponent<Image>();
                 _radialSlotOutlines[i] = slot.GetComponent<Outline>();
+                if (itemPrefab != null)
+                {
+                    GameObject visual = Instantiate(itemPrefab, slot, false);
+                    visual.name = "ApocalypseWheelItem";
+                    visual.SetActive(true);
+                    RectTransform visualRect = visual.transform as RectTransform;
+                    visualRect.anchorMin = visualRect.anchorMax = new Vector2(0.5f, 0.5f);
+                    visualRect.pivot = new Vector2(0.5f, 0.5f);
+                    visualRect.anchoredPosition = Vector2.zero;
+                    visualRect.localRotation = Quaternion.identity;
+                    _apocalypseWheelItems[i] = visualRect;
+                    foreach (Animator animator in visual.GetComponentsInChildren<Animator>(true))
+                        animator.enabled = false;
+                    foreach (Graphic graphic in visual.GetComponentsInChildren<Graphic>(true))
+                        graphic.raycastTarget = false;
+                    Transform icon = visual.transform.Find("Content/Icon/Icon");
+                    if (icon != null)
+                    {
+                        _apocalypseWheelIcons[i] = icon.GetComponent<Image>();
+                        if (_apocalypseWheelIcons[i] != null)
+                            _apocalypseWheelIcons[i].enabled = false;
+                    }
+                    Transform selection = visual.transform.Find("Content/BG/Ring_Selected");
+                    if (selection != null)
+                        _apocalypseWheelSelections[i] = selection.gameObject;
+                    Transform disabled = visual.transform.Find("Content/Disabled");
+                    if (disabled != null)
+                        _apocalypseWheelDisabled[i] = disabled.gameObject;
+                    _radialSlotImages[i].enabled = false;
+                    _radialSlotOutlines[i].enabled = false;
+                }
                 _radialSlotNumbers[i] = Label("Number", slot, Vector2.zero, Vector2.zero, 14,
                                               TextAnchor.MiddleCenter, ConsoleAccent, FontStyle.Bold);
                 _radialSlotNumbers[i].text = (i + 1).ToString();
@@ -116,6 +182,17 @@ namespace RealmOfAshes.Game
                 bool assigned = !string.IsNullOrEmpty(item);
                 if (assigned) hasAssignedItems = true;
                 SetRadialName(i, assigned ? RoaItemData.Name(item) : "—");
+                if (_apocalypseWheelIcons[i] != null)
+                {
+                    Sprite sprite = assigned ? RoaApocalypseItemIcons.For(item) : null;
+                    _apocalypseWheelIcons[i].sprite = sprite;
+                    _apocalypseWheelIcons[i].enabled = sprite != null;
+                    _apocalypseWheelIcons[i].preserveAspect = true;
+                }
+                if (_apocalypseWheelSelections[i] != null)
+                    _apocalypseWheelSelections[i].SetActive(selected == i);
+                if (_apocalypseWheelDisabled[i] != null)
+                    _apocalypseWheelDisabled[i].SetActive(assigned && !_quickbar.IsSlotAvailable(i));
                 int quantity = _quickbar.SlotQuantity(i);
                 bool counted = assigned && quantity > 1;
                 _radialSlotCounts[i].text = counted ? "×" + quantity : string.Empty;
@@ -151,6 +228,9 @@ namespace RealmOfAshes.Game
             int numberFont = FontUnits(Mathf.Clamp(screenHeight / 50f, RadialMinFontPixels, 18f), scale);
             int nameFont = FontUnits(RadialMinFontPixels, scale);
             float numberBand = side * 0.40f / scale;
+            if (_apocalypseWheelBackdrop != null)
+                _apocalypseWheelBackdrop.localScale = Vector3.one *
+                    (radius / (550f * scale));
 
             for (int i = 0; i < _radialSlotRects.Length; i++)
             {
@@ -158,6 +238,9 @@ namespace RealmOfAshes.Game
                 // Экранная ось Y смотрит вниз, ось канвы — вверх.
                 _radialSlotRects[i].anchoredPosition = new Vector2(Mathf.Cos(angle), -Mathf.Sin(angle)) * radius / scale;
                 _radialSlotRects[i].sizeDelta = new Vector2(side, side) / scale;
+                if (_apocalypseWheelItems[i] != null)
+                    _apocalypseWheelItems[i].localScale = Vector3.one *
+                        (side / (380f * scale));
 
                 Text number = _radialSlotNumbers[i];
                 number.fontSize = numberFont;

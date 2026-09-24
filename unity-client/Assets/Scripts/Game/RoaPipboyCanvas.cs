@@ -198,7 +198,9 @@ namespace RealmOfAshes.Game
             GameObject focus = events != null ? events.currentSelectedGameObject : null;
             if (focus == null) return false;
             var field = focus.GetComponent<InputField>();
-            return field != null && field.isFocused;
+            if (field != null && field.isFocused) return true;
+            var tmpField = focus.GetComponent<TMPro.TMP_InputField>();
+            return tmpField != null && tmpField.isFocused;
         }
 
         public void TogglePage(Page page)
@@ -579,7 +581,7 @@ namespace RealmOfAshes.Game
             AddHint("SHIFT+ЛКМ", "Экипировать");
             AddHint("ПКМ", "Действия");
             AddHint("Наведение", "Сведения");
-            AddHint("1–8", "Быстрый доступ");
+            AddHint("1–6", "Быстрый доступ");
 
             // На телефоне клавиш нет — и обещать их нельзя.
             _hintTouch = Label("HintTouch", page, 10, TextAnchor.MiddleCenter, RoaUiPalette.InkLabel);
@@ -772,8 +774,7 @@ namespace RealmOfAshes.Game
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             scroll.content = _itemsGrid;
 
-            // Быстрый доступ 1-8: без этого ряда слоты 5-8 недостижимы вовсе —
-            // контекстное меню предлагает только первые четыре.
+            // Быстрый доступ 1-6: все слоты доступны прямо из инвентаря.
             _quickRow = Child("QuickRow", panel);
             Place_(_quickRow, 0f, 0f, 1f, 0f, new Vector2(6f, 56f), new Vector2(-6f, 92f));
             for (int i = 0; i < RoaQuickbar.SlotCount; i++)
@@ -1592,7 +1593,14 @@ namespace RealmOfAshes.Game
             artRect.anchoredPosition = new Vector2(0f, 16f);
             artRect.sizeDelta = new Vector2(50f, 50f);
             var art = artRect.gameObject.AddComponent<RawImage>();
-            art.texture = RoaItemCategories.Art(row.Id);
+            Sprite apocalypseIcon = RoaApocalypseItemIcons.For(row.Id);
+            art.texture = apocalypseIcon != null ? apocalypseIcon.texture : RoaItemCategories.Art(row.Id);
+            if (apocalypseIcon != null)
+            {
+                Rect source = apocalypseIcon.textureRect;
+                art.uvRect = new Rect(source.x / art.texture.width, source.y / art.texture.height,
+                    source.width / art.texture.width, source.height / art.texture.height);
+            }
             art.raycastTarget = false;
             art.enabled = art.texture != null;
 

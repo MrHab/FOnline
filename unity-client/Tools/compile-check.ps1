@@ -42,6 +42,7 @@ try {
         (Join-Path $UnityData 'Managed\UnityEngine\Unity.Scripting.dll'),
         (Join-Path $client 'Library\PackageCache\com.unity.nuget.newtonsoft-json@*\Runtime\Newtonsoft.Json.dll'),
         (Join-Path $scriptAssemblies 'glTFast*.dll'),
+        (Join-Path $scriptAssemblies 'Unity.TextMeshPro.dll'),
         (Join-Path $scriptAssemblies 'Unity.RenderPipelines*.dll')
     )
 

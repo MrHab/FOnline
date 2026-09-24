@@ -180,9 +180,13 @@ const servicePosition = (locationId, service) => {
 
   // --- торгуют только торговцы-люди -----------------------------------------
   const scrapActors = accounts.target.join.worldState?.enemies || [];
-  const merchant = scrapActors.find(row => row.role === 'merchant' && row.hostileToPlayer === false);
+  const merchant = scrapActors.find(row => row.role === 'merchant' && row.tradeOpen === true);
+  const questMerchant = scrapActors.find(row => row.role === 'merchant'
+    && Array.isArray(row.traderQuests) && row.traderQuests.length > 0);
   const auctioneer = scrapActors.find(row => row.service === 'auction');
   assert(merchant?.tradeOpen === true, 'торговец столицы торгует: ' + JSON.stringify(merchant && { name: merchant.name, tradeOpen: merchant.tradeOpen }));
+  assert(questMerchant && questMerchant.canDialogue === true && questMerchant.tradeOpen === false,
+    'квестовый торговец ведёт только диалог и не открывает рынок');
   assert(auctioneer && auctioneer.tradeOpen === false, 'аукционер «Покажи товары» не предлагает');
   // Облик и взгляд авторского НПС — из его строки: их задают в сцене Unity, и
   // клиент получает ровно их, а не выводит облик из id актёра, который новый

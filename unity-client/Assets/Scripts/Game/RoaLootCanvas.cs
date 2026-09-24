@@ -112,6 +112,7 @@ namespace RealmOfAshes.Game
             _panel.pivot = new Vector2(0.5f, 0.5f);
             var back = _panel.gameObject.AddComponent<Image>();
             back.color = PanelBg;
+            RoaApocalypseUiKit.StyleWindow(back, true);
             var outline = _panel.gameObject.AddComponent<Outline>();
             outline.effectColor = PanelBorder;
             outline.effectDistance = new Vector2(1.5f, -1.5f);

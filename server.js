@@ -9,6 +9,8 @@ const os = require('os');
 const { monitorEventLoopDelay, performance } = require('perf_hooks');
 const nodemailer = require('nodemailer');
 const { version: GAME_VERSION } = require('./package.json');
+const { cleanChatText, chatChannel, chatScope, chatRecipients } =
+  require('./src/server/player-chat');
 const {
   KROMKA_DAMAGE_TYPES,
   resolveDamageMitigation,
@@ -7516,12 +7518,20 @@ function sanitizePersistedQuickbar(slots = [], state = {}) {
     ...Object.keys(state.inventory || {}),
     ...Object.values(state.equipment || {}).filter(Boolean)
   ].map(String));
-  return slots.slice(0, 8).map(itemId => {
+  const sanitize = itemId => {
     const id = String(itemId || '').trim();
     if (!id || !allowed.has(id)) return null;
     const base = serverBaseItemId(id);
     return base && SERVER_ITEM_IDS.has(base) ? id : null;
-  });
+  };
+  const migrated = slots.slice(0, 6).map(sanitize);
+  for (const itemId of slots.slice(6)) {
+    const empty = migrated.findIndex(value => !value);
+    if (empty < 0) break;
+    const valid = sanitize(itemId);
+    if (valid) migrated[empty] = valid;
+  }
+  return migrated;
 }
 
 function sanitizePersistedEconomyState(state = {}) {
@@ -16088,7 +16098,19 @@ function serverNpcTradeResalePrice(itemId = '', market = {}, player = {}) {
     Math.ceil((sellPrice + 1) / (1 - SERVER_TRADE_MAX_BUY_DISCOUNT))));
 }
 
-const SERVER_NPC_TRADE_CLOSED_ERROR = 'Этот человек не торгует. Торговцы есть в столицах фракций и на базах Сердцевины, остальное — на аукционе.';
+const SERVER_NPC_TRADE_CLOSED_ERROR = 'Этот человек не торгует. Квестовые персонажи ведут дела, остальные товары доступны у торговцев и на аукционе.';
+
+function serverNpcHasQuestDialogue(actor = null) {
+  return !!actor && (!!String(actor.kromkaNamedNpcId || '')
+    || !!String(actor.kromkaOnboardingNpcId || '')
+    || (Array.isArray(actor.kromkaQuestIds) && actor.kromkaQuestIds.length > 0)
+    || (Array.isArray(actor.traderQuests) && actor.traderQuests.length > 0));
+}
+
+function serverNpcHasDialogue(actor = null) {
+  return !!actor && actor.canDialogue !== false && (serverNpcHasQuestDialogue(actor)
+    || ['auction', 'medic', 'repair'].includes(String(actor.service || '')));
+}
 
 /**
  * Открыта ли торговля с NPC. В экономике v3 торгуют только торговцы-люди
@@ -16096,7 +16118,7 @@ const SERVER_NPC_TRADE_CLOSED_ERROR = 'Этот человек не торгуе
  * также скупщик Чёрного рынка; остальные мирные NPC не торгуют.
  */
 function serverNpcTradeOpen(actor = null, locationId = '') {
-  if (!actor || serverNpcIsNaturalCreature(actor, actor)) return false;
+  if (!actor || serverNpcIsNaturalCreature(actor, actor) || serverNpcHasQuestDialogue(actor)) return false;
   if (serverIsBlackMarketActor(actor)) return true;
   if (!WORLD_ECONOMY.worldModel.npcTraders) return false;
   if (WORLD_ECONOMY.worldModel.wildTraders) return true;
@@ -16999,7 +17021,33 @@ function spawnAuthoredLocationActors(room, loc) {
   const controllingSites = wastelandSitesForLocation(loc, room);
   const controllingSite = controllingSites.length === 1 ? controllingSites[0] : null;
   let count = 0;
-  loc.objects.forEach((row, index) => {
+  const authoredRows = loc.objects.slice();
+  const merchants = authoredRows.filter(row => locationDefinitionObjectIsNpc(row)
+    && authoredNpcDefaultRole(row) === 'merchant');
+  const hasOrdinaryMerchant = merchants.some(row => {
+    const entity = locationDefinitionObjectEntity(row);
+    return entity.spawnedBy !== 'named' && entity.spawnedBy !== 'onboarding'
+      && (!Array.isArray(entity.quests) || entity.quests.length === 0);
+  });
+  const authoredQuestMerchant = merchants.find(row => {
+    const entity = locationDefinitionObjectEntity(row);
+    return entity.spawnedBy !== 'named' && Array.isArray(entity.quests) && entity.quests.length > 0;
+  });
+  if (!hasOrdinaryMerchant && authoredQuestMerchant
+    && (locationIsFactionCapital(loc) || WORLD_ECONOMY.npcTradeHubs.includes(loc.id))) {
+    const questRow = authoredQuestMerchant;
+    const entity = locationDefinitionObjectEntity(questRow);
+    const point = locationObjectPosition(questRow);
+    const id = `${String(questRow.id || 'merchant').slice(0, 48)}_shop`;
+    authoredRows.push({
+      ...questRow,
+      id,
+      name: 'Торговец',
+      position: { x: point.x + 6, y: point.y || 0, z: point.z },
+      entity: { ...entity, npcId: id, spawnedBy: '', quests: [], noTraderQuests: true }
+    });
+  }
+  authoredRows.forEach((row, index) => {
     if (!locationDefinitionObjectIsNpc(row)) return;
     // Именных и учебных НПС ставят их каталоги; строка — только их место и облик.
     const rowOwner = String(locationDefinitionObjectEntity(row).spawnedBy || '');
@@ -17112,9 +17160,7 @@ function spawnAuthoredLocationActors(room, loc) {
     actor.dialogueProfile = merchantActor
       ? String(entity.dialogueProfile || trade.dialogueProfile || entity.traderProfile || entity.tradeProfile || entity.profile || (locationTraderActor ? loc.trader?.dialogueProfile : '') || '').slice(0, 64)
       : String(entity.dialogueProfile || '').slice(0, 64);
-    actor.traderQuests = merchantActor
-      ? (explicitQuests.length ? explicitQuests : (Array.isArray(trade.quests) && trade.quests.length ? trade.quests.slice() : (locationTraderActor && Array.isArray(loc.trader?.quests) ? loc.trader.quests.slice() : [])))
-      : explicitQuests;
+    actor.traderQuests = entity.noTraderQuests ? [] : explicitQuests;
     actor.traderMarket = trade.market || null;
     if (serverNpcIsNaturalCreature(actor, actor)) normalizeServerNaturalCreatureState(actor);
     else materializeAuthoredNpcRoutine(room, loc, actor, Date.now());
@@ -18502,7 +18548,9 @@ function spawnWastelandSiteWorkers(room, loc) {
         actor.traderId = `${site.id || loc.id}_${role}`.slice(0, 64);
         actor.traderProfile = String(trade.traderProfile || role).slice(0, 64);
         actor.dialogueProfile = String(trade.dialogueProfile || role || '').slice(0, 64);
-        actor.traderQuests = Array.isArray(trade.quests) ? trade.quests.slice() : [];
+        // Работник поселения продаёт товары; поручения профиля принадлежат
+        // именным персонажам и не превращают каждого торговца в квестового NPC.
+        actor.traderQuests = [];
         actor.traderMarket = trade.market || null;
         count++;
       }
@@ -18892,7 +18940,7 @@ function publicEnemy(e, viewer = null) {
     visual: String(e.visual || '').slice(0, 32),
     modelKey,
     species: String(e.species || '').slice(0, 32),
-    canDialogue: naturalCreature ? false : e.canDialogue !== false,
+    canDialogue: naturalCreature ? false : serverNpcHasDialogue(e),
     worldBoss: !!e.worldBossId,
     shieldNode: !!e.shieldNodeOf,
     shielded: !!e.worldBossId && e.shielded === true,
@@ -27727,6 +27775,41 @@ function liveOtherSessionForLogin(login, deviceId, token, currentSocketId = '') 
 
 
 io.on('connection', (socket) => {
+  socket.on('playerChatSend', (data = {}, ack) => {
+    if (!data || typeof data !== 'object') data = {};
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    const sender = players.get(socket.id);
+    if (!sender) return fail('Войдите в мир, чтобы отправить сообщение.');
+    const channel = chatChannel(data.channel);
+    if (!channel) return fail('Неизвестный канал чата.');
+    const text = cleanChatText(data.text);
+    if (!text) return fail('Введите сообщение.');
+    const now = Date.now();
+    if (now - Number(sender.lastChatAt || 0) < 700)
+      return fail('Отправляйте сообщения чуть реже.');
+
+    const withClan = player => ({ ...player,
+      chatClanId: serverKromkaClanForPlayer(player)?.id ||
+        player.socialState?.clan?.id || '' });
+    const source = withClan(sender);
+    if (!chatScope(source, channel))
+      return fail(channel === 'faction' ? 'Вы не состоите во фракции.'
+        : channel === 'group' ? 'Вы не состоите в группе.'
+        : channel === 'clan' ? 'Вы не состоите в клане.'
+        : 'Канал сейчас недоступен.');
+    sender.lastChatAt = now;
+    const message = {
+      id: `${sender.characterId}:${now}`, channel,
+      senderId: String(sender.characterId || ''),
+      senderName: String(sender.name || 'Странник').slice(0, 40),
+      text, t: now
+    };
+    const members = [...players.values()].map(withClan);
+    for (const receiver of chatRecipients(source, members, channel))
+      io.to(receiver.id).emit('playerChatMessage', message);
+    if (typeof ack === 'function') ack({ ok: true, id: message.id, t: now });
+  });
+
   socket.on('networkPing', (data = {}, ack) => {
     if (typeof ack !== 'function') return;
     const clientTime = Number(data?.clientTime);
@@ -29949,6 +30032,7 @@ io.on('connection', (socket) => {
     ensureServerFriendlyNpcSocialState(enemy);
     const canTalk = enemy.canDialogue !== false
       && !serverNpcIsNaturalCreature(enemy, enemy)
+      && serverNpcHasDialogue(enemy)
       && !serverActorHostileToPlayer(enemy, p);
     if (!canTalk) return fail('Этот НПС не настроен на разговор.');
     const dialogueInterruptType = npcRoutineDialogueInterruptType(room, enemy, Date.now());

@@ -7,14 +7,13 @@ using UnityEngine;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Eight persistent quick-access slots. The browser client keeps these in the
-    /// character save rather than join.self, so Unity reads and writes the same field
-    /// through the authenticated character endpoint. Item actions themselves still
-    /// use authoritative Socket.IO events through RoaInventory/RoaCombat.
+    /// Six persistent quick-access slots in the character save, read and written
+    /// through the authenticated character endpoint. Item actions use authoritative
+    /// Socket.IO events through RoaInventory/RoaCombat.
     /// </summary>
     public sealed class RoaQuickbar : MonoBehaviour
     {
-        public const int SlotCount = 8;
+        public const int SlotCount = 6;
 
         private readonly string[] _slots = new string[SlotCount];
         private RoaAuthClient _auth;
@@ -139,7 +138,7 @@ namespace RealmOfAshes.Game
             }
             _assignItem = itemRuntimeId;
             _clearMode = false;
-            _status = "Выберите слот 1–8.";
+            _status = "Выберите слот 1–6.";
             if (_mobile == null || !_mobile.ControlsEnabled) OpenAssignRadial();
         }
 
@@ -325,6 +324,19 @@ namespace RealmOfAshes.Game
                     if (token != null && token.Type != JTokenType.Null)
                         _slots[i] = token.ToString().Trim();
                 }
+                // Older characters may still have items in slots 7–8. Keep them
+                // in any empty visible slot when loading the six-slot bar.
+                for (int i = SlotCount; i < saved.Count; i++)
+                {
+                    string item = saved[i]?.ToString().Trim();
+                    if (string.IsNullOrEmpty(item)) continue;
+                    for (int target = 0; target < SlotCount; target++)
+                    {
+                        if (!string.IsNullOrEmpty(_slots[target])) continue;
+                        _slots[target] = item;
+                        break;
+                    }
+                }
             }
             _loaded = true;
             _status = string.Empty;
@@ -403,7 +415,7 @@ namespace RealmOfAshes.Game
 
         private void UpdateRadialSelection()
         {
-            // Keep all eight directions fixed even when only one or no item is
+            // Keep all six directions fixed even when only one or no item is
             // assigned. Compressing the populated entries around the circle made
             // slot numbers move and reduced an empty quickbar to a lone center box.
             _radialSelected = RadialSelection(MouseGuiPoint() - _radialCenter, SlotCount);

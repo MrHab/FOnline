@@ -851,7 +851,11 @@ namespace RealmOfAshes.Game
                         || !string.IsNullOrEmpty(enemy.Snapshot["traderId"]?.ToString())
                         || ReadBoolean(enemy.Snapshot["personalTrade"]);
 
-                if (!dead && (hostile || (!canDialogue && !hasTrade))) continue;
+                string service = enemy.Snapshot["service"]?.ToString();
+                bool hasServiceMenu = service == "registrar" || service == "artifactLab"
+                    || service == "fastTravel";
+
+                if (!dead && (hostile || (!canDialogue && !hasTrade && !hasServiceMenu))) continue;
 
                 Vector3 delta = enemy.Root.transform.position - origin;
                 delta.y = 0f;
@@ -1946,10 +1950,11 @@ namespace RealmOfAshes.Game
                 bool important = RoaActorNameplates.IsImportantNpc(canDialogue,
                     enemy.Snapshot["role"]?.ToString(), enemy.Snapshot["encounterRole"]?.ToString());
                 bool hostile = ReadBoolean(enemy.Snapshot["hostileToPlayer"], true);
-                rows.Add(new RoaActorNameplates.Entry
+                var plateEntry = new RoaActorNameplates.Entry
                 {
                     Key = "npc:" + pair.Key,
-                    Name = important ? enemy.Snapshot["name"]?.ToString() ?? "Торговец" : string.Empty,
+                    Name = enemy.Snapshot["name"]?.ToString() ?? (important ? "Торговец" : "Враг"),
+                    Level = enemy.Snapshot["level"]?.ToObject<int>() ?? 0,
                     Faction = NpcCombatFactionLine(
                         enemy.Snapshot["faction"]?.ToString(), hostile,
                         enemy.Snapshot["aiState"]?.ToString(),
@@ -1962,7 +1967,9 @@ namespace RealmOfAshes.Game
                     World = enemy.Root.transform.position + Vector3.up * (2.05f * scale),
                     Hostile = hostile,
                     IsPlayer = false
-                });
+                };
+                if (!hostile) plateEntry.Name = RoaInteraction.DisplayNpcName(enemy.Snapshot);
+                rows.Add(plateEntry);
             }
         }
 

@@ -74,6 +74,8 @@ namespace RealmOfAshes.Game
             public RectTransform Rect;
             public RawImage Back;
             public RawImage Icon;
+            public Image SyntyIcon;
+            public GameObject SyntySelection;
             public Text Label;
             public int BaseFontSize;
             public RoaMobileControlPress Press;
@@ -84,10 +86,11 @@ namespace RealmOfAshes.Game
         // пикселей, поэтому порог подгонки подписи — 10,5 пикселя.
         public const float MinLabelPixels = 10.5f;
 
-        private static readonly Color Ink = new Color(0.90f, 0.96f, 0.84f, 1f);
-        private static readonly Color Normal = new Color(0.075f, 0.11f, 0.075f, 0.88f);
-        private static readonly Color Selected = new Color(0.23f, 0.42f, 0.20f, 0.96f);
-        private static readonly Color Fire = new Color(0.57f, 0.18f, 0.075f, 0.97f);
+        private static readonly Color Ink = new Color(0.96f, 0.86f, 0.66f, 1f);
+        private static readonly Color Normal = new Color(0.78f, 0.74f, 0.62f, 0.94f);
+        private static readonly Color Selected = new Color(1f, 0.82f, 0.43f, 1f);
+        private static readonly Color Fire = new Color(1f, 0.50f, 0.32f, 1f);
+        private static GameObject _syntyButtonPrefab;
 
         public RoaMobileControls Controls;
         public RoaBoltThrower BoltThrower;
@@ -160,7 +163,7 @@ namespace RealmOfAshes.Game
 
         private void OnDestroy()
         {
-            if (_disc == null) return;
+            if (_disc == null || _disc.hideFlags != HideFlags.DontSave) return;
             if (Application.isPlaying) Destroy(_disc);
             else DestroyImmediate(_disc);
         }
@@ -274,7 +277,13 @@ namespace RealmOfAshes.Game
 
         public bool ButtonHasIcon(string id)
         {
-            return _buttons.TryGetValue(id, out ButtonView view) && view.Icon.enabled;
+            return _buttons.TryGetValue(id, out ButtonView view) &&
+                (view.Icon.enabled || view.SyntyIcon != null && view.SyntyIcon.enabled);
+        }
+
+        public bool ButtonUsesSyntyPrefab(string id)
+        {
+            return _buttons.TryGetValue(id, out ButtonView view) && view.SyntyIcon != null;
         }
 
         public bool SimulatePressForProbe(string id, bool pressed)
@@ -420,32 +429,33 @@ namespace RealmOfAshes.Game
             _layer.offsetMin = Vector2.zero;
             _layer.offsetMax = Vector2.zero;
 
-            _disc = CreateDiscTexture();
-            CreateButton("Inventory", "СУМКА", "RealmUi/mobile/left/inventory",
+            _disc = Resources.Load<Texture2D>(
+                "ApocalypseHud/SPR_Apocalypse_Dial_Background_01") ?? CreateDiscTexture();
+            CreateButton("Inventory", "СУМКА", "ApocalypseHud/ICON_Apocalpyse_Inventory_Backpack_01",
                 () => Controls?.TriggerInventory());
-            CreateButton("Map", "КАРТА", "RealmUi/mobile/left/map",
+            CreateButton("Map", "КАРТА", "ApocalypseHud/ICON_Apocalpyse_Map_Quest_01",
                 () => Controls?.TriggerMap());
-            CreateButton("Pipboy", "ПУТНИК", "RealmUi/mobile/left/skills",
+            CreateButton("Pipboy", "ПУТНИК", "ApocalypseHud/ICON_Apocalpyse_Inventory_Notes_01",
                 () => Controls?.TriggerPipboy());
-            CreateButton("Menu", "МЕНЮ", "RealmUi/mobile/top/main_menu",
+            CreateButton("Menu", "МЕНЮ", "ApocalypseHud/ICON_Input_Xbox_Button_Menu_Clean",
                 () => Controls?.TriggerMenu());
-            CreateButton("Fire", "ОГОНЬ", "RealmUi/mobile/right/attack", null,
+            CreateButton("Fire", "ОГОНЬ", "ApocalypseHud/ICON_Apocalpyse_Inventory_Weapon_01", null,
                 held => Controls?.SetFireHeld(held), true);
-            CreateButton("Interact", "ДЕЙСТВИЕ", "RealmUi/mobile/right/interact",
+            CreateButton("Interact", "ДЕЙСТВИЕ", "ApocalypseHud/ICON_Apocalpyse_Map_Unknown_01",
                 () => Controls?.TriggerInteract());
-            CreateButton("Target", "ЦЕЛЬ", "RealmUi/mobile/right/target",
+            CreateButton("Target", "ЦЕЛЬ", "ApocalypseHud/ICON_Apocalpyse_Map_Target_01",
                 () => Controls?.TriggerTargetCycle());
-            CreateButton("Crouch", "ПРИСЕСТЬ", "RealmUi/mobile/left/crouch",
+            CreateButton("Crouch", "ПРИСЕСТЬ", "ApocalypseHud/ICON_Input_PC_Arrow_Down_Clean",
                 () => Controls?.TriggerCrouch());
-            CreateButton("Reload", "ПЕРЕЗАР.", "RealmUi/mobile/right/reload",
+            CreateButton("Reload", "ПЕРЕЗАР.", "ApocalypseHud/ICON_SM_Wep_Pistol_Ammo_01",
                 () => Controls?.TriggerReload());
-            CreateButton("Mode", "РЕЖИМ", "RealmUi/mobile/right/mode",
+            CreateButton("Mode", "РЕЖИМ", "ApocalypseHud/ICON_Input_PC_Tab_Clean",
                 () => Controls?.TriggerFireMode());
-            CreateButton("Player", "ИГРОК", "RealmUi/mobile/right/radial_menu",
+            CreateButton("Player", "ИГРОК", "ApocalypseHud/ICON_Apocalpyse_Map_Message_01",
                 () => Controls?.TriggerPlayerOrPing());
-            CreateButton("Bolt", "БОЛТ", "RealmUi/mobile/right/bolt",
+            CreateButton("Bolt", "БОЛТ", "ApocalypseHud/ICON_SM_Wep_CrossBow_Bolt_01",
                 () => BoltThrower?.ToggleAim());
-            CreateButton("Vehicle", "МОТО", "RealmUi/mobile/right/vehicle",
+            CreateButton("Vehicle", "МОТО", "ApocalypseHud/ICON_Apocalpyse_Map_Vehicle_01",
                 () => Vehicles?.Toggle());
             CreateJoystick();
             Hide();
@@ -468,6 +478,8 @@ namespace RealmOfAshes.Game
             RoaMobileControlPress press = root.GetComponent<RoaMobileControlPress>();
             press.Configure(back, fire ? Fire : Normal, clicked, pressed);
 
+            Image syntyIcon = AddSyntyButtonVisual(rect, iconPath, out GameObject syntySelection);
+
             var iconRoot = new GameObject("Icon", typeof(RectTransform), typeof(RawImage));
             iconRoot.transform.SetParent(root.transform, false);
             RectTransform iconRect = (RectTransform)iconRoot.transform;
@@ -475,13 +487,16 @@ namespace RealmOfAshes.Game
             iconRect.anchorMax = new Vector2(0.81f, 0.91f);
             iconRect.offsetMin = iconRect.offsetMax = Vector2.zero;
             RawImage icon = iconRoot.GetComponent<RawImage>();
-            icon.texture = Resources.Load<Texture2D>(iconPath);
+            icon.texture = string.IsNullOrEmpty(iconPath)
+                ? null : Resources.Load<Texture2D>(iconPath);
+            if (icon.texture == null)
+                icon.texture = Resources.Load<Texture2D>(LegacyIconPath(id));
             icon.color = Color.white;
             icon.raycastTarget = false;
             // RawImage без текстуры рисует сплошной белый квадрат поверх диска:
             // без спрайта кнопка остаётся текстовой, с подписью по центру.
             bool hasIcon = icon.texture != null;
-            icon.enabled = hasIcon;
+            icon.enabled = hasIcon && syntyIcon == null;
 
             var labelRoot = new GameObject("Label", typeof(RectTransform), typeof(Text));
             labelRoot.transform.SetParent(root.transform, false);
@@ -505,17 +520,93 @@ namespace RealmOfAshes.Game
 
             _buttons[id] = new ButtonView
             {
-                Id = id, Rect = rect, Back = back, Icon = icon, Label = text,
+                Id = id, Rect = rect, Back = back, Icon = icon, SyntyIcon = syntyIcon,
+                SyntySelection = syntySelection, Label = text,
                 BaseFontSize = text.fontSize, Press = press
             };
+        }
+
+        private static Image AddSyntyButtonVisual(RectTransform parent, string iconPath,
+                                                  out GameObject selection)
+        {
+            selection = null;
+            if (_syntyButtonPrefab == null)
+                _syntyButtonPrefab = Resources.Load<GameObject>(
+                    "ApocalypseHud/Button_Apocalypse_HotBar_Item_01");
+            if (_syntyButtonPrefab == null) return null;
+
+            GameObject visual = Instantiate(_syntyButtonPrefab, parent, false);
+            visual.name = "ApocalypseHudControlVisual";
+            RectTransform frame = visual.GetComponent<RectTransform>();
+            frame.anchorMin = Vector2.zero;
+            frame.anchorMax = Vector2.one;
+            frame.offsetMin = Vector2.zero;
+            frame.offsetMax = Vector2.zero;
+            frame.SetAsFirstSibling();
+
+            foreach (Button button in visual.GetComponentsInChildren<Button>(true))
+                button.enabled = false;
+            foreach (Animator animator in visual.GetComponentsInChildren<Animator>(true))
+                animator.enabled = false;
+            foreach (Graphic graphic in visual.GetComponentsInChildren<Graphic>(true))
+            {
+                graphic.raycastTarget = false;
+                if (!(graphic is Image)) graphic.enabled = false;
+            }
+            CanvasGroup group = visual.AddComponent<CanvasGroup>();
+            group.interactable = false;
+            group.blocksRaycasts = false;
+
+            Transform input = visual.transform.Find("Input");
+            if (input != null) input.gameObject.SetActive(false);
+            Transform highlighted = visual.transform.Find("Highlighted");
+            if (highlighted != null) highlighted.gameObject.SetActive(false);
+            Transform selected = visual.transform.Find("Selected");
+            if (selected != null)
+            {
+                selection = selected.gameObject;
+                selection.SetActive(false);
+            }
+
+            Sprite iconSprite = Resources.Load<Sprite>(iconPath);
+            foreach (Image image in visual.GetComponentsInChildren<Image>(true))
+            {
+                if (image.sprite == null ||
+                    image.sprite.name != "ICON_SM_Wep_Pistol_Metal_01") continue;
+                image.sprite = iconSprite;
+                image.enabled = iconSprite != null;
+                return iconSprite != null ? image : null;
+            }
+            return null;
+        }
+
+        private static string LegacyIconPath(string id)
+        {
+            switch (id)
+            {
+                case "Inventory": return "RealmUi/mobile/left/inventory";
+                case "Map": return "RealmUi/mobile/left/map";
+                case "Pipboy": return "RealmUi/mobile/left/skills";
+                case "Menu": return "RealmUi/mobile/top/main_menu";
+                case "Fire": return "RealmUi/mobile/right/attack";
+                case "Interact": return "RealmUi/mobile/right/interact";
+                case "Target": return "RealmUi/mobile/right/target";
+                case "Crouch": return "RealmUi/mobile/left/crouch";
+                case "Reload": return "RealmUi/mobile/right/reload";
+                case "Mode": return "RealmUi/mobile/right/mode";
+                case "Player": return "RealmUi/mobile/right/radial_menu";
+                case "Bolt": return "RealmUi/mobile/right/bolt";
+                case "Vehicle": return "RealmUi/mobile/right/vehicle";
+                default: return string.Empty;
+            }
         }
 
         private void CreateJoystick()
         {
             _joystickOuter = CreateJoystickPart("JoystickOuter", 0.52f,
-                new Color(0.17f, 0.28f, 0.18f, 0.68f), out _joystickOuterImage);
+                new Color(0.77f, 0.68f, 0.48f, 0.80f), out _joystickOuterImage);
             _joystickKnob = CreateJoystickPart("JoystickKnob", 0.72f,
-                new Color(0.67f, 0.82f, 0.59f, 0.90f), out _joystickKnobImage);
+                new Color(1f, 0.82f, 0.51f, 0.96f), out _joystickKnobImage);
             _joystickOuter.gameObject.SetActive(false);
             _joystickKnob.gameObject.SetActive(false);
         }
@@ -640,6 +731,7 @@ namespace RealmOfAshes.Game
             if (!_buttons.TryGetValue(id, out ButtonView view)) return;
             Color color = fire ? Fire : selected ? Selected : Normal;
             view.Press.SetNormalColor(color);
+            if (view.SyntySelection != null) view.SyntySelection.SetActive(selected);
         }
 
         private static Rect Intersect(Rect a, Rect b)

@@ -74,7 +74,7 @@ namespace RealmOfAshes.Game
         public float ContainerRange = 3.1f;
 
         private enum TargetKind { None, LabNode, Actor, Container, Storage, Resource, CraftingStation, JobBoard, QuestObject, Transition, PlotBoard }
-        private enum PanelKind { None, Npc, Trade, Storage, Corpse, Container, Crafting, JobBoard }
+        private enum PanelKind { None, Npc, Service, Trade, Storage, Corpse, Container, Crafting, JobBoard }
         private enum QuantityKind { None, TradeBuy, TradeSell, StorageDeposit, StorageWithdraw, Loot }
 
         private sealed class ContainerView
@@ -243,8 +243,7 @@ namespace RealmOfAshes.Game
         public void TradeBack()
         {
             ClearTradeQueue();
-            if (_panel == PanelKind.Trade) _panel = PanelKind.Npc;
-            else ClosePanel(true);
+            ClosePanel(true);
         }
 
         public void TradeClose()
@@ -271,7 +270,8 @@ namespace RealmOfAshes.Game
             get
             {
                 if (_candidateKind == TargetKind.None || _candidate == null) return string.Empty;
-                string name = _candidate["name"]?.ToString() ?? "Объект";
+                string name = _candidateKind == TargetKind.Actor
+                    ? DisplayNpcName(_candidate) : (_candidate["name"]?.ToString() ?? "Объект");
                 string action;
                 if (_candidateKind == TargetKind.Resource) action = "добыть";
                 else if (_candidateKind == TargetKind.CraftingStation) action = "открыть станок";
@@ -281,7 +281,10 @@ namespace RealmOfAshes.Game
                 else if (_candidateKind == TargetKind.Transition) action = "перейти";
                 else if (_candidateKind == TargetKind.Storage) action = "открыть хранилище";
                 else if (_candidateKind == TargetKind.Container) action = "открыть";
-                else action = _candidate["dead"]?.ToObject<bool>() == true ? "обыскать" : "поговорить";
+                else if (_candidate["dead"]?.ToObject<bool>() == true) action = "обыскать";
+                else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) action = "поговорить";
+                else if (NpcHasTrade(_candidate)) action = "торговать";
+                else action = "услуги";
                 return InteractKey + " — " + action + ": " + name;
             }
         }
@@ -298,6 +301,7 @@ namespace RealmOfAshes.Game
         public bool DialogueCanvasDriven { get; set; }
 
         public bool NpcOpen { get { return _panel == PanelKind.Npc; } }
+        public bool ServiceOpen { get { return _panel == PanelKind.Service; } }
         public bool JobBoardOpen { get { return _panel == PanelKind.JobBoard; } }
         public string DialogueTitle { get { return PanelTitle(); } }
         public string DialogueStatus { get { return Time.unscaledTime <= _statusUntil ? _status : string.Empty; } }
@@ -333,7 +337,7 @@ namespace RealmOfAshes.Game
         /// <summary>traderProfileId() web (07b:154): профиль по полю, затем по id, затем по локации.</summary>
         private string TraderProfileId()
         {
-            if (_active == null || !NpcHasTrade(_active)) return string.Empty;
+            if (_active == null || (!NpcHasTrade(_active) && !IsQuestNpc(_active))) return string.Empty;
             string direct = (_active["dialogueProfile"]?.ToString() ?? _active["traderProfile"]?.ToString() ?? string.Empty).ToLowerInvariant();
             if (direct == "klim" || direct == "scrap" || direct == "relay") return direct;
             string actorId = (_active["traderId"]?.ToString() ?? _active["id"]?.ToString() ?? string.Empty).ToLowerInvariant();
@@ -400,7 +404,7 @@ namespace RealmOfAshes.Game
             }
         }
 
-        public bool NpcHasTradeOption { get { return _active != null && NpcHasTrade(_active); } }
+        public bool NpcHasTradeOption { get { return _active != null && !IsQuestNpc(_active) && NpcHasTrade(_active); } }
         /// <summary>Сервис NPC постоянной базы: medic, registrar, auction, artifactLab, trade.</summary>
         public string NpcService { get { return _active?["service"]?.ToString() ?? string.Empty; } }
         public string NpcTerritoryFactionId { get { return _active?["territoryFactionId"]?.ToString() ?? string.Empty; } }
@@ -2167,7 +2171,15 @@ namespace RealmOfAshes.Game
 
             if (_candidateKind != TargetKind.Actor) return;
             if (_candidate["dead"]?.ToObject<bool>() == true) InspectCorpse(_candidate);
-            else OpenNpc(_candidate);
+            else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) OpenNpc(_candidate);
+            else if (NpcHasTrade(_candidate))
+            {
+                _active = (JObject)_candidate.DeepClone();
+                _market = null;
+                ClearTradeQueue();
+                RequestTrade();
+            }
+            else if (HasServiceMenu(_candidate)) OpenService(_candidate);
         }
 
         /// <summary>
@@ -2370,6 +2382,13 @@ namespace RealmOfAshes.Game
             FocusNpc(true);
         }
 
+        private void OpenService(JObject actor)
+        {
+            _active = (JObject)actor.DeepClone();
+            _panel = PanelKind.Service;
+            _scroll = Vector2.zero;
+        }
+
         private void FocusNpc(bool active)
         {
             string id = _active?["id"]?.ToString();
@@ -2484,6 +2503,7 @@ namespace RealmOfAshes.Game
 
         private void RequestTrade()
         {
+            if (_active == null || IsQuestNpc(_active)) return;
             string id = _active?["id"]?.ToString();
             if (string.IsNullOrEmpty(id)) return;
             Show("Получаем ассортимент…", 2f);
@@ -3257,6 +3277,45 @@ namespace RealmOfAshes.Game
                 || !string.IsNullOrEmpty(actor["traderId"]?.ToString())
                 || !string.IsNullOrEmpty(actor["traderProfile"]?.ToString())
                 || (actor["traderStock"] as JArray)?.Count > 0;
+        }
+
+        public static bool IsQuestNpc(JObject actor)
+        {
+            return actor != null && (
+                !string.IsNullOrEmpty(actor["kromkaNamedNpcId"]?.ToString())
+                || !string.IsNullOrEmpty(actor["kromkaOnboardingNpcId"]?.ToString())
+                || (actor["kromkaQuestIds"] as JArray)?.Count > 0
+                || (actor["traderQuests"] as JArray)?.Count > 0);
+        }
+
+        private static bool HasDialogueService(JObject actor)
+        {
+            string service = actor?["service"]?.ToString();
+            return service == "auction" || service == "medic" || service == "repair";
+        }
+
+        private static bool HasServiceMenu(JObject actor)
+        {
+            string service = actor?["service"]?.ToString();
+            return service == "registrar" || service == "artifactLab" || service == "fastTravel";
+        }
+
+        public static string DisplayNpcName(JObject actor)
+        {
+            string name = actor?["name"]?.ToString() ?? "НПС";
+            if (IsQuestNpc(actor) || HasDialogueService(actor)) return name;
+            int colon = name.IndexOf(':');
+            if (colon >= 0 && colon + 1 < name.Length) name = name.Substring(colon + 1).Trim();
+            int bracket = name.IndexOf('[');
+            if (bracket > 0) name = name.Substring(0, bracket).Trim();
+            int qualifier = name.IndexOf(" у ", StringComparison.OrdinalIgnoreCase);
+            if (qualifier > 0) name = name.Substring(0, qualifier).Trim();
+            if (name.Length > 28)
+            {
+                int cut = name.LastIndexOf(' ', 28);
+                name = name.Substring(0, cut > 12 ? cut : 28).TrimEnd() + "…";
+            }
+            return name;
         }
 
         private static TargetKind StaticTargetKind(LocationObject entry)

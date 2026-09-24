@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using RealmOfAshes.Net;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace RealmOfAshes.Game
 {
@@ -30,6 +31,7 @@ namespace RealmOfAshes.Game
             public string Faction;
             public int Hp;
             public int MaxHp;
+            public int Level;
             public Vector3 World;
             public bool Hostile;
             public bool IsPlayer;
@@ -138,6 +140,11 @@ namespace RealmOfAshes.Game
             public Text Health;
             public Image HealthTrack;
             public Image HealthFill;
+            public GameObject ApocalypseInfo;
+            public TextMeshProUGUI ApocalypseEnemyName;
+            public TextMeshProUGUI ApocalypseAllyName;
+            public TextMeshProUGUI ApocalypseLevel;
+            public Slider ApocalypseHealth;
         }
 
         private Canvas _canvas;
@@ -213,8 +220,54 @@ namespace RealmOfAshes.Game
                 fill.fillOrigin = 0;
                 fill.raycastTarget = false;
                 health.transform.SetAsLastSibling();
-                _pool.Add(new Plate { Root = root, Rect = rect, Back = back, Name = name,
-                    Faction = faction, Health = health, HealthTrack = track, HealthFill = fill });
+                var plate = new Plate { Root = root, Rect = rect, Back = back, Name = name,
+                    Faction = faction, Health = health, HealthTrack = track, HealthFill = fill };
+                GameObject infoPrefab = Resources.Load<GameObject>(
+                    "ApocalypseHud/HUD_Apocalypse_WorldSpace_EnemyInfo_01");
+                if (infoPrefab != null)
+                {
+                    plate.ApocalypseInfo = Instantiate(infoPrefab, rect, false);
+                    RoaApocalypseTmpFonts.Apply(plate.ApocalypseInfo);
+                    plate.ApocalypseInfo.name = "ApocalypseActorInfo";
+                    RectTransform infoRect = (RectTransform)plate.ApocalypseInfo.transform;
+                    infoRect.anchorMin = infoRect.anchorMax = new Vector2(0.5f, 0f);
+                    infoRect.pivot = new Vector2(0.5f, 0f);
+                    infoRect.anchoredPosition = Vector2.zero;
+                    infoRect.localScale = Vector3.one * 0.5f;
+                    plate.ApocalypseEnemyName = infoRect.Find(
+                        "HUD_WorldSpace_NameEnemy/Label_NameEnemy")
+                        ?.GetComponent<TextMeshProUGUI>();
+                    plate.ApocalypseLevel = infoRect.Find(
+                        "Health_Bar/HUD_EnemyInfo_Level/Label_EnemyLevel")
+                        ?.GetComponent<TextMeshProUGUI>();
+                    plate.ApocalypseHealth = infoRect.Find(
+                        "Health_Bar/HUD_HealthBar_Enemy/Slider")?.GetComponent<Slider>();
+                    GameObject allyPrefab = Resources.Load<GameObject>(
+                        "ApocalypseHud/HUD_Apocalypse_WorldSpace_NameAlly_01");
+                    if (allyPrefab != null)
+                    {
+                        GameObject ally = Instantiate(allyPrefab, infoRect, false);
+                        RoaApocalypseTmpFonts.Apply(ally);
+                        ally.name = "ApocalypseAllyName";
+                        RectTransform allyRect = (RectTransform)ally.transform;
+                        allyRect.anchorMin = allyRect.anchorMax = new Vector2(0.5f, 1f);
+                        allyRect.pivot = new Vector2(0.5f, 1f);
+                        allyRect.anchoredPosition = Vector2.zero;
+                        allyRect.localScale = Vector3.one * 0.5f;
+                        plate.ApocalypseAllyName = allyRect.Find("Label_NameAlly")
+                            ?.GetComponent<TextMeshProUGUI>();
+                        ally.SetActive(false);
+                    }
+                    foreach (Animator animator in plate.ApocalypseInfo.GetComponentsInChildren<Animator>(true))
+                        animator.enabled = false;
+                    foreach (Graphic graphic in plate.ApocalypseInfo.GetComponentsInChildren<Graphic>(true))
+                        graphic.raycastTarget = false;
+                    name.gameObject.SetActive(false);
+                    faction.gameObject.SetActive(false);
+                    health.gameObject.SetActive(false);
+                    trackObject.SetActive(false);
+                }
+                _pool.Add(plate);
             }
             return _pool[index];
         }
@@ -335,6 +388,7 @@ namespace RealmOfAshes.Game
                         Name = string.IsNullOrEmpty(Hud.Name) ? "Странник" : Hud.Name,
                         Hp = Hud.Hp,
                         MaxHp = Hud.MaxHp,
+                        Level = Hud.Level,
                         World = Player.transform.position + Vector3.up * 1.07f,
                         IsPlayer = true,
                         IsSelf = true
@@ -370,6 +424,40 @@ namespace RealmOfAshes.Game
                     plate.Root.SetActive(true);
                     float distance = Vector3.Distance(origin, entry.World);
                     Presentation presentation = ResolvePresentation(entry, awareness, distance, maxDistance);
+                    if (plate.ApocalypseInfo != null)
+                    {
+                        plate.Rect.sizeDelta = new Vector2(164f, 46f);
+                        plate.Rect.anchoredPosition = new Vector2(
+                            rect.x + rect.width * 0.5f, Screen.height - rect.yMax);
+                        bool ally = entry.IsPlayer || !entry.Hostile;
+                        if (plate.ApocalypseEnemyName != null)
+                        {
+                            plate.ApocalypseEnemyName.gameObject.SetActive(!ally);
+                            plate.ApocalypseEnemyName.text = string.IsNullOrWhiteSpace(entry.Name)
+                                ? "Враг" : entry.Name;
+                        }
+                        if (plate.ApocalypseAllyName != null)
+                        {
+                            plate.ApocalypseAllyName.transform.parent.gameObject.SetActive(ally);
+                            plate.ApocalypseAllyName.text = string.IsNullOrWhiteSpace(entry.Name)
+                                ? "Союзник" : entry.Name;
+                        }
+                        if (plate.ApocalypseLevel != null)
+                            plate.ApocalypseLevel.text = entry.Level > 0
+                                ? entry.Level.ToString() : "?";
+                        if (plate.ApocalypseHealth != null)
+                        {
+                            plate.ApocalypseHealth.interactable = false;
+                            plate.ApocalypseHealth.minValue = 0f;
+                            plate.ApocalypseHealth.maxValue = 1f;
+                            plate.ApocalypseHealth.value = Mathf.Clamp01(
+                                entry.Hp / (float)Mathf.Max(1, entry.MaxHp));
+                        }
+                        CanvasGroup group = plate.ApocalypseInfo.GetComponent<CanvasGroup>();
+                        if (group == null) group = plate.ApocalypseInfo.AddComponent<CanvasGroup>();
+                        group.alpha = presentation.Alpha;
+                        continue;
+                    }
                     plate.Name.gameObject.SetActive(presentation.ShowName);
                     plate.Name.text = presentation.ShowName ? entry.Name : string.Empty;
                     plate.Faction.gameObject.SetActive(presentation.ShowFaction);

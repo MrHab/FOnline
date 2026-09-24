@@ -176,7 +176,6 @@ namespace RealmOfAshes.Game
             _card.sizeDelta = new Vector2(1180f, 700f);
             var cardImage = _card.gameObject.AddComponent<Image>();
             cardImage.color = CardBg;
-            RoaApocalypseUiKit.StyleWindow(cardImage, true);
             var cardOutline = _card.gameObject.AddComponent<Outline>();
             cardOutline.effectColor = CardBorder;
             cardOutline.effectDistance = new Vector2(1f, -1f);
@@ -309,7 +308,6 @@ namespace RealmOfAshes.Game
             _panel = Child(name, content);
             var image = _panel.gameObject.AddComponent<Image>();
             image.color = PanelBg;
-            RoaApocalypseUiKit.StyleWindow(image);
             var outline = _panel.gameObject.AddComponent<Outline>();
             outline.effectColor = PanelBorder;
             outline.effectDistance = new Vector2(1f, -1f);
@@ -378,7 +376,6 @@ namespace RealmOfAshes.Game
         {
             var back = rect.gameObject.AddComponent<Image>();
             back.color = InputBg;
-            RoaApocalypseUiKit.StyleInput(back);
             var outline = rect.gameObject.AddComponent<Outline>();
             outline.effectColor = new Color(0.682f, 0.545f, 0.282f, 0.45f);
             outline.effectDistance = new Vector2(1f, -1f);
@@ -403,19 +400,19 @@ namespace RealmOfAshes.Game
         private Button ActionButton(RectTransform panel, string caption, float right, float top, float width,
                                     bool link, System.Action onClick)
         {
-            var go = RoaApocalypseUiKit.CreateButtonRoot(panel, "Action");
+            var go = new GameObject("Action", typeof(RectTransform));
             var rect = (RectTransform)go.transform;
+            rect.SetParent(panel, false);
             rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(1f, 1f);
             rect.anchoredPosition = new Vector2(-right, -top);
             rect.sizeDelta = new Vector2(width, U(32f));
-            var image = go.GetComponent<Image>();
-            image.color = link ? new Color(0f, 0f, 0f, 0f)
-                : image.sprite != null ? Color.white : ButtonBg;
+            var image = go.AddComponent<Image>();
+            image.color = link ? new Color(0f, 0f, 0f, 0f) : ButtonBg;
             var outline = go.AddComponent<Outline>();
             outline.effectColor = link ? new Color(0.682f, 0.545f, 0.282f, 0.35f) : new Color(0.682f, 0.545f, 0.282f, 0.55f);
             outline.effectDistance = new Vector2(1f, -1f);
-            var button = go.GetComponent<Button>();
+            var button = go.AddComponent<Button>();
             button.targetGraphic = image;
             Text label = Label("Label", rect, Fs(13f), TextAnchor.MiddleCenter, link ? LinkInk : ButtonInk);
             Stretch(label.rectTransform, 2f);

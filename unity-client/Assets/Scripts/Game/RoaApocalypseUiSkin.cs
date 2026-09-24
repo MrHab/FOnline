@@ -5,9 +5,8 @@ using UnityEngine.UI;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Applies the Apocalypse HUD art to the runtime-built uGUI screens. The game's
-    /// canvases are rebuilt as data arrives, so newly created controls are picked up
-    /// without changing their layout, event handlers or server-driven values.
+    /// Legacy preview helper for the Apocalypse art. Runtime screens keep their own
+    /// stable appearance; repeatedly restyling rebuilt canvases caused visible flashes.
     /// </summary>
     [DefaultExecutionOrder(32000)]
     public sealed class RoaApocalypseUiSkin : MonoBehaviour
@@ -27,7 +26,6 @@ namespace RealmOfAshes.Game
         private static Font _displayFont;
 
         private readonly HashSet<Image> _styledImages = new HashSet<Image>();
-        private float _nextScan;
 
         public static Sprite Background => Load(ref _background, "SPR_Apocalypse_Box_Background_01");
         public static Sprite Bar => Load(ref _bar, "SPR_Apocalypse_Bar_MetalRusty_01");
@@ -36,15 +34,6 @@ namespace RealmOfAshes.Game
         {
             if (field == null) field = Resources.Load<Sprite>(AssetRoot + name);
             return field;
-        }
-
-        private void Update()
-        {
-            if (Time.unscaledTime < _nextScan) return;
-            _nextScan = Time.unscaledTime + 0.35f;
-            if (_styledImages.Count > 3000)
-                _styledImages.RemoveWhere(image => image == null);
-            ApplyAll();
         }
 
         public void ApplyAll()

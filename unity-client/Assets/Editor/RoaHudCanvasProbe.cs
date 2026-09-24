@@ -29,17 +29,44 @@ namespace RealmOfAshes.EditorTools
                     && RoaEnemies.ReadBoolean(new JValue(true))
                     && !RoaEnemies.ReadBoolean(new JValue(false), true),
                 "explicit JSON null is no longer safe for optional NPC flags");
-            var occupied = new List<Rect>();
-            Require(RoaActorNameplates.TryResolveScreenRect(new Vector2(-20f, -10f), occupied,
-                                                            800, 480, out Rect first),
-                    "first nameplate was not placed");
-            Require(first.xMin >= 6f && first.yMin >= 6f && first.xMax <= 794f && first.yMax <= 474f,
-                    "nameplate escaped the screen safe margin");
-            occupied.Add(first);
-            Require(RoaActorNameplates.TryResolveScreenRect(new Vector2(-20f, -10f), occupied,
-                                                            800, 480, out Rect second),
-                    "overlapping nameplate was not relocated");
-            Require(!first.Overlaps(second), "relocated nameplates still overlap");
+            Rect first = RoaActorNameplates.AnchorScreenRect(new Vector2(320f, 220f));
+            Rect second = RoaActorNameplates.AnchorScreenRect(new Vector2(330f, 220f));
+            Require(first.center.x == 320f && first.yMax == 212f
+                    && second.center.x == 330f && second.yMax == 212f
+                    && first.Overlaps(second),
+                "actor labels no longer stay directly over their own models");
+            string itemsPath = Path.GetFullPath(Path.Combine(Application.dataPath,
+                "..", "..", "data", "kromka", "items.json"));
+            Require(RoaItemData.ApplyCatalog(JObject.Parse(File.ReadAllText(itemsPath)),
+                    out string catalogError),
+                "authored equipment catalog is unavailable: " + catalogError);
+            Require(RoaActorNameplates.EquipmentTier(null) == 1
+                    && RoaActorNameplates.EquipmentTier(new JObject
+                        { ["armor"] = "metalArmor", ["weapon"] = "pistol" }) == 2
+                    && RoaActorNameplates.EquipmentTier(new JObject
+                        { ["armor"] = "combatArmor", ["weapon"] = "pistol" }) == 4
+                    && RoaActorNameplates.RomanTier(4) == "IV",
+                "nameplate tier does not follow equipped items");
+            GameObject gateRoot = new GameObject("VisibilityGateProbe");
+            try
+            {
+                RoaVisibilityGate gate = gateRoot.AddComponent<RoaVisibilityGate>();
+                MeshRenderer body = new GameObject("VisibleBody").AddComponent<MeshRenderer>();
+                body.transform.SetParent(gateRoot.transform, false);
+                MeshRenderer hiddenPart = new GameObject("HiddenPart").AddComponent<MeshRenderer>();
+                hiddenPart.transform.SetParent(gateRoot.transform, false);
+                hiddenPart.enabled = false;
+                gate.SetVisible(false);
+                MeshRenderer arrivingPart = new GameObject("ArrivingPart").AddComponent<MeshRenderer>();
+                arrivingPart.transform.SetParent(gateRoot.transform, false);
+                gate.SetVisible(false);
+                Require(!body.enabled && !hiddenPart.enabled && !arrivingPart.enabled,
+                    "fog gate exposed a newly loaded body part");
+                gate.SetVisible(true);
+                Require(body.enabled && !hiddenPart.enabled && arrivingPart.enabled,
+                    "fog gate revived a deliberately hidden character part");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(gateRoot); }
             Require(RoaActorNameplates.IsImportantNpc(true, "merchant", string.Empty)
                     && RoaActorNameplates.IsImportantNpc(true, string.Empty, "quartermaster")
                     && !RoaActorNameplates.IsImportantNpc(true, "guard", string.Empty)
@@ -279,6 +306,7 @@ namespace RealmOfAshes.EditorTools
             Require(healthy.Kind == RoaHudCanvas.ConnectionBannerKind.Hidden,
                 "healthy connection leaves a permanent banner on screen");
             CaptureIfRequested();
+            CaptureNameplatesIfRequested();
             Debug.Log("[HUD CLEANUP 4.1] готово: исследование/активность/бой/детали, "
                 + "компактный бой, скрытая личность, приоритетная панель и чёткий Canvas.");
         }
@@ -484,6 +512,102 @@ namespace RealmOfAshes.EditorTools
                     target.Release();
                     UnityEngine.Object.DestroyImmediate(target);
                 }
+                if (cameraObject != null) UnityEngine.Object.DestroyImmediate(cameraObject);
+                if (host != null) UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
+        private static void CaptureNameplatesIfRequested()
+        {
+            string path = Environment.GetEnvironmentVariable("ROA_NAMEPLATE_CAPTURE");
+            if (string.IsNullOrWhiteSpace(path)) return;
+            bool mobile = string.Equals(Environment.GetEnvironmentVariable(
+                "ROA_NAMEPLATE_CAPTURE_MOBILE"), "1", StringComparison.Ordinal);
+            Screen.SetResolution(mobile ? 896 : 1280, mobile ? 414 : 720, false);
+            GameObject host = null;
+            GameObject cameraObject = null;
+            RenderTexture target = null;
+            Texture2D readback = null;
+            RenderTexture previous = RenderTexture.active;
+            try
+            {
+                host = new GameObject("NameplateCapture");
+                RoaActorNameplates owner = host.AddComponent<RoaActorNameplates>();
+                owner.enabled = false;
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(RoaActorNameplates).GetMethod("EnsureCanvas", flags).Invoke(owner, null);
+                MethodInfo acquire = typeof(RoaActorNameplates).GetMethod("AcquirePlate", flags);
+                Canvas canvas = host.GetComponentInChildren<Canvas>(true);
+                RectTransform canvasRect = (RectTransform)canvas.transform;
+                Require(acquire != null && canvas != null, "nameplate capture cannot build its canvas");
+                for (int i = 0; i < 2; i++)
+                {
+                    object plate = acquire.Invoke(owner, new object[] { i });
+                    Type type = plate.GetType();
+                    GameObject root = (GameObject)type.GetField("Root").GetValue(plate);
+                    RectTransform rect = (RectTransform)type.GetField("Rect").GetValue(plate);
+                    GameObject info = (GameObject)type.GetField("ApocalypseInfo").GetValue(plate);
+                    var enemyName = (TMPro.TextMeshProUGUI)type.GetField(
+                        "ApocalypseEnemyName").GetValue(plate);
+                    var allyName = (TMPro.TextMeshProUGUI)type.GetField(
+                        "ApocalypseAllyName").GetValue(plate);
+                    var level = (TMPro.TextMeshProUGUI)type.GetField(
+                        "ApocalypseLevel").GetValue(plate);
+                    var health = (UnityEngine.UI.Slider)type.GetField(
+                        "ApocalypseHealth").GetValue(plate);
+                    Require(info != null && enemyName != null && allyName != null
+                        && level != null && health != null,
+                        "the Apocalypse name, tier or health prefab is incomplete");
+                    root.SetActive(true);
+                    rect.sizeDelta = new Vector2(190f, 88f);
+                    rect.anchoredPosition = new Vector2(
+                        canvasRect.rect.width * (i == 0 ? 0.35f : 0.65f),
+                        canvasRect.rect.height * 0.48f);
+                    info.SetActive(true);
+                    enemyName.gameObject.SetActive(i == 0);
+                    enemyName.text = "ремонтник";
+                    allyName.transform.parent.gameObject.SetActive(i == 1);
+                    allyName.text = "охранник";
+                    level.text = i == 0 ? "IV" : "II";
+                    health.minValue = 0f;
+                    health.maxValue = 1f;
+                    health.value = i == 0 ? 0.72f : 0.9f;
+                    enemyName.ForceMeshUpdate(true, true);
+                    allyName.ForceMeshUpdate(true, true);
+                    level.ForceMeshUpdate(true, true);
+                }
+
+                cameraObject = new GameObject("NameplateCaptureCamera");
+                Camera camera = cameraObject.AddComponent<Camera>();
+                camera.enabled = false;
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = new Color(0.96f, 0.76f, 0.54f, 1f);
+                canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                canvas.worldCamera = camera;
+                canvas.planeDistance = 1f;
+                target = new RenderTexture(mobile ? 896 : 1280,
+                    mobile ? 414 : 720, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+                target.Create();
+                camera.targetTexture = target;
+                Canvas.ForceUpdateCanvases();
+                if (GraphicsSettings.currentRenderPipeline != null)
+                {
+                    var request = new RenderPipeline.StandardRequest { destination = target };
+                    RenderPipeline.SubmitRenderRequest(camera, request);
+                }
+                else camera.Render();
+                RenderTexture.active = target;
+                readback = new Texture2D(target.width, target.height, TextureFormat.RGBA32, false);
+                readback.ReadPixels(new Rect(0f, 0f, target.width, target.height), 0, 0);
+                readback.Apply(false, false);
+                File.WriteAllBytes(path, readback.EncodeToPNG());
+                Debug.Log("[ROA PROBE] Nameplate capture: " + path);
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                if (readback != null) UnityEngine.Object.DestroyImmediate(readback);
+                if (target != null) { target.Release(); UnityEngine.Object.DestroyImmediate(target); }
                 if (cameraObject != null) UnityEngine.Object.DestroyImmediate(cameraObject);
                 if (host != null) UnityEngine.Object.DestroyImmediate(host);
             }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,13 +26,13 @@ namespace RealmOfAshes.Game
 
         public struct Entry
         {
-            /// <summary>Устойчивый ключ актёра для липких слотов раскладки.</summary>
+            /// <summary>Устойчивый ключ актёра.</summary>
             public string Key;
             public string Name;
             public string Faction;
             public int Hp;
             public int MaxHp;
-            public int Level;
+            public int Tier;
             public Vector3 World;
             public bool Hostile;
             public bool IsPlayer;
@@ -91,7 +92,7 @@ namespace RealmOfAshes.Game
                 : CompactHealthState(entry.Hp, entry.MaxHp);
             float t = Mathf.Clamp01(distance / Mathf.Max(0.01f, maxDistance));
             float near = 1f - Mathf.SmoothStep(0.45f, 1f, t);
-            float floor = entry.IsSelf ? 1f : entry.Hostile ? 0.68f : 0.34f;
+            float floor = entry.IsSelf ? 1f : 0.86f;
             float alpha = Mathf.Lerp(floor, 1f, near);
             float width = showName || showFaction ? 164f : showHealthText ? 88f : 68f;
             float healthHeight = showHealthText ? 12f : 7f;
@@ -106,10 +107,32 @@ namespace RealmOfAshes.Game
         }
 
         private readonly List<Entry> _entries = new List<Entry>();
-        private readonly List<Rect> _occupied = new List<Rect>();
-        // Вертикальный сдвиг слота каждой плашки на прошлом кадре (по Entry.Key).
-        private Dictionary<string, float> _stickySlots = new Dictionary<string, float>();
-        private Dictionary<string, float> _nextStickySlots = new Dictionary<string, float>();
+        private static readonly string[] TierSlots =
+            { "weapon", "offhand", "armor", "helmet", "boots", "backpack", "detector", "artifactBelt" };
+
+        public static int EquipmentTier(JObject equipment, string weaponId = null)
+        {
+            int tier = Mathf.Max(1, ItemTier(weaponId));
+            if (equipment != null)
+                foreach (string slot in TierSlots)
+                    tier = Mathf.Max(tier, ItemTier(equipment[slot]?.ToString()));
+            return Mathf.Clamp(tier, 1, 5);
+        }
+
+        private static int ItemTier(string id) => string.IsNullOrWhiteSpace(id)
+            ? 0 : RoaItemData.Tier(id);
+
+        public static string RomanTier(int tier)
+        {
+            switch (Mathf.Clamp(tier, 1, 5))
+            {
+                case 2: return "II";
+                case 3: return "III";
+                case 4: return "IV";
+                case 5: return "V";
+                default: return "I";
+            }
+        }
 
         public void Configure(RoaSocketClient socket, RoaEnemies enemies,
                               RoaRemotePlayers remotePlayers, Camera worldCamera)
@@ -233,7 +256,7 @@ namespace RealmOfAshes.Game
                     infoRect.anchorMin = infoRect.anchorMax = new Vector2(0.5f, 0f);
                     infoRect.pivot = new Vector2(0.5f, 0f);
                     infoRect.anchoredPosition = Vector2.zero;
-                    infoRect.localScale = Vector3.one * 0.5f;
+                    infoRect.localScale = Vector3.one * 0.78f;
                     plate.ApocalypseEnemyName = infoRect.Find(
                         "HUD_WorldSpace_NameEnemy/Label_NameEnemy")
                         ?.GetComponent<TextMeshProUGUI>();
@@ -242,6 +265,7 @@ namespace RealmOfAshes.Game
                         ?.GetComponent<TextMeshProUGUI>();
                     plate.ApocalypseHealth = infoRect.Find(
                         "Health_Bar/HUD_HealthBar_Enemy/Slider")?.GetComponent<Slider>();
+                    StyleName(plate.ApocalypseEnemyName, NameHostile);
                     GameObject allyPrefab = Resources.Load<GameObject>(
                         "ApocalypseHud/HUD_Apocalypse_WorldSpace_NameAlly_01");
                     if (allyPrefab != null)
@@ -256,6 +280,7 @@ namespace RealmOfAshes.Game
                         allyRect.localScale = Vector3.one * 0.5f;
                         plate.ApocalypseAllyName = allyRect.Find("Label_NameAlly")
                             ?.GetComponent<TextMeshProUGUI>();
+                        StyleName(plate.ApocalypseAllyName, Color.white);
                         ally.SetActive(false);
                     }
                     foreach (Animator animator in plate.ApocalypseInfo.GetComponentsInChildren<Animator>(true))
@@ -288,6 +313,23 @@ namespace RealmOfAshes.Game
             shadow.effectColor = new Color(0f, 0f, 0f, 0.85f);
             shadow.effectDistance = new Vector2(0f, -1f);
             return text;
+        }
+
+        private static void StyleName(TextMeshProUGUI label, Color color)
+        {
+            if (label == null) return;
+            label.color = color;
+            label.faceColor = Color.white;
+            label.fontSize = Mathf.Max(56f, label.fontSize);
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 36f;
+            label.fontSizeMax = label.fontSize;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.overflowMode = TextOverflowModes.Overflow;
+            label.alignment = TextAlignmentOptions.Center;
+            label.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 260f);
+            label.outlineColor = Color.black;
+            label.outlineWidth = 0.16f;
         }
 
         // --- Подсказка цели (#target-hint): имя и шанс попадания у курсора ---
@@ -388,37 +430,22 @@ namespace RealmOfAshes.Game
                         Name = string.IsNullOrEmpty(Hud.Name) ? "Странник" : Hud.Name,
                         Hp = Hud.Hp,
                         MaxHp = Hud.MaxHp,
-                        Level = Hud.Level,
-                        World = Player.transform.position + Vector3.up * 1.07f,
+                        Tier = EquipmentTier(Socket?.Session?.Self?["equipment"] as JObject,
+                            Hud.WeaponId),
+                        World = Player.transform.position + Vector3.up * 2.05f,
                         IsPlayer = true,
                         IsSelf = true
                     });
                 Vector3 origin = Player.transform.position;
-                // Гистерезис сортировки: сантиметровое дрожание дистанции не должно
-                // перетасовывать first-fit раскладку. Сравниваем корзины по 2 м,
-                // внутри корзины порядок стабилен по ключу актёра.
-                _entries.Sort((a, b) =>
-                {
-                    int buckets = NameplateOrderBucket(a.World, origin)
-                        .CompareTo(NameplateOrderBucket(b.World, origin));
-                    return buckets != 0
-                        ? buckets
-                        : string.CompareOrdinal(a.Key ?? string.Empty, b.Key ?? string.Empty);
-                });
                 bool awareness = Socket?.Session?.Self?["talentRanks"]?["awareness"]?.ToObject<int>() > 0;
-                _occupied.Clear();
-                _nextStickySlots.Clear();
                 foreach (Entry entry in _entries)
                 {
                     Vector3 screen = camera.WorldToScreenPoint(entry.World);
                     if (screen.z <= 0f || screen.x < 0f || screen.x > Screen.width || screen.y < 0f || screen.y > Screen.height) continue;
-                    // Та же раскладка без наложений, что и у IMGUI (координаты сверху вниз),
-                    // но со «липким» слотом: занятая плашка держится за прошлый сдвиг.
-                    if (!TryResolveScreenRectSticky(new Vector2(screen.x, Screen.height - screen.y),
-                            _occupied, Screen.width, Screen.height,
-                            entry.Key, _stickySlots, _nextStickySlots, out Rect rect))
-                        continue;
-                    _occupied.Add(rect);
+                    // Name and health share one root at the actor's screen position.
+                    // Nearby actors may overlap, but neither label leaves its model.
+                    Rect rect = AnchorScreenRect(
+                        new Vector2(screen.x, Screen.height - screen.y));
 
                     Plate plate = AcquirePlate(used++);
                     plate.Root.SetActive(true);
@@ -426,7 +453,7 @@ namespace RealmOfAshes.Game
                     Presentation presentation = ResolvePresentation(entry, awareness, distance, maxDistance);
                     if (plate.ApocalypseInfo != null)
                     {
-                        plate.Rect.sizeDelta = new Vector2(164f, 46f);
+                        plate.Rect.sizeDelta = new Vector2(190f, 88f);
                         plate.Rect.anchoredPosition = new Vector2(
                             rect.x + rect.width * 0.5f, Screen.height - rect.yMax);
                         bool ally = entry.IsPlayer || !entry.Hostile;
@@ -443,8 +470,7 @@ namespace RealmOfAshes.Game
                                 ? "Союзник" : entry.Name;
                         }
                         if (plate.ApocalypseLevel != null)
-                            plate.ApocalypseLevel.text = entry.Level > 0
-                                ? entry.Level.ToString() : "?";
+                            plate.ApocalypseLevel.text = RomanTier(entry.Tier);
                         if (plate.ApocalypseHealth != null)
                         {
                             plate.ApocalypseHealth.interactable = false;
@@ -503,98 +529,17 @@ namespace RealmOfAshes.Game
                     nameRect.sizeDelta = new Vector2(width, 14f);
                     nameRect.anchoredPosition = new Vector2(0f, rowY + (presentation.ShowFaction ? 14f : 0f));
                 }
-                // Память слотов живёт ровно один кадр: актёры, пропавшие из
-                // раскладки, не тянут за собой устаревшие сдвиги.
-                Dictionary<string, float> swap = _stickySlots;
-                _stickySlots = _nextStickySlots;
-                _nextStickySlots = swap;
             }
             for (int i = used; i < _pool.Count; i++) if (_pool[i].Root.activeSelf) _pool[i].Root.SetActive(false);
             RefreshHint(show);
         }
 
-        public static bool TryResolveScreenRect(Vector2 point, IReadOnlyList<Rect> occupied,
-                                                int screenWidth, int screenHeight, out Rect resolved)
+        public static Rect AnchorScreenRect(Vector2 point)
         {
-            return TryResolveScreenRectSticky(point, occupied, screenWidth, screenHeight,
-                null, null, null, out resolved);
-        }
-
-        /// <summary>Корзина сортировки плашек: 2-метровые ступени дистанции.</summary>
-        public static int NameplateOrderBucket(Vector3 world, Vector3 origin)
-        {
-            Vector3 delta = world - origin;
-            delta.y = 0f;
-            return Mathf.FloorToInt(delta.magnitude / 2f);
-        }
-
-        /// <summary>
-        /// Раскладка без наложений с памятью слота. Порядок предпочтений:
-        /// родное место над головой → слот прошлого кадра → свободный слот
-        /// с шагом 49px. Без памяти каждый пересчёт мог перекинуть плашку на
-        /// другой свободный слот, и имена «летали» при любой перетасовке.
-        /// </summary>
-        public static bool TryResolveScreenRectSticky(Vector2 point, IReadOnlyList<Rect> occupied,
-                                                      int screenWidth, int screenHeight,
-                                                      string key,
-                                                      Dictionary<string, float> previousSlots,
-                                                      Dictionary<string, float> nextSlots,
-                                                      out Rect resolved)
-        {
-            const float width = 164f;
-            const float height = 46f;
-            const float margin = 6f;
-            float baseX = Mathf.Clamp(point.x - width * 0.5f, margin,
-                                      Mathf.Max(margin, screenWidth - width - margin));
-            float maxY = Mathf.Max(margin, screenHeight - height - margin);
-            float baseY = Mathf.Clamp(point.y - height - 8f, margin, maxY);
-
-            // 1. Родное место: всегда возвращаемся к нему, как только оно свободно.
-            var natural = new Rect(baseX, baseY, width, height);
-            if (!OverlapsAny(natural, occupied))
-            {
-                if (nextSlots != null && key != null) nextSlots[key] = 0f;
-                resolved = natural;
-                return true;
-            }
-
-            // 2. Слот прошлого кадра: занятая плашка держится за уже выданный
-            //    сдвиг, а не прыгает на первый попавшийся свободный.
-            if (previousSlots != null && key != null
-                && previousSlots.TryGetValue(key, out float lastOffset) && lastOffset != 0f)
-            {
-                float stickyY = Mathf.Clamp(baseY + lastOffset, margin, maxY);
-                var sticky = new Rect(baseX, stickyY, width, height);
-                if (!OverlapsAny(sticky, occupied))
-                {
-                    if (nextSlots != null) nextSlots[key] = stickyY - baseY;
-                    resolved = sticky;
-                    return true;
-                }
-            }
-
-            // 3. Обычный подбор свободного слота вверх/вниз.
-            for (int attempt = 1; attempt < 7; attempt++)
-            {
-                int step = (attempt + 1) / 2;
-                float direction = attempt % 2 == 1 ? -1f : 1f;
-                float y = Mathf.Clamp(baseY + direction * step * 49f, margin, maxY);
-                var candidate = new Rect(baseX, y, width, height);
-                if (OverlapsAny(candidate, occupied)) continue;
-                if (nextSlots != null && key != null) nextSlots[key] = y - baseY;
-                resolved = candidate;
-                return true;
-            }
-            resolved = default;
-            return false;
-        }
-
-        private static bool OverlapsAny(Rect candidate, IReadOnlyList<Rect> occupied)
-        {
-            if (occupied == null) return false;
-            for (int i = 0; i < occupied.Count; i++)
-                if (candidate.Overlaps(occupied[i])) return true;
-            return false;
+            const float width = 190f;
+            const float height = 88f;
+            return new Rect(point.x - width * 0.5f, point.y - height - 8f,
+                width, height);
         }
 
         private static string CompactHealthState(int hp, int maxHp)

@@ -1967,7 +1967,9 @@ namespace RealmOfAshes.Game
                 {
                     Key = "npc:" + pair.Key,
                     Name = enemy.Snapshot["name"]?.ToString() ?? (important ? "Торговец" : "Враг"),
-                    Level = enemy.Snapshot["level"]?.ToObject<int>() ?? 0,
+                    Tier = RoaActorNameplates.EquipmentTier(
+                        enemy.Snapshot["equipment"] as JObject,
+                        enemy.Snapshot["weapon"]?.ToString()),
                     Faction = NpcCombatFactionLine(
                         enemy.Snapshot["faction"]?.ToString(), hostile,
                         enemy.Snapshot["aiState"]?.ToString(),

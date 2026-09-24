@@ -175,7 +175,7 @@ assert(nameplates.includes('public static bool IsImportantNpc(')
   && nameplates.includes('CompactHealthState(entry.Hp, entry.MaxHp)')
   && enemies.includes('RoaActorNameplates.IsImportantNpc(canDialogue,')
   && enemies.includes('Name = enemy.Snapshot["name"]')
-  && enemies.includes('Level = enemy.Snapshot["level"]')
+  && enemies.includes('Tier = RoaActorNameplates.EquipmentTier(')
   && nameplates.includes('HUD_Apocalypse_WorldSpace_EnemyInfo_01')
   && !enemies.includes('if (enemy.Snapshot["canDialogue"]?.ToObject<bool>() != true) continue;')
   && hudProbe.includes('compact health-bar/name hierarchy is not deterministic'),

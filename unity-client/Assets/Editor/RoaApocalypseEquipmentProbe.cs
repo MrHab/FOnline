@@ -67,6 +67,12 @@ namespace RealmOfAshes.EditorTools
                 Animation driver = character.GetComponentInChildren<Animation>(true);
                 if (driver == null || driver.cullingType != AnimationCullingType.AlwaysAnimate)
                     throw new InvalidOperationException("The hidden source rig does not animate the pack body.");
+                character.SetPresentationLod(RoaActorPresentationTier.Far);
+                if (driver.cullingType != AnimationCullingType.AlwaysAnimate)
+                    throw new InvalidOperationException("Far NPC LOD freezes the hidden animation rig.");
+                character.SetPresentationLod(RoaActorPresentationTier.Near);
+                if (driver.cullingType != AnimationCullingType.AlwaysAnimate)
+                    throw new InvalidOperationException("Near NPC LOD freezes the hidden animation rig.");
                 // Outfits can change after the player has travelled. Keep the
                 // preview camera with the actor while moving both in world space.
                 host.transform.position = new Vector3(13f, 0f, -9f);

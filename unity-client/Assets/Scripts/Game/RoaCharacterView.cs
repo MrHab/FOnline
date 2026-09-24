@@ -471,7 +471,13 @@ namespace RealmOfAshes.Game
             bool changed = _presentationTier != tier;
             _presentationTier = tier;
             if (_animation != null)
-                _animation.cullingType = AnimationCullingType.BasedOnRenderers;
+                // The legacy rig's renderers are hidden behind the visible
+                // PolygonApocalypse body. Culling by those renderers freezes
+                // NPCs in their bind pose as soon as presentation LOD changes.
+                _animation.cullingType = _apocalypseSkin != null
+                    && tier != RoaActorPresentationTier.Hidden
+                    ? AnimationCullingType.AlwaysAnimate
+                    : AnimationCullingType.BasedOnRenderers;
 
             SetGroundingLod(tier == RoaActorPresentationTier.Near);
             if (tier != RoaActorPresentationTier.Near && changed)

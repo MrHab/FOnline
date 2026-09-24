@@ -54,6 +54,13 @@ namespace RealmOfAshes.EditorTools
                 Vector3 actual = art.transform.lossyScale;
                 if (Vector3.Distance(native, actual) > 0.001f)
                     throw new InvalidOperationException("Fallback model changed native size: " + actual);
+                original.transform.localScale = new Vector3(0.5f, 3f, 1.5f);
+                RoaApocalypseNativeScale nativeSize = art.GetComponent<RoaApocalypseNativeScale>();
+                if (nativeSize == null)
+                    throw new InvalidOperationException("Fallback has no runtime native-size guard.");
+                nativeSize.EnsureNativeSize();
+                if (Vector3.Distance(native, art.transform.lossyScale) > 0.001f)
+                    throw new InvalidOperationException("Fallback size changed with its gameplay root.");
                 Debug.Log("[ROA APOCALYPSE] Environment fallback passed: "
                     + keys.Length + " roles, collision retained, old mesh hidden.");
             }

@@ -34,6 +34,7 @@ namespace RealmOfAshes.Game
             replacement.name = ChildName;
             replacement.transform.localRotation = Quaternion.Euler(pitch, yaw, 0f);
             SetNativeWorldScale(replacement.transform, prefab.transform.localScale);
+            replacement.AddComponent<RoaApocalypseNativeScale>().Configure(prefab.transform.localScale);
             foreach (Animator animator in replacement.GetComponentsInChildren<Animator>(true))
                 animator.enabled = false;
             foreach (Collider collider in replacement.GetComponentsInChildren<Collider>(true))
@@ -104,5 +105,26 @@ namespace RealmOfAshes.Game
             }
             return bounds;
         }
+    }
+
+    /// <summary>Keeps runtime pack art at its authored size when a gameplay root resizes.</summary>
+    public sealed class RoaApocalypseNativeScale : MonoBehaviour
+    {
+        [SerializeField] private Vector3 authoredScale = Vector3.one;
+
+        public void Configure(Vector3 scale)
+        {
+            authoredScale = scale;
+            EnsureNativeSize();
+        }
+
+        public void EnsureNativeSize()
+        {
+            if (transform.parent == null) return;
+            if (Vector3.Distance(transform.lossyScale, authoredScale) < 0.0001f) return;
+            RoaApocalypseVisuals.SetNativeWorldScale(transform, authoredScale);
+        }
+
+        private void LateUpdate() => EnsureNativeSize();
     }
 }

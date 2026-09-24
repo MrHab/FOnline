@@ -24,6 +24,7 @@ namespace RealmOfAshes.EditorTools
         private const string MapScene = "Assets/Scenes/Kromka/KromkaGlobalMap.unity";
         private const string DemoScene = PackRoot + "Scenes/Demo_City_Universal_RenderPipeline.unity";
         private const string RecoveredRoot = "Assets/Prefabs/Kromka/RecoveredEnvironment";
+        private const float GlobalMapPresentationScale = 20f;
 
         // The left side is the game's authored model key; the right side is a Synty prefab.
         private static readonly Dictionary<string, string> Models = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -258,6 +259,18 @@ namespace RealmOfAshes.EditorTools
             try
             {
                 int count = 0;
+                if (path == MapScene)
+                {
+                    GameObject mapRoot = scene.GetRootGameObjects().FirstOrDefault(item =>
+                        item.name.StartsWith("KromkaGlobalMap_", StringComparison.Ordinal));
+                    if (mapRoot == null) throw new InvalidOperationException("Global map root is missing.");
+                    Vector3 expanded = Vector3.one * GlobalMapPresentationScale;
+                    if ((mapRoot.transform.localScale - expanded).sqrMagnitude > 0.000001f)
+                    {
+                        mapRoot.transform.localScale = expanded;
+                        count++;
+                    }
+                }
                 foreach (GameObject root in scene.GetRootGameObjects()) count += NormalizeVisuals(root);
                 if (count == 0) return 0;
                 EditorSceneManager.MarkSceneDirty(scene);

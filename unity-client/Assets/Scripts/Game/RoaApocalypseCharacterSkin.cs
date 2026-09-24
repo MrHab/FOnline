@@ -216,6 +216,9 @@ namespace RealmOfAshes.Game
         public void SyncPose()
         {
             if (_visual == null) return;
+            if (_basePrefab != null && Vector3.Distance(_visual.transform.lossyScale,
+                    _basePrefab.transform.localScale) > 0.0001f)
+                RoaApocalypseVisuals.SetNativeWorldScale(_visual.transform, _basePrefab.transform.localScale);
             RefreshArmor();
             RefreshAccessories();
             foreach (BonePair pair in _bones)

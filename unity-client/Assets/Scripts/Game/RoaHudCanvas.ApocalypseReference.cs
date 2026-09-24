@@ -226,12 +226,43 @@ namespace RealmOfAshes.Game
                 RectTransform rect = (RectTransform)_apocalypseWeapon.transform;
                 rect.anchorMin = rect.anchorMax = new Vector2(1f, 0f);
                 rect.pivot = new Vector2(1f, 0f);
-                rect.anchoredPosition = new Vector2(-16f, 185f);
+                rect.anchoredPosition = new Vector2(-16f, 16f);
                 rect.localScale = Vector3.one * 0.36f;
                 _apocalypseWeaponName = rect.Find("Label_GunName")
                     ?.GetComponent<TextMeshProUGUI>();
                 _apocalypseWeaponAmmo = rect.Find("Label_AmmoCount")
                     ?.GetComponent<TextMeshProUGUI>();
+                if (_apocalypseWeaponName != null)
+                {
+                    _apocalypseWeaponName.fontSize = 52f;
+                    _apocalypseWeaponName.enableAutoSizing = true;
+                    _apocalypseWeaponName.fontSizeMin = 28f;
+                    _apocalypseWeaponName.fontSizeMax = 52f;
+                    _apocalypseWeaponName.textWrappingMode = TextWrappingModes.NoWrap;
+                    _apocalypseWeaponName.overflowMode = TextOverflowModes.Ellipsis;
+                    _apocalypseWeaponName.alignment = TextAlignmentOptions.TopLeft;
+                    RectTransform nameRect = _apocalypseWeaponName.rectTransform;
+                    nameRect.anchorMin = new Vector2(0f, 1f);
+                    nameRect.anchorMax = new Vector2(1f, 1f);
+                    nameRect.pivot = new Vector2(0f, 1f);
+                    nameRect.anchoredPosition = new Vector2(12f, -4f);
+                    nameRect.sizeDelta = new Vector2(-24f, 70f);
+                }
+                if (_apocalypseWeaponAmmo != null)
+                {
+                    _apocalypseWeaponAmmo.fontSize = 52f;
+                    _apocalypseWeaponAmmo.enableAutoSizing = true;
+                    _apocalypseWeaponAmmo.fontSizeMin = 30f;
+                    _apocalypseWeaponAmmo.fontSizeMax = 52f;
+                    _apocalypseWeaponAmmo.textWrappingMode = TextWrappingModes.NoWrap;
+                    _apocalypseWeaponAmmo.overflowMode = TextOverflowModes.Ellipsis;
+                    _apocalypseWeaponAmmo.alignment = TextAlignmentOptions.BottomRight;
+                    RectTransform ammoRect = _apocalypseWeaponAmmo.rectTransform;
+                    ammoRect.anchorMin = ammoRect.anchorMax = new Vector2(1f, 0f);
+                    ammoRect.pivot = new Vector2(1f, 0f);
+                    ammoRect.anchoredPosition = new Vector2(-12f, 58f);
+                    ammoRect.sizeDelta = new Vector2(190f, 66f);
+                }
                 _apocalypseWeaponIcon = rect.Find("Icon_CurrentWeapon")
                     ?.GetComponent<Image>();
                 for (int i = 0; i < _apocalypseBullets.Length; i++)
@@ -329,6 +360,20 @@ namespace RealmOfAshes.Game
                     (mobile ? 0.625f : 0.5f);
             if (_apocalypseWeapon != null)
             {
+                // Keep the weapon readout on the same bottom line as the quick slots.
+                RectTransform weaponRect = (RectTransform)_apocalypseWeapon.transform;
+                RectTransform quickbarRect = _quickPanel != null
+                    ? (RectTransform)_quickPanel.transform : null;
+                if (quickbarRect != null && _safeRoot.rect.width > 1f)
+                {
+                    float quickbarRight = quickbarRect.anchoredPosition.x
+                        + quickbarRect.rect.width * quickbarRect.localScale.x * 0.5f;
+                    float rightEdge = Mathf.Min(quickbarRight + (mobile ? 125f : 90f),
+                        _safeRoot.rect.width * 0.5f - 16f);
+                    weaponRect.anchoredPosition = new Vector2(
+                        rightEdge - _safeRoot.rect.width * 0.5f,
+                        quickbarRect.anchoredPosition.y + 2f * quickbarRect.localScale.y);
+                }
                 _apocalypseWeapon.SetActive(visible && _hud.WeaponId != "fists");
                 if (visible)
                 {

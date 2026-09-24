@@ -52,8 +52,8 @@ namespace RealmOfAshes.Game
             RectTransform bar = (RectTransform)_apocalypseActionBar.transform;
             bar.anchorMin = bar.anchorMax = new Vector2(0.5f, 0f);
             bar.pivot = new Vector2(0.5f, 0f);
-            bar.anchoredPosition = new Vector2(0f, 75f);
-            bar.localScale = Vector3.one * 0.6f;
+            bar.anchoredPosition = new Vector2(0f, 50f);
+            bar.localScale = Vector3.one * 0.5f;
             panel.sizeDelta = new Vector2(800f, 170f);
             foreach (Animator animator in bar.GetComponentsInChildren<Animator>(true))
                 animator.enabled = false;
@@ -326,7 +326,7 @@ namespace RealmOfAshes.Game
             RefreshApocalypseCurrentQuest(visible);
             if (_apocalypseActionBar != null)
                 _apocalypseActionBar.transform.localScale = Vector3.one *
-                    (mobile ? 0.75f : 0.6f);
+                    (mobile ? 0.625f : 0.5f);
             if (_apocalypseWeapon != null)
             {
                 _apocalypseWeapon.SetActive(visible && _hud.WeaponId != "fists");

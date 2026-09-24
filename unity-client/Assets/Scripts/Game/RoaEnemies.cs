@@ -1519,7 +1519,7 @@ namespace RealmOfAshes.Game
             if (hand == null) return;
 
             string url = BaseUrl.TrimEnd('/')
-                + "/assets/models/weapons/weapon_" + modelId + ".glb";
+                + "/assets/models/weapons/weapon_" + RoaApocalypseModels.WeaponRig(modelId) + ".glb";
             GltfImport import = await LoadCached(url);
             if (import == null || enemy.Root == null || enemy.WeaponModelId != modelId) return;
 

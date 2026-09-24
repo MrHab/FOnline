@@ -12,6 +12,23 @@ namespace RealmOfAshes.EditorTools
         private const string Root = "Assets/Synty/PolygonApocalypse/Prefabs/";
         private const string Output = "Assets/Resources/RealmOfAshes/PolygonApocalypseModels.asset";
 
+        [Serializable]
+        private sealed class WeaponCatalog
+        {
+            public WeaponCatalogEntry[] weapons;
+        }
+
+        [Serializable]
+        private sealed class WeaponCatalogEntry
+        {
+            public string itemId;
+            public string prefab;
+            public string rigId;
+            public string combatId;
+            public string name;
+            public float weight;
+        }
+
         [InitializeOnLoadMethod]
         private static void BuildIfRequested()
         {
@@ -29,32 +46,37 @@ namespace RealmOfAshes.EditorTools
         [MenuItem("Realm of Ashes/PolygonApocalypse/Rebuild runtime model palette")]
         public static void Build()
         {
-            var weaponPaths = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                { "pistol", "Weapons/Guns/SM_Wep_Pistol_01" },
-                { "revolver", "Weapons/Guns/SM_Wep_Revolver_01" },
-                { "sawedOffShotgun", "Weapons/Guns/SM_Wep_Shotgun_01" },
-                { "smg", "Weapons/Guns/SM_Wep_SubMGun_01" },
-                { "rifle", "Weapons/Guns/SM_Wep_HuntingRifle_01" },
-                { "assaultRifle", "Weapons/Guns/SM_Wep_AssaultRifle_01" },
-                { "machineGun", "Weapons/Guns/SM_Wep_MachineGun_01" },
-                { "laserPistol", "Weapons/Guns/SM_Wep_Hybrid_01" },
-                { "flamethrower", "Weapons/Misc/SM_Wep_FlameThrower_01" },
-                { "plasmaRifle", "Weapons/Guns/SM_Wep_Hybrid_02" },
-                { "shotgun", "Weapons/Guns/SM_Wep_Shotgun_01" },
-                { "rocketLauncher", "Weapons/Guns/SM_Wep_RocketLauncher_01" },
-                { "knife", "Weapons/Melee/SM_Wep_Melee_HuntingKnife_01" },
-                { "pickaxe", "Weapons/Melee/SM_Wep_Spade_01" },
-                { "axe", "Weapons/Melee/SM_Wep_FireAxe_01" },
-                { "handPump", "Weapons/Melee/SM_Wep_PipeWrench_01" }
-            };
+            string manifestPath = Path.GetFullPath(Path.Combine(Application.dataPath,
+                "../../data/kromka/apocalypse-weapons.json"));
+            WeaponCatalog catalogFile = JsonUtility.FromJson<WeaponCatalog>(File.ReadAllText(manifestPath));
+            if (catalogFile == null || catalogFile.weapons == null || catalogFile.weapons.Length == 0)
+                throw new InvalidOperationException("PolygonApocalypse weapon roster is empty: " + manifestPath);
             var weapons = new List<RoaApocalypseModels.WeaponEntry>();
-            foreach (KeyValuePair<string, string> pair in weaponPaths)
+            var weaponIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (WeaponCatalogEntry row in catalogFile.weapons)
+            {
+                if (row == null || string.IsNullOrEmpty(row.itemId) || !weaponIds.Add(row.itemId))
+                    throw new InvalidOperationException("Duplicate PolygonApocalypse weapon ID: " + row?.itemId);
                 weapons.Add(new RoaApocalypseModels.WeaponEntry
                 {
-                    itemId = pair.Key,
-                    prefab = Require(pair.Value)
+                    itemId = row.itemId,
+                    prefab = Require(row.prefab),
+                    rigId = row.rigId,
+                    combatId = row.combatId,
+                    displayName = row.name,
+                    weight = row.weight
                 });
+            }
+            // The saved one-handed shotgun keeps its historical gameplay ID.
+            weapons.Add(new RoaApocalypseModels.WeaponEntry
+            {
+                itemId = "sawedOffShotgun",
+                prefab = Require("Weapons/Guns/SM_Wep_Shotgun_01"),
+                rigId = "sawedOffShotgun",
+                combatId = "sawedOffShotgun",
+                displayName = "Обрез",
+                weight = 2.4f
+            });
 
             // The world can drop any of these items at runtime. Reuse a small
             // set of recognisable pack props where it has no exact counterpart.
@@ -146,6 +168,41 @@ namespace RealmOfAshes.EditorTools
                 + " weapons, " + items.Count + " ground items, " + creatures.Count
                 + " creature roles, " + environment.Count
                 + " environment models, six bodies and one vehicle.");
+        }
+
+        [MenuItem("Realm of Ashes/PolygonApocalypse/Validate weapon roster")]
+        public static void ValidateWeaponRoster()
+        {
+            string manifestPath = Path.GetFullPath(Path.Combine(Application.dataPath,
+                "../../data/kromka/apocalypse-weapons.json"));
+            WeaponCatalog manifest = JsonUtility.FromJson<WeaponCatalog>(File.ReadAllText(manifestPath));
+            if (manifest?.weapons == null || manifest.weapons.Length == 0)
+                throw new InvalidOperationException("PolygonApocalypse weapon manifest is empty.");
+            if (RoaApocalypseModels.WeaponEntries == null
+                || RoaApocalypseModels.WeaponEntries.Count != manifest.weapons.Length + 1)
+                throw new InvalidOperationException("Runtime weapon palette has missing entries.");
+            foreach (WeaponCatalogEntry row in manifest.weapons)
+            {
+                GameObject prefab = RoaApocalypseModels.Weapon(row.itemId);
+                if (prefab == null || prefab != Require(row.prefab))
+                    throw new InvalidOperationException("Weapon prefab is missing: " + row.itemId);
+                if (RoaApocalypseModels.WeaponRig(row.itemId) != row.rigId)
+                    throw new InvalidOperationException("Weapon grip rig is wrong: " + row.itemId);
+                if (RoaApocalypseModels.WeaponCombatId(row.itemId) != row.combatId)
+                    throw new InvalidOperationException("Weapon combat profile is wrong: " + row.itemId);
+                if (prefab.GetComponentsInChildren<Renderer>(true).Length == 0)
+                    throw new InvalidOperationException("Weapon has no visible mesh: " + row.itemId);
+                string rigPath = Path.GetFullPath(Path.Combine(Application.dataPath,
+                    "../../public/assets/models/weapons/weapon_" + row.rigId + ".glb"));
+                if (!File.Exists(rigPath))
+                    throw new InvalidOperationException("Weapon grip rig is missing: " + row.rigId);
+                if (row.itemId.StartsWith("polygon", StringComparison.Ordinal)
+                    && (RoaItemData.Name(row.itemId) != row.name
+                        || Mathf.Abs(RoaItemData.Weight(row.itemId) - row.weight) > 0.001f))
+                    throw new InvalidOperationException("Weapon item fallback is wrong: " + row.itemId);
+            }
+            Debug.Log("[ROA APOCALYPSE] Weapon roster PASS: " + manifest.weapons.Length
+                + " pack models, grip rigs, renderers and local item definitions.");
         }
 
         private static void AddItems(Dictionary<string, string> paths, string prefab, params string[] ids)

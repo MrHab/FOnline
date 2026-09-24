@@ -190,7 +190,8 @@ namespace RealmOfAshes.Game
 
         public static bool IsFirearm(string weaponId)
         {
-            return !string.IsNullOrEmpty(weaponId) && Firearms.Contains(weaponId);
+            return !string.IsNullOrEmpty(weaponId)
+                && Firearms.Contains(RoaApocalypseModels.WeaponRig(weaponId));
         }
 
         /// <summary>
@@ -451,8 +452,9 @@ namespace RealmOfAshes.Game
             await RoaWeaponGrip.Ensure(baseUrl);
             if (request != _loadRequest || !RoaWeaponGrip.Ready) return;
 
-            string url = baseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + weaponId + ".glb";
-            GltfImport import = await LoadCached(weaponId, url);
+            string rigId = RoaApocalypseModels.WeaponRig(weaponId);
+            string url = baseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + rigId + ".glb";
+            GltfImport import = await LoadCached(rigId, url);
             if (request != _loadRequest) return;
             if (import == null)
             {
@@ -484,7 +486,7 @@ namespace RealmOfAshes.Game
             _socketGripLeft = FindDeep(_weapon, "socket_grip_l");
 
             // Узел перезарядки: первый найденный из профиля.
-            ReloadProfiles.TryGetValue(weaponId, out _reloadProfile);
+            ReloadProfiles.TryGetValue(rigId, out _reloadProfile);
             _reloadNode = null;
             if (_reloadProfile != null)
             {

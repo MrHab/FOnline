@@ -48,7 +48,9 @@ namespace RealmOfAshes.Game
 
         public static int Tier(string itemOrRuntimeId)
         {
-            return Tiers.TryGetValue(RoaInventory.BaseId(itemOrRuntimeId ?? string.Empty), out int tier) ? tier : 0;
+            string id = RoaInventory.BaseId(itemOrRuntimeId ?? string.Empty);
+            return Tiers.TryGetValue(id, out int tier)
+                || Tiers.TryGetValue(RoaApocalypseModels.WeaponCombatId(id), out tier) ? tier : 0;
         }
 
         public static string TierShortLabel(int tier) { return tier >= 1 && tier <= 5 ? TierShort[tier] : string.Empty; }
@@ -57,7 +59,10 @@ namespace RealmOfAshes.Game
 
         public static float Range(string weaponId)
         {
-            return WeaponRange.TryGetValue(RoaInventory.BaseId(weaponId ?? string.Empty), out float range) ? range : 1.35f;
+            string id = RoaInventory.BaseId(weaponId ?? string.Empty);
+            if (RoaApocalypseModels.WeaponCombatId(id) != RoaApocalypseModels.WeaponRig(id)) return 12f;
+            return WeaponRange.TryGetValue(id, out float range)
+                || WeaponRange.TryGetValue(RoaApocalypseModels.WeaponCombatId(id), out range) ? range : 1.35f;
         }
 
         /// <summary>gearPowerTotal web: сумма очков тира по слотам с весом слота и состоянием предмета.</summary>

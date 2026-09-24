@@ -375,6 +375,11 @@ const unityItemSource = read('unity-client/Assets/Scripts/Game/RoaItemData.cs');
 const unityItems = {};
 for (const match of unityItemSource.matchAll(/Add\(result,\s*"([^"]+)",\s*"([^"]*)",\s*(-?\d+(?:\.\d+)?)f?\);/g))
   unityItems[match[1]] = { name: match[2], weight: Number(match[3]) };
+const apocalypseWeapons = JSON.parse(read('data/kromka/apocalypse-weapons.json')).weapons || [];
+for (const weapon of apocalypseWeapons) {
+  if (weapon.itemId.startsWith('polygon'))
+    unityItems[weapon.itemId] = { name: weapon.name, weight: Number(weapon.weight) };
+}
 assert.deepStrictEqual(Object.keys(unityItems).sort(), Object.keys(authoredItems).sort(),
   'Unity item catalog drifted from data/kromka/items.json');
 const itemNameDrift = [];
@@ -422,12 +427,12 @@ assert.deepStrictEqual(
   authoredRecipes.map(({ id, name }) => ({ id, name })),
   'Unity crafting names drifted from data/kromka/field-recipes.json');
 
-// Every character-slot item (except the intrinsic fists), all ammo and all aid
-// must be producible by field crafting.
+// Items explicitly obtainable by crafting must have a field recipe. Pack
+// variants enter through trade and loot, so they do not require duplicate recipes.
 const characterEquipmentSlots = new Set(['weapon', 'armor', 'helmet', 'boots', 'backpack']);
 const craftedOutputIds = new Set(authoredRecipes.map(row => row.outputId));
 const requiredCraftOutputIds = Object.values(authoredItems)
-  .filter(item => !(item.acquisition || []).includes('intrinsic'))
+  .filter(item => (item.acquisition || []).includes('craft'))
   .filter(item => characterEquipmentSlots.has(item.slot) || ['ammo', 'aid'].includes(item.category))
   .map(item => item.id)
   .sort();

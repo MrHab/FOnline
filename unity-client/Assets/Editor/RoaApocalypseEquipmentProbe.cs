@@ -128,7 +128,53 @@ namespace RealmOfAshes.EditorTools
                 Capture(preview, readback, "ApocalypseWalkB.png");
                 if (Vector3.Distance(firstAnkle, secondAnkle) < 0.12f)
                     throw new InvalidOperationException("Pack body did not follow the walking pose.");
-                Debug.Log("[ROA APOCALYPSE] Equipment probe PASS: armor and backpack visible.");
+                driver.Play("idle");
+                driver.Sample();
+                character.UpdateLocomotion(Vector3.zero, 0f, false, false);
+                character.SetAim(character.transform.position + character.transform.forward * 5f
+                    + Vector3.up * 1.3f, true);
+                string[] weaponSamples =
+                {
+                    "polygonAssaultRifle02", "polygonRevolver02", "polygonKatana01",
+                    "polygonGrenade01", "polygonVehMiniGun01"
+                };
+                foreach (string weaponId in weaponSamples)
+                {
+                    await character.EquipWeapon("http://127.0.0.1:3000", weaponId);
+                    await Task.Delay(180);
+                    if (character.WeaponId != weaponId)
+                        throw new InvalidOperationException("Pack weapon did not equip: " + weaponId);
+                    Transform weapon = null;
+                    foreach (Transform node in character.GetComponentsInChildren<Transform>(true))
+                        if (node.name == "Weapon:" + weaponId) { weapon = node; break; }
+                    Transform visual = weapon?.Find(RoaApocalypseVisuals.ChildName);
+                    bool visible = false;
+                    if (visual != null)
+                        foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true))
+                            if (renderer.enabled) { visible = true; break; }
+                    if (!visible)
+                        throw new InvalidOperationException("Pack weapon visual did not replace GLB: " + weaponId);
+                    Bounds visualBounds = RoaApocalypseVisuals.LocalBounds(weapon,
+                        visual.GetComponentsInChildren<Renderer>(true));
+                    Debug.Log("[ROA APOCALYPSE] " + weaponId + " bounds "
+                        + visualBounds.size.ToString("F3"));
+                    if (weaponId == "polygonGrenade01"
+                        && Mathf.Max(visualBounds.size.x, visualBounds.size.y,
+                            visualBounds.size.z) > 0.4f)
+                        throw new InvalidOperationException("Pack grenade is too large in hand.");
+                    if (weaponId == "polygonAssaultRifle02")
+                        Capture(preview, readback, "ApocalypseWeaponAssault02.png");
+                    if (weaponId == "polygonKatana01")
+                    {
+                        Capture(preview, readback, "ApocalypseWeaponKatana.png");
+                        character.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                        Capture(preview, readback, "ApocalypseWeaponKatanaSide.png");
+                        character.transform.localRotation = Quaternion.identity;
+                    }
+                    if (weaponId == "polygonGrenade01")
+                        Capture(preview, readback, "ApocalypseWeaponGrenade.png");
+                }
+                Debug.Log("[ROA APOCALYPSE] Equipment probe PASS: armor, backpack and five pack weapons visible.");
             }
             catch (Exception error) { Debug.LogError("[ROA APOCALYPSE] Equipment probe FAIL " + error); }
             finally

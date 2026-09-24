@@ -64,7 +64,8 @@ namespace RealmOfAshes.Game
         {
             EnsureScene();
 
-            string url = BaseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + weaponId + ".glb";
+            string rigId = RoaApocalypseModels.WeaponRig(weaponId);
+            string url = BaseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + rigId + ".glb";
             var import = new GltfImport();
 
             if (!await import.Load(RoaModelUrl.Lite(url)))

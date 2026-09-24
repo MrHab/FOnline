@@ -59,6 +59,24 @@ namespace RealmOfAshes.Game
                     oldFootprint / Mathf.Max(newFootprint, 0.01f)), 0.05f, 8f);
                 replacement.transform.localScale = Vector3.one * scale;
             }
+            else if (prefab.name.Contains("Grenade") || prefab.name.Contains("Flashbang")
+                || prefab.name.Contains("Molotov") || prefab.name.Contains("Bomb"))
+            {
+                float targetSize = prefab.name.Contains("Grenade") || prefab.name.Contains("Flashbang")
+                    ? 0.18f : prefab.name.Contains("Molotov") ? 0.28f : 0.3f;
+                float longest = Mathf.Max(newBounds.size.x, newBounds.size.y, newBounds.size.z);
+                replacement.transform.localScale = Vector3.one
+                    * Mathf.Clamp(targetSize / Mathf.Max(longest, 0.01f), 0.05f, 8f);
+            }
+            else if (prefab.name.StartsWith("SM_Wep_"))
+            {
+                // A sword, a grenade and a rifle must keep their own silhouette.
+                // Stretching every axis to the legacy rig turned long blades into
+                // knife-sized clubs and flattened many firearm variants.
+                float scale = oldBounds.size.magnitude
+                    / Mathf.Max(newBounds.size.magnitude, 0.01f);
+                replacement.transform.localScale = Vector3.one * Mathf.Clamp(scale, 0.05f, 8f);
+            }
             else replacement.transform.localScale = new Vector3(
                     Mathf.Clamp(oldBounds.size.x / Mathf.Max(newBounds.size.x, 0.01f), 0.05f, 8f),
                     Mathf.Clamp(oldBounds.size.y / Mathf.Max(newBounds.size.y, 0.01f), 0.05f, 8f),

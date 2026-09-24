@@ -820,6 +820,7 @@ const KROMKA_SIEGES_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'sieges.json');
 const KROMKA_WORLD_SIMULATION_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'world-simulation.json');
 const KROMKA_CHARACTER_PROGRESSION_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'character-progression.json');
 const KROMKA_ITEMS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'items.json');
+const KROMKA_APOCALYPSE_WEAPONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'apocalypse-weapons.json');
 const KROMKA_FIELD_RECIPES_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'field-recipes.json');
 const KROMKA_VEHICLES_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'vehicles.json');
 const WASTELAND_SIM_FILE = path.join(DATA_DIR, 'wasteland-sim.json');
@@ -881,6 +882,9 @@ function readJson(file, fallback) {
 // Authored gameplay catalogs are initialized before any sanitizer tables so
 // equipment, carry weight, prices and crafting all derive from the same rows.
 const KROMKA_ITEM_CATALOG = normalizeItemCatalog(readJson(KROMKA_ITEMS_FILE, { items: [] }));
+const KROMKA_APOCALYPSE_WEAPONS = readJson(KROMKA_APOCALYPSE_WEAPONS_FILE, { weapons: [] }).weapons;
+const KROMKA_APOCALYPSE_WEAPON_RIGS = new Map(KROMKA_APOCALYPSE_WEAPONS.map(row => [row.itemId, row.rigId]));
+const KROMKA_APOCALYPSE_WEAPON_COMBATS = new Map(KROMKA_APOCALYPSE_WEAPONS.map(row => [row.itemId, row.combatId]));
 const KROMKA_ITEM_INDEXES = itemCatalogIndexes(KROMKA_ITEM_CATALOG);
 const SERVER_ITEM_CATEGORY = new Map(KROMKA_ITEM_CATALOG.items.map(item => [item.id, String(item.category || '')]));
 const SERVER_ITEM_NAME = new Map(KROMKA_ITEM_CATALOG.items.map(item => [item.id, String(item.name || item.id)]));
@@ -5626,7 +5630,20 @@ function normalizeServerTraderProfiles(raw = {}) {
 }
 
 function loadServerTraderProfiles() {
-  return normalizeServerTraderProfiles(readAuthoredDataJson(TRADER_PROFILES_FILE, { profiles: {} }));
+  const profiles = normalizeServerTraderProfiles(readAuthoredDataJson(TRADER_PROFILES_FILE, { profiles: {} }));
+  for (const row of KROMKA_APOCALYPSE_WEAPONS) {
+    if (!row?.itemId?.startsWith('polygon')) continue;
+    const vendorId = row.kind === 'mounted' ? 'coreBaseArtels'
+      : row.kind === 'throwable' || ['plasmaRifle', 'laserPistol', 'flamethrower', 'rocketLauncher'].includes(row.rigId)
+        ? 'relay' : row.rigId === 'axe' || row.rigId === 'knife' ? 'scrap' : 'oldKlim';
+    const vendor = profiles[vendorId];
+    if (!vendor || vendor.stock.some(item => item.id === row.itemId)) continue;
+    vendor.stock.push({
+      id: row.itemId, qty: 1, price: Math.round((SERVER_ITEM_BASE_PRICES[row.itemId] || 1) * 1.15),
+      shelfMin: 0, shelfTarget: 1, shelfMax: 1, priority: 60
+    });
+  }
+  return profiles;
 }
 
 const SERVER_TRADER_PROFILES = loadServerTraderProfiles();
@@ -6510,6 +6527,23 @@ const SERVER_WEAPONS = {
   fists: { id: 'fists', name: 'Кулаки', hands: 1, weaponSkill: 'unarmed', damageType: 'ballistic', requiredStrength: 1, dmg: [2, 4], range: 1.35, ammoType: null, magSize: 0, fireRate: 0.62, apCost: 2 }
 };
 
+for (const row of KROMKA_APOCALYPSE_WEAPONS) {
+  if (!row || !row.itemId || !row.combatId || SERVER_WEAPONS[row.itemId]) continue;
+  const rig = SERVER_WEAPONS[row.combatId];
+  const item = KROMKA_ITEM_INDEXES.byId[row.itemId];
+  if (!rig || !item) throw new Error(`Invalid PolygonApocalypse weapon: ${row.itemId}`);
+  SERVER_WEAPONS[row.itemId] = {
+    ...rig, id: row.itemId, name: row.name || item.name,
+    hands: item.hands || rig.hands,
+    dualWield: item.compatibleSlots.includes('offhand') && !!rig.dualWield,
+    ...(row.kind === 'mounted' ? { weaponSkill: 'heavyWeapons', requiredStrength: 8 } : {}),
+    ...(row.kind === 'throwable' ? {
+      weaponSkill: 'throwing', requiredStrength: 2, range: 12,
+      fireRate: 0.9, explosiveRadius: 2.8, dmg: [24, 38]
+    } : {})
+  };
+}
+
 const SERVER_WEAPON_MODIFICATION_SLOTS = new Set(['barrel', 'scope', 'magazine', 'forend']);
 const SERVER_WEAPON_MODIFICATION_CATALOG = Object.freeze({
   barrel_precision: { id: 'barrel_precision', slot: 'barrel', weaponIds: ['pistol', 'rifle', 'assaultRifle', 'machineGun', 'revolver', 'smg'], cost: { scrap: 3, weaponParts: 2 }, effects: { damageMul: 1.06, rangeMul: 1.12, fireRateMul: 1.05 } },
@@ -6535,9 +6569,11 @@ const SERVER_WEAPON_MODIFICATION_CATALOG = Object.freeze({
 
 function serverWeaponModificationCompatible(mod = {}, weapon = SERVER_WEAPONS.fists) {
   if (!mod || !weapon?.ammoType || !SERVER_WEAPON_MODIFICATION_SLOTS.has(mod.slot)) return false;
+  if (KROMKA_APOCALYPSE_WEAPONS.some(row => row.itemId === weapon.id && row.kind === 'throwable')) return false;
   if (mod.slot === 'forend' && Number(weapon.hands || 1) !== 2) return false;
-  if (Array.isArray(mod.weaponIds) && !mod.weaponIds.includes(weapon.id)) return false;
-  if (Array.isArray(mod.excludeWeaponIds) && mod.excludeWeaponIds.includes(weapon.id)) return false;
+  const rigId = KROMKA_APOCALYPSE_WEAPON_RIGS.get(weapon.id) || weapon.id;
+  if (Array.isArray(mod.weaponIds) && !mod.weaponIds.includes(rigId)) return false;
+  if (Array.isArray(mod.excludeWeaponIds) && mod.excludeWeaponIds.includes(rigId)) return false;
   return true;
 }
 
@@ -11858,12 +11894,12 @@ function serverAutomaticAccuracyPenalty(p = {}, w = SERVER_WEAPONS.fists, client
 
 function serverExplosiveRadius(p = {}, w = SERVER_WEAPONS.fists) {
   const base = Math.max(1.5, Number(w?.explosiveRadius || 3.6));
-  if (w?.id !== 'rocketLauncher') return base;
+  if (w?.damageType !== 'explosive') return base;
   return base + serverSkillNorm(p, 'throwing') * 0.45 + serverTalentLevel(p, 'grenadier') * 0.2;
 }
 
 function serverIsShotgunWeapon(w = SERVER_WEAPONS.fists) {
-  return w?.id === 'shotgun';
+  return (KROMKA_APOCALYPSE_WEAPON_COMBATS.get(w?.id) || w?.id) === 'shotgun';
 }
 
 function serverShotgunSpreadWidthAtDistance(w = SERVER_WEAPONS.shotgun, distance = 0) {
@@ -11923,8 +11959,8 @@ function serverShotgunSpreadSample(w = SERVER_WEAPONS.shotgun, origin = {}, enem
 
 function serverConeWidthAtDistance(w = SERVER_WEAPONS.fists, distance = 0) {
   const d = Math.max(0, Number(distance || 0));
-  if (w.id === 'flamethrower') return 0.42 + d * 0.24;
-  if (w.id === 'shotgun') return serverShotgunSpreadWidthAtDistance(w, d);
+  if ((KROMKA_APOCALYPSE_WEAPON_COMBATS.get(w.id) || w.id) === 'flamethrower') return 0.42 + d * 0.24;
+  if (serverIsShotgunWeapon(w)) return serverShotgunSpreadWidthAtDistance(w, d);
   return 0.45;
 }
 
@@ -31006,7 +31042,7 @@ io.on('connection', (socket) => {
       return fail('Сервер: экипировка изменилась; повторите атаку после сверки.', currentCombat());
     }
     if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не экипировано.', currentCombat());
-    if (weapon.id !== 'rocketLauncher') return fail('Это действие доступно только для ракетницы.', currentCombat());
+    if (weapon.damageType !== 'explosive') return fail('Это действие доступно только для взрывного оружия.', currentCombat());
     if (p.mountedVehicle) return fail(VEHICLE_ATTACK_REFUSAL, currentCombat());
     const modeInfo = serverWeaponModeInfo(p, weapon, String(data.mode || 'single'));
     const attackToken = serverCombatToken(data.attackToken || data.combat?.token || '');
@@ -31204,7 +31240,7 @@ io.on('connection', (socket) => {
       const plan = serverResolvePlayerAttackPlan(p, data, Date.now());
       if (!plan.ok) return fail(plan.error);
       const weapon = plan.entries[0].weapon;
-      if (!weapon.ammoType || weapon.id === 'rocketLauncher') return fail('В мишень нужно выстрелить из огнестрельного оружия.');
+      if (!weapon.ammoType || weapon.damageType === 'explosive') return fail('В мишень нужно выстрелить из огнестрельного оружия.');
       const dx = enemy.x - p.x, dz = enemy.z - p.z;
       const dirX = Number(data.shotDirX), dirZ = Number(data.shotDirZ);
       const length = Math.hypot(dirX, dirZ);
@@ -31242,7 +31278,7 @@ io.on('connection', (socket) => {
     const attackPlan = serverResolvePlayerAttackPlan(p, data, Date.now());
     if (!attackPlan.ok) return fail(attackPlan.error || 'Сервер: атака отклонена.');
     const weapon = attackPlan.entries[0].weapon;
-    if (weapon.id === 'rocketLauncher' || data.explosive) return fail('Взрыв обрабатывается отдельным серверным действием.');
+    if (weapon.damageType === 'explosive' || data.explosive) return fail('Взрыв обрабатывается отдельным серверным действием.');
     const modeInfo = attackPlan.modeInfo;
     const origin = serverCombatOrigin(p, data, room);
     const targetPoint = serverCombatTargetPoint(enemy, data, weapon, room);

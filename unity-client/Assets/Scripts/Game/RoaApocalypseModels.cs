@@ -14,6 +14,10 @@ namespace RealmOfAshes.Game
         {
             public string itemId;
             public GameObject prefab;
+            public string rigId;
+            public string combatId;
+            public string displayName;
+            public float weight;
         }
 
         [Serializable]
@@ -62,6 +66,8 @@ namespace RealmOfAshes.Game
 
         private static RoaApocalypseModels _instance;
         private Dictionary<string, GameObject> _weapons;
+        private Dictionary<string, string> _weaponRigs;
+        private Dictionary<string, string> _weaponCombats;
         private Dictionary<string, GameObject> _items;
         private Dictionary<string, CreatureEntry> _creatures;
         private Dictionary<string, GameObject> _environment;
@@ -97,14 +103,44 @@ namespace RealmOfAshes.Game
         {
             RoaApocalypseModels palette = Instance;
             if (palette == null || string.IsNullOrEmpty(itemId)) return null;
-            if (palette._weapons == null)
-            {
-                palette._weapons = new Dictionary<string, GameObject>(StringComparer.Ordinal);
-                foreach (WeaponEntry entry in palette.weapons)
-                    if (entry != null && !string.IsNullOrEmpty(entry.itemId) && entry.prefab != null)
-                        palette._weapons[entry.itemId] = entry.prefab;
-            }
+            palette.EnsureWeapons();
             return palette._weapons.TryGetValue(itemId, out GameObject prefab) ? prefab : null;
+        }
+
+        // The imported GLB supplies grip, muzzle and reload sockets. Its renderers
+        // are hidden by AttachStatic; several pack weapons can share one socket rig.
+        public static string WeaponRig(string itemId)
+        {
+            RoaApocalypseModels palette = Instance;
+            if (palette == null || string.IsNullOrEmpty(itemId)) return itemId;
+            palette.EnsureWeapons();
+            return palette._weaponRigs.TryGetValue(itemId, out string rigId) ? rigId : itemId;
+        }
+
+        public static string WeaponCombatId(string itemId)
+        {
+            RoaApocalypseModels palette = Instance;
+            if (palette == null || string.IsNullOrEmpty(itemId)) return itemId;
+            palette.EnsureWeapons();
+            return palette._weaponCombats.TryGetValue(itemId, out string combatId) ? combatId : itemId;
+        }
+
+        public static IReadOnlyList<WeaponEntry> WeaponEntries => Instance?.weapons;
+
+        private void EnsureWeapons()
+        {
+            if (_weapons != null) return;
+            _weapons = new Dictionary<string, GameObject>(StringComparer.Ordinal);
+            _weaponRigs = new Dictionary<string, string>(StringComparer.Ordinal);
+            _weaponCombats = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (WeaponEntry entry in weapons)
+            {
+                if (entry == null || string.IsNullOrEmpty(entry.itemId) || entry.prefab == null) continue;
+                _weapons[entry.itemId] = entry.prefab;
+                _weaponRigs[entry.itemId] = string.IsNullOrEmpty(entry.rigId) ? entry.itemId : entry.rigId;
+                _weaponCombats[entry.itemId] = string.IsNullOrEmpty(entry.combatId)
+                    ? _weaponRigs[entry.itemId] : entry.combatId;
+            }
         }
 
         public static GameObject Item(string itemId)
@@ -209,6 +245,8 @@ namespace RealmOfAshes.Game
             industrialEnvironment = industrialModel;
             rockEnvironment = rockModel;
             _weapons = null;
+            _weaponRigs = null;
+            _weaponCombats = null;
             _items = null;
             _creatures = null;
             _environment = null;

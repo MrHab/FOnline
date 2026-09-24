@@ -1,0 +1,680 @@
+{
+  "schema": "kromka.apocalypseWeapons.v1",
+  "weapons": [
+    {
+      "itemId": "assaultRifle",
+      "name": "Штурмовая винтовка 01",
+      "prefab": "Weapons/Guns/SM_Wep_AssaultRifle_01",
+      "rigId": "assaultRifle",
+      "combatId": "assaultRifle",
+      "kind": "handheld",
+      "weight": 4.8
+    },
+    {
+      "itemId": "polygonAssaultRifle02",
+      "name": "Штурмовая винтовка 02",
+      "prefab": "Weapons/Guns/SM_Wep_AssaultRifle_02",
+      "rigId": "assaultRifle",
+      "combatId": "assaultRifle",
+      "kind": "handheld",
+      "weight": 4.8
+    },
+    {
+      "itemId": "polygonAssaultRifle03",
+      "name": "Штурмовая винтовка 03",
+      "prefab": "Weapons/Guns/SM_Wep_AssaultRifle_03",
+      "rigId": "assaultRifle",
+      "combatId": "assaultRifle",
+      "kind": "handheld",
+      "weight": 4.8
+    },
+    {
+      "itemId": "rifle",
+      "name": "Охотничья винтовка 01",
+      "prefab": "Weapons/Guns/SM_Wep_HuntingRifle_01",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "handheld",
+      "weight": 4
+    },
+    {
+      "itemId": "polygonHuntingRifleClean01",
+      "name": "Охотничья винтовка (чистое) 01",
+      "prefab": "Weapons/Guns/SM_Wep_HuntingRifle_Clean_01",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "handheld",
+      "weight": 4
+    },
+    {
+      "itemId": "laserPistol",
+      "name": "Гибридное оружие 01",
+      "prefab": "Weapons/Guns/SM_Wep_Hybrid_01",
+      "rigId": "laserPistol",
+      "combatId": "laserPistol",
+      "kind": "handheld",
+      "weight": 2.2
+    },
+    {
+      "itemId": "plasmaRifle",
+      "name": "Гибридное оружие 02",
+      "prefab": "Weapons/Guns/SM_Wep_Hybrid_02",
+      "rigId": "plasmaRifle",
+      "combatId": "plasmaRifle",
+      "kind": "handheld",
+      "weight": 5.1
+    },
+    {
+      "itemId": "polygonHybrid03",
+      "name": "Гибридное оружие 03",
+      "prefab": "Weapons/Guns/SM_Wep_Hybrid_03",
+      "rigId": "plasmaRifle",
+      "combatId": "plasmaRifle",
+      "kind": "handheld",
+      "weight": 5.1
+    },
+    {
+      "itemId": "machineGun",
+      "name": "Пулемёт 01",
+      "prefab": "Weapons/Guns/SM_Wep_MachineGun_01",
+      "rigId": "machineGun",
+      "combatId": "machineGun",
+      "kind": "handheld",
+      "weight": 8.8
+    },
+    {
+      "itemId": "polygonMachineGun02",
+      "name": "Пулемёт 02",
+      "prefab": "Weapons/Guns/SM_Wep_MachineGun_02",
+      "rigId": "machineGun",
+      "combatId": "machineGun",
+      "kind": "handheld",
+      "weight": 8.8
+    },
+    {
+      "itemId": "polygonMinigun01",
+      "name": "Миниган 01",
+      "prefab": "Weapons/Guns/SM_Wep_Minigun_01",
+      "rigId": "machineGun",
+      "combatId": "machineGun",
+      "kind": "handheld",
+      "weight": 8.8
+    },
+    {
+      "itemId": "polygonMinigunClean01",
+      "name": "Миниган (чистое) 01",
+      "prefab": "Weapons/Guns/SM_Wep_Minigun_Clean_01",
+      "rigId": "machineGun",
+      "combatId": "machineGun",
+      "kind": "handheld",
+      "weight": 8.8
+    },
+    {
+      "itemId": "polygonNailgun01",
+      "name": "Гвоздомёт 01",
+      "prefab": "Weapons/Guns/SM_Wep_Nailgun_01",
+      "rigId": "smg",
+      "combatId": "smg",
+      "kind": "handheld",
+      "weight": 3.2
+    },
+    {
+      "itemId": "polygonNailgunClean01",
+      "name": "Гвоздомёт (чистое) 01",
+      "prefab": "Weapons/Guns/SM_Wep_Nailgun_Clean_01",
+      "rigId": "smg",
+      "combatId": "smg",
+      "kind": "handheld",
+      "weight": 3.2
+    },
+    {
+      "itemId": "pistol",
+      "name": "Пистолет 01",
+      "prefab": "Weapons/Guns/SM_Wep_Pistol_01",
+      "rigId": "pistol",
+      "combatId": "pistol",
+      "kind": "handheld",
+      "weight": 1.5
+    },
+    {
+      "itemId": "revolver",
+      "name": "Револьвер 01",
+      "prefab": "Weapons/Guns/SM_Wep_Revolver_01",
+      "rigId": "revolver",
+      "combatId": "revolver",
+      "kind": "handheld",
+      "weight": 2
+    },
+    {
+      "itemId": "polygonRevolver02",
+      "name": "Револьвер 02",
+      "prefab": "Weapons/Guns/SM_Wep_Revolver_02",
+      "rigId": "revolver",
+      "combatId": "revolver",
+      "kind": "handheld",
+      "weight": 2
+    },
+    {
+      "itemId": "polygonRifle01",
+      "name": "Винтовка 01",
+      "prefab": "Weapons/Guns/SM_Wep_Rifle_01",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "handheld",
+      "weight": 4
+    },
+    {
+      "itemId": "polygonRifle02",
+      "name": "Винтовка 02",
+      "prefab": "Weapons/Guns/SM_Wep_Rifle_02",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "handheld",
+      "weight": 4
+    },
+    {
+      "itemId": "polygonRifle03",
+      "name": "Винтовка 03",
+      "prefab": "Weapons/Guns/SM_Wep_Rifle_03",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "handheld",
+      "weight": 4
+    },
+    {
+      "itemId": "rocketLauncher",
+      "name": "Ракетная установка 01",
+      "prefab": "Weapons/Guns/SM_Wep_RocketLauncher_01",
+      "rigId": "rocketLauncher",
+      "combatId": "rocketLauncher",
+      "kind": "handheld",
+      "weight": 9.6
+    },
+    {
+      "itemId": "shotgun",
+      "name": "Дробовик 01",
+      "prefab": "Weapons/Guns/SM_Wep_Shotgun_01",
+      "rigId": "shotgun",
+      "combatId": "shotgun",
+      "kind": "handheld",
+      "weight": 4.2
+    },
+    {
+      "itemId": "polygonSniperRifle01",
+      "name": "Снайперская винтовка 01",
+      "prefab": "Weapons/Guns/SM_Wep_SniperRifle_01",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "handheld",
+      "weight": 4
+    },
+    {
+      "itemId": "polygonSniperRifle02",
+      "name": "Снайперская винтовка 02",
+      "prefab": "Weapons/Guns/SM_Wep_SniperRifle_02",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "handheld",
+      "weight": 4
+    },
+    {
+      "itemId": "polygonSniperRiflePneumatic01",
+      "name": "Пневматическая снайперская винтовка 01",
+      "prefab": "Weapons/Guns/SM_Wep_SniperRifle_Pneumatic_01",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "handheld",
+      "weight": 4
+    },
+    {
+      "itemId": "polygonSpearGun01",
+      "name": "Гарпунное ружьё 01",
+      "prefab": "Weapons/Guns/SM_Wep_SpearGun_01",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "handheld",
+      "weight": 4
+    },
+    {
+      "itemId": "smg",
+      "name": "Пистолет-пулемёт 01",
+      "prefab": "Weapons/Guns/SM_Wep_SubMGun_01",
+      "rigId": "smg",
+      "combatId": "smg",
+      "kind": "handheld",
+      "weight": 3.2
+    },
+    {
+      "itemId": "polygonSubMGun02",
+      "name": "Пистолет-пулемёт 02",
+      "prefab": "Weapons/Guns/SM_Wep_SubMGun_02",
+      "rigId": "smg",
+      "combatId": "smg",
+      "kind": "handheld",
+      "weight": 3.2
+    },
+    {
+      "itemId": "polygonSubMGun03",
+      "name": "Пистолет-пулемёт 03",
+      "prefab": "Weapons/Guns/SM_Wep_SubMGun_03",
+      "rigId": "smg",
+      "combatId": "smg",
+      "kind": "handheld",
+      "weight": 3.2
+    },
+    {
+      "itemId": "polygonSubMGunClean03",
+      "name": "Пистолет-пулемёт (чистое) 03",
+      "prefab": "Weapons/Guns/SM_Wep_SubMGun_Clean_03",
+      "rigId": "smg",
+      "combatId": "smg",
+      "kind": "handheld",
+      "weight": 3.2
+    },
+    {
+      "itemId": "polygonBatMetal01",
+      "name": "Металлическая бита 01",
+      "prefab": "Weapons/Melee/SM_Wep_Bat_Metal_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonBatWood01",
+      "name": "Деревянная бита 01",
+      "prefab": "Weapons/Melee/SM_Wep_Bat_Wood_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonBatWood02",
+      "name": "Деревянная бита 02",
+      "prefab": "Weapons/Melee/SM_Wep_Bat_Wood_02",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonBaton01",
+      "name": "Дубинка 01",
+      "prefab": "Weapons/Melee/SM_Wep_Baton_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonBaton02",
+      "name": "Дубинка 02",
+      "prefab": "Weapons/Melee/SM_Wep_Baton_02",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonButcher01",
+      "name": "Мясницкий тесак 01",
+      "prefab": "Weapons/Melee/SM_Wep_Butcher_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonCross01",
+      "name": "Боевой крест 01",
+      "prefab": "Weapons/Melee/SM_Wep_Cross_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonCrowbar01",
+      "name": "Лом 01",
+      "prefab": "Weapons/Melee/SM_Wep_Crowbar_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonCrutch01",
+      "name": "Костыль 01",
+      "prefab": "Weapons/Melee/SM_Wep_Crutch_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "axe",
+      "name": "Топор 01",
+      "prefab": "Weapons/Melee/SM_Wep_FireAxe_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonHammer01",
+      "name": "Молот 01",
+      "prefab": "Weapons/Melee/SM_Wep_Hammer_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonKatana01",
+      "name": "Катана 01",
+      "prefab": "Weapons/Melee/SM_Wep_Katana_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonMeleeGolfClub01",
+      "name": "Клюшка 01",
+      "prefab": "Weapons/Melee/SM_Wep_Melee_GolfClub_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "knife",
+      "name": "Нож 01",
+      "prefab": "Weapons/Melee/SM_Wep_Melee_HuntingKnife_01",
+      "rigId": "knife",
+      "combatId": "knife",
+      "kind": "handheld",
+      "weight": 0.5
+    },
+    {
+      "itemId": "polygonMeleeMachete01",
+      "name": "Мачете 01",
+      "prefab": "Weapons/Melee/SM_Wep_Melee_Machete_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonMeleeSpearWood01",
+      "name": "Копьё 01",
+      "prefab": "Weapons/Melee/SM_Wep_Melee_Spear_Wood_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "handPump",
+      "name": "Трубный ключ 01",
+      "prefab": "Weapons/Melee/SM_Wep_PipeWrench_01",
+      "rigId": "handPump",
+      "combatId": "handPump",
+      "kind": "handheld",
+      "weight": 2.7
+    },
+    {
+      "itemId": "polygonPipe01",
+      "name": "Труба 01",
+      "prefab": "Weapons/Melee/SM_Wep_Pipe_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonPlank01",
+      "name": "Доска 01",
+      "prefab": "Weapons/Melee/SM_Wep_Plank_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonRebarClub01",
+      "name": "Арматурная дубина 01",
+      "prefab": "Weapons/Melee/SM_Wep_RebarClub_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "pickaxe",
+      "name": "Оружие 01",
+      "prefab": "Weapons/Melee/SM_Wep_Spade_01",
+      "rigId": "pickaxe",
+      "combatId": "pickaxe",
+      "kind": "handheld",
+      "weight": 3
+    },
+    {
+      "itemId": "polygonWoodAxe01",
+      "name": "Дровяной топор 01",
+      "prefab": "Weapons/Melee/SM_Wep_WoodAxe_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonWrench01",
+      "name": "Ключ 01",
+      "prefab": "Weapons/Melee/SM_Wep_Wrench_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonBombGasCan01",
+      "name": "Бомба из канистры 01",
+      "prefab": "Weapons/Misc/SM_Wep_Bomb_GasCan_01",
+      "rigId": "pistol",
+      "combatId": "rocketLauncher",
+      "kind": "throwable",
+      "weight": 0.65
+    },
+    {
+      "itemId": "polygonBombPropane01",
+      "name": "Пропановая бомба 01",
+      "prefab": "Weapons/Misc/SM_Wep_Bomb_Propane_01",
+      "rigId": "pistol",
+      "combatId": "rocketLauncher",
+      "kind": "throwable",
+      "weight": 0.65
+    },
+    {
+      "itemId": "polygonChainSaw01",
+      "name": "Бензопила 01",
+      "prefab": "Weapons/Misc/SM_Wep_ChainSaw_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonCrossBow01",
+      "name": "Арбалет 01",
+      "prefab": "Weapons/Misc/SM_Wep_CrossBow_01",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "handheld",
+      "weight": 4
+    },
+    {
+      "itemId": "polygonCrossBowClean01",
+      "name": "Арбалет (чистое) 01",
+      "prefab": "Weapons/Misc/SM_Wep_CrossBow_Clean_01",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "handheld",
+      "weight": 4
+    },
+    {
+      "itemId": "flamethrower",
+      "name": "Огнемёт 01",
+      "prefab": "Weapons/Misc/SM_Wep_FlameThrower_01",
+      "rigId": "flamethrower",
+      "combatId": "flamethrower",
+      "kind": "handheld",
+      "weight": 7.4
+    },
+    {
+      "itemId": "polygonFlareGun01",
+      "name": "Сигнальный пистолет 01",
+      "prefab": "Weapons/Misc/SM_Wep_FlareGun_01",
+      "rigId": "pistol",
+      "combatId": "pistol",
+      "kind": "handheld",
+      "weight": 1.5
+    },
+    {
+      "itemId": "polygonFlashbang01",
+      "name": "Светошумовая граната 01",
+      "prefab": "Weapons/Misc/SM_Wep_Flashbang_01",
+      "rigId": "pistol",
+      "combatId": "rocketLauncher",
+      "kind": "throwable",
+      "weight": 0.65
+    },
+    {
+      "itemId": "polygonGrenade01",
+      "name": "Граната 01",
+      "prefab": "Weapons/Misc/SM_Wep_Grenade_01",
+      "rigId": "pistol",
+      "combatId": "rocketLauncher",
+      "kind": "throwable",
+      "weight": 0.65
+    },
+    {
+      "itemId": "polygonMolotov01",
+      "name": "Коктейль Молотова 01",
+      "prefab": "Weapons/Misc/SM_Wep_Molotov_01",
+      "rigId": "pistol",
+      "combatId": "rocketLauncher",
+      "kind": "throwable",
+      "weight": 0.65
+    },
+    {
+      "itemId": "polygonNailBomb01",
+      "name": "Бомба с гвоздями 01",
+      "prefab": "Weapons/Misc/SM_Wep_NailBomb_01",
+      "rigId": "pistol",
+      "combatId": "rocketLauncher",
+      "kind": "throwable",
+      "weight": 0.65
+    },
+    {
+      "itemId": "polygonPipeBomb01",
+      "name": "Трубная бомба 01",
+      "prefab": "Weapons/Misc/SM_Wep_PipeBomb_01",
+      "rigId": "pistol",
+      "combatId": "rocketLauncher",
+      "kind": "throwable",
+      "weight": 0.65
+    },
+    {
+      "itemId": "polygonSignShield01",
+      "name": "Щит 01",
+      "prefab": "Weapons/Misc/SM_Wep_Sign_Shield_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonTrimmer01",
+      "name": "Триммер 01",
+      "prefab": "Weapons/Misc/SM_Wep_Trimmer_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonTrimmerClean01",
+      "name": "Триммер (чистое) 01",
+      "prefab": "Weapons/Misc/SM_Wep_Trimmer_Clean_01",
+      "rigId": "axe",
+      "combatId": "axe",
+      "kind": "handheld",
+      "weight": 2.5
+    },
+    {
+      "itemId": "polygonAAGun01",
+      "name": "Зенитная установка 01",
+      "prefab": "Weapons/Weapons/SM_Wep_AAGun_01",
+      "rigId": "machineGun",
+      "combatId": "machineGun",
+      "kind": "mounted",
+      "weight": 15.84
+    },
+    {
+      "itemId": "polygonVehAA01",
+      "name": "Транспортная зенитная установка 01",
+      "prefab": "Weapons/Weapons/SM_Wep_Veh_AA_01",
+      "rigId": "machineGun",
+      "combatId": "machineGun",
+      "kind": "mounted",
+      "weight": 15.84
+    },
+    {
+      "itemId": "polygonVehHarpoon01",
+      "name": "Транспортный гарпун 01",
+      "prefab": "Weapons/Weapons/SM_Wep_Veh_Harpoon_01",
+      "rigId": "rifle",
+      "combatId": "rifle",
+      "kind": "mounted",
+      "weight": 7.2
+    },
+    {
+      "itemId": "polygonVehMachineGun01",
+      "name": "Транспортный пулемёт 01",
+      "prefab": "Weapons/Weapons/SM_Wep_Veh_MachineGun_01",
+      "rigId": "machineGun",
+      "combatId": "machineGun",
+      "kind": "mounted",
+      "weight": 15.84
+    },
+    {
+      "itemId": "polygonVehMiniGun01",
+      "name": "Транспортный миниган 01",
+      "prefab": "Weapons/Weapons/SM_Wep_Veh_MiniGun_01",
+      "rigId": "machineGun",
+      "combatId": "machineGun",
+      "kind": "mounted",
+      "weight": 15.84
+    },
+    {
+      "itemId": "polygonVehRocketLauncher01",
+      "name": "Транспортная ракетная установка 01",
+      "prefab": "Weapons/Weapons/SM_Wep_Veh_Rocket_Launcher_01",
+      "rigId": "rocketLauncher",
+      "combatId": "rocketLauncher",
+      "kind": "mounted",
+      "weight": 17.28
+    },
+    {
+      "itemId": "polygonVehSawLauncher01",
+      "name": "Транспортная пильная установка 01",
+      "prefab": "Weapons/Weapons/SM_Wep_Veh_Saw_Launcher_01",
+      "rigId": "rocketLauncher",
+      "combatId": "rocketLauncher",
+      "kind": "mounted",
+      "weight": 17.28
+    }
+  ]
+}

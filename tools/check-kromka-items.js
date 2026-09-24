@@ -16,6 +16,8 @@ const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 const json = relative => JSON.parse(read(relative));
 
 const catalog = normalizeItemCatalog(json('data/kromka/items.json'));
+const throwableIds = new Set(json('data/kromka/apocalypse-weapons.json').weapons
+  .filter(row => row.kind === 'throwable').map(row => row.itemId));
 const indexes = itemCatalogIndexes(catalog);
 const recipes = normalizeFieldRecipeCatalog(json('data/kromka/field-recipes.json'), catalog);
 const recipeIndexes = fieldRecipeCatalogIndexes(recipes);
@@ -45,7 +47,8 @@ for (const item of catalog.items) {
     assert(item.compatibleSlots.length > 0, `${item.id}: missing equipment compatibility`);
   }
   if (item.conditionMode === 'runtime') {
-    assert(item.ammoType && item.modificationSlots.length >= 3,
+    assert(item.ammoType && (throwableIds.has(item.id)
+      ? item.modificationSlots.length === 0 : item.modificationSlots.length >= 3),
       `${item.id}: runtime weapon lacks magazine/modification identity`);
   }
 }

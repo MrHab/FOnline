@@ -162,7 +162,8 @@ namespace RealmOfAshes.Game
         public static Profile Get(string weaponId)
         {
             Profile profile;
-            return Profiles.TryGetValue(weaponId ?? string.Empty, out profile) ? profile : null;
+            string rigId = RoaApocalypseModels.WeaponRig(weaponId);
+            return Profiles.TryGetValue(rigId ?? string.Empty, out profile) ? profile : null;
         }
 
         /// <summary>

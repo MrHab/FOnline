@@ -869,7 +869,7 @@ namespace RealmOfAshes.Game
             BeginAttackRequest(attackToken, meleeAttack, attackVisualStartedAt);
             SendAttackVisual(self, targetPosition, selfX, selfZ, targetX, targetZ, angle);
 
-            if (weapon == "rocketLauncher")
+            if (RoaApocalypseModels.WeaponCombatId(weapon) == "rocketLauncher")
             {
                 SendExplosion(selfX, selfZ, targetX, targetZ, angle, targetPosition, attackToken);
                 return;
@@ -986,7 +986,7 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                if (ActiveWeapon() != "rocketLauncher") return false;
+                if (RoaApocalypseModels.WeaponCombatId(ActiveWeapon()) != "rocketLauncher") return false;
                 JToken safe = Socket?.Session?.Self?["zoneRules"]?["safe"];
                 if (safe != null && safe.Type == JTokenType.Boolean && safe.Value<bool>()) return false;
                 return Hud == null || Hud.PvpMode != "peaceful";

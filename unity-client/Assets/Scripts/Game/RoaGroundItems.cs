@@ -407,10 +407,11 @@ namespace RealmOfAshes.Game
                 kind = "library";
                 return "/assets/models/items/ground_item_library.glb";
             }
-            if (WeaponItems.Contains(itemId))
+            if (WeaponItems.Contains(itemId) || RoaApocalypseModels.Weapon(itemId) != null)
             {
                 kind = "weapon";
-                return "/assets/models/weapons/weapon_" + itemId + ".glb";
+                return "/assets/models/weapons/weapon_"
+                    + RoaApocalypseModels.WeaponRig(itemId) + ".glb";
             }
             if (EquipmentModels.TryGetValue(itemId ?? string.Empty, out string path))
             {

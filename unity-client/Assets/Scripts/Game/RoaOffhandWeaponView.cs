@@ -60,14 +60,16 @@ namespace RealmOfAshes.Game
 
         public static bool IsSupported(string weaponId)
         {
-            return !string.IsNullOrEmpty(weaponId) && Supported.Contains(weaponId);
+            return !string.IsNullOrEmpty(weaponId)
+                && Supported.Contains(RoaApocalypseModels.WeaponRig(weaponId));
         }
 
         /// <summary>Physical items allowed in the authoritative offhand slot.
         /// IsSupported remains firearm-only so a knife/case never selects dual-gun IK.</summary>
         public static bool CanRender(string itemId)
         {
-            return IsSupported(itemId) || itemId == "knife" || itemId == "medkit";
+            return IsSupported(itemId) || RoaApocalypseModels.WeaponRig(itemId) == "knife"
+                || itemId == "medkit";
         }
 
         public bool TryGetMuzzle(out Vector3 worldPosition)
@@ -162,8 +164,9 @@ namespace RealmOfAshes.Game
             await RoaWeaponGrip.Ensure(baseUrl);
             if (request != _loadRequest || !RoaWeaponGrip.Ready) return;
 
-            string url = baseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + weaponId + ".glb";
-            GltfImport import = await RoaWeaponView.LoadCached(weaponId, url);
+            string rigId = RoaApocalypseModels.WeaponRig(weaponId);
+            string url = baseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + rigId + ".glb";
+            GltfImport import = await RoaWeaponView.LoadCached(rigId, url);
             if (request != _loadRequest) return;
             if (import == null)
             {
@@ -189,7 +192,7 @@ namespace RealmOfAshes.Game
             _weapon = holder.transform;
             _socketGrip = FindDeep(_weapon, "socket_grip_r");
             _socketMuzzle = FindDeep(_weapon, "socket_muzzle");
-            if (_socketGrip == null || (weaponId != "knife" && _socketMuzzle == null))
+            if (_socketGrip == null || (rigId != "knife" && _socketMuzzle == null))
             {
                 Debug.LogError("[ROA] У оружия второй руки " + weaponId + " нет сокетов хвата или дула.");
                 WeaponId = weaponId;
@@ -226,7 +229,7 @@ namespace RealmOfAshes.Game
             if (WeaponId == "medkit") return;
             if (!Ready || Stowed || _weapon == null || _characterRoot == null) return;
 
-            if (WeaponId == "knife")
+            if (RoaApocalypseModels.WeaponRig(WeaponId) == "knife")
             {
                 // A passive offhand blade follows the animated left wrist.
                 // Do not mirror the right firearm arm or invent a muzzle.

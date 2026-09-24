@@ -180,6 +180,7 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
   assert(f.attack('enemyHit').protected);
   assert(f.attack('playerHit').protected);
   f.weapon.id = 'rocketLauncher';
+  f.weapon.damageType = 'explosive';
   const explosion = f.attack('explosionAttack', { impactX: 10, impactZ: 0 });
   assert(explosion.ok, `${capital}: explosion near protected NPCs denied`);
   assert.equal(explosion.enemyHits.length + explosion.playerHits.length, 0);
@@ -191,6 +192,7 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
 {
   const f = fixture('pvpFullDrop');
   f.weapon.id = 'rocketLauncher';
+  f.weapon.damageType = 'explosive';
   f.p.socialState = { friends: [{ id: f.target.characterId }] };
   const foe = { ...f.enemy, id: 'raider', faction: 'raiders', hostileToPlayer: true };
   const opponent = { ...f.target, id: 'opponent', characterId: 'opponent-char' };
@@ -249,6 +251,7 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
   const f = fixture('pvp');
   const ride = () => ({ itemId: 'motorcycle', kind: 'motorcycle', speed: 11, since: 0 });
   f.weapon.id = 'rocketLauncher';
+  f.weapon.damageType = 'explosive';
   f.p.socialState = { friends: [{ id: f.target.characterId }] };
   f.target.mountedVehicle = ride();
   const opponent = { ...f.target, id: 'opponent', characterId: 'opponent-char', mountedVehicle: ride() };

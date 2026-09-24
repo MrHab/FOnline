@@ -195,6 +195,13 @@ namespace RealmOfAshes.Game
             Add(result, "shotgun", "Дробовик", 4.2f);
             Add(result, "rocketLauncher", "Ракетница", 9.6f);
             Add(result, "knife", "Боевой нож", 0.5f);
+            IReadOnlyList<RoaApocalypseModels.WeaponEntry> apocalypseWeapons =
+                RoaApocalypseModels.WeaponEntries;
+            if (apocalypseWeapons != null)
+                foreach (RoaApocalypseModels.WeaponEntry entry in apocalypseWeapons)
+                    if (entry != null && entry.itemId != null
+                        && entry.itemId.StartsWith("polygon", System.StringComparison.Ordinal))
+                        Add(result, entry.itemId, entry.displayName, entry.weight);
             Add(result, "fists", "Кулаки", 0f);
 
             Add(result, "leather", "Кожаная куртка", 3f);

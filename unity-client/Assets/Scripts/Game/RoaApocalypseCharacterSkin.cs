@@ -23,8 +23,6 @@ namespace RealmOfAshes.Game
         private GameObject _basePrefab;
         private GameObject _activePrefab;
         private bool _female;
-        private Bounds _sourceBounds;
-        private bool _hasSourceBounds;
         private RoaCharacterView _view;
         private GameObject _backpack;
         private GameObject _helmet;
@@ -51,14 +49,27 @@ namespace RealmOfAshes.Game
             _rigRoot = rigRoot;
             var source = new Dictionary<string, Transform>();
             var originalRenderers = new List<Renderer>();
+            var sourceRenderers = new List<Renderer>();
+            Renderer bodyRenderer = null;
             foreach (Transform bone in rigRoot.GetComponentsInChildren<Transform>(true))
             {
                 string key = BoneKey(bone.name);
                 if (!source.ContainsKey(key)) source.Add(key, bone);
             }
             foreach (Renderer renderer in rigRoot.GetComponentsInChildren<Renderer>(true))
-                if (renderer.enabled && (renderer is MeshRenderer || renderer is SkinnedMeshRenderer))
-                    originalRenderers.Add(renderer);
+            {
+                if (!(renderer is MeshRenderer || renderer is SkinnedMeshRenderer)
+                    || IsHeldItem(renderer.transform)) continue;
+                sourceRenderers.Add(renderer);
+                if (renderer.name == "body_base") bodyRenderer = renderer;
+                if (renderer.enabled) originalRenderers.Add(renderer);
+            }
+
+            // Rebinding an outfit happens after the legacy renderers were hidden.
+            // Read their current world bounds each time: a cached world-space
+            // position leaves the new skin behind when the actor has moved.
+            Bounds oldBounds = bodyRenderer != null
+                ? bodyRenderer.bounds : WorldBounds(sourceRenderers);
 
             _visual = Instantiate(prefab, transform, false);
             _visual.name = RoaApocalypseVisuals.ChildName;
@@ -98,12 +109,6 @@ namespace RealmOfAshes.Game
             _bones.Sort((a, b) => Depth(a.Target).CompareTo(Depth(b.Target)));
             if (_bones.Count >= 10)
             {
-                if (originalRenderers.Count > 0 && !_hasSourceBounds)
-                {
-                    _sourceBounds = WorldBounds(originalRenderers);
-                    _hasSourceBounds = true;
-                }
-                var oldBounds = _sourceBounds;
                 var fresh = new List<Renderer>();
                 foreach (Renderer renderer in _visual.GetComponentsInChildren<Renderer>(true))
                     if (renderer.enabled && renderer.gameObject.activeInHierarchy) fresh.Add(renderer);

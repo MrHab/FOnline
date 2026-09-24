@@ -57,6 +57,9 @@ namespace RealmOfAshes.EditorTools
                 RoaCharacterView character = host.GetComponentInChildren<RoaCharacterView>(true);
                 if (character == null || !character.Ready)
                     throw new InvalidOperationException("Character body did not load.");
+                // Outfits can change after the player has travelled. Keep the
+                // preview camera with the actor while moving both in world space.
+                host.transform.position = new Vector3(13f, 0f, -9f);
                 await character.EquipItems("http://127.0.0.1:3000", new JObject
                 {
                     ["armor"] = "combatArmor",
@@ -77,6 +80,7 @@ namespace RealmOfAshes.EditorTools
                 character.UpdateLocomotion(Vector3.zero, 0f, false, false);
                 await Task.Delay(150);
                 character.GetComponent<RoaApocalypseCharacterSkin>()?.SyncPose();
+                AssertPackBodyFollowsCharacter(character);
                 readback = new Texture2D(preview.Texture.width, preview.Texture.height,
                     TextureFormat.RGBA32, false);
                 Capture(preview, readback, "ApocalypseEquipmentFront.png");
@@ -100,6 +104,30 @@ namespace RealmOfAshes.EditorTools
                     EditorApplication.ExitPlaymode();
                 }
             }
+        }
+
+        private static void AssertPackBodyFollowsCharacter(RoaCharacterView character)
+        {
+            Transform skin = character.transform.Find(RoaApocalypseVisuals.ChildName);
+            if (skin == null) throw new InvalidOperationException("Pack character skin is missing.");
+            Renderer body = null;
+            foreach (Renderer renderer in character.GetComponentsInChildren<Renderer>(true))
+                if (renderer.name == "body_base") { body = renderer; break; }
+            if (body == null) throw new InvalidOperationException("Source body is missing.");
+            bool found = false;
+            Bounds packBounds = default;
+            foreach (Renderer renderer in skin.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
+                if (!found) { packBounds = renderer.bounds; found = true; }
+                else packBounds.Encapsulate(renderer.bounds);
+            }
+            if (!found) throw new InvalidOperationException("Pack character has no visible mesh.");
+            Vector2 sourceCenter = new Vector2(body.bounds.center.x, body.bounds.center.z);
+            Vector2 packCenter = new Vector2(packBounds.center.x, packBounds.center.z);
+            if (Vector2.Distance(sourceCenter, packCenter) > 1.2f)
+                throw new InvalidOperationException("Pack character stayed behind after outfit change: "
+                    + Vector2.Distance(sourceCenter, packCenter).ToString("F2") + " m.");
         }
 
         private static void Capture(RoaCharacterPreview preview, Texture2D readback, string name)

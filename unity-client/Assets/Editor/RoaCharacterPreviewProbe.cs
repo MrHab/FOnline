@@ -126,6 +126,13 @@ namespace RealmOfAshes.EditorTools
                 RoaCharacterView loaded = host.GetComponentInChildren<RoaCharacterView>(true);
                 Check(loaded != null && loaded.Ready, "RoaCharacterView не готов");
                 Check(loaded.BodyKey == "male_medium", "загружено не то тело");
+                Transform packBody = loaded.transform.Find(RoaApocalypseVisuals.ChildName);
+                Check(packBody != null, "тело PolygonApocalypse не создано для игрока");
+                int visiblePackRenderers = 0;
+                foreach (Renderer renderer in packBody.GetComponentsInChildren<Renderer>(true))
+                    if (renderer.enabled && renderer.gameObject.activeInHierarchy)
+                        visiblePackRenderers++;
+                Check(visiblePackRenderers > 0, "у тела PolygonApocalypse нет видимых частей");
                 Check(loaded.AnyHairVisible, "выбранная причёска не видна");
                 CheckHairTint(loaded, "#5B2922");
 

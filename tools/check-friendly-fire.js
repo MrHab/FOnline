@@ -20,6 +20,13 @@ function constSource(name) {
   return source.slice(start, source.indexOf(';', start) + 1);
 }
 function handlerSource(event) {
+  if (event === 'enemyHit' || event === 'playerHit') {
+    const name = event === 'enemyHit' ? 'handleEnemyHit' : 'handlePlayerHit';
+    const start = source.indexOf(`  ${name} = (`);
+    assert(start >= 0, event);
+    const body = source.slice(start, source.indexOf('\n  };', start) + 5);
+    return `${body}\n  socket.on('${event}', ${name});`;
+  }
   const start = source.indexOf(`  socket.on('${event}',`);
   assert(start >= 0, event);
   return source.slice(start, source.indexOf('\n  });', start) + 6);
@@ -121,6 +128,7 @@ function fixture(mode = 'pvp') {
     'serverMarkAttackTargetHit', 'serverCurrentHp', 'serverAllowCosmeticRelay',
     'serverEmitPlayerVehicle', 'serverDismountVehicle', 'serverVehicleHitDismount'
   ]) vm.runInContext(functionSource(name), context);
+  vm.runInContext('let handleEnemyHit; let handlePlayerHit;', context);
   for (const event of ['shoot', 'melee', 'combatAttack', 'enemyHit', 'playerHit', 'explosionAttack'])
     vm.runInContext(handlerSource(event), context);
   let sequence = 0;

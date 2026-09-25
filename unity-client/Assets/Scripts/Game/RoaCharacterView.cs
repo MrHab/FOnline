@@ -206,6 +206,7 @@ namespace RealmOfAshes.Game
 
         public bool Ready { get; private set; }
         public bool UsesProjectPrefab { get; private set; }
+        public bool UsesUnderwearBody { get; private set; }
 
         /// <summary>Изменилась иерархия визуала: туману войны надо обновить рендереры.</summary>
         public event Action OnVisualChanged;
@@ -987,7 +988,7 @@ namespace RealmOfAshes.Game
             return true;
         }
 
-        public async Task Load(string baseUrl, JObject appearance)
+        public async Task Load(string baseUrl, JObject appearance, bool useUnderwearBody = false)
         {
             int loadRequest = ++_loadRequest;
             string key = ModelKey(appearance);
@@ -997,6 +998,7 @@ namespace RealmOfAshes.Game
             string url = baseUrl.TrimEnd('/') + relativeUrl;
             Ready = false;
             UsesProjectPrefab = false;
+            UsesUnderwearBody = useUnderwearBody;
             _clips.Clear();
             _bones.Clear();
             _boneOffsets.Clear();
@@ -1059,7 +1061,7 @@ namespace RealmOfAshes.Game
             PrepareAppearance();
             ApplyAppearanceVisuals();
 
-            GameObject apocalypseBody = RoaApocalypseModels.Character(key);
+            GameObject apocalypseBody = useUnderwearBody ? null : RoaApocalypseModels.Character(key);
             if (_modelRoot != null && apocalypseBody != null)
             {
                 _apocalypseSkin = GetComponent<RoaApocalypseCharacterSkin>();
@@ -1073,6 +1075,16 @@ namespace RealmOfAshes.Game
 
             _animation.wrapMode = WrapMode.Loop;
             Play("idle");
+            // The creator exposes this rig directly. Apply its first idle pose
+            // before the preview becomes visible so loading never flashes a T-pose.
+            if (useUnderwearBody && _animation["idle"] != null)
+            {
+                AnimationState idle = _animation["idle"];
+                idle.enabled = true;
+                idle.weight = 1f;
+                idle.time = Mathf.Min(0.35f, idle.length * 0.35f);
+                _animation.Sample();
+            }
             Ready = true;
             if (_dead) SetDead(true);
 

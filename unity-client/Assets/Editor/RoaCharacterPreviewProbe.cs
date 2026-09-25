@@ -115,6 +115,42 @@ namespace RealmOfAshes.EditorTools
                     HairColorId = "hair_08"
                 };
 
+                // The creator shows the authored underwear body. The equipment
+                // review below still exercises the PolygonApocalypse game skin.
+                preview.Show(BaseUrl, appearance, 320, 360, showUnderwear: true);
+                await WaitUntilReady(preview, 30000);
+                RoaCharacterView creatorBody = host.GetComponentInChildren<RoaCharacterView>(true);
+                Check(creatorBody != null && creatorBody.UsesUnderwearBody
+                    && creatorBody.BodyKey == "male_medium", "создатель не показал мужское тело в белье");
+                Check(creatorBody.GetComponent<RoaApocalypseCharacterSkin>() == null,
+                    "одежда PolygonApocalypse перекрыла тело в белье");
+                Check(creatorBody.AnyHairVisible, "мужская причёска не видна в создателе");
+                CheckHairTint(creatorBody, "#5B2922");
+                CaptureCreator(preview, "CreatorUnderwearMale.png");
+
+                appearance.HairId = "shaved";
+                appearance.HairColorId = "hair_02";
+                preview.Show(BaseUrl, appearance, 320, 360, showUnderwear: true);
+                Check(host.GetComponentInChildren<RoaCharacterView>(true) == creatorBody
+                    && !creatorBody.AnyHairVisible, "выбор бритья не обновил мужское тело");
+                appearance.Sex = "female";
+                appearance.HairId = "tied_back";
+                appearance.HairColorId = "hair_05";
+                preview.Show(BaseUrl, appearance, 320, 360, showUnderwear: true);
+                await WaitUntilReady(preview, 30000);
+                creatorBody = host.GetComponentInChildren<RoaCharacterView>(true);
+                Check(creatorBody != null && creatorBody.UsesUnderwearBody
+                    && creatorBody.BodyKey == "female_medium" && creatorBody.AnyHairVisible,
+                    "создатель не показал женское тело и причёску");
+                Check(creatorBody.GetComponent<RoaApocalypseCharacterSkin>() == null,
+                    "одежда PolygonApocalypse перекрыла женское тело в белье");
+                CheckHairTint(creatorBody, "#8A6040");
+                CaptureCreator(preview, "CreatorUnderwearFemale.png");
+
+                appearance.Sex = "male";
+                appearance.HairId = "short_crop";
+                appearance.HairColorId = "hair_08";
+
                 preview.Show(BaseUrl, appearance, 320, 360);
                 Check(preview.Texture != null, "render texture не создана");
                 Check(preview.Texture.width == 320 && preview.Texture.height == 360,
@@ -579,6 +615,30 @@ namespace RealmOfAshes.EditorTools
             }
             Check(preview.IsReady,
                 "GLB не готов за " + timeoutMs + " мс; статус: " + preview.StatusText);
+        }
+
+        private static void CaptureCreator(RoaCharacterPreview preview, string fileName)
+        {
+            Check(preview.RenderNow() && preview.RenderNow(), "тело в белье не отрисовано");
+            RenderTexture previous = RenderTexture.active;
+            Texture2D snapshot = null;
+            try
+            {
+                RenderTexture.active = preview.Texture;
+                snapshot = new Texture2D(preview.Texture.width, preview.Texture.height,
+                    TextureFormat.RGBA32, false);
+                snapshot.ReadPixels(new Rect(0, 0, snapshot.width, snapshot.height), 0, 0);
+                snapshot.Apply(false, false);
+                string path = System.IO.Path.GetFullPath(System.IO.Path.Combine(
+                    Application.dataPath, "../Temp/" + fileName));
+                System.IO.File.WriteAllBytes(path, snapshot.EncodeToPNG());
+                Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] тело в белье: " + path);
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                if (snapshot != null) UnityEngine.Object.DestroyImmediate(snapshot);
+            }
         }
 
         private static void CheckHairTint(RoaCharacterView view, string html)

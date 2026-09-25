@@ -25,6 +25,7 @@ namespace RealmOfAshes.EditorTools
         private static Transform _leftTarget;
         private static RoaIkChain _rightArm;
         private static RoaIkChain _leftArm;
+        private static RoaApocalypseCharacterSkin _skin;
         private static Vector3 _rightLastPosition;
         private static Vector3 _leftLastPosition;
         private static Quaternion _rightLastRotation;
@@ -119,6 +120,14 @@ namespace RealmOfAshes.EditorTools
                 _leftTarget = CreateHandTarget(LeftTargetName, targetParent, skin.VisibleHand(true));
                 _rightArm = ArmChain(skin, "R");
                 _leftArm = ArmChain(skin, "L");
+                _skin = skin;
+                foreach (SkinnedMeshRenderer renderer in skin.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    if (!renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
+                    // A paused player loop otherwise keeps the last skinned pose on screen.
+                    renderer.updateWhenOffscreen = true;
+                    renderer.forceMatrixRecalculationPerRender = true;
+                }
                 RememberTargets();
                 EditorApplication.isPaused = true;
                 EditorApplication.delayCall += Focus;
@@ -181,7 +190,8 @@ namespace RealmOfAshes.EditorTools
 
         private static void RestoreHandTargets()
         {
-            if (_rightTarget != null && _leftTarget != null) return;
+            if (_rightTarget != null && _leftTarget != null && _rightArm != null
+                && _leftArm != null && _skin != null) return;
             Transform[] all = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include);
             _rightTarget = all.FirstOrDefault(node => node.name == RightTargetName);
             _leftTarget = all.FirstOrDefault(node => node.name == LeftTargetName);
@@ -189,6 +199,7 @@ namespace RealmOfAshes.EditorTools
             RoaApocalypseCharacterSkin skin = visual != null
                 ? visual.GetComponentInParent<RoaApocalypseCharacterSkin>() : null;
             if (skin == null) return;
+            _skin = skin;
             _rightArm = ArmChain(skin, "R");
             _leftArm = ArmChain(skin, "L");
             RememberTargets();
@@ -213,24 +224,27 @@ namespace RealmOfAshes.EditorTools
             if (!EditorApplication.isPlaying || !EditorApplication.isPaused
                 || SceneManager.GetActiveScene().path != ScenePath) return;
             RestoreHandTargets();
-            bool changed = false;
-            if (_rightTarget != null && _rightArm != null && _rightArm.Ready
-                && (_rightTarget.position != _rightLastPosition
-                    || _rightTarget.rotation != _rightLastRotation))
-            {
-                _rightArm.Solve(_rightTarget.position, _rightTarget.rotation);
-                changed = true;
-            }
-            if (_leftTarget != null && _leftArm != null && _leftArm.Ready
-                && (_leftTarget.position != _leftLastPosition
-                    || _leftTarget.rotation != _leftLastRotation))
-            {
-                _leftArm.Solve(_leftTarget.position, _leftTarget.rotation);
-                changed = true;
-            }
+            if (_rightTarget == null || _leftTarget == null || _skin == null) return;
+            bool changed = _rightTarget.position != _rightLastPosition
+                || _rightTarget.rotation != _rightLastRotation
+                || _leftTarget.position != _leftLastPosition
+                || _leftTarget.rotation != _leftLastRotation;
             if (!changed) return;
+            ApplyHandPose();
             RememberTargets();
             SceneView.RepaintAll();
+        }
+
+        private static void ApplyHandPose()
+        {
+            // The visual skin retargets from the gameplay skeleton. Rebuild that
+            // baseline before applying both editor targets so a later repaint or
+            // paused player-loop step cannot leave the hand at its old position.
+            _skin.SyncPose();
+            if (_rightArm != null && _rightArm.Ready)
+                _rightArm.Solve(_rightTarget.position, _rightTarget.rotation);
+            if (_leftArm != null && _leftArm.Ready)
+                _leftArm.Solve(_leftTarget.position, _leftTarget.rotation);
         }
 
         private static void DrawHandTargets(SceneView sceneView)
@@ -238,6 +252,8 @@ namespace RealmOfAshes.EditorTools
             if (!EditorApplication.isPlaying || !EditorApplication.isPaused
                 || SceneManager.GetActiveScene().path != ScenePath) return;
             RestoreHandTargets();
+            if (_rightTarget != null && _leftTarget != null && _skin != null)
+                ApplyHandPose();
             DrawTarget(_rightTarget, Color.cyan, "RIGHT HAND");
             DrawTarget(_leftTarget, new Color(1f, 0.7f, 0.15f), "LEFT HAND");
         }

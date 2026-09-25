@@ -32,6 +32,7 @@ namespace RealmOfAshes.Game
         private GameObject _backpack;
         private GameObject _helmet;
         private GameObject _helmetPrefab;
+        private readonly List<GameObject> _nativeHair = new List<GameObject>();
         private readonly List<GameObject> _footwear = new List<GameObject>();
         private string _footwearId;
 
@@ -39,6 +40,16 @@ namespace RealmOfAshes.Game
         public string ActiveArmorId => _armorId;
         public int ActiveArmorParts => _armorParts.Count;
         public GameObject ActiveHelmetPrefab => _helmetPrefab;
+        public bool AnyNativeHairVisible
+        {
+            get
+            {
+                foreach (GameObject hair in _nativeHair)
+                    if (hair != null && hair.activeSelf) return true;
+                return false;
+            }
+        }
+        public int NativeHairCount => _nativeHair.Count;
         public string ActiveFootwearId => _footwearId;
         public int ActiveFootwearParts => _footwear.Count;
 
@@ -100,6 +111,7 @@ namespace RealmOfAshes.Game
             Bounds oldBounds = bodyRenderer != null
                 ? bodyRenderer.bounds : WorldBounds(sourceRenderers);
 
+            _nativeHair.Clear();
             _visual = Instantiate(prefab, transform, false);
             _visual.name = RoaApocalypseVisuals.ChildName;
             RoaApocalypseVisuals.SetNativeWorldScale(_visual.transform, prefab.transform.localScale);
@@ -117,6 +129,10 @@ namespace RealmOfAshes.Game
             foreach (Renderer renderer in _visual.GetComponentsInChildren<Renderer>(true))
             {
                 string name = renderer.name;
+                // A character can load while its owner is hidden or prewarmed.
+                // Keep authored hair even when the outer actor is inactive.
+                if (name.Contains("_Hair_") && renderer.enabled && renderer.gameObject.activeSelf)
+                    _nativeHair.Add(renderer.gameObject);
                 if (name.Contains("Backpack") || name.Contains("Bedroll")
                     || name.Contains("SupplyBag") || name.Contains("Helmet")
                     || name.Contains("_Hat_") || name.Contains("_Mask_"))
@@ -165,6 +181,7 @@ namespace RealmOfAshes.Game
                     _visual.transform.position += offset;
                 }
                 foreach (Renderer renderer in originalRenderers) renderer.enabled = false;
+                RefreshNativeHair();
                 return true;
             }
             foreach (Renderer renderer in originalRenderers) renderer.enabled = true;
@@ -221,6 +238,7 @@ namespace RealmOfAshes.Game
                 RoaApocalypseVisuals.SetNativeWorldScale(_visual.transform, _basePrefab.transform.localScale);
             RefreshArmor();
             RefreshAccessories();
+            RefreshNativeHair();
             foreach (BonePair pair in _bones)
                 if (pair.Source != null && pair.Target != null)
                     pair.Target.localRotation = pair.TargetRest;
@@ -351,6 +369,20 @@ namespace RealmOfAshes.Game
                 RoaApocalypseModels.BackpackAttachment, "Spine_03");
             SetAccessory(ref _helmet, helmetPrefab != null, helmetPrefab, "Head");
             RefreshFootwear();
+        }
+
+        private void RefreshNativeHair()
+        {
+            // The animated pack body has its own hair mesh. The character's
+            // appearance controller already knows whether a loaded helmet or
+            // hood covers the original hair, so mirror that state here.
+            SetNativeHairVisible(_view == null || _view.AnyHairVisible);
+        }
+
+        public void SetNativeHairVisible(bool visible)
+        {
+            foreach (GameObject hair in _nativeHair)
+                if (hair != null && hair.activeSelf != visible) hair.SetActive(visible);
         }
 
         private void RefreshFootwear()

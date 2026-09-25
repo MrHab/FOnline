@@ -136,7 +136,7 @@ namespace RealmOfAshes.EditorTools
             AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_FootballHelmet_01", "helmet");
             AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Soldier_Male_Helmet_01", "tacticalHelmet");
             AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_RiotCop_Male_Helmet_01", "assaultHelmet");
-            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Hunter_Male_Hat_01", "preWarHelmet");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Scout_Female_Hat_01", "preWarHelmet");
             foreach (RoaApocalypseModels.ArmorEntry row in armor)
                 itemPaths[row.itemId] = "Characters/" + row.malePrefab.name;
             var items = new List<RoaApocalypseModels.ItemEntry>();

@@ -640,7 +640,7 @@ MonoBehaviour:
   - itemId: assaultHelmet
     prefab: {fileID: 1153852152701694, guid: cfe86ff67def9cd4bb8dc14105e1b710, type: 3}
   - itemId: preWarHelmet
-    prefab: {fileID: 1492510654237128, guid: 141fc51930b1a2c4b85d8d213c3bf3a8, type: 3}
+    prefab: {fileID: 1210444806839874, guid: 27d7347987dcd1f48be7c4b55465a67e, type: 3}
   - itemId: leather
     prefab: {fileID: 1274019000965958, guid: af169be12f376ce46a3e6b4bee8b8ffe, type: 3}
   - itemId: metalArmor

@@ -1147,6 +1147,7 @@ namespace RealmOfAshes.Game
             bool showHair = !covered && hairId != "shaved";
             foreach (GameObject hairObject in _hairObjects)
                 if (hairObject != null && hairObject.activeSelf != showHair) hairObject.SetActive(showHair);
+            if (_apocalypseSkin != null) _apocalypseSkin.SetNativeHairVisible(showHair);
         }
 
         private static Color HairColor(string id)

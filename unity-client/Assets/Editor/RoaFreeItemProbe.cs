@@ -477,6 +477,9 @@ namespace RealmOfAshes.EditorTools
             Animation animation=character.GetComponentInChildren<Animation>(true);
             int poseSamples=0, coverageSamples=0;
             float maxHeadSlip=0;
+            var skin=character.GetComponent<RoaApocalypseCharacterSkin>();
+            Check(skin!=null,"PolygonApocalypse body absent during helmet review");
+            if(bodyKey.StartsWith("male_")) Check(skin.NativeHairCount>0,"Native male hair absent before helmet review");
             await character.EquipWeapon(Origin, "");
             for(int outfit=0; outfit<helmets.Length+armor.Length; outfit++)
             {
@@ -490,6 +493,15 @@ namespace RealmOfAshes.EditorTools
                 await Task.Yield();
                 Check(character.HasLoadedEquipment("helmet",helmet) && character.HasLoadedEquipment("boots",boot),"Gear not ready "+bodyKey);
                 Check(!character.AnyHairVisible,"Hair protrudes through helmet");
+                Check(!skin.AnyNativeHairVisible,"PolygonApocalypse hair protrudes through helmet");
+                if(helmet=="preWarHelmet")
+                {
+                    GameObject nativeHelmet=skin.ActiveHelmetPrefab;
+                    Check(nativeHelmet==RoaApocalypseModels.Item(helmet),"Relict uses the wrong pack helmet");
+                    var filter=nativeHelmet.GetComponentInChildren<MeshFilter>(true);
+                    Check(filter!=null && filter.sharedMesh.bounds.size.y>=.3f,
+                        "Relict helmet is too flat at its authored size");
+                }
                 var renderers=new List<SkinnedMeshRenderer>();
                 character.CollectEquipmentRenderers(renderers);
                 foreach(string id in new[]{helmet,boot})
@@ -585,6 +597,7 @@ namespace RealmOfAshes.EditorTools
             }
             await character.EquipItems(Origin,new JObject());
             Check(character.AnyHairVisible,"Removing helmet did not restore hair");
+            if(skin.NativeHairCount>0) Check(skin.AnyNativeHairVisible,"Removing helmet did not restore PolygonApocalypse hair");
             Check(!character.HasLoadedEquipment("helmet",helmets[1]),"Removed gear remained visible");
             return new JObject { ["body"]=bodyKey, ["helmetModels"]=helmets.Length, ["bootModels"]=boots.Length,
                 ["armorCombinations"]=armor.Length, ["animationPoses"]=poseSamples, ["footCoverageRays"]=coverageSamples,

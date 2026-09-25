@@ -403,7 +403,7 @@ namespace RealmOfAshes.Game
             if (TryScreenPointToWorld(Input.mousePosition, out Vector3 cursor)
                 && TryResolvePrimaryTarget(cursor, out string resolvedEnemyId,
                     out Vector3 resolvedEnemyPosition, out PublicPlayer resolvedRemote,
-                    out Vector3 resolvedRemotePosition))
+                    out Vector3 resolvedRemotePosition, hoverCamera.ScreenPointToRay(Input.mousePosition)))
             {
                 if (resolvedRemote != null)
                 {
@@ -534,7 +534,7 @@ namespace RealmOfAshes.Game
             if (Time.time < _nextRequestAt || !TryScreenPointToWorld(screenPoint, out Vector3 cursor)) return false;
             EnsureFireMode();
             if (BlockForbiddenAttack()) return false;
-            AttackAt(cursor);
+            AttackAt(cursor, Camera.main.ScreenPointToRay(screenPoint));
             return true;
         }
 
@@ -546,7 +546,8 @@ namespace RealmOfAshes.Game
             target = null;
             targetPosition = Vector3.zero;
             if (Player == null || !TryScreenPointToWorld(screenPoint, out Vector3 cursor)) return false;
-            TryResolvePrimaryTarget(cursor, out _, out _, out target, out targetPosition);
+            TryResolvePrimaryTarget(cursor, out _, out _, out target, out targetPosition,
+                Camera.main.ScreenPointToRay(screenPoint));
             return target != null;
         }
 
@@ -806,7 +807,7 @@ namespace RealmOfAshes.Game
                 ack["combat"]?["cooldownRemainingMs"]?.ToObject<float>() ?? 0f);
             return Mathf.Clamp(Mathf.Max(retryMs, cooldownMs) / 1000f, 0f, 5f);
         }
-        private void AttackAt(Vector3 cursor)
+        private void AttackAt(Vector3 cursor, Ray? screenRay = null)
         {
             if (TryApplyHeldMedicine(cursor)) return;
             NotifyCombatPresentation();
@@ -876,7 +877,7 @@ namespace RealmOfAshes.Game
             }
 
             TryResolvePrimaryTarget(cursor, out string enemyId, out Vector3 enemyPosition,
-                out PublicPlayer remote, out Vector3 remotePosition);
+                out PublicPlayer remote, out Vector3 remotePosition, screenRay);
 
             // Конус собирает только NPC, а сервер отклоняет повторный токен в PvP,
             // поэтому веер и удар по игроку в одной атаке несовместимы. Если игрок
@@ -1011,7 +1012,8 @@ namespace RealmOfAshes.Game
 
         private bool TryResolvePrimaryTarget(Vector3 cursor,
                                              out string enemyId, out Vector3 enemyPosition,
-                                             out PublicPlayer player, out Vector3 playerPosition)
+                                             out PublicPlayer player, out Vector3 playerPosition,
+                                             Ray? screenRay = null)
         {
             enemyId = null;
             enemyPosition = Vector3.zero;
@@ -1050,9 +1052,57 @@ namespace RealmOfAshes.Game
                 return true;
             }
 
+            // Курсор над высокой моделью проецируется на землю позади её ног.
+            // Подсветка уже использует hit-test модели, но раньше сам выстрел
+            // в такой ситуации отправлялся как combatAttack без цели и урона.
+            // Ближний бой также терял цель вплотную (along < 0.45 м).
+            if (screenRay.HasValue)
+            {
+                bool cursorEnemy = Enemies.TryFindTargetUnderCursor(screenRay.Value,
+                    out string hitEnemyId, out Vector3 hitEnemyPosition, out float enemyCursorDistance);
+                PublicPlayer hitPlayer = null;
+                Vector3 hitPlayerPosition = Vector3.zero;
+                float playerCursorDistance = float.PositiveInfinity;
+                bool cursorPlayer = RemotePlayers != null && RemotePlayers.TryFindTargetUnderCursor(
+                    screenRay.Value, out hitPlayer, out hitPlayerPosition,
+                    out playerCursorDistance);
+                if (cursorPlayer && playerCursorDistance < enemyCursorDistance
+                    && TargetWithinRange(origin, hitPlayerPosition, maxRange))
+                {
+                    player = hitPlayer;
+                    playerPosition = hitPlayerPosition;
+                    return true;
+                }
+                if (cursorEnemy && TargetWithinRange(origin, hitEnemyPosition, maxRange))
+                {
+                    enemyId = hitEnemyId;
+                    enemyPosition = hitEnemyPosition;
+                    return true;
+                }
+            }
+
+            // Для сенсорного управления и клика рядом с ногами модели берём
+            // ближайшую цель в настроенном радиусе. Дальность остаётся
+            // ограниченной оружием; окончательное решение принимает сервер.
+            if (Enemies.TryFindTarget(cursor, TargetRadius,
+                    out string nearbyId, out Vector3 nearbyPosition)
+                && TargetWithinRange(origin, nearbyPosition, maxRange))
+            {
+                enemyId = nearbyId;
+                enemyPosition = nearbyPosition;
+                return true;
+            }
+
             player = null;
             playerPosition = Vector3.zero;
             return false;
+        }
+
+        private static bool TargetWithinRange(Vector3 origin, Vector3 target, float maxRange)
+        {
+            Vector3 delta = target - origin;
+            delta.y = 0f;
+            return delta.sqrMagnitude <= maxRange * maxRange;
         }
 
         /// <summary>

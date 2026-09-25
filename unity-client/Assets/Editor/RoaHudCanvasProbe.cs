@@ -52,6 +52,10 @@ namespace RealmOfAshes.EditorTools
                     && RoaActorNameplates.BadgeText(new RoaActorNameplates.Entry
                         { IsPlayer = true, Level = 12, Tier = 4 }) == "12",
                 "NPC tiers or player levels use the wrong nameplate badge");
+            Require(RoaActorNameplates.DisplayActorName("ремонтник", "Враг") == "Ремонтник"
+                    && RoaActorNameplates.DisplayActorName("  the Wanderer", "Игрок") == "The Wanderer"
+                    && RoaActorNameplates.DisplayActorName("", "Игрок") == "Игрок",
+                "actor names must start with a capital letter");
             GameObject gateRoot = new GameObject("VisibilityGateProbe");
             try
             {
@@ -570,9 +574,9 @@ namespace RealmOfAshes.EditorTools
                         canvasRect.rect.height * 0.48f);
                     info.SetActive(true);
                     enemyName.gameObject.SetActive(i == 0);
-                    enemyName.text = "ремонтник";
+                    enemyName.text = RoaActorNameplates.DisplayActorName("ремонтник", "Враг");
                     allyName.transform.parent.gameObject.SetActive(i == 1);
-                    allyName.text = "Игрок";
+                    allyName.text = RoaActorNameplates.DisplayActorName("игрок", "Игрок");
                     level.text = i == 0
                         ? RoaActorNameplates.BadgeText(new RoaActorNameplates.Entry { Tier = 4 })
                         : RoaActorNameplates.BadgeText(new RoaActorNameplates.Entry

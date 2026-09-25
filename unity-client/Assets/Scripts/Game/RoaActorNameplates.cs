@@ -138,6 +138,27 @@ namespace RealmOfAshes.Game
         public static string BadgeText(Entry entry) => entry.IsPlayer
             ? Mathf.Max(1, entry.Level).ToString() : RomanTier(entry.Tier);
 
+        private static readonly Dictionary<string, string> CapitalizedNames =
+            new Dictionary<string, string>(System.StringComparer.Ordinal);
+
+        public static string DisplayActorName(string name, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return fallback;
+            if (CapitalizedNames.TryGetValue(name, out string display)) return display;
+            display = name.Trim();
+            for (int i = 0; i < display.Length; i++)
+            {
+                if (!char.IsLetter(display[i])) continue;
+                char upper = char.ToUpperInvariant(display[i]);
+                if (upper != display[i])
+                    display = display.Substring(0, i) + upper + display.Substring(i + 1);
+                break;
+            }
+            if (CapitalizedNames.Count >= 512) CapitalizedNames.Clear();
+            CapitalizedNames[name] = display;
+            return display;
+        }
+
         public void Configure(RoaSocketClient socket, RoaEnemies enemies,
                               RoaRemotePlayers remotePlayers, Camera worldCamera)
         {
@@ -261,6 +282,10 @@ namespace RealmOfAshes.Game
                     infoRect.pivot = new Vector2(0.5f, 0f);
                     infoRect.anchoredPosition = Vector2.zero;
                     infoRect.localScale = Vector3.one * 0.78f;
+                    RectTransform healthBar = infoRect.Find(
+                        "Health_Bar/HUD_HealthBar_Enemy") as RectTransform;
+                    if (healthBar != null)
+                        healthBar.localScale = new Vector3(0.72f, 0.8f, 1f);
                     plate.ApocalypseEnemyName = infoRect.Find(
                         "HUD_WorldSpace_NameEnemy/Label_NameEnemy")
                         ?.GetComponent<TextMeshProUGUI>();
@@ -460,17 +485,17 @@ namespace RealmOfAshes.Game
                         plate.Rect.anchoredPosition = new Vector2(
                             rect.x + rect.width * 0.5f, Screen.height - rect.yMax);
                         bool ally = entry.IsPlayer || !entry.Hostile;
+                        string displayName = DisplayActorName(entry.Name,
+                            ally ? "Союзник" : "Враг");
                         if (plate.ApocalypseEnemyName != null)
                         {
                             plate.ApocalypseEnemyName.gameObject.SetActive(!ally);
-                            plate.ApocalypseEnemyName.text = string.IsNullOrWhiteSpace(entry.Name)
-                                ? "Враг" : entry.Name;
+                            plate.ApocalypseEnemyName.text = displayName;
                         }
                         if (plate.ApocalypseAllyName != null)
                         {
                             plate.ApocalypseAllyName.transform.parent.gameObject.SetActive(ally);
-                            plate.ApocalypseAllyName.text = string.IsNullOrWhiteSpace(entry.Name)
-                                ? "Союзник" : entry.Name;
+                            plate.ApocalypseAllyName.text = displayName;
                         }
                         if (plate.ApocalypseLevel != null)
                             plate.ApocalypseLevel.text = BadgeText(entry);
@@ -488,7 +513,8 @@ namespace RealmOfAshes.Game
                         continue;
                     }
                     plate.Name.gameObject.SetActive(presentation.ShowName);
-                    plate.Name.text = presentation.ShowName ? entry.Name : string.Empty;
+                    plate.Name.text = presentation.ShowName
+                        ? DisplayActorName(entry.Name, "") : string.Empty;
                     plate.Faction.gameObject.SetActive(presentation.ShowFaction);
                     plate.Faction.text = presentation.ShowFaction ? entry.Faction : string.Empty;
                     plate.Health.gameObject.SetActive(presentation.ShowHealthText);
@@ -512,8 +538,8 @@ namespace RealmOfAshes.Game
                     plate.HealthFill.color = new Color(healthColor.r, healthColor.g, healthColor.b, alpha);
                     plate.HealthFill.fillAmount = Mathf.Clamp01(ratio);
                     RectTransform trackRect = plate.HealthTrack.rectTransform;
-                    trackRect.sizeDelta = new Vector2(presentation.ShowName || presentation.ShowFaction ? 64f : width - 4f,
-                        presentation.ShowHealthText ? 11f : 6f);
+                    trackRect.sizeDelta = new Vector2(48f,
+                        presentation.ShowHealthText ? 8f : 5f);
                     plate.Health.color = new Color(1f, 1f, 0.94f, alpha);
                     RectTransform healthRect = plate.Health.rectTransform;
                     healthRect.anchorMin = healthRect.anchorMax = new Vector2(0.5f, 0f);

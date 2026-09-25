@@ -143,7 +143,9 @@ namespace RealmOfAshes.Game
 
             if (weaponId == "medkit")
             {
-                Transform medicalHand = _leftHand;
+                RoaApocalypseCharacterSkin skin = characterRoot.GetComponentInParent<RoaApocalypseCharacterSkin>();
+                Transform medicalHand = skin != null ? skin.VisibleHand(true) : null;
+                if (medicalHand == null) medicalHand = _leftHand;
                 GameObject medical = await RoaItemModelCatalog.InstantiateInactive(baseUrl, weaponId, medicalHand);
                 if (request != _loadRequest || characterRoot == null || medical == null
                     || !RoaItemModelCatalog.MountMedicalCase(medical, medicalHand))
@@ -178,6 +180,7 @@ namespace RealmOfAshes.Game
             var holder = new GameObject("OffhandWeapon:" + weaponId);
             holder.SetActive(false);
             holder.transform.SetParent(characterRoot, false);
+            holder.layer = characterRoot.gameObject.layer;
             if (!await import.InstantiateMainSceneAsync(holder.transform))
             {
                 Object.Destroy(holder);

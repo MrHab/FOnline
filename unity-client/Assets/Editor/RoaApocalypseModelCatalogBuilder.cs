@@ -46,6 +46,7 @@ namespace RealmOfAshes.EditorTools
         [MenuItem("Realm of Ashes/PolygonApocalypse/Rebuild runtime model palette")]
         public static void Build()
         {
+            GameObject compactShotgun = RoaApocalypseShotgunVariantBuilder.Build();
             string manifestPath = Path.GetFullPath(Path.Combine(Application.dataPath,
                 "../../data/kromka/apocalypse-weapons.json"));
             WeaponCatalog catalogFile = JsonUtility.FromJson<WeaponCatalog>(File.ReadAllText(manifestPath));
@@ -71,7 +72,7 @@ namespace RealmOfAshes.EditorTools
             weapons.Add(new RoaApocalypseModels.WeaponEntry
             {
                 itemId = "sawedOffShotgun",
-                prefab = Require("Weapons/Guns/SM_Wep_Shotgun_01"),
+                prefab = compactShotgun,
                 rigId = "sawedOffShotgun",
                 combatId = "sawedOffShotgun",
                 displayName = "Дробовик «Коротыш»",
@@ -85,11 +86,11 @@ namespace RealmOfAshes.EditorTools
             {
                 Armor("leather", "SM_Chr_Biker_Male_01", "SM_Chr_Punk_Female_01"),
                 Armor("metalArmor", "SM_Chr_Criminal_Male_01", "SM_Chr_Mechanic_Female_01"),
-                Armor("ballisticVest", "SM_Chr_Soldier_Male_01", "SM_Chr_Eastern_Female_01"),
-                Armor("combatArmor", "SM_Chr_RiotCop_Male_01", "SM_Chr_Soldier_Female_01"),
+                Armor("ballisticVest", "SM_Chr_Hunter_Male_01", "SM_Chr_Eastern_Female_01"),
+                Armor("combatArmor", "SM_Chr_Soldier_Male_01", "SM_Chr_Soldier_Female_01"),
                 // Bastion uses frontline uniforms plus separate metal plates;
                 // the old business/emo bodies were visibly unarmored.
-                Armor("heavyArmor", "SM_Chr_RiotCop_Male_01", "SM_Chr_Soldier_Female_01"),
+                Armor("heavyArmor", "SM_Chr_RiotCop_Male_01", "SM_Chr_RiotCop_Male_01"),
                 Armor("hazmatSuit", "SM_Chr_Hazmat_Male_01", "SM_Chr_Hazmat_Male_01"),
                 Armor("energySuit", "SM_Chr_Press_Male_01", "SM_Chr_Cool_Female_01")
             };
@@ -97,10 +98,10 @@ namespace RealmOfAshes.EditorTools
             // uniform may be shared; each item's garment and plates stay distinct.
             var footwear = new List<RoaApocalypseModels.FootwearEntry>
             {
-                Footwear("boots", "Sports", false),
-                Footwear("scoutBoots", "Metal", false),
-                Footwear("reinforcedBoots", null, true),
-                Footwear("assaultBoots", "Metal", true)
+                Footwear("boots", "SM_Chr_Biker_Male_01", "SM_Chr_Punk_Female_01", "Sports", false),
+                Footwear("scoutBoots", "SM_Chr_Soldier_Male_01", "SM_Chr_Soldier_Female_01", "Metal", false),
+                Footwear("reinforcedBoots", "SM_Chr_RiotCop_Male_01", "SM_Chr_Eastern_Female_01", null, true),
+                Footwear("assaultBoots", "SM_Chr_Hazmat_Male_01", "SM_Chr_Mechanic_Female_01", "Metal", true)
             };
 
             // The world can drop any of these items at runtime. Reuse a small
@@ -131,10 +132,9 @@ namespace RealmOfAshes.EditorTools
             AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Backpack_01", "backpack");
             AddItems(itemPaths, "Props/SM_Prop_Radio_01", "artifactDetectorMk1", "artifactDetectorMk2", "artifactDetectorMk3");
             AddItems(itemPaths, "Props/SM_Prop_Ammo_Box_Belt_01", "artifactBelt2", "artifactBelt3", "artifactBelt4");
-            AddItems(itemPaths, "Props/SM_Prop_Chemical_02", "artifactSpring", "artifactVein", "artifactNode", "artifactDrop", "artifactBloodkin", "artifactShell", "artifactWarmer", "artifactSieve", "artifactThunderer", "artifactHusher", "artifactAnchor", "artifactDew", "artifactMemory", "artifactUnknown");
             AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Mask_Hockey_01", "weldedHelmet");
-            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_FootballHelmet_01", "helmet");
-            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Soldier_Male_Helmet_01", "tacticalHelmet");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Soldier_Male_Helmet_01", "helmet");
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_FootballHelmet_01", "tacticalHelmet");
             AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_RiotCop_Male_Helmet_01", "assaultHelmet");
             AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Scout_Female_Hat_01", "preWarHelmet");
             foreach (RoaApocalypseModels.ArmorEntry row in armor)
@@ -257,12 +257,14 @@ namespace RealmOfAshes.EditorTools
         }
 
         private static RoaApocalypseModels.FootwearEntry Footwear(
-            string itemId, string kneeStyle, bool thigh)
+            string itemId, string malePrefab, string femalePrefab, string kneeStyle, bool thigh)
         {
             string root = "Characters/Attachments/SM_Chr_Attach_Armour_";
             return new RoaApocalypseModels.FootwearEntry
             {
                 itemId = itemId,
+                malePrefab = Require("Characters/" + malePrefab),
+                femalePrefab = Require("Characters/" + femalePrefab),
                 leftKnee = kneeStyle == null ? null : Require(root + "Knee_" + kneeStyle + "_L_01"),
                 rightKnee = kneeStyle == null ? null : Require(root + "Knee_" + kneeStyle + "_R_01"),
                 leftThigh = thigh ? Require(root + "Thigh_Metal_L_01") : null,

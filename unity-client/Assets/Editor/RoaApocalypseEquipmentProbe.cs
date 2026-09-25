@@ -192,6 +192,7 @@ namespace RealmOfAshes.EditorTools
                         ["armor"] = armorId, ["helmet"] = "helmet",
                         ["backpack"] = "backpack", ["boots"] = "boots"
                     });
+                    await Task.Delay(120);
                     skin.SyncPose();
                     if (!character.HasLoadedEquipment("armor", armorId)
                         || skin.ActivePrefab != basePrefab || skin.ActiveArmorId != armorId
@@ -209,7 +210,8 @@ namespace RealmOfAshes.EditorTools
                         || garment.sharedMesh == null || garment.sharedMesh.triangles.Length < 300)
                         throw new InvalidOperationException("Armor garment is not visible: " + armorId);
                     if (armorId == "heavyArmor" && skin.ActiveArmorParts < 6)
-                        throw new InvalidOperationException("Bastion is missing native metal plates.");
+                        throw new InvalidOperationException("Bastion is missing native metal plates: "
+                            + skin.ActiveArmorParts);
                     if (armorId == "ballisticVest")
                         Capture(preview, readback, "ApocalypseBallisticVest.png");
                     if (armorId == "combatArmor")
@@ -240,6 +242,7 @@ namespace RealmOfAshes.EditorTools
                     "boots", "scoutBoots", "reinforcedBoots", "assaultBoots"
                 };
                 int[] expectedParts = { 2, 2, 2, 4 };
+                var footwearMeshes = new HashSet<Mesh>();
                 for (int i = 0; i < bootSamples.Length; i++)
                 {
                     await character.EquipItems("http://127.0.0.1:3000", new JObject
@@ -251,6 +254,32 @@ namespace RealmOfAshes.EditorTools
                     if (skin.ActiveFootwearId != bootSamples[i]
                         || skin.ActiveFootwearParts != expectedParts[i])
                         throw new InvalidOperationException("Footwear did not change: " + bootSamples[i]);
+                    Transform boot = baseVisual.Find("PolygonApocalypse_Footwear:" + bootSamples[i]);
+                    SkinnedMeshRenderer bootRenderer = boot?.GetComponent<SkinnedMeshRenderer>();
+                    if (bootRenderer == null || bootRenderer.sharedMesh == null
+                        || bootRenderer.sharedMesh.triangles.Length < 300
+                        || !footwearMeshes.Add(bootRenderer.sharedMesh))
+                        throw new InvalidOperationException("Footwear lacks its own full shoe mesh: " + bootSamples[i]);
+                    Capture(preview, readback, "ApocalypseBoots_" + bootSamples[i] + ".png");
+                }
+                Transform visibleHead = null;
+                foreach (Transform node in baseVisual.GetComponentsInChildren<Transform>(true))
+                    if (node.name == "Head") { visibleHead = node; break; }
+                if (visibleHead == null) throw new InvalidOperationException("Visible head bone is missing.");
+                float standingHeadY = visibleHead.position.y;
+                for (int i = 0; i < 24; i++)
+                {
+                    character.UpdateLocomotion(Vector3.zero, 0f, false, true);
+                    await Task.Delay(20);
+                }
+                skin.SyncPose();
+                Capture(preview, readback, "ApocalypseCrouch.png");
+                if (standingHeadY - visibleHead.position.y < 0.12f)
+                    throw new InvalidOperationException("Visible character does not crouch.");
+                for (int i = 0; i < 24; i++)
+                {
+                    character.UpdateLocomotion(Vector3.zero, 0f, false, false);
+                    await Task.Delay(20);
                 }
                 Debug.Log("[ROA APOCALYPSE] Wardrobe PASS: seven armor layers, stable character and weapon, five helmets, four footwear variants.");
                 string[] weaponSamples =
@@ -286,6 +315,70 @@ namespace RealmOfAshes.EditorTools
                     if (weaponId == "polygonGrenade01")
                         Capture(preview, readback, "ApocalypseWeaponGrenade.png");
                 }
+                string gripReport = Path.GetFullPath(Path.Combine(
+                    Application.dataPath, "../Temp/ApocalypseWeaponGripProbe.txt"));
+                var gripLines = new List<string>();
+                foreach (RoaApocalypseModels.WeaponEntry entry in RoaApocalypseModels.WeaponEntries)
+                {
+                    await character.EquipWeapon("http://127.0.0.1:3000", entry.itemId);
+                    await Task.Delay(100);
+                    if (!character.WeaponReady)
+                        throw new InvalidOperationException("Weapon did not load: " + entry.itemId);
+                    Transform visual = AssertWeaponVisible(character, entry.itemId);
+                    Transform grip = RoaItemModelCatalog.FindSocket(visual.parent, "socket_grip_r");
+                    skin.SyncPose();
+                    Transform palm = skin.VisibleHand(false);
+                    Transform sourcePalm = null, sourceLeft = null;
+                    foreach (Transform node in character.GetComponentsInChildren<Transform>(true))
+                    {
+                        if (node.name == "hand_r") sourcePalm = node;
+                        if (node.name == "hand_l") sourceLeft = node;
+                    }
+                    Transform visibleLeft = skin.VisibleHand(true);
+                    if (grip == null || palm == null || sourcePalm == null
+                        || sourceLeft == null || visibleLeft == null)
+                        throw new InvalidOperationException("Weapon grip or visible hand is missing: " + entry.itemId);
+                    float gap = Vector3.Distance(grip.position, palm.position);
+                    float sourceGap = sourcePalm != null ? Vector3.Distance(grip.position, sourcePalm.position) : -1f;
+                    float retargetGap = sourcePalm != null ? Vector3.Distance(palm.position, sourcePalm.position) : -1f;
+                    float leftGap = Vector3.Distance(visibleLeft.position, sourceLeft.position);
+                    Transform sourceShoulder = null, visibleShoulder = null;
+                    foreach (Transform node in character.GetComponentsInChildren<Transform>(true))
+                    {
+                        if (node.name == "clavicle_r") sourceShoulder = node;
+                        if (node.name == "Clavicle_R") visibleShoulder = node;
+                    }
+                    gripLines.Add(entry.itemId + ": grip " + gap.ToString("F3")
+                        + " m, source " + sourceGap.ToString("F3")
+                        + " m, retarget " + retargetGap.ToString("F3")
+                        + " m, left " + leftGap.ToString("F3") + " m"
+                        + ", shoulders " + (sourceShoulder != null && visibleShoulder != null
+                            ? Vector3.Distance(sourceShoulder.position, visibleShoulder.position).ToString("F3") : "missing")
+                        + ", reach " + (visibleShoulder != null
+                            ? Vector3.Distance(visibleShoulder.position, sourcePalm.position).ToString("F3") : "missing")
+                        + ", sourcePalm " + character.transform.InverseTransformPoint(sourcePalm.position).ToString("F3")
+                        + ", visiblePalm " + character.transform.InverseTransformPoint(palm.position).ToString("F3"));
+                    File.WriteAllLines(gripReport, gripLines);
+                    if (retargetGap > 0.10f || leftGap > 0.10f)
+                        throw new InvalidOperationException("Visible hand misses " + entry.itemId
+                            + " source palm by " + retargetGap.ToString("F3")
+                            + "/" + leftGap.ToString("F3") + " m");
+                    if (entry.itemId == "shotgun")
+                        Capture(preview, readback, "ApocalypseShotgun.png");
+                    if (entry.itemId == "sawedOffShotgun")
+                        Capture(preview, readback, "ApocalypseSawedOffShotgun.png");
+                }
+                await character.EquipWeapon("http://127.0.0.1:3000", "medkit");
+                await Task.Delay(180);
+                Transform medical = null;
+                foreach (Transform node in character.GetComponentsInChildren<Transform>(true))
+                    if (node.name == "ItemModel:medkit") { medical = node; break; }
+                if (!character.WeaponReady || medical == null
+                    || !medical.IsChildOf(skin.VisibleHand(false)))
+                    throw new InvalidOperationException("Medkit is not in the visible right hand.");
+                Capture(preview, readback, "ApocalypseMedkit.png");
+                gripLines.Add("medkit: visible right hand");
+                File.WriteAllLines(gripReport, gripLines);
                 await ValidateFemaleArmor();
                 File.WriteAllText(report,
                     "PASS: seven wearable armor layers for each sex, stable person and weapon, five helmets, four footwear variants and backpack.");

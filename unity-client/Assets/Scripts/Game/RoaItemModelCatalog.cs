@@ -69,10 +69,13 @@ namespace RealmOfAshes.Game
                 holder = new GameObject("ItemModel:" + itemId);
                 holder.SetActive(false);
                 holder.transform.SetParent(parent, false);
+                holder.layer = parent.gameObject.layer;
                 if (await import.InstantiateMainSceneAsync(holder.transform)
                     && holder != null && parent != null
                     && holder.GetComponentsInChildren<Renderer>(true).Length > 0)
                 {
+                    foreach (Transform node in holder.GetComponentsInChildren<Transform>(true))
+                        node.gameObject.layer = parent.gameObject.layer;
                     RoaApocalypseVisuals.AttachStatic(holder.transform, RoaApocalypseModels.Item(itemId));
                     return holder;
                 }

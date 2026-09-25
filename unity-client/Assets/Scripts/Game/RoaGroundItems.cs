@@ -421,7 +421,7 @@ namespace RealmOfAshes.Game
         private static string ModelPath(string itemId, out string kind)
         {
             kind = string.Empty;
-            if (RoaItemModelCatalog.Contains(itemId) && itemId != "artifactUnknown")
+            if (RoaItemModelCatalog.Contains(itemId))
             {
                 kind = "catalog";
                 return RoaItemModelCatalog.ModelPath(itemId);

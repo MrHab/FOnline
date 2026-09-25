@@ -176,6 +176,13 @@ namespace RealmOfAshes.Game
         private static readonly Dictionary<string, GltfImport> WeaponCache = new Dictionary<string, GltfImport>();
         private static int _weaponCacheSession;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetModelCache()
+        {
+            _weaponCacheSession++;
+            RoaModelImportLifetime.Clear(WeaponCache);
+        }
+
         /// <summary>
         /// Огнестрел: всё это держится одним и тем же хватом
         /// (APPROVED_FIREARM_GRIP_PROFILES, 04d:21). Ближний бой — knife, axe,
@@ -407,7 +414,9 @@ namespace RealmOfAshes.Game
             // aim/recoil IK. Unknown-item fallback used to leave it invisible.
             if (weaponId == "medkit" && bones != null && bones.TryGetValue("hand_r", out _hand) && _hand != null)
             {
-                Transform medicalHand = _hand;
+                RoaApocalypseCharacterSkin skin = characterRoot.GetComponentInParent<RoaApocalypseCharacterSkin>();
+                Transform medicalHand = skin != null ? skin.VisibleHand(false) : null;
+                if (medicalHand == null) medicalHand = _hand;
                 GameObject medical = await RoaItemModelCatalog.InstantiateInactive(baseUrl, weaponId, medicalHand);
                 if (request != _loadRequest || characterRoot == null || medical == null
                     || !RoaItemModelCatalog.MountMedicalCase(medical, medicalHand))
@@ -467,6 +476,7 @@ namespace RealmOfAshes.Game
 
             var holder = new GameObject("Weapon:" + weaponId);
             holder.transform.SetParent(characterRoot, false);
+            holder.layer = characterRoot.gameObject.layer;
 
             if (!await import.InstantiateMainSceneAsync(holder.transform))
             {

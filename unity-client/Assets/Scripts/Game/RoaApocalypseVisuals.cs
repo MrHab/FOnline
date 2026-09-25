@@ -13,6 +13,8 @@ namespace RealmOfAshes.Game
             if (parent == null || prefab == null) return null;
             GameObject visual = Object.Instantiate(prefab, parent, false);
             visual.name = ChildName;
+            foreach (Transform node in visual.GetComponentsInChildren<Transform>(true))
+                node.gameObject.layer = parent.gameObject.layer;
             SetNativeWorldScale(visual.transform, prefab.transform.localScale);
             visual.AddComponent<RoaApocalypseNativeScale>().Configure(prefab.transform.localScale);
             foreach (Collider collider in visual.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
@@ -55,6 +57,8 @@ namespace RealmOfAshes.Game
             Bounds oldBounds = LocalBounds(original, legacy);
             GameObject replacement = Object.Instantiate(prefab, original, false);
             replacement.name = ChildName;
+            foreach (Transform node in replacement.GetComponentsInChildren<Transform>(true))
+                node.gameObject.layer = original.gameObject.layer;
             replacement.transform.localRotation = Quaternion.Euler(pitch, yaw, 0f);
             SetNativeWorldScale(replacement.transform, prefab.transform.localScale);
             replacement.AddComponent<RoaApocalypseNativeScale>().Configure(prefab.transform.localScale);

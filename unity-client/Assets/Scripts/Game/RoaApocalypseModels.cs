@@ -39,6 +39,8 @@ namespace RealmOfAshes.Game
         public sealed class FootwearEntry
         {
             public string itemId;
+            public GameObject malePrefab;
+            public GameObject femalePrefab;
             public GameObject leftKnee;
             public GameObject rightKnee;
             public GameObject leftThigh;
@@ -192,6 +194,11 @@ namespace RealmOfAshes.Game
 
         public static GameObject Item(string itemId)
         {
+            // Artifacts retain their individually authored Kromka GLB models.
+            // Older palettes contain one shared chemical prop for every artifact.
+            if (itemId != null && itemId.StartsWith("artifact", StringComparison.Ordinal)
+                && itemId != "artifactContainer" && !itemId.StartsWith("artifactDetector", StringComparison.Ordinal)
+                && !itemId.StartsWith("artifactBelt", StringComparison.Ordinal)) return null;
             RoaApocalypseModels palette = Instance;
             if (palette == null || string.IsNullOrEmpty(itemId)) return null;
             if (palette._items == null)

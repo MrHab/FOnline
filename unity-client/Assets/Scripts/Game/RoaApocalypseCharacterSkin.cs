@@ -13,13 +13,22 @@ namespace RealmOfAshes.Game
             public Transform Source;
             public Transform Target;
             public Quaternion TargetRest;
+            public Quaternion SourceRest;
             public Transform SourceChild;
             public Transform TargetChild;
         }
 
         private readonly List<BonePair> _bones = new List<BonePair>();
+        private RoaIkChain _leftArm;
+        private RoaIkChain _rightArm;
+        private Transform _sourceLeftHand;
+        private Transform _sourceRightHand;
+        private Transform _visibleLeftHand;
+        private Transform _visibleRightHand;
         private GameObject _visual;
         private Transform _rigRoot;
+        private Vector3 _rigRootRestLocalPosition;
+        private Vector3 _visualRestLocalPosition;
         private GameObject _basePrefab;
         private GameObject _activePrefab;
         private SkinnedMeshRenderer _bodyRenderer;
@@ -34,6 +43,7 @@ namespace RealmOfAshes.Game
         private GameObject _helmetPrefab;
         private readonly List<GameObject> _nativeHair = new List<GameObject>();
         private readonly List<GameObject> _footwear = new List<GameObject>();
+        private GameObject _footwearRoot;
         private string _footwearId;
 
         public GameObject ActivePrefab => _activePrefab;
@@ -89,6 +99,7 @@ namespace RealmOfAshes.Game
             }
             _activePrefab = prefab;
             _rigRoot = rigRoot;
+            _rigRootRestLocalPosition = rigRoot.localPosition;
             var source = new Dictionary<string, Transform>();
             var originalRenderers = new List<Renderer>();
             var sourceRenderers = new List<Renderer>();
@@ -147,7 +158,8 @@ namespace RealmOfAshes.Game
                 {
                     Source = old,
                     Target = target,
-                    TargetRest = target.localRotation
+                    TargetRest = target.localRotation,
+                    SourceRest = old.localRotation
                 });
             }
             for (int i = 0; i < _bones.Count; i++)
@@ -168,6 +180,12 @@ namespace RealmOfAshes.Game
                 _bones[i] = parent;
             }
             _bones.Sort((a, b) => Depth(a.Target).CompareTo(Depth(b.Target)));
+            _sourceLeftHand = source.TryGetValue("handl", out Transform sourceLeft) ? sourceLeft : null;
+            _sourceRightHand = source.TryGetValue("handr", out Transform sourceRight) ? sourceRight : null;
+            _visibleLeftHand = FindVisualBone("Hand_L");
+            _visibleRightHand = FindVisualBone("Hand_R");
+            _leftArm = VisualArm("L");
+            _rightArm = VisualArm("R");
             if (_bones.Count >= 10)
             {
                 var fresh = new List<Renderer>();
@@ -180,6 +198,7 @@ namespace RealmOfAshes.Game
                         oldBounds.min.y - newBounds.min.y, oldBounds.center.z - newBounds.center.z);
                     _visual.transform.position += offset;
                 }
+                _visualRestLocalPosition = _visual.transform.localPosition;
                 foreach (Renderer renderer in originalRenderers) renderer.enabled = false;
                 RefreshNativeHair();
                 return true;
@@ -211,9 +230,29 @@ namespace RealmOfAshes.Game
         {
             for (Transform item = node; item != null; item = item.parent)
                 if (item.name.StartsWith("Weapon:") || item.name.StartsWith("OffhandWeapon:")
+                    || item.name.StartsWith("ItemModel:")
                     || item.name.StartsWith("Vehicle:") || item.name.StartsWith("CreatureWeapon:"))
                     return true;
             return false;
+        }
+
+        public Transform VisibleHand(bool left) => left ? _visibleLeftHand : _visibleRightHand;
+
+        private Transform FindVisualBone(string name)
+        {
+            if (_visual == null) return null;
+            foreach (Transform bone in _visual.GetComponentsInChildren<Transform>(true))
+                if (bone.name == name) return bone;
+            return null;
+        }
+
+        private RoaIkChain VisualArm(string side)
+        {
+            return new RoaIkChain(new[]
+            {
+                FindVisualBone("Clavicle_" + side), FindVisualBone("Shoulder_" + side),
+                FindVisualBone("Elbow_" + side), FindVisualBone("Hand_" + side)
+            }, 12, 0.005f);
         }
 
         private static Bounds WorldBounds(IEnumerable<Renderer> renderers)
@@ -233,27 +272,45 @@ namespace RealmOfAshes.Game
         public void SyncPose()
         {
             if (_visual == null) return;
+            if (_rigRoot != null && _rigRoot.parent != null)
+                _visual.transform.position = transform.TransformPoint(_visualRestLocalPosition)
+                    + _rigRoot.parent.TransformVector(
+                        _rigRoot.localPosition - _rigRootRestLocalPosition);
             if (_basePrefab != null && Vector3.Distance(_visual.transform.lossyScale,
                     _basePrefab.transform.localScale) > 0.0001f)
                 RoaApocalypseVisuals.SetNativeWorldScale(_visual.transform, _basePrefab.transform.localScale);
             RefreshArmor();
             RefreshAccessories();
+            UpdateIdentityMesh();
             RefreshNativeHair();
             foreach (BonePair pair in _bones)
                 if (pair.Source != null && pair.Target != null)
                     pair.Target.localRotation = pair.TargetRest;
             foreach (BonePair pair in _bones)
             {
-                if (pair.Source == null || pair.Target == null || pair.SourceChild == null
-                    || pair.TargetChild == null) continue;
+                if (pair.Source == null || pair.Target == null) continue;
                 string key = BoneKey(pair.Target.name);
-                if (key == "root" || key == "pelvis" || key.StartsWith("spine")
-                    || key.StartsWith("neck")) continue;
+                if (key == "root") continue;
+                if (key == "pelvis" || key.StartsWith("spine") || key.StartsWith("neck"))
+                {
+                    // The gameplay rig adds crouch and aim to these bones after
+                    // sampling its clip. Carry that delta onto the visible rig.
+                    pair.Target.localRotation = pair.TargetRest
+                        * Quaternion.Inverse(pair.SourceRest) * pair.Source.localRotation;
+                    continue;
+                }
+                if (pair.SourceChild == null || pair.TargetChild == null) continue;
                 Vector3 current = pair.TargetChild.position - pair.Target.position;
                 Vector3 desired = pair.SourceChild.position - pair.Source.position;
                 if (current.sqrMagnitude < 0.0001f || desired.sqrMagnitude < 0.0001f) continue;
                 pair.Target.rotation = Quaternion.FromToRotation(current, desired) * pair.Target.rotation;
             }
+            // The two skeletons have different limb proportions. Direction-only
+            // retargeting leaves visible palms away from the weapon sockets.
+            if (_rightArm != null && _rightArm.Ready && _sourceRightHand != null)
+                _rightArm.Solve(_sourceRightHand.position, null);
+            if (_leftArm != null && _leftArm.Ready && _sourceLeftHand != null)
+                _leftArm.Solve(_sourceLeftHand.position, null);
         }
 
         private void RefreshArmor()
@@ -308,6 +365,7 @@ namespace RealmOfAshes.Game
             if (source.rootBone != null && targetBones.TryGetValue(source.rootBone.name, out Transform rootBone))
                 layer.rootBone = rootBone;
             layer.localBounds = garment.bounds;
+            layer.updateWhenOffscreen = true;
             layer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             layer.receiveShadows = false;
             foreach (MeshRenderer part in donor.GetComponentsInChildren<MeshRenderer>(true))
@@ -322,7 +380,7 @@ namespace RealmOfAshes.Game
                 // female donor outfits have no metal shoulder pieces.
                 AddDonorPart(RoaApocalypseModels.CharacterOutfit(false, "metalArmor"),
                     "Armour_Shoulder_Metal_L", targetBones);
-                AddDonorPart(RoaApocalypseModels.CharacterOutfit(false, "ballisticVest"),
+                AddDonorPart(RoaApocalypseModels.CharacterOutfit(false, "combatArmor"),
                     "Armour_Shoulder_Metal_R", targetBones);
                 RoaApocalypseModels.FootwearEntry plates = RoaApocalypseModels.Footwear("assaultBoots");
                 if (plates != null)
@@ -389,6 +447,13 @@ namespace RealmOfAshes.Game
         {
             string itemId = LoadedItem("boots", FootwearIds);
             if (itemId == _footwearId) return;
+            if (_footwearRoot != null)
+            {
+                _footwearRoot.SetActive(false);
+                if (Application.isPlaying) Destroy(_footwearRoot);
+                else DestroyImmediate(_footwearRoot);
+                _footwearRoot = null;
+            }
             foreach (GameObject part in _footwear)
             {
                 if (part == null) continue;
@@ -400,10 +465,55 @@ namespace RealmOfAshes.Game
             _footwearId = itemId;
             RoaApocalypseModels.FootwearEntry selected = RoaApocalypseModels.Footwear(itemId);
             if (selected == null) return;
+            AttachFootwearMesh(itemId, selected);
             AddFootwearPart(selected.leftKnee, "LowerLeg_L");
             AddFootwearPart(selected.rightKnee, "LowerLeg_R");
             AddFootwearPart(selected.leftThigh, "UpperLeg_L");
             AddFootwearPart(selected.rightThigh, "UpperLeg_R");
+        }
+
+        private void AttachFootwearMesh(string itemId, RoaApocalypseModels.FootwearEntry selected)
+        {
+            string body = _female ? "female_medium" : "male_medium";
+            Mesh mesh = Resources.Load<Mesh>("RealmOfAshes/ArmorLayers/footwear_" + itemId + "_" + body);
+            GameObject donor = _female ? selected.femalePrefab : selected.malePrefab;
+            if (mesh == null || donor == null) return;
+            SkinnedMeshRenderer source = null;
+            foreach (SkinnedMeshRenderer renderer in donor.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if (renderer.name == donor.name) { source = renderer; break; }
+            if (source == null) return;
+            var targetBones = new Dictionary<string, Transform>();
+            foreach (Transform node in _visual.GetComponentsInChildren<Transform>(true))
+                if (!targetBones.ContainsKey(node.name)) targetBones.Add(node.name, node);
+            Transform[] bones = new Transform[source.bones.Length];
+            for (int i = 0; i < bones.Length; i++)
+                if (source.bones[i] == null || !targetBones.TryGetValue(source.bones[i].name, out bones[i]))
+                    return;
+            _footwearRoot = new GameObject("PolygonApocalypse_Footwear:" + itemId);
+            _footwearRoot.transform.SetParent(_visual.transform, false);
+            _footwearRoot.layer = gameObject.layer;
+            var layer = _footwearRoot.AddComponent<SkinnedMeshRenderer>();
+            layer.sharedMesh = mesh;
+            layer.sharedMaterials = source.sharedMaterials;
+            layer.bones = bones;
+            if (source.rootBone != null && targetBones.TryGetValue(source.rootBone.name, out Transform rootBone))
+                layer.rootBone = rootBone;
+            layer.localBounds = mesh.bounds;
+            layer.updateWhenOffscreen = true;
+            layer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        }
+
+        private void UpdateIdentityMesh()
+        {
+            if (_bodyRenderer == null) return;
+            string body = _female ? "female_medium" : "male_medium";
+            string name = _armorId != null
+                ? (_footwearId != null ? "base_no_feet_" : "base_") + body
+                : _footwearId != null ? "body_no_feet_" + body : null;
+            Mesh identity = name != null
+                ? Resources.Load<Mesh>("RealmOfAshes/ArmorLayers/" + name) : _originalBodyMesh;
+            if (identity != null && _bodyRenderer.sharedMesh != identity)
+                _bodyRenderer.sharedMesh = identity;
         }
 
         private void AddFootwearPart(GameObject prefab, string boneName)

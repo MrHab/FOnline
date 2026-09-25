@@ -22,6 +22,11 @@ namespace RealmOfAshes.EditorTools
             "leather", "metalArmor", "ballisticVest", "combatArmor",
             "heavyArmor", "hazmatSuit", "energySuit"
         };
+        private static readonly string[] FootwearIds =
+        {
+            "boots", "scoutBoots", "reinforcedBoots", "assaultBoots"
+        };
+        private enum LayerKind { Identity, IdentityNoFeet, BodyNoFeet, Garment, Footwear }
 
         [MenuItem("Realm of Ashes/PolygonApocalypse/Rebuild wearable armor layers")]
         public static void Build()
@@ -42,13 +47,22 @@ namespace RealmOfAshes.EditorTools
                 foreach (bool female in new[] { false, true })
                 {
                     string body = female ? "female_medium" : "male_medium";
-                    SaveLayer("base_" + body, Body(RoaApocalypseModels.Character(body)), true);
+                    var permanentBody = Body(RoaApocalypseModels.Character(body));
+                    SaveLayer("base_" + body, permanentBody, LayerKind.Identity);
+                    SaveLayer("base_no_feet_" + body, permanentBody, LayerKind.IdentityNoFeet);
+                    SaveLayer("body_no_feet_" + body, permanentBody, LayerKind.BodyNoFeet);
                     foreach (string itemId in ArmorIds)
                         SaveLayer(itemId + "_" + body,
-                            Body(RoaApocalypseModels.CharacterOutfit(female, itemId)), false);
+                            Body(RoaApocalypseModels.CharacterOutfit(female, itemId)), LayerKind.Garment);
+                    foreach (string itemId in FootwearIds)
+                    {
+                        var pair = RoaApocalypseModels.Footwear(itemId);
+                        SaveLayer("footwear_" + itemId + "_" + body,
+                            Body(female ? pair.femalePrefab : pair.malePrefab), LayerKind.Footwear);
+                    }
                 }
                 AssetDatabase.SaveAssets();
-                Debug.Log("[ROA APOCALYPSE] Built 16 native-size wearable armor meshes.");
+                Debug.Log("[ROA APOCALYPSE] Built native-size armor and footwear meshes.");
             }
             finally
             {
@@ -68,12 +82,13 @@ namespace RealmOfAshes.EditorTools
             throw new InvalidOperationException("Missing body mesh in " + prefab.name);
         }
 
-        private static void SaveLayer(string name, SkinnedMeshRenderer renderer, bool keepIdentity)
+        private static void SaveLayer(string name, SkinnedMeshRenderer renderer, LayerKind kind)
         {
             UnityEngine.Mesh source = renderer.sharedMesh;
             if (source == null || !source.isReadable || source.subMeshCount != 1)
                 throw new InvalidOperationException("Unreadable or multi-material body: " + renderer.name);
             BoneWeight[] weights = source.boneWeights;
+            Vector3[] vertices = source.vertices;
             int[] triangles = source.triangles;
             var chosen = new List<int>(triangles.Length);
             for (int i = 0; i < triangles.Length; i += 3)
@@ -82,7 +97,12 @@ namespace RealmOfAshes.EditorTools
                 bool identity = IdentityWeight(weights[a], renderer.bones)
                     + IdentityWeight(weights[b], renderer.bones)
                     + IdentityWeight(weights[c], renderer.bones) >= 1.5f;
-                if (identity != keepIdentity) continue;
+                bool footwear = IsFootwearTriangle(a, b, c, vertices, weights, renderer.bones);
+                bool keep = kind == LayerKind.Identity ? identity
+                    : kind == LayerKind.IdentityNoFeet ? identity && !footwear
+                    : kind == LayerKind.BodyNoFeet ? !footwear
+                    : kind == LayerKind.Footwear ? footwear : !identity && !footwear;
+                if (!keep) continue;
                 chosen.Add(a); chosen.Add(b); chosen.Add(c);
             }
             if (chosen.Count < 30) throw new InvalidOperationException("Empty armor layer: " + name);
@@ -101,6 +121,32 @@ namespace RealmOfAshes.EditorTools
                 UnityEngine.Object.DestroyImmediate(layer);
                 EditorUtility.SetDirty(existing);
             }
+        }
+
+        private static bool IsFootwearTriangle(int a, int b, int c, Vector3[] vertices,
+            BoneWeight[] weights, Transform[] bones)
+        {
+            if (Mathf.Max(vertices[a].y, vertices[b].y, vertices[c].y) > 0.42f) return false;
+            return FootWeight(weights[a], bones) + FootWeight(weights[b], bones)
+                + FootWeight(weights[c], bones) >= 1.5f;
+        }
+
+        private static float FootWeight(BoneWeight weight, Transform[] bones)
+        {
+            return FootPart(weight.boneIndex0, weight.weight0, bones)
+                + FootPart(weight.boneIndex1, weight.weight1, bones)
+                + FootPart(weight.boneIndex2, weight.weight2, bones)
+                + FootPart(weight.boneIndex3, weight.weight3, bones);
+        }
+
+        private static float FootPart(int index, float weight, Transform[] bones)
+        {
+            if (weight <= 0f || index < 0 || index >= bones.Length) return 0f;
+            string name = bones[index]?.name ?? string.Empty;
+            return name.StartsWith("LowerLeg", StringComparison.Ordinal)
+                || name.StartsWith("Ankle", StringComparison.Ordinal)
+                || name.StartsWith("Ball", StringComparison.Ordinal)
+                || name.StartsWith("Toes", StringComparison.Ordinal) ? weight : 0f;
         }
 
         private static float IdentityWeight(BoneWeight weight, Transform[] bones)

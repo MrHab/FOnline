@@ -557,8 +557,8 @@ MonoBehaviour:
     paint: 0
   - itemId: oil
     prefab: {fileID: 1544143072547004, guid: aa9d0fceec1d4814aa3e38892faa08a0, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
+    paint: 1
   - itemId: medkit
     prefab: {fileID: 1419824209681924, guid: e3c29f4b68873c34fb53043e28bd48ce, type: 3}
     tint: {r: 1, g: 1, b: 1, a: 1}
@@ -593,8 +593,8 @@ MonoBehaviour:
     paint: 0
   - itemId: ore
     prefab: {fileID: 1975549760567462, guid: 9aaf6ee41c0ba774b8703c41860bcf9b, type: 3}
-    tint: {r: 0.72156864, g: 0.39607844, b: 0.24705882, a: 1}
-    paint: 0
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
+    paint: 1
   - itemId: scrap
     prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
     tint: {r: 1, g: 1, b: 1, a: 1}
@@ -621,8 +621,8 @@ MonoBehaviour:
     paint: 0
   - itemId: wood
     prefab: {fileID: 1350644683509884, guid: 76268956b264f0146950f405edf04c42, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
+    paint: 1
   - itemId: food
     prefab: {fileID: 1475631568837504, guid: 43c02ad0264295844bda05a0e56a7b21, type: 3}
     tint: {r: 1, g: 1, b: 1, a: 1}
@@ -737,191 +737,191 @@ MonoBehaviour:
     paint: 0
   - itemId: oreT2
     prefab: {fileID: 1690247541683866, guid: d8c037247812d25488e711028faa7b49, type: 3}
-    tint: {r: 0.49803922, g: 0.6509804, b: 0.9098039, a: 1}
-    paint: 0
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
+    paint: 1
   - itemId: oreT3
     prefab: {fileID: 1771740753285238, guid: 715a9ecf31213914b8c48bf28132a534, type: 3}
-    tint: {r: 0.43137255, g: 0.75686276, b: 0.72156864, a: 1}
-    paint: 0
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
+    paint: 1
   - itemId: oreT4
     prefab: {fileID: 1975549760567462, guid: 9aaf6ee41c0ba774b8703c41860bcf9b, type: 3}
-    tint: {r: 0.41568628, g: 0.29803923, b: 0.65882355, a: 1}
-    paint: 0
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
+    paint: 1
   - itemId: oreT5
     prefab: {fileID: 1690247541683866, guid: d8c037247812d25488e711028faa7b49, type: 3}
-    tint: {r: 0.8784314, g: 0.6901961, b: 0.2509804, a: 1}
-    paint: 0
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
+    paint: 1
   - itemId: metalBar
     prefab: {fileID: 1740159825050108, guid: 9ec5c47e508672046a6b4fb0ef032ae0, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
+    paint: 1
   - itemId: metalBarT2
     prefab: {fileID: 1422194030587680, guid: 1e2df45cd640c87499fb4a0f91ede38f, type: 3}
-    tint: {r: 0.49803922, g: 0.6509804, b: 0.9098039, a: 1}
-    paint: 0
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
+    paint: 1
   - itemId: metalBarT3
     prefab: {fileID: 1960109127320382, guid: a962b80504c904c4d926fbb7f50cef74, type: 3}
-    tint: {r: 0.61960787, g: 0.827451, b: 0.8, a: 1}
-    paint: 0
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
+    paint: 1
   - itemId: metalBarT4
     prefab: {fileID: 1312267116750424, guid: d101aa80cae075448acbe3fef69e529e, type: 3}
-    tint: {r: 0.41568628, g: 0.29803923, b: 0.65882355, a: 1}
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
     paint: 1
   - itemId: metalBarT5
     prefab: {fileID: 1050192036017312, guid: ebd44adc0d24bf948bf9fe8306802017, type: 3}
-    tint: {r: 0.8784314, g: 0.6901961, b: 0.2509804, a: 1}
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
     paint: 1
   - itemId: woodT2
     prefab: {fileID: 1204843447569306, guid: d4ba06f688ca5c9489d121c2497c63f3, type: 3}
-    tint: {r: 0.7254902, g: 0.5411765, b: 0.34509805, a: 1}
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
     paint: 1
   - itemId: woodT3
     prefab: {fileID: 1350644683509884, guid: 76268956b264f0146950f405edf04c42, type: 3}
-    tint: {r: 0.36078432, g: 0.27450982, b: 0.1882353, a: 1}
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
     paint: 1
   - itemId: woodT4
     prefab: {fileID: 1264090075301404, guid: b365b833ab258da41bc7f258dea7992d, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
+    paint: 1
   - itemId: woodT5
     prefab: {fileID: 1303663450289950, guid: 7ca9915df67a66d43991170ba2400f17, type: 3}
-    tint: {r: 0.6039216, g: 0.6039216, b: 0.5803922, a: 1}
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
     paint: 1
   - itemId: plank
     prefab: {fileID: 1390090078305650, guid: f41a7face91c60c4f830c977faaf3138, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
+    paint: 1
   - itemId: plankT2
     prefab: {fileID: 1886075303413064, guid: b3a3a6bb9e6be4b4ba0e9ce04a13469a, type: 3}
-    tint: {r: 0.8509804, g: 0.7254902, b: 0.5411765, a: 1}
-    paint: 0
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
+    paint: 1
   - itemId: plankT3
     prefab: {fileID: 1030515876107612, guid: 70c4f34a01ff2d44990c22a48fb28063, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
+    paint: 1
   - itemId: plankT4
     prefab: {fileID: 1138131664617212, guid: 5b6c5207dfaa25f4bac3c6145bc0e80c, type: 3}
-    tint: {r: 0.3529412, g: 0.27450982, b: 0.21960784, a: 1}
-    paint: 0
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
+    paint: 1
   - itemId: plankT5
     prefab: {fileID: 1030515876107612, guid: 70c4f34a01ff2d44990c22a48fb28063, type: 3}
-    tint: {r: 0.65882355, g: 0.65882355, b: 0.63529414, a: 1}
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
     paint: 1
   - itemId: fiber
     prefab: {fileID: 1904356791742696, guid: e85a5f270aefc744d86962e605a57bb3, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
+    paint: 1
   - itemId: fiberT2
     prefab: {fileID: 1406762892669528, guid: efed0d9bfc3a06841bdac6f14c559c13, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
+    paint: 1
   - itemId: fiberT3
     prefab: {fileID: 1154606685033784, guid: 38a679cbf2c60174f878721348dc3381, type: 3}
-    tint: {r: 0.43137255, g: 0.5411765, b: 0.20392157, a: 1}
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
     paint: 1
   - itemId: fiberT4
     prefab: {fileID: 1585323693196822, guid: eabca08e95a9cb44aa7dcf3f4597c780, type: 3}
-    tint: {r: 0.3372549, g: 0.40784314, b: 0.47843137, a: 1}
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
     paint: 1
   - itemId: fiberT5
     prefab: {fileID: 1585323693196822, guid: eabca08e95a9cb44aa7dcf3f4597c780, type: 3}
-    tint: {r: 0.89411765, g: 0.89411765, b: 0.91764706, a: 1}
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
     paint: 1
   - itemId: cloth
     prefab: {fileID: 1484124097767750, guid: a052e8ab2b05c5848ac30c50603edc4b, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
+    paint: 1
   - itemId: clothT2
     prefab: {fileID: 1923436127841654, guid: 1774fe93c36d1034db8e878267008e01, type: 3}
-    tint: {r: 0.9019608, g: 0.85490197, b: 0.7529412, a: 1}
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
     paint: 1
   - itemId: clothT3
     prefab: {fileID: 1898980893148434, guid: 8b58c4261b2d002448d6650144d6524e, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
+    paint: 1
   - itemId: clothT4
     prefab: {fileID: 1749900185397060, guid: 556b8a68174719240b5ebf1c232a2570, type: 3}
-    tint: {r: 0.41568628, g: 0.45490196, b: 0.34509805, a: 1}
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
     paint: 1
   - itemId: clothT5
     prefab: {fileID: 1019305471006132, guid: 45b136255b490db41b821c0681ba1df3, type: 3}
-    tint: {r: 0.43137255, g: 0.43137255, b: 0.4862745, a: 1}
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
     paint: 1
   - itemId: hide
     prefab: {fileID: 1450902690143878, guid: e64d11a1ee5e8c74e9b54d07273486fa, type: 3}
-    tint: {r: 0.8235294, g: 0.65882355, b: 0.47058824, a: 1}
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
     paint: 1
   - itemId: hideT2
     prefab: {fileID: 1936296572197054, guid: bc7405876eb03cf419e76727648969ac, type: 3}
-    tint: {r: 0.65882355, g: 0.4627451, b: 0.3137255, a: 1}
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
     paint: 1
   - itemId: hideT3
     prefab: {fileID: 1661139685211656, guid: fa13aecf5da33384e9f57335cbc2cc81, type: 3}
-    tint: {r: 0.4392157, g: 0.28235295, b: 0.18431373, a: 1}
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
     paint: 1
   - itemId: hideT4
     prefab: {fileID: 1809841070471890, guid: 0e4082dba9eb0ad4b821534ba7c54dd3, type: 3}
-    tint: {r: 0.5411765, g: 0.43137255, b: 0.28235295, a: 1}
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
     paint: 1
   - itemId: hideT5
     prefab: {fileID: 1823289685449104, guid: ac6635c94a1124440bc95f976363db86, type: 3}
-    tint: {r: 0.3529412, g: 0.16470589, b: 0.24313726, a: 1}
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
     paint: 1
   - itemId: tannedHide
     prefab: {fileID: 1849830538105032, guid: 9888cc354f0db164e83fb93f855fbc36, type: 3}
-    tint: {r: 0.84705883, g: 0.7058824, b: 0.5411765, a: 1}
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
     paint: 1
   - itemId: tannedHideT2
     prefab: {fileID: 1223997312163924, guid: 67f32a009e5dde04ebd61fae3db3d284, type: 3}
-    tint: {r: 0.627451, g: 0.4392157, b: 0.24705882, a: 1}
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
     paint: 1
   - itemId: tannedHideT3
     prefab: {fileID: 1304215742492940, guid: d06389c47b933e8439add707caa92991, type: 3}
-    tint: {r: 0.47843137, g: 0.3137255, b: 0.1882353, a: 1}
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
     paint: 1
   - itemId: tannedHideT4
     prefab: {fileID: 1601925588779386, guid: df852e25306e5884181e6fdab11b6c3b, type: 3}
-    tint: {r: 0.30588236, g: 0.3529412, b: 0.26666668, a: 1}
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
     paint: 1
   - itemId: tannedHideT5
     prefab: {fileID: 1326644470446332, guid: 29bbdad2089078346a5cb0efbe9d593e, type: 3}
-    tint: {r: 0.3529412, g: 0.16470589, b: 0.24313726, a: 1}
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
     paint: 1
   - itemId: oilT2
     prefab: {fileID: 1028305517566684, guid: d6b062349986fcf4cbd2cdef910c6482, type: 3}
-    tint: {r: 0.16470589, g: 0.14117648, b: 0.1254902, a: 1}
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
     paint: 1
   - itemId: oilT3
     prefab: {fileID: 1006637963614218, guid: 74bb9c0d68e161047ba2ff77572a8f6f, type: 3}
-    tint: {r: 0.84705883, g: 0.6901961, b: 0.2509804, a: 1}
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
     paint: 1
   - itemId: oilT4
     prefab: {fileID: 1524708790358150, guid: a799b90d2d301fa47a7dd9cff7d121b2, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
+    paint: 1
   - itemId: oilT5
     prefab: {fileID: 1649920933936872, guid: 408a269eab4673c4a9d74010e3f61298, type: 3}
-    tint: {r: 0.18431373, g: 0.43529412, b: 0.8156863, a: 1}
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
     paint: 1
   - itemId: fuel
     prefab: {fileID: 1333788564670996, guid: 7e25cc1253205ab45bf2f21ac7f68181, type: 3}
-    tint: {r: 0.16470589, g: 0.14117648, b: 0.1254902, a: 1}
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
     paint: 1
   - itemId: fuelT2
     prefab: {fileID: 1687963133933838, guid: fe7485ddc63a5764981aa828ce2734e4, type: 3}
-    tint: {r: 0.78431374, g: 0.627451, b: 0.2509804, a: 1}
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
     paint: 1
   - itemId: fuelT3
     prefab: {fileID: 1333788564670996, guid: 7e25cc1253205ab45bf2f21ac7f68181, type: 3}
-    tint: {r: 0.8784314, g: 0.4392157, b: 0.1254902, a: 1}
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
     paint: 1
   - itemId: fuelT4
     prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
-    tint: {r: 0.6039216, g: 0.6901961, b: 0.7529412, a: 1}
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
     paint: 1
   - itemId: fuelT5
     prefab: {fileID: 1544143072547004, guid: aa9d0fceec1d4814aa3e38892faa08a0, type: 3}
-    tint: {r: 0.18431373, g: 0.43529412, b: 0.8156863, a: 1}
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
     paint: 1
   armor:
   - itemId: leather
@@ -1173,103 +1173,103 @@ MonoBehaviour:
   - resourceType: ore
     tier: 1
     prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
-    tint: {r: 0.72156864, g: 0.39607844, b: 0.24705882, a: 1}
-    paint: 0
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
+    paint: 1
   - resourceType: ore
     tier: 2
     prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
-    tint: {r: 0.49803922, g: 0.6509804, b: 0.9098039, a: 1}
-    paint: 0
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
+    paint: 1
   - resourceType: ore
     tier: 3
     prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
-    tint: {r: 0.43137255, g: 0.75686276, b: 0.72156864, a: 1}
-    paint: 0
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
+    paint: 1
   - resourceType: ore
     tier: 4
     prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
-    tint: {r: 0.41568628, g: 0.29803923, b: 0.65882355, a: 1}
-    paint: 0
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
+    paint: 1
   - resourceType: ore
     tier: 5
     prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
-    tint: {r: 0.8784314, g: 0.6901961, b: 0.2509804, a: 1}
-    paint: 0
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
+    paint: 1
   - resourceType: wood
     tier: 1
     prefab: {fileID: 1139796795624570, guid: bff2e4d1b38f7264b9a067e055e3e986, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
+    paint: 1
   - resourceType: wood
     tier: 2
     prefab: {fileID: 1691466447685246, guid: 823fa5dbf20779e4fb6e204b95a29062, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
+    paint: 1
   - resourceType: wood
     tier: 3
     prefab: {fileID: 1232429670324094, guid: ec861ae4eb8a8164ea47630c36d2a366, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
+    paint: 1
   - resourceType: wood
     tier: 4
     prefab: {fileID: 1369509060990928, guid: 541d55964971acb4badd8724436b8489, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
+    paint: 1
   - resourceType: wood
     tier: 5
     prefab: {fileID: 1750051835719524, guid: ddf1dea042d8f3d42a7f813667437cb9, type: 3}
-    tint: {r: 0.54901963, g: 0.54901963, b: 0.53333336, a: 1}
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
     paint: 1
   - resourceType: fiber
     tier: 1
     prefab: {fileID: 1904356791742696, guid: e85a5f270aefc744d86962e605a57bb3, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
+    paint: 1
   - resourceType: fiber
     tier: 2
     prefab: {fileID: 1154606685033784, guid: 38a679cbf2c60174f878721348dc3381, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
+    paint: 1
   - resourceType: fiber
     tier: 3
     prefab: {fileID: 1410177089634338, guid: 22d1bb3c605f0a047a3df61400d33cd6, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
+    paint: 1
   - resourceType: fiber
     tier: 4
     prefab: {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
+    paint: 1
   - resourceType: fiber
     tier: 5
     prefab: {fileID: 1536043230066214, guid: 5bdebad866447df48805ee507df9bead, type: 3}
-    tint: {r: 0.65882355, g: 0.65882355, b: 0.627451, a: 1}
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
     paint: 1
   - resourceType: oil
     tier: 1
     prefab: {fileID: 1890296390273018, guid: 46b7bcd01c72c9148b72bd322a02225c, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.72156864, g: 0.47843137, b: 0.29411766, a: 1}
+    paint: 1
   - resourceType: oil
     tier: 2
     prefab: {fileID: 1569311349296154, guid: 4fd3fd966a4c8a344836e1de87d78767, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.37254903, g: 0.72156864, b: 0.2901961, a: 1}
+    paint: 1
   - resourceType: oil
     tier: 3
     prefab: {fileID: 1984875063549348, guid: d17191aac136baf4388e8d209448c295, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.24705882, g: 0.56078434, b: 0.8784314, a: 1}
+    paint: 1
   - resourceType: oil
     tier: 4
     prefab: {fileID: 1177563166683432, guid: b0fe48a0043aa464c81ce5b7a4a903f6, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.60784316, g: 0.34901962, b: 0.84705883, a: 1}
+    paint: 1
   - resourceType: oil
     tier: 5
     prefab: {fileID: 1267131352853402, guid: 47da375f113338e47b5357cdd6284614, type: 3}
-    tint: {r: 1, g: 1, b: 1, a: 1}
-    paint: 0
+    tint: {r: 0.9098039, g: 0.70980394, b: 0.1882353, a: 1}
+    paint: 1
   defaultEnvironment: {fileID: 1980102390720548, guid: 9b425efa126d5aa48aeda3fa09c70785, type: 3}
   roadEnvironment: {fileID: 1549825329564326, guid: 4d7a1cef4b51c604a83e17a8a5dc96ed, type: 3}
   plantEnvironment: {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}

@@ -209,7 +209,8 @@ namespace RealmOfAshes.Game
                 Bone("clavicle_l"), Bone("upperarm_l"), Bone("lowerarm_l"), _leftHand
             }, 12, 0.001f);
 
-            RoaApocalypseVisuals.AttachStatic(_weapon, RoaApocalypseModels.Weapon(weaponId), 180f);
+            RoaApocalypseModels.ApplyEquipmentTier(
+                RoaApocalypseVisuals.AttachStatic(_weapon, RoaApocalypseModels.Weapon(weaponId), 180f), weaponId);
             WeaponId = weaponId;
             Ready = _leftArm.Ready;
             Mount();

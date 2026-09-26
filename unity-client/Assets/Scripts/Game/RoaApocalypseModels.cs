@@ -249,11 +249,47 @@ namespace RealmOfAshes.Game
         /// <summary>Оттенок собственного префаба предмета (без облика-заместителя).</summary>
         public static Color ItemTint(string itemId) => OwnItemEntry(itemId)?.tint ?? Color.white;
 
-        /// <summary>Облик собственного префаба предмета: оттенок и, если задано, закраска.</summary>
+        /// <summary>Облик собственного префаба предмета: оттенок и закраска; экипировка — цвет тира.</summary>
         public static void ApplyItemLook(GameObject root, string itemId)
         {
             ItemEntry entry = OwnItemEntry(itemId);
             if (entry != null) ApplyTint(root, entry.tint, entry.paint);
+            else ApplyEquipmentTier(root, itemId);
+        }
+
+        /// <summary>Насколько цвет тира перекрывает свой цвет модели экипировки.</summary>
+        public const float EquipmentTierStrength = 0.85f;
+
+        /// <summary>Слабое свечение цветом тира: тёмный металл оружия умножением почти не красится.</summary>
+        public const float EquipmentTierGlow = 0.12f;
+
+        /// <summary>Оттенок экипировки тира: смесь белого с цветом тира; белый — не тировой предмет.</summary>
+        public static Color EquipmentTierTint(string itemId)
+        {
+            if (!RoaItemData.IsTieredGear(itemId)) return Color.white;
+            return Color.Lerp(Color.white, RoaTierData.TierColor(RoaItemData.Tier(itemId)), EquipmentTierStrength);
+        }
+
+        /// <summary>
+        /// Оружие, инструмент, шлем тира окрашиваются в цвет тира (умножением, чтобы
+        /// детали модели читались). Надетые комплекты брони — модель персонажа целиком,
+        /// их не красим: окрасились бы лицо и руки.
+        /// </summary>
+        public static void ApplyEquipmentTier(GameObject root, string itemId)
+        {
+            Color tint = EquipmentTierTint(itemId);
+            if (root == null || tint == Color.white) return;
+            ApplyTint(root, tint);
+            Color glow = RoaTierData.TierColor(RoaItemData.Tier(itemId)) * EquipmentTierGlow;
+            var block = new MaterialPropertyBlock();
+            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.GetPropertyBlock(block);
+                block.SetFloat("_Enable_Emission", 1f);
+                block.SetColor("_Emission_Color", glow);
+                block.SetTexture("_Emission_Map", Texture2D.whiteTexture);
+                renderer.SetPropertyBlock(block);
+            }
         }
 
         /// <summary>Облик точки добычи тира: оттенок и закраска из палитры.</summary>
@@ -281,7 +317,7 @@ namespace RealmOfAshes.Game
                 if (_paintBase != null) return _paintBase;
                 _paintBase = new Texture2D(4, 4, TextureFormat.RGBA32, false) { name = "RoaTierPaintBase", hideFlags = HideFlags.DontSave };
                 var pixels = new Color32[16];
-                for (int i = 0; i < pixels.Length; i++) pixels[i] = new Color32(150, 150, 150, 255);
+                for (int i = 0; i < pixels.Length; i++) pixels[i] = new Color32(118, 118, 118, 255);
                 _paintBase.SetPixels32(pixels);
                 _paintBase.Apply(false, true);
                 return _paintBase;

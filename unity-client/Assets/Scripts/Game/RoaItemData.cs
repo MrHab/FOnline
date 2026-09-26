@@ -112,6 +112,14 @@ namespace RealmOfAshes.Game
                 ? exact : VisualId(exact);
         }
 
+        /// <summary>Тировая экипировка (оружие, броня, инструмент) — не материал и не предмет без тиров.</summary>
+        public static bool IsTieredGear(string itemOrRuntimeId)
+        {
+            return ById.TryGetValue(RoaInventory.BaseId(itemOrRuntimeId) ?? string.Empty, out Definition definition)
+                && !string.IsNullOrEmpty(definition.TierGroup) && string.IsNullOrEmpty(definition.MaterialKind)
+                && definition.Tier > 0;
+        }
+
         /// <summary>Группа тировых вариантов предмета; у предмета без тиров — сам id.</summary>
         public static string TierGroup(string itemOrRuntimeId)
         {

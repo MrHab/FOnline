@@ -75,22 +75,25 @@ for (const family of config.families) {
 const rawTiers = require(path.join(ROOT, 'data/kromka/tiers.json'));
 const packRoot = path.join(ROOT, 'unity-client/Assets/Synty/PolygonApocalypse/Prefabs');
 const packInstalled = require('fs').existsSync(packRoot);
-// Облик — путь префаба или { prefab, tint }: один префаб разного оттенка — разный облик.
-const visualPrefab = visual => (typeof visual === 'string' ? visual : visual.prefab);
-const visualKey = visual => (typeof visual === 'string' ? visual : `${visual.prefab} ${visual.tint} ${visual.paint === true}`);
+// Тиры различает их цвет (ресурсы окрашены им целиком): у каждого тира свой,
+// заметно отличный от соседнего цвет.
+const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+const tierColors = rawTiers.tiers.map(row => row.color);
+tierColors.forEach(color => assert(/^#[0-9A-F]{6}$/i.test(color || ''), `tier colour ${color} is not #RRGGBB`));
+for (let i = 1; i < tierColors.length; i += 1) {
+  const [a, b] = [rgb(tierColors[i - 1]), rgb(tierColors[i])];
+  const distance = Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  assert(distance > 90, `T${i} and T${i + 1} colours are too close (${distance.toFixed(0)})`);
+}
+assert.deepEqual(config.tiers.map(row => row.color), tierColors.map(color => color.toUpperCase()), 'the server keeps the tier colours');
+const visualPrefab = visual => visual;
 for (const family of rawTiers.families) {
   const visuals = family.visuals || {};
   for (const kind of ['raw', 'refined', 'nodes']) {
-    for (const visual of visuals[kind] || []) {
-      if (typeof visual !== 'string') {
-        assert(/^#[0-9A-F]{6}$/i.test(visual.tint || ''), `${family.id}: bad tint ${visual.tint}`);
-        assert(visual.paint === undefined || typeof visual.paint === 'boolean', `${family.id}: paint must be true or false`);
-      }
-    }
+    for (const visual of visuals[kind] || []) assert.equal(typeof visual, 'string', `${family.id}: ${kind} visual is a prefab path`);
   }
   for (const kind of ['raw', 'refined']) {
     assert.equal((visuals[kind] || []).length, T, `${family.id}: ${kind} needs a pack prefab per tier`);
-    assert.equal(new Set(visuals[kind].map(visualKey)).size, T, `${family.id}: ${kind} tiers must look different`);
   }
   // Шкуры снимаются с убитого зверя — своей точки добычи у них нет.
   assert.equal((visuals.nodes || []).length, family.resourceType === 'hide' ? 0 : T, `${family.id}: node prefab per tier`);

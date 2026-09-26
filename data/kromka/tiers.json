@@ -1,7 +1,7 @@
 {
   "schema": "kromka.tiers.v1",
   "version": 1,
-  "note": "Тиры мира: тир зоны равен её опасности (1–5), в зоне растут ресурсы и живут враги только её тира. Оружие, броня и инструменты существуют во всех пяти тирах: исходный id предмета — вариант его авторского тира, остальные получают суффикс T<n> (smgT1, oreT4). power — множитель урона и защиты, durability — стойкость к износу, price — множитель цены, modSlots — сколько слотов модификаций открыто, level — уровень профессии, с которого тир доступен в добыче, переработке и ремесле, xp — опыт профессии за единицу работы этого тира.",
+  "note": "Тиры мира: тир зоны равен её опасности (1–5), в зоне растут ресурсы и живут враги только её тира. Оружие, броня и инструменты существуют во всех пяти тирах: исходный id предмета — вариант его авторского тира, остальные получают суффикс T<n> (smgT1, oreT4). power — множитель урона и защиты, durability — стойкость к износу, price — множитель цены, modSlots — сколько слотов модификаций открыто, level — уровень профессии, с которого тир доступен в добыче, переработке и ремесле, xp — опыт профессии за единицу работы этого тира, color — цвет тира: им целиком окрашены ресурсы и частично экипировка.",
   "tiers": [
     {
       "tier": 1,
@@ -11,7 +11,8 @@
       "price": 1,
       "modSlots": 1,
       "level": 0,
-      "xp": 20
+      "xp": 20,
+      "color": "#B87A4B"
     },
     {
       "tier": 2,
@@ -21,7 +22,8 @@
       "price": 2.2,
       "modSlots": 2,
       "level": 10,
-      "xp": 40
+      "xp": 40,
+      "color": "#5FB84A"
     },
     {
       "tier": 3,
@@ -31,7 +33,8 @@
       "price": 4.8,
       "modSlots": 3,
       "level": 30,
-      "xp": 80
+      "xp": 80,
+      "color": "#3F8FE0"
     },
     {
       "tier": 4,
@@ -41,7 +44,8 @@
       "price": 10.5,
       "modSlots": 4,
       "level": 55,
-      "xp": 160
+      "xp": 160,
+      "color": "#9B59D8"
     },
     {
       "tier": 5,
@@ -51,7 +55,8 @@
       "price": 23,
       "modSlots": 4,
       "level": 80,
-      "xp": 320
+      "xp": 320,
+      "color": "#E8B530"
     }
   ],
   "professions": {
@@ -204,69 +209,25 @@
       },
       "visuals": {
         "nodes": [
-          {
-            "prefab": "Environment/SM_Env_Rock_01",
-            "tint": "#B8653F"
-          },
-          {
-            "prefab": "Environment/SM_Env_Rock_01",
-            "tint": "#7FA6E8"
-          },
-          {
-            "prefab": "Environment/SM_Env_Rock_01",
-            "tint": "#6EC1B8"
-          },
-          {
-            "prefab": "Environment/SM_Env_Rock_01",
-            "tint": "#6A4CA8"
-          },
-          {
-            "prefab": "Environment/SM_Env_Rock_01",
-            "tint": "#E0B040"
-          }
+          "Environment/SM_Env_Rock_01",
+          "Environment/SM_Env_Rock_01",
+          "Environment/SM_Env_Rock_01",
+          "Environment/SM_Env_Rock_01",
+          "Environment/SM_Env_Rock_01"
         ],
         "raw": [
-          {
-            "prefab": "Generic/SM_Generic_Small_Rocks_05",
-            "tint": "#B8653F"
-          },
-          {
-            "prefab": "Generic/SM_Generic_Small_Rocks_03",
-            "tint": "#7FA6E8"
-          },
-          {
-            "prefab": "Generic/SM_Generic_Small_Rocks_04",
-            "tint": "#6EC1B8"
-          },
-          {
-            "prefab": "Generic/SM_Generic_Small_Rocks_05",
-            "tint": "#6A4CA8"
-          },
-          {
-            "prefab": "Generic/SM_Generic_Small_Rocks_03",
-            "tint": "#E0B040"
-          }
+          "Generic/SM_Generic_Small_Rocks_05",
+          "Generic/SM_Generic_Small_Rocks_03",
+          "Generic/SM_Generic_Small_Rocks_04",
+          "Generic/SM_Generic_Small_Rocks_05",
+          "Generic/SM_Generic_Small_Rocks_03"
         ],
         "refined": [
           "Props/SM_Prop_Iron_Sheet_01",
-          {
-            "prefab": "Props/SM_Prop_Iron_Sheet_02",
-            "tint": "#7FA6E8"
-          },
-          {
-            "prefab": "Props/SM_Prop_MetalSheet_01",
-            "tint": "#9ED3CC"
-          },
-          {
-            "prefab": "Props/SM_Prop_Iron_Sheet_04",
-            "tint": "#6A4CA8",
-            "paint": true
-          },
-          {
-            "prefab": "Props/SM_Prop_Iron_Sheet_03",
-            "tint": "#E0B040",
-            "paint": true
-          }
+          "Props/SM_Prop_Iron_Sheet_02",
+          "Props/SM_Prop_MetalSheet_01",
+          "Props/SM_Prop_Iron_Sheet_04",
+          "Props/SM_Prop_Iron_Sheet_03"
         ]
       }
     },
@@ -320,47 +281,21 @@
           "Generic/SM_Generic_Tree_01",
           "Generic/SM_Generic_Tree_02",
           "Environment/SM_Env_Tree_Dead_03",
-          {
-            "prefab": "Generic/SM_Generic_TreeDead_01",
-            "tint": "#8C8C88",
-            "paint": true
-          }
+          "Generic/SM_Generic_TreeDead_01"
         ],
         "raw": [
           "Item/SM_Item_Log_01",
-          {
-            "prefab": "Item/SM_Item_Log_03",
-            "tint": "#B98A58",
-            "paint": true
-          },
-          {
-            "prefab": "Item/SM_Item_Log_01",
-            "tint": "#5C4630",
-            "paint": true
-          },
+          "Item/SM_Item_Log_03",
+          "Item/SM_Item_Log_01",
           "Item/SM_Item_Log_04",
-          {
-            "prefab": "Item/SM_Item_Log_05",
-            "tint": "#9A9A94",
-            "paint": true
-          }
+          "Item/SM_Item_Log_05"
         ],
         "refined": [
           "Props/SM_Prop_Plank_01",
-          {
-            "prefab": "Props/SM_Prop_Plank_02",
-            "tint": "#D9B98A"
-          },
+          "Props/SM_Prop_Plank_02",
           "Props/SM_Prop_Plank_Block_01",
-          {
-            "prefab": "Props/SM_Prop_Plank_03",
-            "tint": "#5A4638"
-          },
-          {
-            "prefab": "Props/SM_Prop_Plank_Block_01",
-            "tint": "#A8A8A2",
-            "paint": true
-          }
+          "Props/SM_Prop_Plank_03",
+          "Props/SM_Prop_Plank_Block_01"
         ]
       }
     },
@@ -415,49 +350,21 @@
           "Environment/SM_Env_Grass_Tuft_02",
           "Environment/SM_Env_Bushes_03",
           "Environment/SM_Env_Bushes_01",
-          {
-            "prefab": "Environment/SM_Env_Bushes_04",
-            "tint": "#A8A8A0",
-            "paint": true
-          }
+          "Environment/SM_Env_Bushes_04"
         ],
         "raw": [
           "Environment/SM_Env_Grass_Tuft_01",
           "Environment/SM_Env_Grass_Tuft_03",
-          {
-            "prefab": "Environment/SM_Env_Grass_Tuft_02",
-            "tint": "#6E8A34",
-            "paint": true
-          },
-          {
-            "prefab": "Item/SM_Item_Rope_Detailed_01",
-            "tint": "#56687A",
-            "paint": true
-          },
-          {
-            "prefab": "Item/SM_Item_Rope_Detailed_01",
-            "tint": "#E4E4EA",
-            "paint": true
-          }
+          "Environment/SM_Env_Grass_Tuft_02",
+          "Item/SM_Item_Rope_Detailed_01",
+          "Item/SM_Item_Rope_Detailed_01"
         ],
         "refined": [
           "Props/SM_Prop_Sandbag_01",
-          {
-            "prefab": "Props/SM_Prop_Sheet_01",
-            "tint": "#E6DAC0",
-            "paint": true
-          },
+          "Props/SM_Prop_Sheet_01",
           "Props/SM_Prop_Sheet_04",
-          {
-            "prefab": "Props/SM_Prop_Sheet_02",
-            "tint": "#6A7458",
-            "paint": true
-          },
-          {
-            "prefab": "Props/SM_Prop_Sheet_03",
-            "tint": "#6E6E7C",
-            "paint": true
-          }
+          "Props/SM_Prop_Sheet_02",
+          "Props/SM_Prop_Sheet_03"
         ]
       }
     },
@@ -509,58 +416,18 @@
       "visuals": {
         "nodes": [],
         "raw": [
-          {
-            "prefab": "Props/SM_Prop_Rug_05",
-            "tint": "#D2A878",
-            "paint": true
-          },
-          {
-            "prefab": "Props/SM_Prop_Rug_06",
-            "tint": "#A87650",
-            "paint": true
-          },
-          {
-            "prefab": "Props/SM_Prop_Rug_04",
-            "tint": "#70482F",
-            "paint": true
-          },
-          {
-            "prefab": "Props/SM_Prop_Rug_01",
-            "tint": "#8A6E48",
-            "paint": true
-          },
-          {
-            "prefab": "Props/SM_Prop_Rug_02",
-            "tint": "#5A2A3E",
-            "paint": true
-          }
+          "Props/SM_Prop_Rug_05",
+          "Props/SM_Prop_Rug_06",
+          "Props/SM_Prop_Rug_04",
+          "Props/SM_Prop_Rug_01",
+          "Props/SM_Prop_Rug_02"
         ],
         "refined": [
-          {
-            "prefab": "Props/SM_Prop_Sleeping_Bag_Rolled_01",
-            "tint": "#D8B48A",
-            "paint": true
-          },
-          {
-            "prefab": "Props/SM_Prop_Sleeping_Bag_Rolled_02",
-            "tint": "#A0703F",
-            "paint": true
-          },
-          {
-            "prefab": "Props/SM_Prop_Sleeping_Bag_01",
-            "tint": "#7A5030",
-            "paint": true
-          },
-          {
-            "prefab": "Characters/Attachments/SM_Chr_Attach_Bedroll_01",
-            "tint": "#4E5A44",
-            "paint": true
-          },
-          {
-            "prefab": "Item/SM_Item_Duffle_Bag_01",
-            "tint": "#5A2A3E",
-            "paint": true
-          }
+          "Props/SM_Prop_Sleeping_Bag_Rolled_01",
+          "Props/SM_Prop_Sleeping_Bag_Rolled_02",
+          "Props/SM_Prop_Sleeping_Bag_01",
+          "Characters/Attachments/SM_Chr_Attach_Bedroll_01",
+          "Item/SM_Item_Duffle_Bag_01"
         ]
       }
     },
@@ -618,49 +485,17 @@
         ],
         "raw": [
           "Props/SM_Prop_GasCan_01",
-          {
-            "prefab": "Item/SM_Item_Can_05",
-            "tint": "#2A2420",
-            "paint": true
-          },
-          {
-            "prefab": "Item/SM_Item_Jar_01",
-            "tint": "#D8B040",
-            "paint": true
-          },
+          "Item/SM_Item_Can_05",
+          "Item/SM_Item_Jar_01",
           "Props/SM_Prop_Propane_01",
-          {
-            "prefab": "Props/SM_Prop_Barrel_Coloured_01",
-            "tint": "#2F6FD0",
-            "paint": true
-          }
+          "Props/SM_Prop_Barrel_Coloured_01"
         ],
         "refined": [
-          {
-            "prefab": "Item/SM_Item_Can_07",
-            "tint": "#2A2420",
-            "paint": true
-          },
-          {
-            "prefab": "Item/SM_Item_Drink_Bottle_02",
-            "tint": "#C8A040",
-            "paint": true
-          },
-          {
-            "prefab": "Item/SM_Item_Can_07",
-            "tint": "#E07020",
-            "paint": true
-          },
-          {
-            "prefab": "Props/SM_Prop_Chemical_01",
-            "tint": "#9AB0C0",
-            "paint": true
-          },
-          {
-            "prefab": "Props/SM_Prop_GasCan_01",
-            "tint": "#2F6FD0",
-            "paint": true
-          }
+          "Item/SM_Item_Can_07",
+          "Item/SM_Item_Drink_Bottle_02",
+          "Item/SM_Item_Can_07",
+          "Props/SM_Prop_Chemical_01",
+          "Props/SM_Prop_GasCan_01"
         ]
       }
     }

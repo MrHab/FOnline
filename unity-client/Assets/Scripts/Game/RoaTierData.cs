@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
+using UnityEngine;
 
 namespace RealmOfAshes.Game
 {
@@ -17,6 +18,7 @@ namespace RealmOfAshes.Game
             public float Durability = 1f;
             public int ModSlots;
             public int Level;
+            public Color Color = Color.white;
         }
 
         public sealed class Profession
@@ -45,7 +47,9 @@ namespace RealmOfAshes.Game
                     Power = row["power"]?.ToObject<float?>() ?? 1f,
                     Durability = row["durability"]?.ToObject<float?>() ?? 1f,
                     ModSlots = row["modSlots"]?.ToObject<int?>() ?? 0,
-                    Level = row["level"]?.ToObject<int?>() ?? 0
+                    Level = row["level"]?.ToObject<int?>() ?? 0,
+                    Color = ColorUtility.TryParseHtmlString(row["color"]?.ToString() ?? string.Empty, out Color color)
+                        ? color : DefaultColor(tiers.Count + 1)
                 });
             }
             var professions = new List<Profession>();
@@ -79,6 +83,25 @@ namespace RealmOfAshes.Game
         {
             Tier a = Get(from), b = Get(to);
             return a != null && b != null && a.Power > 0f ? b.Power / a.Power : 1f;
+        }
+
+        /// <summary>
+        /// Цвет тира (data/kromka/tiers.json): бронза, зелёный, синий, фиолетовый,
+        /// золото. До ответа сервера — та же палитра, зашитая здесь.
+        /// </summary>
+        public static Color TierColor(int tier) => Get(tier)?.Color ?? DefaultColor(tier);
+
+        private static Color DefaultColor(int tier)
+        {
+            switch (tier)
+            {
+                case 1: return new Color32(0xB8, 0x7A, 0x4B, 0xFF);
+                case 2: return new Color32(0x5F, 0xB8, 0x4A, 0xFF);
+                case 3: return new Color32(0x3F, 0x8F, 0xE0, 0xFF);
+                case 4: return new Color32(0x9B, 0x59, 0xD8, 0xFF);
+                case 5: return new Color32(0xE8, 0xB5, 0x30, 0xFF);
+                default: return Color.white;
+            }
         }
 
         /// <summary>Уровень профессии, с которого открыт тир.</summary>

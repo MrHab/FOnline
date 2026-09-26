@@ -154,11 +154,12 @@ namespace RealmOfAshes.EditorTools
                 {
                     JArray ids = (JArray)family[kind]["ids"];
                     JArray paths = (JArray)visuals[kind];
+                    // Ресурс тира окрашен цветом тира целиком (заливкой атласа).
                     for (int i = 0; i < ids.Count && i < paths.Count; i++)
                     {
                         itemPaths[ids[i].ToString()] = VisualPath(paths[i]);
-                        itemTints[ids[i].ToString()] = VisualTint(paths[i]);
-                        if (VisualPaint(paths[i])) itemPaints.Add(ids[i].ToString());
+                        itemTints[ids[i].ToString()] = TierColor(tierData, i + 1);
+                        itemPaints.Add(ids[i].ToString());
                     }
                 }
                 JArray nodes = (JArray)visuals["nodes"];
@@ -168,8 +169,8 @@ namespace RealmOfAshes.EditorTools
                         resourceType = family["resourceType"].ToString(),
                         tier = i + 1,
                         prefab = Require(VisualPath(nodes[i])),
-                        tint = VisualTint(nodes[i]),
-                        paint = VisualPaint(nodes[i])
+                        tint = TierColor(tierData, i + 1),
+                        paint = true
                     });
             }
             var items = new List<RoaApocalypseModels.ItemEntry>();
@@ -327,15 +328,13 @@ namespace RealmOfAshes.EditorTools
             return visual is JObject row ? row["prefab"]?.ToString() : visual?.ToString();
         }
 
-        private static Color VisualTint(JToken visual)
+        /// <summary>Цвет тира из tiers.json (tiers[].color).</summary>
+        private static Color TierColor(JObject tierData, int tier)
         {
-            string hex = visual is JObject row ? row["tint"]?.ToString() : null;
-            return !string.IsNullOrEmpty(hex) && ColorUtility.TryParseHtmlString(hex, out Color tint) ? tint : Color.white;
-        }
-
-        private static bool VisualPaint(JToken visual)
-        {
-            return visual is JObject row && row["paint"]?.Type == JTokenType.Boolean && row["paint"].ToObject<bool>();
+            foreach (JToken row in (JArray)tierData["tiers"])
+                if (row["tier"]?.ToObject<int>() == tier
+                    && ColorUtility.TryParseHtmlString(row["color"]?.ToString() ?? string.Empty, out Color color)) return color;
+            return Color.white;
         }
 
         private static GameObject Require(string relativePath)

@@ -37,6 +37,7 @@ namespace RealmOfAshes.EditorTools
             var missing = new List<string>();
             foreach (JObject family in (JArray)tiers["families"])
                 CaptureFamily(family, missing);
+            CaptureEquipment(missing);
             CheckNodeSwap(missing);
             if (missing.Count > 0) throw new InvalidOperationException("[TIER RESOURCES] нет префабов: " + string.Join(", ", missing));
             Debug.Log("[TIER RESOURCES] OK: листы в " + OutputDir);
@@ -97,19 +98,15 @@ namespace RealmOfAshes.EditorTools
                             Place(none.rectTransform, x, y + Cell / 2f - 20, Cell, 40);
                             continue;
                         }
-                        JToken visual = prefabs[row][tier - 1];
-                        string path = visual is JObject entry ? entry["prefab"].ToString() : visual.ToString();
-                        string hex = visual is JObject tinted ? tinted["tint"]?.ToString() : null;
-                        Color tint = !string.IsNullOrEmpty(hex) && ColorUtility.TryParseHtmlString(hex, out Color parsed) ? parsed : Color.white;
-                        bool paint = visual is JObject painted && painted["paint"]?.Type == JTokenType.Boolean && painted["paint"].ToObject<bool>();
-                        Texture2D render = RenderPrefab(path, tint, paint, out float size);
+                        string path = prefabs[row][tier - 1].ToString();
+                        // Ресурс — цвет тира заливкой, как его ставит палитра.
+                        Texture2D render = RenderPrefab(path, RoaTierData.TierColor(tier), true, out float size);
                         if (render == null) { missing.Add(path); continue; }
                         renders.Add(render);
                         RawImage image = Raw(panel, render);
                         Place(image.rectTransform, x, y, Cell, Cell);
                         string itemId = items[row][tier - 1];
                         string shown = Path.GetFileName(path).Replace("SM_", string.Empty)
-                            + (string.IsNullOrEmpty(hex) ? string.Empty : (paint ? " заливка " : " оттенок ") + hex)
                             + " · " + size.ToString("0.0") + " м";
                         string caption = string.IsNullOrEmpty(itemId) ? shown : RoaItemData.Name(itemId) + "\n" + shown;
                         Text label = Label(panel, caption, 12, FontStyle.Normal);
@@ -168,13 +165,82 @@ namespace RealmOfAshes.EditorTools
                 }
         }
 
+        /// <summary>
+        /// Лист экипировки: модели нескольких групп в цвете каждого тира (как в руках и
+        /// на земле) и значки T1–T5 одного оружия, как их рисует интерфейс.
+        /// </summary>
+        private static void CaptureEquipment(List<string> missing)
+        {
+            string[] groups = { "smg", "polygonKatana01", "shotgun", "pickaxe", "helmet" };
+            int height = 110 + (groups.Length + 1) * (Cell + 40);
+            var renders = new List<Texture2D>();
+            GameObject root = null;
+            try
+            {
+                root = new GameObject("TierEquipmentSheet");
+                var canvasGo = new GameObject("Canvas", typeof(RectTransform));
+                canvasGo.transform.SetParent(root.transform, false);
+                Canvas canvas = canvasGo.AddComponent<Canvas>();
+                canvasGo.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+                var panel = (RectTransform)canvasGo.transform;
+                Text title = Label(panel, "Экипировка — цвет тира на модели и значке", 22, FontStyle.Bold);
+                Place(title.rectTransform, 24, 18, Width - 48, 32);
+                for (int tier = 1; tier <= 5; tier++)
+                {
+                    Text head = Label(panel, "T" + tier, 22, FontStyle.Bold);
+                    head.alignment = TextAnchor.MiddleCenter;
+                    head.color = RoaTierData.TierColor(tier);
+                    Place(head.rectTransform, ColumnX(tier), 62, Cell, 28);
+                }
+                for (int row = 0; row <= groups.Length; row++)
+                {
+                    float y = 100 + row * (Cell + 40);
+                    var band = new GameObject("Band", typeof(RectTransform), typeof(Image));
+                    band.transform.SetParent(panel, false);
+                    band.GetComponent<Image>().color = row % 2 == 0 ? new Color(0.17f, 0.16f, 0.13f) : new Color(0.14f, 0.13f, 0.11f);
+                    Place((RectTransform)band.transform, 16, y - 4, Width - 32, Cell + 36);
+                    bool icons = row == groups.Length;
+                    string group = icons ? groups[0] : groups[row];
+                    Text rowName = Label(panel, icons ? "Значки ПП" : RoaItemData.Name(group).Split('[')[0], 15, FontStyle.Bold);
+                    Place(rowName.rectTransform, 26, y + Cell / 2f - 12, 175, 44);
+                    int authored = RoaItemData.Tier(group);
+                    for (int tier = 1; tier <= 5; tier++)
+                    {
+                        string id = tier == authored ? group : group + "T" + tier;
+                        Texture2D picture;
+                        if (icons) picture = RoaItemCategories.Art(id);
+                        else
+                        {
+                            GameObject prefab = RoaApocalypseModels.Weapon(id) ?? RoaApocalypseModels.Item(id);
+                            if (prefab == null) { missing.Add("модель " + id); continue; }
+                            picture = RenderPrefab(AssetDatabase.GetAssetPath(prefab), Color.white, false, out float _, id);
+                            if (picture != null) renders.Add(picture);
+                        }
+                        if (picture == null) { missing.Add("картинка " + id); continue; }
+                        RawImage image = Raw(panel, picture);
+                        Place(image.rectTransform, ColumnX(tier), y, Cell, Cell);
+                        Text label = Label(panel, RoaItemData.Name(id), 12, FontStyle.Normal);
+                        label.alignment = TextAnchor.UpperCenter;
+                        Place(label.rectTransform, ColumnX(tier) - 10, y + Cell + 2, Cell + 20, 30);
+                    }
+                }
+                Render(canvas, height, Path.Combine(OutputDir, "tier-equipment.png"));
+            }
+            finally
+            {
+                if (root != null) UnityEngine.Object.DestroyImmediate(root);
+                foreach (Texture2D texture in renders) UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
         private static float ColumnX(int tier) => 210 + (tier - 1) * 204;
 
         /// <summary>Префаб пака в авторском размере, снятый камерой по своим габаритам.</summary>
-        private static Texture2D RenderPrefab(string packPath, Color tint, bool paint, out float largest)
+        private static Texture2D RenderPrefab(string packPath, Color tint, bool paint, out float largest, string equipmentId = null)
         {
             largest = 0f;
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PackRoot + packPath + ".prefab");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                packPath.StartsWith("Assets/") ? packPath : PackRoot + packPath + ".prefab");
             if (prefab == null) return null;
             GameObject instance = null, cameraGo = null;
             var lights = new List<GameObject>();
@@ -190,6 +256,8 @@ namespace RealmOfAshes.EditorTools
                 instance.transform.position = new Vector3(0f, -12000f, 0f);
                 SetLayer(instance, CaptureLayer);
                 RoaApocalypseModels.ApplyTint(instance, tint, paint);
+                // Экипировка — ровно та окраска, что ставит клиент (оттенок и свечение тира).
+                if (!string.IsNullOrEmpty(equipmentId)) RoaApocalypseModels.ApplyEquipmentTier(instance, equipmentId);
                 var bounds = new Bounds(instance.transform.position, Vector3.zero);
                 bool first = true;
                 foreach (Renderer renderer in instance.GetComponentsInChildren<Renderer>())

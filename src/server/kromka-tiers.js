@@ -54,6 +54,8 @@ function normalizeTierConfig(raw = {}) {
     return Object.freeze({
       tier: index + 1,
       name: String(row.name || `T${index + 1}`).slice(0, 16),
+      // Цвет тира: ресурсы окрашены им целиком, экипировка — частично.
+      color: /^#[0-9A-Fa-f]{6}$/.test(String(row.color || '')) ? String(row.color).toUpperCase() : '#FFFFFF',
       power: finite(row.power, 1, 0.1, 10),
       durability: finite(row.durability, 1, 0.1, 10),
       price: finite(row.price, 1, 0.1, 1000),

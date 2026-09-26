@@ -267,6 +267,7 @@ const {
 const { entryKeyForDirection: dangerEntryKeyForDirection } = require('./src/server/danger-cells');
 const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
 const { createZoneRuntime } = require('./src/server/zone-runtime');
+const { TILES: CITY_TILES, WALL_HALF: CITY_WALL_HALF } = require('./src/server/city-builder');
 const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
 const { migrateSaveStateToZones } = require('./src/server/zone-migration');
 const { zoneAtPoint, zoneById, zoneLocationId, zoneOfLocation, zoneOfPlace, zoneRecipe } = require('./src/server/zone-graph');
@@ -17077,6 +17078,44 @@ function serverResourceKeepClearTiles(room, loc = {}) {
 }
 
 /**
+ * Клетки, до которых можно дойти от входа (обход в ширину по проходимой земле):
+ * в городе за стеной узел поставить нельзя. Большие зоны — открытая местность,
+ * там обход дорог и не нужен: null.
+ */
+function serverReachableTiles(room, loc = {}, starts = []) {
+  const dims = roomTileDims(room);
+  if (dims.w * dims.h > 10000) return null;
+  const walkable = new Map();
+  const canWalk = (tx, tz) => {
+    const key = tz * dims.w + tx;
+    if (!walkable.has(key)) {
+      const pos = tileToWorld(tx, tz, dims);
+      walkable.set(key, isRoomWalkableTile(room, tx, tz) && isRoomWalkableWorld(room, pos.x, pos.z, 0.45));
+    }
+    return walkable.get(key);
+  };
+  const seen = new Set();
+  const queue = [];
+  for (const start of starts) {
+    if (!inBounds(start.tx, start.tz, dims)) continue;
+    const key = start.tz * dims.w + start.tx;
+    if (!seen.has(key)) { seen.add(key); queue.push(start); }
+  }
+  if (!queue.length) return null;
+  for (let head = 0; head < queue.length; head++) {
+    const { tx, tz } = queue[head];
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = tx + dx, nz = tz + dz;
+      const key = nz * dims.w + nx;
+      if (seen.has(key) || !inBounds(nx, nz, dims) || !canWalk(nx, nz)) continue;
+      seen.add(key);
+      queue.push({ tx: nx, tz: nz });
+    }
+  }
+  return seen;
+}
+
+/**
  * Старые узлы (лом, вода, пища и прочее без тира) из комнаты убираются, у узлов
  * семейств проставляется тир комнаты, а семейство, которого в локации меньше
  * минимума, дополняется узлами на свободной проходимой земле. Места выбираются
@@ -17103,13 +17142,24 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
 
   const dims = roomTileDims(room);
   const bounds = normalizedLocationPlayableBounds(loc);
-  const minX = Math.max(3, bounds.minX + 3), maxX = Math.min(dims.w - 4, bounds.maxX - 3);
-  const minZ = Math.max(3, bounds.minZ + 3), maxZ = Math.min(dims.h - 4, bounds.maxZ - 3);
+  let minX = Math.max(3, bounds.minX + 3), maxX = Math.min(dims.w - 4, bounds.maxX - 3);
+  let minZ = Math.max(3, bounds.minZ + 3), maxZ = Math.min(dims.h - 4, bounds.maxZ - 3);
+  const city = !!(loc?.cityZone || ZONE_RUNTIME.cityOf(locationId));
+  if (city && dims.w === CITY_TILES && dims.h === CITY_TILES) {
+    // Город — внутри стены (клетки CENTRE ± WALL_HALF), с запасом на её толщину.
+    const inner = CITY_TILES / 2 - CITY_WALL_HALF + 3;
+    minX = Math.max(minX, inner); minZ = Math.max(minZ, inner);
+    maxX = Math.min(maxX, CITY_TILES - 1 - inner); maxZ = Math.min(maxZ, CITY_TILES - 1 - inner);
+  }
   if (maxX <= minX || maxZ <= minZ) return changed;
   const centreX = (minX + maxX) / 2, centreZ = (minZ + maxZ) / 2;
   const halfSize = Math.max(1, Math.min(maxX - minX, maxZ - minZ) / 2);
-  const city = !!(loc?.cityZone || ZONE_RUNTIME.cityOf(locationId));
   const keepClear = serverResourceKeepClearTiles(room, loc);
+  // Обход — от точки появления и входов (не от выходов: они у края, за стеной).
+  const starts = [loc.spawn, loc.respawn, ...Object.keys(loc).filter(key => key.startsWith('entry')).map(key => loc[key])]
+    .filter(point => point && Number.isFinite(Number(point.tx)) && Number.isFinite(Number(point.tz)))
+    .map(point => ({ tx: Number(point.tx), tz: Number(point.tz) }));
+  const reachable = serverReachableTiles(room, loc, starts);
   const nearest = (tx, tz) => {
     let best = Infinity;
     for (const other of room.resources.values()) best = Math.min(best, Math.hypot(other.tx - tx, other.tz - tz));
@@ -17131,6 +17181,7 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
         if (tile !== TILE_TYPES.GRASS && tile !== TILE_TYPES.DARK && tile !== TILE_TYPES.PATH) continue;
         if (roomTileHasResource(room, tx, tz, 2) || roomTileHasContainer(room, tx, tz, 2)) continue;
         if (keepClear.some(point => Math.hypot(point.tx - tx, point.tz - tz) < 6)) continue;
+        if (reachable && !reachable.has(tz * dims.w + tx)) continue;
         const pos = tileToWorld(tx, tz, dims);
         // Вокруг узла свободно: он не перекроет проход.
         if (!isRoomWalkableWorld(room, pos.x, pos.z, 1.4)) continue;

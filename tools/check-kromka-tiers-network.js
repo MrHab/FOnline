@@ -122,6 +122,9 @@ const harvest = account => h.socketAck(account.socket, 'harvestResource', { id: 
       const rows = cityNodes.filter(row => row.type === type);
       assert(rows.length >= 2 && rows.every(row => row.tier === 1), `the city grows T1 ${type}: ` + JSON.stringify(cityNodes));
     }
+    const { TILES, WALL_HALF } = require('../src/server/city-builder');
+    const outside = cityNodes.filter(row => Math.abs(row.tx - TILES / 2) >= WALL_HALF || Math.abs(row.tz - TILES / 2) >= WALL_HALF);
+    assert.deepEqual(outside, [], 'every city node stands inside the city wall');
     console.log(`PASS the city holds tier 1 nodes of every family (${cityNodes.length})`);
 
     // Кирка T2 не берёт жилу тира 3: отказ до траты ОД и износа.

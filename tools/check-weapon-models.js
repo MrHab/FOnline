@@ -330,8 +330,10 @@ for (const row of apocalypseWeapons) {
     assert(fs.existsSync(path.join(apocalypsePrefabRoot, `${row.prefab}.prefab`)),
       `${row.itemId}: missing PolygonApocalypse prefab`);
 }
+// Предмет с авторским visualId (серп — мачете) берёт оснастку и модель у него.
 const physicalItemIds = kromkaItems
   .filter(item => item.slot === 'weapon' && ['weapons', 'tools'].includes(item.category))
+  .filter(item => !(item.visualId && (expected.has(item.visualId) || packIds.has(item.visualId))))
   .map(item => item.id)
   .filter(id => id !== 'fists');
 assert.deepStrictEqual(

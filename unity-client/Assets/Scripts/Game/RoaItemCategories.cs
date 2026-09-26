@@ -104,7 +104,8 @@ namespace RealmOfAshes.Game
         /// </summary>
         public static Texture2D Art(string itemOrRuntimeId)
         {
-            string id = RoaInventory.BaseId(itemOrRuntimeId);
+            // Вариант тира рисуется картинкой исходного предмета.
+            string id = RoaItemData.VisualId(itemOrRuntimeId);
             if (string.IsNullOrEmpty(id)) id = "misc";
             if (ArtCache.TryGetValue(id, out Texture2D cached)) return cached;
 

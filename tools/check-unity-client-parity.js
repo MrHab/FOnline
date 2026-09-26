@@ -5,6 +5,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { readTieredCatalogs } = require('../src/server/kromka-tiers');
 
 // Unity — единственный клиент. Источник правды для сверки — авторитетный сервер
 // (server.js) и авторские данные data/kromka; прежний браузерный клиент удалён.
@@ -395,8 +396,11 @@ assert.strictEqual(unityItems.silver?.name, 'Марки Тракта', 'silver: 
 
 // Crafting rows are client presentation, but their ids/output/station/cost are
 // part of the server request and therefore need exact parity, in authored order.
-const authoredRecipeCatalog = JSON.parse(read('data/kromka/field-recipes.json'));
-const authoredRecipes = (authoredRecipeCatalog.recipes || []).map(row => ({
+// The baked fallback carries only untiered recipes: tiered rows (every weapon,
+// armour and tool in T1–T5, refining) arrive with the server catalog.
+const tieredCatalogs = readTieredCatalogs(path.join(ROOT, 'data'));
+const allRecipes = tieredCatalogs.recipeCatalog.recipes.map(row => ({ id: row.id, outputId: row.output.id }));
+const authoredRecipes = tieredCatalogs.recipeCatalog.recipes.filter(row => !row.tier).map(row => ({
   id: String(row.id),
   name: String(row.name),
   outputId: String(row.output?.id),
@@ -430,7 +434,7 @@ assert.deepStrictEqual(
 // Items explicitly obtainable by crafting must have a field recipe. Pack
 // variants enter through trade and loot, so they do not require duplicate recipes.
 const characterEquipmentSlots = new Set(['weapon', 'armor', 'helmet', 'boots', 'backpack']);
-const craftedOutputIds = new Set(authoredRecipes.map(row => row.outputId));
+const craftedOutputIds = new Set(allRecipes.map(row => row.outputId));
 const requiredCraftOutputIds = Object.values(authoredItems)
   .filter(item => (item.acquisition || []).includes('craft'))
   .filter(item => characterEquipmentSlots.has(item.slot) || ['ammo', 'aid'].includes(item.category))

@@ -17,6 +17,7 @@ const zoneWalk = require('./lib/zone-walk');
 const { zoneOfPlace, zoneRecipe } = require('../src/server/zone-graph');
 const { loadZoneCatalog } = require('../src/server/zone-chunks');
 const { buildZone } = require('../src/server/zone-builder');
+const { readTieredCatalogs, enemyTierScale } = require('../src/server/kromka-tiers');
 const accounts = {};
 // Зона Сердцевины и её портал — ворота территории.
 const zoneGraph = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'zone-graph.json'), 'utf8'));
@@ -358,7 +359,11 @@ const getJson = route => new Promise((resolve, reject) => {
   // виды, но откормленные, и сервер выдаёт им авторские характеристики.
   const labEnemies = accounts.modification.join.worldState.enemies || [];
   const byName = name => labEnemies.filter(row => String(row.name || '') === name);
-  assert(byName('Слухач').every(row => row.maxHp === 54), 'The outer guards keep the ordinary stats of their kind: '
+  // Обычный слухач лаборатории — слухач её тира (Сердцевина — тир 5, data/kromka/tiers.json).
+  const tiered = readTieredCatalogs(path.join(__dirname, '..', 'data')).config;
+  const listenerHp = Math.round(54 * enemyTierScale(tiered, 'listener', tiered.locationTiers.coreLabCircuit).hp);
+  assert(byName('Слухач').length && byName('Слухач').every(row => row.maxHp === listenerHp),
+    `The outer guards keep the ordinary stats of their kind at the lab tier (${listenerHp}): `
     + JSON.stringify(byName('Слухач').map(row => row.maxHp)));
   assert(byName('Складень').some(row => row.maxHp === 252), 'The inner guard is fed up on health: '
     + JSON.stringify(byName('Складень').map(row => row.maxHp)));

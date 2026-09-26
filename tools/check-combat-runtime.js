@@ -18,6 +18,11 @@ const TMP_ROOT = path.resolve(process.env.COMBAT_RUNTIME_TMPDIR || os.tmpdir());
 // таймеру. Боевой таймер — четверть часа, поэтому проверка просит короткий.
 const RESOURCE_RESPAWN_MS = 1000;
 const TMP_PREFIX = 'realm-of-ashes-combat-runtime-';
+const PICKAXE_HIT_WEAR = (() => {
+  const { readTieredCatalogs, tierWearMultiplier } = require('../src/server/kromka-tiers');
+  const { config, itemCatalog } = readTieredCatalogs(path.join(PROJECT_ROOT, 'data'));
+  return 1.5 * tierWearMultiplier(config, itemCatalog.items.find(item => item.id === 'pickaxe').tier);
+})();
 const COMBAT_LOCATION_ID = 'combatRuntimeArena';
 const NPC_LOCATION_TAGS = new Set([
   'npc', 'enemy', 'monster', 'living', 'friendly', 'guard', 'merchant', 'trader'
@@ -1797,7 +1802,8 @@ async function assertHarvestRequiresEquippedTool(accounts) {
         before: resource,
         after: harvested.resource
       });
-    invariant(Number(harvested.self?.itemConditions?.pickaxe) === beforeSuccessCondition - 1.5,
+    // Износ за удар 1.5 делится на прочность тира кирки (data/kromka/tiers.json).
+    invariant(Number(harvested.self?.itemConditions?.pickaxe) === Number((beforeSuccessCondition - PICKAXE_HIT_WEAR).toFixed(2)),
       'Successful harvest did not apply exactly one tool wear', {
         before: beforeSuccessCondition,
         after: harvested.self?.itemConditions?.pickaxe

@@ -13,6 +13,7 @@ const { SIDES, zoneById, zoneLocationId, zoneOfLocation, zoneRecipe } = require(
 const { loadZoneCatalog } = require('./zone-chunks');
 const { TILES, buildZone } = require('./zone-builder');
 const { buildCity, cityStationObjects } = require('./city-builder');
+const { designateFiberNodes } = require('./kromka-tiers');
 
 const METRES = TILES * 2;
 const SIDE_ENTRY = Object.freeze({ north: 'entryFromNorth', south: 'entryFromSouth', west: 'entryFromWest', east: 'entryFromEast' });
@@ -191,7 +192,7 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
       const problems = frozenZoneProblems(graph, authored);
       if (problems.length) throw new Error(`frozen zone ${id} no longer fits the graph: ${problems.join('; ')}`);
       // Ревизия закреплённой зоны — от её содержимого: правка файла меняет её для клиентов.
-      const { revision, ...content } = authored;
+      const { revision, ...content } = designateFiberNodes(authored);
       const hash = crypto.createHash('sha1').update(JSON.stringify(content)).digest('hex').slice(0, 8);
       // Зона со своей сценой Unity — обычная авторская локация: клиент грузит
       // сцену, а не собирает объекты из определения. Без этого он построил бы
@@ -200,7 +201,9 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
       return { ...content, generated, frozen: true, revision: `f-${hash}` };
     }
     if (!catalog) catalog = loadZoneCatalog(zonesDir);
-    return buildZone(zoneRecipe(graph, id), catalog);
+    const definition = designateFiberNodes(buildZone(zoneRecipe(graph, id), catalog));
+    // Кусты волокна меняют содержимое: ревизия меняется вместе с ним.
+    return { ...definition, revision: `${definition.revision}-f` };
   }
 
   /** Полное определение зоны в каталоге: строит его при первом обращении. Не зона — ничего не делает. */

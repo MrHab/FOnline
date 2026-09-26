@@ -179,6 +179,13 @@ namespace RealmOfAshes.Game
                     }
                     AddSkillCard(self, skill, free);
                 }
+                // Профессии Albion: растут от самой работы, очки на них не тратятся.
+                if (self?["professions"] is JArray professions && professions.Count > 0)
+                {
+                    AddSkillGroupTitle("Профессии — растут от работы");
+                    foreach (JToken token in professions)
+                        if (token is JObject profession) AddProfessionCard(profession);
+                }
             });
 
             _progressionStatus.text = _planApplying ? "Применяю план…" : Pipboy.ProgressionStatus;
@@ -200,13 +207,13 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>Строка на две карточки (#skill-grid: 2 колонки по 441px, gap 8).</summary>
-        private RectTransform NextSkillCell()
+        private RectTransform NextSkillCell(float height = 150f)
         {
             if (_skillPairRow == null || _skillPairCount >= 2)
             {
                 var row = new GameObject("Pair", typeof(RectTransform));
                 row.transform.SetParent(_skillsGrid, false);
-                row.AddComponent<LayoutElement>().preferredHeight = 150f;
+                row.AddComponent<LayoutElement>().preferredHeight = height;
                 _skillPairRow = (RectTransform)row.transform;
                 _skillPairCount = 0;
                 _skillRows.Add(row);
@@ -266,6 +273,45 @@ namespace RealmOfAshes.Game
             Button plus = SmallButton(planRow, "+5%", 73f, 56f, !_planApplying && !locked && free > 0 && shown < 100, () => { _skillPlan[id] = plannedSteps + 1; _refreshAt = 0f; });
             plus.name = "SkillPlus:" + id;
 
+        }
+
+        /// <summary>Карточка профессии: уровень, открытый тир и опыт до следующего уровня.</summary>
+        private void AddProfessionCard(JObject profession)
+        {
+            string id = profession["id"]?.ToString() ?? string.Empty;
+            int level = profession["level"]?.ToObject<int?>() ?? 0;
+            int maxTier = profession["maxTier"]?.ToObject<int?>() ?? 1;
+            long xp = profession["xp"]?.ToObject<long?>() ?? 0L;
+            long levelXp = profession["levelXp"]?.ToObject<long?>() ?? 0L;
+            long nextXp = profession["nextLevelXp"]?.ToObject<long?>() ?? xp;
+
+            RectTransform cell = NextSkillCell(58f);
+            var card = new GameObject("Profession:" + id, typeof(RectTransform));
+            card.transform.SetParent(cell, false);
+            var rect = (RectTransform)card.transform;
+            Stretch(rect, 0f);
+            var back = card.AddComponent<Image>();
+            back.color = CardBgDark;
+            back.raycastTarget = false;
+            var outline = card.AddComponent<Outline>();
+            outline.effectColor = CardBorderGreen;
+            outline.effectDistance = new Vector2(1f, -1f);
+
+            Text name = Label("Name", rect, 11, TextAnchor.UpperLeft, SlotName, FontStyle.Bold);
+            name.text = profession["name"]?.ToString() ?? id;
+            Place_(name.rectTransform, 0f, 1f, 1f, 1f, new Vector2(7f, -20f), new Vector2(-7f, -6f));
+            Text rank = Label("Rank", rect, 10, TextAnchor.UpperLeft, new Color(0.89f, 0.761f, 0.412f, 1f));
+            rank.text = "Уровень " + level + " · открыт тир T" + maxTier
+                + (nextXp > xp ? " · опыт " + (xp - levelXp) + " / " + (nextXp - levelXp) : " · максимум");
+            Place_(rank.rectTransform, 0f, 1f, 1f, 1f, new Vector2(7f, -36f), new Vector2(-7f, -22f));
+
+            // Полоса опыта до следующего уровня.
+            RectTransform bar = Panel_(rect, new Color(0.02f, 0.05f, 0.03f, 1f), new Color(0.494f, 0.784f, 0.357f, 0.22f));
+            Place_(bar, 0f, 0f, 1f, 0f, new Vector2(7f, 7f), new Vector2(-7f, 15f));
+            float share = nextXp > levelXp ? Mathf.Clamp01((float)(xp - levelXp) / (nextXp - levelXp)) : 1f;
+            RectTransform fill = Child("Fill", bar);
+            fill.gameObject.AddComponent<Image>().color = new Color(0.89f, 0.761f, 0.412f, 0.85f);
+            Place_(fill, 0f, 0f, share, 1f, Vector2.zero, Vector2.zero);
         }
 
         private Button SmallButton(RectTransform parent, string caption, float left, float width, bool enabled, System.Action onClick)

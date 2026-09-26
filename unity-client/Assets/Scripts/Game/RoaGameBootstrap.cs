@@ -620,6 +620,7 @@ namespace RealmOfAshes.Game
                         + (string.IsNullOrEmpty(catalogError) ? "нет данных" : catalogError));
                     yield break;
                 }
+                RoaTierData.Apply(response["tiers"] as JObject);
                 JObject fieldRecipes = response["fieldRecipes"] as JObject;
                 if (!RoaCraftingData.ApplyCatalog(fieldRecipes, out catalogError))
                 {

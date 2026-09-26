@@ -182,7 +182,29 @@ namespace RealmOfAshes.Game
         public bool CraftPending { get { return _craftPending; } }
         public bool PlotPending { get { return _plotPending; } }
 
-        public bool CanCraft(RoaCraftRecipe recipe) { return HasCraftIngredients(recipe); }
+        public bool CanCraft(RoaCraftRecipe recipe) { return HasCraftIngredients(recipe) && ProfessionAllows(recipe); }
+
+        /// <summary>Тир рецепта открыт уровнем профессии (решает сервер, клиент не шлёт заведомый отказ).</summary>
+        public bool ProfessionAllows(RoaCraftRecipe recipe) { return RoaCraftingData.ProfessionAllows(_self, recipe); }
+
+        /// <summary>Уровень профессии из авторитетного состояния игрока (self.professions).</summary>
+        public int ProfessionLevel(string professionId) { return RoaCraftingData.ProfessionLevel(_self, professionId); }
+
+        public string ProfessionName(string professionId)
+        {
+            JObject row = ProfessionRow(professionId);
+            return row?["name"]?.ToString() ?? professionId;
+        }
+
+        /// <summary>Профессии игрока: добыча, переработка и ремёсла с уровнем и открытым тиром.</summary>
+        public JArray Professions { get { return _self?["professions"] as JArray ?? new JArray(); } }
+
+        private JObject ProfessionRow(string professionId)
+        {
+            foreach (JToken token in Professions)
+                if (token is JObject row && row["id"]?.ToString() == professionId) return row;
+            return null;
+        }
         public static string CraftCost(RoaCraftRecipe recipe) { return recipe == null ? string.Empty : CraftCostText(recipe); }
         public void CraftRecipe(RoaCraftRecipe recipe) { Craft(recipe); }
         public void CraftingClose() { ClosePanel(true); }
@@ -1730,7 +1752,9 @@ namespace RealmOfAshes.Game
             }
 
             view.Data = (JObject)row.DeepClone();
-            view.Data["name"] = ResourceLabel(row["type"]?.ToString());
+            // Тир узла — тир зоны: «Руда T3» сразу говорит, какой нужен инструмент.
+            int resourceTier = row["tier"]?.ToObject<int?>() ?? 0;
+            view.Data["name"] = ResourceLabel(row["type"]?.ToString()) + (resourceTier > 0 ? " T" + resourceTier : string.Empty);
             view.Position = RoaCoords.TileToWorld(tx, tz, _mapWidth, _mapDepth);
             bool available = row["hp"]?.ToObject<float>() > 0f;
 
@@ -2267,8 +2291,13 @@ namespace RealmOfAshes.Game
                 }
 
                 JObject item = ack["item"] as JObject;
-                Show("Получено: " + (item?["id"]?.ToString() ?? "ресурс")
-                    + " x" + (item?["qty"]?.ToObject<int>() ?? 1));
+                JObject profession = ack["profession"] as JObject;
+                string itemId = item?["id"]?.ToString() ?? string.Empty;
+                Show("Получено: " + (string.IsNullOrEmpty(itemId) ? "ресурс" : RoaItemData.Name(itemId))
+                    + " x" + (item?["qty"]?.ToObject<int>() ?? 1)
+                    + (profession != null ? " · " + profession["name"] + " +" + profession["gained"]
+                        + (profession["leveledUp"]?.ToObject<bool>() == true ? " — уровень " + profession["level"] + "!" : string.Empty)
+                        : string.Empty));
             });
         }
 
@@ -3362,6 +3391,7 @@ namespace RealmOfAshes.Game
             if (type == "electronics") return "Электроника";
             if (type == "ammoParts") return "Детали боеприпасов";
             if (type == "weaponParts") return "Оружейные детали";
+            if (type == "fiber") return "Волокно";
             if (type == "blue") return "Синь";
             return "Ресурс";
         }
@@ -3369,6 +3399,7 @@ namespace RealmOfAshes.Game
         private static Color ResourceColor(string type)
         {
             if (type == "wood" || type == "food" || type == "medicine") return new Color(0.35f, 0.55f, 0.24f);
+            if (type == "fiber") return new Color(0.66f, 0.62f, 0.36f);
             if (type == "water") return new Color(0.20f, 0.48f, 0.68f);
             if (type == "oil") return new Color(0.16f, 0.14f, 0.12f);
             if (type == "chemicals") return new Color(0.45f, 0.72f, 0.30f);

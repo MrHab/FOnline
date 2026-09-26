@@ -1,0 +1,183 @@
+{
+  "schema": "kromka.tiers.v1",
+  "version": 1,
+  "note": "Тиры мира: тир зоны равен её опасности (1–5), в зоне растут ресурсы и живут враги только её тира. Оружие, броня и инструменты существуют во всех пяти тирах: исходный id предмета — вариант его авторского тира, остальные получают суффикс T<n> (smgT1, oreT4). power — множитель урона и защиты, durability — стойкость к износу, price — множитель цены, modSlots — сколько слотов модификаций открыто, level — уровень профессии, с которого тир доступен в добыче, переработке и ремесле, xp — опыт профессии за единицу работы этого тира.",
+  "tiers": [
+    { "tier": 1, "name": "T1", "power": 1.0, "durability": 1.0, "price": 1.0, "modSlots": 1, "level": 0, "xp": 20 },
+    { "tier": 2, "name": "T2", "power": 1.12, "durability": 1.15, "price": 2.2, "modSlots": 2, "level": 10, "xp": 40 },
+    { "tier": 3, "name": "T3", "power": 1.25, "durability": 1.32, "price": 4.8, "modSlots": 3, "level": 30, "xp": 80 },
+    { "tier": 4, "name": "T4", "power": 1.4, "durability": 1.52, "price": 10.5, "modSlots": 4, "level": 55, "xp": 160 },
+    { "tier": 5, "name": "T5", "power": 1.56, "durability": 1.75, "price": 23.0, "modSlots": 4, "level": 80, "xp": 320 }
+  ],
+  "professions": {
+    "maxLevel": 100,
+    "xpCurve": 25,
+    "gatherBonusPerLevel": 0.004,
+    "skills": [
+      { "id": "gatherMetal", "kind": "gather", "family": "metal", "name": "Рудокоп" },
+      { "id": "gatherWood", "kind": "gather", "family": "wood", "name": "Лесоруб" },
+      { "id": "gatherFiber", "kind": "gather", "family": "fiber", "name": "Сборщик волокна" },
+      { "id": "gatherHide", "kind": "gather", "family": "hide", "name": "Свежевальщик" },
+      { "id": "gatherOil", "kind": "gather", "family": "oil", "name": "Нефтяник" },
+      { "id": "refineMetal", "kind": "refine", "family": "metal", "name": "Плавильщик" },
+      { "id": "refineWood", "kind": "refine", "family": "wood", "name": "Столяр" },
+      { "id": "refineFiber", "kind": "refine", "family": "fiber", "name": "Ткач" },
+      { "id": "refineHide", "kind": "refine", "family": "hide", "name": "Кожевник" },
+      { "id": "refineOil", "kind": "refine", "family": "oil", "name": "Перегонщик" },
+      { "id": "craftMelee", "kind": "craft", "line": "melee", "name": "Кузнец холодного оружия" },
+      { "id": "craftFirearms", "kind": "craft", "line": "firearms", "name": "Оружейник" },
+      { "id": "craftHeavy", "kind": "craft", "line": "heavy", "name": "Мастер тяжёлого оружия" },
+      { "id": "craftThrowing", "kind": "craft", "line": "throwing", "name": "Подрывник" },
+      { "id": "craftArmor", "kind": "craft", "line": "armor", "name": "Бронник" },
+      { "id": "craftTools", "kind": "craft", "line": "tools", "name": "Инструментальщик" }
+    ]
+  },
+  "families": [
+    {
+      "id": "metal",
+      "name": "Металл",
+      "resourceType": "ore",
+      "harvestTool": "ore",
+      "refineStation": "tool_bench",
+      "raw": {
+        "weight": 2,
+        "basePrice": 3,
+        "stackLimit": 250,
+        "ids": ["ore", "oreT2", "oreT3", "oreT4", "oreT5"],
+        "names": ["Железная руда", "Хромистая руда", "Титановая руда", "Вольфрамовая руда", "Кромочная руда"]
+      },
+      "refined": {
+        "weight": 1.6,
+        "stackLimit": 200,
+        "ids": ["metalBar", "metalBarT2", "metalBarT3", "metalBarT4", "metalBarT5"],
+        "names": ["Железная болванка", "Хромистая сталь", "Титановый сплав", "Вольфрамовый сплав", "Кромочный сплав"],
+        "visual": "scrap"
+      }
+    },
+    {
+      "id": "wood",
+      "name": "Дерево",
+      "resourceType": "wood",
+      "harvestTool": "wood",
+      "refineStation": "tool_bench",
+      "raw": {
+        "weight": 1.2,
+        "basePrice": 2,
+        "stackLimit": 250,
+        "ids": ["wood", "woodT2", "woodT3", "woodT4", "woodT5"],
+        "names": ["Древесина", "Сосновый кругляк", "Дубовый кругляк", "Железное дерево", "Пепельный кедр"]
+      },
+      "refined": {
+        "weight": 1,
+        "stackLimit": 200,
+        "ids": ["plank", "plankT2", "plankT3", "plankT4", "plankT5"],
+        "names": ["Грубые доски", "Сосновые доски", "Дубовый брус", "Брус железного дерева", "Пепельный брус"],
+        "visual": "wood"
+      }
+    },
+    {
+      "id": "fiber",
+      "name": "Волокно",
+      "resourceType": "fiber",
+      "harvestTool": "fiber",
+      "refineStation": "repair_bench",
+      "raw": {
+        "weight": 0.6,
+        "basePrice": 2,
+        "stackLimit": 250,
+        "ids": ["fiber", "fiberT2", "fiberT3", "fiberT4", "fiberT5"],
+        "names": ["Бурьян", "Дикий лён", "Конопля", "Стальной хлопок", "Пепельный шёлк"],
+        "visual": "food"
+      },
+      "refined": {
+        "weight": 0.5,
+        "stackLimit": 200,
+        "ids": ["cloth", "clothT2", "clothT3", "clothT4", "clothT5"],
+        "names": ["Мешковина", "Льняное полотно", "Парусина", "Армированная ткань", "Пепельное полотно"],
+        "visual": "medicine"
+      }
+    },
+    {
+      "id": "hide",
+      "name": "Шкуры",
+      "resourceType": "hide",
+      "harvestTool": "hide",
+      "refineStation": "repair_bench",
+      "raw": {
+        "weight": 1,
+        "basePrice": 4,
+        "stackLimit": 200,
+        "ids": ["hide", "hideT2", "hideT3", "hideT4", "hideT5"],
+        "names": ["Тонкая шкура", "Грубая шкура", "Толстая шкура", "Панцирная шкура", "Шкура древнего мутанта"],
+        "visual": "trophy"
+      },
+      "refined": {
+        "weight": 0.8,
+        "stackLimit": 200,
+        "ids": ["tannedHide", "tannedHideT2", "tannedHideT3", "tannedHideT4", "tannedHideT5"],
+        "names": ["Сыромять", "Дублёная кожа", "Толстая кожа", "Бронекожа", "Кромочная кожа"],
+        "visual": "trophy"
+      }
+    },
+    {
+      "id": "oil",
+      "name": "Нефть",
+      "resourceType": "oil",
+      "harvestTool": "liquid",
+      "refineStation": "chem_station",
+      "raw": {
+        "weight": 1.5,
+        "basePrice": 9,
+        "stackLimit": 200,
+        "ids": ["oil", "oilT2", "oilT3", "oilT4", "oilT5"],
+        "names": ["Канистра нефти", "Тяжёлая нефть", "Лёгкая нефть", "Газоконденсат", "Синяя нефть"]
+      },
+      "refined": {
+        "weight": 1.2,
+        "stackLimit": 200,
+        "ids": ["fuel", "fuelT2", "fuelT3", "fuelT4", "fuelT5"],
+        "names": ["Мазут", "Солярка", "Бензин", "Авиатопливо", "Синее топливо"],
+        "visual": "oil"
+      }
+    }
+  ],
+  "refining": {
+    "rawPerTier": [2, 2, 2, 3, 4],
+    "previousRefined": 1,
+    "silverFee": [1, 2, 3, 5, 8],
+    "workSeconds": [2, 3, 4, 5, 6],
+    "priceMarkup": 1.15
+  },
+  "locationTiers": {
+    "note": "Тир локаций вне сетки зон. Лаборатории Сердцевины — чёрные зоны, высший тир.",
+    "coreLabAlloy": 5,
+    "coreLabCenterReactor": 5,
+    "coreLabCenterResearch": 5,
+    "coreLabCenterService": 5,
+    "coreLabCircuit": 5,
+    "coreLabSpectrum": 5,
+    "coreLabSprout": 5
+  },
+  "enemies": {
+    "note": "Враг зоны тира N выше своего базового тира сильнее: здоровье растёт как power в степени hpExponent, урон и опыт — как power в степенях attackExponent и xpExponent; ниже базового тира вид не слабеет. tiers — в зонах каких тиров вид заводит логова (если в среде зоны таких нет, встаёт любой вид среды).",
+    "hpExponent": 1.6,
+    "attackExponent": 1.2,
+    "xpExponent": 2,
+    "species": {
+      "raider": { "baseTier": 1, "tiers": [1, 2, 3, 4, 5] },
+      "lantern": { "baseTier": 1, "tiers": [1, 2] },
+      "gari": { "baseTier": 1, "tiers": [1, 2, 3] },
+      "dustling": { "baseTier": 1, "tiers": [1, 2, 3] },
+      "listener": { "baseTier": 2, "tiers": [2, 3, 4] },
+      "rykhlyak": { "baseTier": 3, "tiers": [3, 4, 5] },
+      "mourner": { "baseTier": 1, "tiers": [3, 4, 5] },
+      "burned": { "baseTier": 2, "tiers": [4, 5] },
+      "fold": { "baseTier": 4, "tiers": [4, 5] }
+    }
+  },
+  "hideDrops": {
+    "note": "Шкура тира зоны падает с убитого зверя, только если у игрока в сумке нож свежевальщика не ниже тира зоны.",
+    "qty": [1, 3],
+    "species": ["gari", "rykhlyak", "listener", "mourner", "lantern", "dustling", "fold"]
+  }
+}

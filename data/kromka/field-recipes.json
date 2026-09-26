@@ -207,9 +207,10 @@
       "id": "knifecraft",
       "name": "Нож «Тихий»",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 2,
-        "wood": 1
+        "$metal": 1,
+        "$wood": 1
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -222,9 +223,10 @@
       "id": "pistolcraft",
       "name": "Пистолет «Искра»",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
+        "$metal": 2,
         "weaponParts": 1,
-        "scrap": 4,
         "ammoParts": 2
       },
       "silverFee": 2,
@@ -238,10 +240,10 @@
       "id": "revolvercraft",
       "name": "Револьвер «Шериф»",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "ore": 4,
-        "scrap": 4,
-        "wood": 2
+        "$metal": 4,
+        "$wood": 1
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -254,9 +256,10 @@
       "id": "sawedoffcraft",
       "name": "Дробовик «Коротыш»",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "scrap": 5,
-        "wood": 3
+        "$metal": 3,
+        "$wood": 2
       },
       "silverFee": 2,
       "workSeconds": 4,
@@ -269,10 +272,11 @@
       "id": "smgcraft",
       "name": "ПП «Шорох»",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "scrap": 8,
-        "weaponParts": 3,
-        "wood": 2
+        "$metal": 4,
+        "$wood": 1,
+        "weaponParts": 3
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -285,10 +289,11 @@
       "id": "riflecraft",
       "name": "Винтовка «След»",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -301,9 +306,10 @@
       "id": "assaultcraft",
       "name": "Автомат «Рубеж»",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "ore": 6,
-        "wood": 3
+        "$metal": 3,
+        "$wood": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -316,9 +322,10 @@
       "id": "machineguncraft",
       "name": "Пулемёт «Гром»",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 10,
-        "wood": 4
+        "$metal": 5,
+        "$wood": 2
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -331,9 +338,10 @@
       "id": "lasercraft",
       "name": "Гибрид «Разряд»",
       "station": "energy_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1
       },
       "silverFee": 2,
       "workSeconds": 4,
@@ -346,10 +354,11 @@
       "id": "flamercraft",
       "name": "Огнемёт «Жар»",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 9,
-        "wood": 3,
-        "oil": 2
+        "$metal": 5,
+        "$wood": 2,
+        "$oil": 1
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -362,9 +371,10 @@
       "id": "plasmacraft",
       "name": "Гибрид «Заря»",
       "station": "energy_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 10,
-        "wood": 2,
+        "$metal": 5,
+        "$wood": 1,
         "silver": 10
       },
       "silverFee": 5,
@@ -378,9 +388,10 @@
       "id": "shotguncraft",
       "name": "Дробовик «Град»",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "ore": 7,
-        "wood": 4
+        "$metal": 4,
+        "$wood": 2
       },
       "silverFee": 3,
       "workSeconds": 6,
@@ -393,9 +404,10 @@
       "id": "rocketcrafter",
       "name": "Ракетомёт «Пепел»",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 14,
-        "wood": 4,
+        "$metal": 7,
+        "$wood": 2,
         "silver": 14
       },
       "silverFee": 7,
@@ -409,9 +421,10 @@
       "id": "leathercraft",
       "name": "Куртка «Пыль»",
       "station": "repair_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 5,
-        "chemicals": 1
+        "$hide": 3,
+        "$fiber": 1
       },
       "silverFee": 2,
       "workSeconds": 3,
@@ -424,9 +437,10 @@
       "id": "metalarmorcraft",
       "name": "Панцирь «Лом»",
       "station": "repair_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 12,
-        "ore": 4
+        "$metal": 6,
+        "$hide": 2
       },
       "silverFee": 4,
       "workSeconds": 8,
@@ -439,10 +453,11 @@
       "id": "ballisticvestcraft",
       "name": "Жилет «Застава»",
       "station": "repair_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 10,
-        "ammoParts": 5,
-        "chemicals": 2
+        "$fiber": 4,
+        "$metal": 3,
+        "ammoParts": 3
       },
       "silverFee": 4,
       "workSeconds": 9,
@@ -455,10 +470,12 @@
       "id": "combatarmorcraft",
       "name": "Комплект «Штурм»",
       "station": "repair_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 18,
-        "electronics": 6,
-        "chemicals": 4
+        "$metal": 5,
+        "$fiber": 3,
+        "$hide": 2,
+        "electronics": 4
       },
       "silverFee": 6,
       "workSeconds": 14,
@@ -471,9 +488,10 @@
       "id": "hazmatsuitcraft",
       "name": "Костюм «Фильтр»",
       "station": "chem_station",
+      "line": "armor",
       "inputs": {
-        "chemicals": 10,
-        "scrap": 6
+        "$fiber": 5,
+        "$oil": 3
       },
       "silverFee": 4,
       "workSeconds": 8,
@@ -486,10 +504,11 @@
       "id": "heavyarmorcraft",
       "name": "Панцирь «Бастион»",
       "station": "repair_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 26,
-        "ore": 10,
-        "electronics": 6
+        "$metal": 12,
+        "$hide": 3,
+        "electronics": 4
       },
       "silverFee": 9,
       "workSeconds": 21,
@@ -502,10 +521,11 @@
       "id": "energysuitcraft",
       "name": "Костюм «Изолятор»",
       "station": "energy_bench",
+      "line": "armor",
       "inputs": {
-        "electronics": 16,
-        "chemicals": 8,
-        "scrap": 10
+        "$fiber": 5,
+        "$oil": 2,
+        "electronics": 8
       },
       "silverFee": 7,
       "workSeconds": 17,
@@ -518,8 +538,10 @@
       "id": "prewarhelmetcraft",
       "name": "Шлем «Реликт»",
       "station": "energy_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 6,
+        "$metal": 3,
+        "$fiber": 1,
         "electronics": 3
       },
       "silverFee": 2,
@@ -533,8 +555,9 @@
       "id": "weldedhelmetcraft",
       "name": "Шлем «Сварщик»",
       "station": "tool_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 4
+        "$metal": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -547,8 +570,10 @@
       "id": "helmetcraft",
       "name": "Шлем «Караул»",
       "station": "repair_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 4
+        "$metal": 2,
+        "$hide": 1
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -561,8 +586,10 @@
       "id": "tacticalhelmetcraft",
       "name": "Шлем «Дозор»",
       "station": "repair_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 6,
+        "$metal": 3,
+        "$fiber": 1,
         "electronics": 2
       },
       "silverFee": 2,
@@ -576,8 +603,10 @@
       "id": "assaulthelmetcraft",
       "name": "Шлем «Штурм»",
       "station": "repair_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 8,
+        "$metal": 4,
+        "$hide": 1,
         "electronics": 3
       },
       "silverFee": 3,
@@ -591,9 +620,9 @@
       "id": "bootscraft",
       "name": "Ботинки «Тропа»",
       "station": "tool_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 3,
-        "chemicals": 1
+        "$hide": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -606,9 +635,10 @@
       "id": "scoutbootscraft",
       "name": "Ботинки «След»",
       "station": "tool_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 4,
-        "chemicals": 2
+        "$hide": 2,
+        "$fiber": 1
       },
       "silverFee": 2,
       "workSeconds": 3,
@@ -621,9 +651,11 @@
       "id": "assaultbootscraft",
       "name": "Ботинки «Натиск»",
       "station": "tool_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 5,
-        "wood": 1
+        "$hide": 2,
+        "$metal": 1,
+        "$wood": 1
       },
       "silverFee": 2,
       "workSeconds": 3,
@@ -636,9 +668,10 @@
       "id": "reinforcedbootscraft",
       "name": "Ботинки «Крепь»",
       "station": "repair_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 6,
-        "ore": 2
+        "$hide": 2,
+        "$metal": 2
       },
       "silverFee": 2,
       "workSeconds": 4,
@@ -651,9 +684,10 @@
       "id": "backpackcraft",
       "name": "Рюкзак «Странник»",
       "station": "tool_bench",
+      "line": "armor",
       "inputs": {
-        "scrap": 5,
-        "chemicals": 1
+        "$fiber": 3,
+        "$hide": 2
       },
       "silverFee": 2,
       "workSeconds": 3,
@@ -666,9 +700,10 @@
       "id": "pickaxecraft",
       "name": "Лопата «Пласт»",
       "station": "tool_bench",
+      "line": "tools",
       "inputs": {
-        "ore": 2,
-        "wood": 2
+        "$metal": 2,
+        "$wood": 1
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -681,9 +716,10 @@
       "id": "axecraft",
       "name": "Топор «Пролом»",
       "station": "tool_bench",
+      "line": "tools",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 1
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -696,15 +732,47 @@
       "id": "handpumpcraft",
       "name": "Ключ «Поток»",
       "station": "tool_bench",
+      "line": "tools",
       "inputs": {
-        "ore": 3,
-        "wood": 1,
-        "scrap": 2
+        "$metal": 2,
+        "$wood": 1
       },
       "silverFee": 2,
       "workSeconds": 3,
       "output": {
         "id": "handPump",
+        "qty": 1
+      }
+    },
+    {
+      "id": "sicklecraft",
+      "name": "Серп «Жнец»",
+      "station": "tool_bench",
+      "line": "tools",
+      "inputs": {
+        "$metal": 1,
+        "$wood": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "sickle",
+        "qty": 1
+      }
+    },
+    {
+      "id": "skinningknifecraft",
+      "name": "Нож свежевальщика «Шкурник»",
+      "station": "tool_bench",
+      "line": "tools",
+      "inputs": {
+        "$metal": 1,
+        "$wood": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "skinningKnife",
         "qty": 1
       }
     },
@@ -742,9 +810,10 @@
       "id": "polygonAssaultRifle02craft",
       "name": "Штурмовая винтовка 02",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "ore": 6,
-        "wood": 3
+        "$metal": 3,
+        "$wood": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -757,9 +826,10 @@
       "id": "polygonAssaultRifle03craft",
       "name": "Штурмовая винтовка 03",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "ore": 6,
-        "wood": 3
+        "$metal": 3,
+        "$wood": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -772,10 +842,11 @@
       "id": "polygonHuntingRifleClean01craft",
       "name": "Охотничья винтовка (чистое) 01",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -788,9 +859,10 @@
       "id": "polygonHybrid03craft",
       "name": "Гибридное оружие 03",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 10,
-        "wood": 2,
+        "$metal": 5,
+        "$wood": 1,
         "silver": 10
       },
       "silverFee": 5,
@@ -804,9 +876,10 @@
       "id": "polygonMachineGun02craft",
       "name": "Пулемёт 02",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 10,
-        "wood": 4
+        "$metal": 5,
+        "$wood": 2
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -819,9 +892,10 @@
       "id": "polygonMinigun01craft",
       "name": "Миниган 01",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 10,
-        "wood": 4
+        "$metal": 5,
+        "$wood": 2
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -834,9 +908,10 @@
       "id": "polygonMinigunClean01craft",
       "name": "Миниган (чистое) 01",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 10,
-        "wood": 4
+        "$metal": 5,
+        "$wood": 2
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -849,10 +924,11 @@
       "id": "polygonNailgun01craft",
       "name": "Гвоздомёт 01",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "scrap": 8,
-        "weaponParts": 3,
-        "wood": 2
+        "$metal": 4,
+        "$wood": 1,
+        "weaponParts": 3
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -865,10 +941,11 @@
       "id": "polygonNailgunClean01craft",
       "name": "Гвоздомёт (чистое) 01",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "scrap": 8,
-        "weaponParts": 3,
-        "wood": 2
+        "$metal": 4,
+        "$wood": 1,
+        "weaponParts": 3
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -881,10 +958,10 @@
       "id": "polygonRevolver02craft",
       "name": "Револьвер 02",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "ore": 4,
-        "scrap": 4,
-        "wood": 2
+        "$metal": 4,
+        "$wood": 1
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -897,10 +974,11 @@
       "id": "polygonRifle01craft",
       "name": "Винтовка 01",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -913,10 +991,11 @@
       "id": "polygonRifle02craft",
       "name": "Винтовка 02",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -929,10 +1008,11 @@
       "id": "polygonRifle03craft",
       "name": "Винтовка 03",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -945,10 +1025,11 @@
       "id": "polygonSniperRifle01craft",
       "name": "Снайперская винтовка 01",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -961,10 +1042,11 @@
       "id": "polygonSniperRifle02craft",
       "name": "Снайперская винтовка 02",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -977,10 +1059,11 @@
       "id": "polygonSniperRiflePneumatic01craft",
       "name": "Пневматическая снайперская винтовка 01",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -993,10 +1076,11 @@
       "id": "polygonSpearGun01craft",
       "name": "Гарпунное ружьё 01",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -1009,10 +1093,11 @@
       "id": "polygonSubMGun02craft",
       "name": "Пистолет-пулемёт 02",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "scrap": 8,
-        "weaponParts": 3,
-        "wood": 2
+        "$metal": 4,
+        "$wood": 1,
+        "weaponParts": 3
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -1025,10 +1110,11 @@
       "id": "polygonSubMGun03craft",
       "name": "Пистолет-пулемёт 03",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "scrap": 8,
-        "weaponParts": 3,
-        "wood": 2
+        "$metal": 4,
+        "$wood": 1,
+        "weaponParts": 3
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -1041,10 +1127,11 @@
       "id": "polygonSubMGunClean03craft",
       "name": "Пистолет-пулемёт (чистое) 03",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "scrap": 8,
-        "weaponParts": 3,
-        "wood": 2
+        "$metal": 4,
+        "$wood": 1,
+        "weaponParts": 3
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -1057,9 +1144,10 @@
       "id": "polygonBatMetal01craft",
       "name": "Металлическая бита 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1072,9 +1160,10 @@
       "id": "polygonBatWood01craft",
       "name": "Деревянная бита 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1087,9 +1176,10 @@
       "id": "polygonBatWood02craft",
       "name": "Деревянная бита 02",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1102,9 +1192,10 @@
       "id": "polygonBaton01craft",
       "name": "Дубинка 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1117,9 +1208,10 @@
       "id": "polygonBaton02craft",
       "name": "Дубинка 02",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1132,9 +1224,10 @@
       "id": "polygonButcher01craft",
       "name": "Мясницкий тесак 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1147,9 +1240,10 @@
       "id": "polygonCross01craft",
       "name": "Боевой крест 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1162,9 +1256,10 @@
       "id": "polygonCrowbar01craft",
       "name": "Лом 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1177,9 +1272,10 @@
       "id": "polygonCrutch01craft",
       "name": "Костыль 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1192,9 +1288,10 @@
       "id": "polygonHammer01craft",
       "name": "Молот 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1207,9 +1304,10 @@
       "id": "polygonKatana01craft",
       "name": "Катана 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1222,9 +1320,10 @@
       "id": "polygonMeleeGolfClub01craft",
       "name": "Клюшка 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1237,9 +1336,10 @@
       "id": "polygonMeleeMachete01craft",
       "name": "Мачете 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1252,9 +1352,10 @@
       "id": "polygonMeleeSpearWood01craft",
       "name": "Копьё 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1267,9 +1368,10 @@
       "id": "polygonPipe01craft",
       "name": "Труба 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1282,9 +1384,10 @@
       "id": "polygonPlank01craft",
       "name": "Доска 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1297,9 +1400,10 @@
       "id": "polygonRebarClub01craft",
       "name": "Арматурная дубина 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1312,9 +1416,10 @@
       "id": "polygonWoodAxe01craft",
       "name": "Дровяной топор 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1327,9 +1432,10 @@
       "id": "polygonWrench01craft",
       "name": "Ключ 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1342,9 +1448,10 @@
       "id": "polygonBombGasCan01craft",
       "name": "Бомба из канистры 01",
       "station": "weapon_bench",
+      "line": "throwing",
       "inputs": {
-        "ore": 14,
-        "wood": 4,
+        "$metal": 7,
+        "$wood": 2,
         "silver": 14
       },
       "silverFee": 7,
@@ -1358,9 +1465,10 @@
       "id": "polygonBombPropane01craft",
       "name": "Пропановая бомба 01",
       "station": "weapon_bench",
+      "line": "throwing",
       "inputs": {
-        "ore": 14,
-        "wood": 4,
+        "$metal": 7,
+        "$wood": 2,
         "silver": 14
       },
       "silverFee": 7,
@@ -1374,9 +1482,10 @@
       "id": "polygonChainSaw01craft",
       "name": "Бензопила 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1389,10 +1498,11 @@
       "id": "polygonCrossBow01craft",
       "name": "Арбалет 01",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -1405,10 +1515,11 @@
       "id": "polygonCrossBowClean01craft",
       "name": "Арбалет (чистое) 01",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -1421,9 +1532,10 @@
       "id": "polygonFlareGun01craft",
       "name": "Сигнальный пистолет 01",
       "station": "weapon_bench",
+      "line": "firearms",
       "inputs": {
+        "$metal": 2,
         "weaponParts": 1,
-        "scrap": 4,
         "ammoParts": 2
       },
       "silverFee": 2,
@@ -1437,9 +1549,10 @@
       "id": "polygonFlashbang01craft",
       "name": "Светошумовая граната 01",
       "station": "weapon_bench",
+      "line": "throwing",
       "inputs": {
-        "ore": 14,
-        "wood": 4,
+        "$metal": 7,
+        "$wood": 2,
         "silver": 14
       },
       "silverFee": 7,
@@ -1453,9 +1566,10 @@
       "id": "polygonGrenade01craft",
       "name": "Граната 01",
       "station": "weapon_bench",
+      "line": "throwing",
       "inputs": {
-        "ore": 14,
-        "wood": 4,
+        "$metal": 7,
+        "$wood": 2,
         "silver": 14
       },
       "silverFee": 7,
@@ -1469,9 +1583,10 @@
       "id": "polygonMolotov01craft",
       "name": "Коктейль Молотова 01",
       "station": "weapon_bench",
+      "line": "throwing",
       "inputs": {
-        "ore": 14,
-        "wood": 4,
+        "$metal": 7,
+        "$wood": 2,
         "silver": 14
       },
       "silverFee": 7,
@@ -1485,9 +1600,10 @@
       "id": "polygonNailBomb01craft",
       "name": "Бомба с гвоздями 01",
       "station": "weapon_bench",
+      "line": "throwing",
       "inputs": {
-        "ore": 14,
-        "wood": 4,
+        "$metal": 7,
+        "$wood": 2,
         "silver": 14
       },
       "silverFee": 7,
@@ -1501,9 +1617,10 @@
       "id": "polygonPipeBomb01craft",
       "name": "Трубная бомба 01",
       "station": "weapon_bench",
+      "line": "throwing",
       "inputs": {
-        "ore": 14,
-        "wood": 4,
+        "$metal": 7,
+        "$wood": 2,
         "silver": 14
       },
       "silverFee": 7,
@@ -1517,9 +1634,10 @@
       "id": "polygonSignShield01craft",
       "name": "Щит 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1532,9 +1650,10 @@
       "id": "polygonTrimmer01craft",
       "name": "Триммер 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1547,9 +1666,10 @@
       "id": "polygonTrimmerClean01craft",
       "name": "Триммер (чистое) 01",
       "station": "weapon_bench",
+      "line": "melee",
       "inputs": {
-        "ore": 1,
-        "wood": 3
+        "$metal": 1,
+        "$wood": 2
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -1562,9 +1682,10 @@
       "id": "polygonAAGun01craft",
       "name": "Зенитная установка 01",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 10,
-        "wood": 4
+        "$metal": 5,
+        "$wood": 2
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -1577,9 +1698,10 @@
       "id": "polygonVehAA01craft",
       "name": "Транспортная зенитная установка 01",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 10,
-        "wood": 4
+        "$metal": 5,
+        "$wood": 2
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -1592,10 +1714,11 @@
       "id": "polygonVehHarpoon01craft",
       "name": "Транспортный гарпун 01",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "weaponParts": 2,
-        "scrap": 5,
-        "wood": 2
+        "$metal": 3,
+        "$wood": 1,
+        "weaponParts": 2
       },
       "silverFee": 2,
       "workSeconds": 5,
@@ -1608,9 +1731,10 @@
       "id": "polygonVehMachineGun01craft",
       "name": "Транспортный пулемёт 01",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 10,
-        "wood": 4
+        "$metal": 5,
+        "$wood": 2
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -1623,9 +1747,10 @@
       "id": "polygonVehMiniGun01craft",
       "name": "Транспортный миниган 01",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 10,
-        "wood": 4
+        "$metal": 5,
+        "$wood": 2
       },
       "silverFee": 3,
       "workSeconds": 7,
@@ -1638,9 +1763,10 @@
       "id": "polygonVehRocketLauncher01craft",
       "name": "Транспортная ракетная установка 01",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 14,
-        "wood": 4,
+        "$metal": 7,
+        "$wood": 2,
         "silver": 14
       },
       "silverFee": 7,
@@ -1654,9 +1780,10 @@
       "id": "polygonVehSawLauncher01craft",
       "name": "Транспортная пильная установка 01",
       "station": "weapon_bench",
+      "line": "heavy",
       "inputs": {
-        "ore": 14,
-        "wood": 4,
+        "$metal": 7,
+        "$wood": 2,
         "silver": 14
       },
       "silverFee": 7,

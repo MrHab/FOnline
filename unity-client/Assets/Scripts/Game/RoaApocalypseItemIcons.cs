@@ -40,7 +40,7 @@ namespace RealmOfAshes.Game
 
         public static Sprite For(string itemOrRuntimeId)
         {
-            string id = RoaInventory.BaseId(itemOrRuntimeId);
+            string id = RoaItemData.VisualId(itemOrRuntimeId);
             if (string.IsNullOrEmpty(id)) return null;
             if (Cache.TryGetValue(id, out Sprite cached) && cached != null) return cached;
             Texture2D rendered = Resources.Load<Texture2D>("RealmUi/items/item_" + id);

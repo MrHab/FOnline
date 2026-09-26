@@ -421,6 +421,8 @@ namespace RealmOfAshes.Game
         private static string ModelPath(string itemId, out string kind)
         {
             kind = string.Empty;
+            // Вариант тира лежит на земле моделью исходного предмета.
+            itemId = RoaItemData.VisualId(itemId);
             if (RoaItemModelCatalog.Contains(itemId))
             {
                 kind = "catalog";
@@ -477,6 +479,7 @@ namespace RealmOfAshes.Game
 
         private static GameObject IsolateLibraryItem(GameObject holder, string itemId)
         {
+            itemId = RoaItemData.VisualId(itemId);
             string libraryId = LibraryAliases.TryGetValue(itemId ?? string.Empty, out string alias) ? alias : itemId;
             Transform wanted = FindDeep(holder.transform, "ground_item_" + libraryId);
             if (wanted == null) return null;

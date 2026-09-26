@@ -111,6 +111,8 @@ namespace RealmOfAshes.Game
         {
             RoaApocalypseModels palette = Instance;
             if (palette == null) return null;
+            // Броня тира T1–T5 надевается моделью исходной брони.
+            outfit = RoaItemData.VisualId(outfit);
             if (palette._armor == null)
             {
                 palette._armor = new Dictionary<string, ArmorEntry>(StringComparer.Ordinal);
@@ -136,6 +138,7 @@ namespace RealmOfAshes.Game
         {
             RoaApocalypseModels palette = Instance;
             if (palette == null || string.IsNullOrEmpty(itemId)) return null;
+            itemId = RoaItemData.VisualId(itemId);
             palette.EnsureWeapons();
             return palette._weapons.TryGetValue(itemId, out GameObject prefab) ? prefab : null;
         }
@@ -146,6 +149,7 @@ namespace RealmOfAshes.Game
         {
             RoaApocalypseModels palette = Instance;
             if (palette == null || string.IsNullOrEmpty(itemId)) return itemId;
+            itemId = RoaItemData.VisualId(itemId);
             palette.EnsureWeapons();
             return palette._weaponRigs.TryGetValue(itemId, out string rigId) ? rigId : itemId;
         }
@@ -154,6 +158,7 @@ namespace RealmOfAshes.Game
         {
             RoaApocalypseModels palette = Instance;
             if (palette == null || string.IsNullOrEmpty(itemId)) return itemId;
+            itemId = RoaItemData.VisualId(itemId);
             palette.EnsureWeapons();
             return palette._weaponCombats.TryGetValue(itemId, out string combatId) ? combatId : itemId;
         }
@@ -165,6 +170,7 @@ namespace RealmOfAshes.Game
         {
             RoaApocalypseModels palette = Instance;
             if (palette == null || string.IsNullOrEmpty(itemId)) return null;
+            itemId = RoaItemData.VisualId(itemId);
             if (palette._footwear == null)
             {
                 palette._footwear = new Dictionary<string, FootwearEntry>(StringComparer.Ordinal);
@@ -201,6 +207,7 @@ namespace RealmOfAshes.Game
                 && !itemId.StartsWith("artifactBelt", StringComparison.Ordinal)) return null;
             RoaApocalypseModels palette = Instance;
             if (palette == null || string.IsNullOrEmpty(itemId)) return null;
+            itemId = RoaItemData.VisualId(itemId);
             if (palette._items == null)
             {
                 palette._items = new Dictionary<string, GameObject>(StringComparer.Ordinal);

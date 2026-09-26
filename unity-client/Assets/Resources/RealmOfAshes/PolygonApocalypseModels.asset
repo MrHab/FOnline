@@ -1,0 +1,883 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca78b8a08dcf6d5439d390c2c372a6a6, type: 3}
+  m_Name: PolygonApocalypseModels
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.Game.RoaApocalypseModels
+  male: {fileID: 1109315531109580, guid: 978e4e824620a0f40a841eccaf23a994, type: 3}
+  female: {fileID: 1612642967817046, guid: 145e4b15636b57d47bb0d069eb16834f, type: 3}
+  maleSoldier: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+  femaleSoldier: {fileID: 1975523430147412, guid: b1b8d24198898074e9e7a0a14af7ba95, type: 3}
+  maleHazmat: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
+  maleRiot: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
+  backpackAttachment: {fileID: 1564870888801122, guid: ac097a787546bb24ebc0fce58ca8224d, type: 3}
+  helmetAttachment: {fileID: 1262996259358930, guid: 7dea907e69fa1db4888c36ce5482a775, type: 3}
+  motorbike: {fileID: 1217920854927372, guid: 32684c090c48c8b40bfc7d8845741599, type: 3}
+  weapons:
+  - itemId: assaultRifle
+    prefab: {fileID: 1900586067242068, guid: ad49a19d2c4adc94b838606a5d459f85, type: 3}
+    rigId: assaultRifle
+    combatId: assaultRifle
+    displayName: "\u0410\u0432\u0442\u043E\u043C\u0430\u0442 \xAB\u0420\u0443\u0431\u0435\u0436\xBB"
+    weight: 4.8
+  - itemId: polygonAssaultRifle02
+    prefab: {fileID: 1263777055603640, guid: d9f9bf1ca5142254ba3a359ff4a34b3e, type: 3}
+    rigId: assaultRifle
+    combatId: assaultRifle
+    displayName: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0430\u044F \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430
+      02"
+    weight: 4.8
+  - itemId: polygonAssaultRifle03
+    prefab: {fileID: 1490873028196816, guid: a3fe0be603767ae42a0d14c81d777c2b, type: 3}
+    rigId: assaultRifle
+    combatId: assaultRifle
+    displayName: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0430\u044F \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430
+      03"
+    weight: 4.8
+  - itemId: rifle
+    prefab: {fileID: 1862461175073062, guid: f8ee5a952b0a300448ad8d17e2ab2584, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u0412\u0438\u043D\u0442\u043E\u0432\u043A\u0430 \xAB\u0421\u043B\u0435\u0434\xBB"
+    weight: 4
+  - itemId: polygonHuntingRifleClean01
+    prefab: {fileID: 1311854592980844, guid: 339cc5e61566f63428dc7728c5c3c5a0, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u041E\u0445\u043E\u0442\u043D\u0438\u0447\u044C\u044F \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430
+      (\u0447\u0438\u0441\u0442\u043E\u0435) 01"
+    weight: 4
+  - itemId: laserPistol
+    prefab: {fileID: 1607563544594070, guid: 8b4c47d9211a9784fb3b35a87af8b353, type: 3}
+    rigId: laserPistol
+    combatId: laserPistol
+    displayName: "\u0413\u0438\u0431\u0440\u0438\u0434 \xAB\u0420\u0430\u0437\u0440\u044F\u0434\xBB"
+    weight: 2.2
+  - itemId: plasmaRifle
+    prefab: {fileID: 1216028739883728, guid: 99819784f3e024e4c848e39a0da42d59, type: 3}
+    rigId: plasmaRifle
+    combatId: plasmaRifle
+    displayName: "\u0413\u0438\u0431\u0440\u0438\u0434 \xAB\u0417\u0430\u0440\u044F\xBB"
+    weight: 5.1
+  - itemId: polygonHybrid03
+    prefab: {fileID: 1092074819094010, guid: 6e2b4b3768b35104ca1726c44266e483, type: 3}
+    rigId: plasmaRifle
+    combatId: plasmaRifle
+    displayName: "\u0413\u0438\u0431\u0440\u0438\u0434\u043D\u043E\u0435 \u043E\u0440\u0443\u0436\u0438\u0435
+      03"
+    weight: 5.1
+  - itemId: machineGun
+    prefab: {fileID: 1167886286928202, guid: c10ff4af96f3d7243ae6a36a3377ce60, type: 3}
+    rigId: machineGun
+    combatId: machineGun
+    displayName: "\u041F\u0443\u043B\u0435\u043C\u0451\u0442 \xAB\u0413\u0440\u043E\u043C\xBB"
+    weight: 8.8
+  - itemId: polygonMachineGun02
+    prefab: {fileID: 1395857700468264, guid: 3e9dcf9e9d8d7a4438ae8cfb9e5badf2, type: 3}
+    rigId: machineGun
+    combatId: machineGun
+    displayName: "\u041F\u0443\u043B\u0435\u043C\u0451\u0442 02"
+    weight: 8.8
+  - itemId: polygonMinigun01
+    prefab: {fileID: 1946215608911346, guid: a807abad9d573264b96019ffcfcae869, type: 3}
+    rigId: machineGun
+    combatId: machineGun
+    displayName: "\u041C\u0438\u043D\u0438\u0433\u0430\u043D 01"
+    weight: 8.8
+  - itemId: polygonMinigunClean01
+    prefab: {fileID: 1485816507113764, guid: a2670dd89e8f6534aa5e4457957a84c8, type: 3}
+    rigId: machineGun
+    combatId: machineGun
+    displayName: "\u041C\u0438\u043D\u0438\u0433\u0430\u043D (\u0447\u0438\u0441\u0442\u043E\u0435)
+      01"
+    weight: 8.8
+  - itemId: polygonNailgun01
+    prefab: {fileID: 1976984469360624, guid: f5c3bc26a8c162c4a9d22dbbcc59f479, type: 3}
+    rigId: smg
+    combatId: smg
+    displayName: "\u0413\u0432\u043E\u0437\u0434\u043E\u043C\u0451\u0442 01"
+    weight: 3.2
+  - itemId: polygonNailgunClean01
+    prefab: {fileID: 1809121837865474, guid: 2673249e51517794ba8e07feee2a1d39, type: 3}
+    rigId: smg
+    combatId: smg
+    displayName: "\u0413\u0432\u043E\u0437\u0434\u043E\u043C\u0451\u0442 (\u0447\u0438\u0441\u0442\u043E\u0435)
+      01"
+    weight: 3.2
+  - itemId: pistol
+    prefab: {fileID: 1562996608389564, guid: a1608518da2a041418e8a5351d223d94, type: 3}
+    rigId: pistol
+    combatId: pistol
+    displayName: "\u041F\u0438\u0441\u0442\u043E\u043B\u0435\u0442 \xAB\u0418\u0441\u043A\u0440\u0430\xBB"
+    weight: 1.5
+  - itemId: revolver
+    prefab: {fileID: 1111015175407080, guid: 151fe3144103e1440900697f4b29c68e, type: 3}
+    rigId: revolver
+    combatId: revolver
+    displayName: "\u0420\u0435\u0432\u043E\u043B\u044C\u0432\u0435\u0440 \xAB\u0428\u0435\u0440\u0438\u0444\xBB"
+    weight: 2
+  - itemId: polygonRevolver02
+    prefab: {fileID: 1319036115938546, guid: 379c13fc7bb54114e8f838c5ad3a0eab, type: 3}
+    rigId: revolver
+    combatId: revolver
+    displayName: "\u0420\u0435\u0432\u043E\u043B\u044C\u0432\u0435\u0440 02"
+    weight: 2
+  - itemId: polygonRifle01
+    prefab: {fileID: 1072090535415360, guid: ac46653d56756124eb294a6b8c58d2d3, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u0412\u0438\u043D\u0442\u043E\u0432\u043A\u0430 01"
+    weight: 4
+  - itemId: polygonRifle02
+    prefab: {fileID: 1952938124507012, guid: 9281ea4fb86d62a4882324b916876584, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u0412\u0438\u043D\u0442\u043E\u0432\u043A\u0430 02"
+    weight: 4
+  - itemId: polygonRifle03
+    prefab: {fileID: 1652972229580220, guid: d6c28b427b8bce649b57606441c2061d, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u0412\u0438\u043D\u0442\u043E\u0432\u043A\u0430 03"
+    weight: 4
+  - itemId: rocketLauncher
+    prefab: {fileID: 1265324198127248, guid: 5f73668964f88164aae003225d1f933f, type: 3}
+    rigId: rocketLauncher
+    combatId: rocketLauncher
+    displayName: "\u0420\u0430\u043A\u0435\u0442\u043E\u043C\u0451\u0442 \xAB\u041F\u0435\u043F\u0435\u043B\xBB"
+    weight: 9.6
+  - itemId: shotgun
+    prefab: {fileID: 1105646471333690, guid: a2458a3a2318bb64ea864a87f6558170, type: 3}
+    rigId: shotgun
+    combatId: shotgun
+    displayName: "\u0414\u0440\u043E\u0431\u043E\u0432\u0438\u043A \xAB\u0413\u0440\u0430\u0434\xBB"
+    weight: 4.2
+  - itemId: polygonSniperRifle01
+    prefab: {fileID: 1658074229854742, guid: adc01ffa88b3d6744a5eb21a731f6c23, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u0421\u043D\u0430\u0439\u043F\u0435\u0440\u0441\u043A\u0430\u044F
+      \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430 01"
+    weight: 4
+  - itemId: polygonSniperRifle02
+    prefab: {fileID: 1886666021998926, guid: 3027fd935d242c541a7114d06d974130, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u0421\u043D\u0430\u0439\u043F\u0435\u0440\u0441\u043A\u0430\u044F
+      \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430 02"
+    weight: 4
+  - itemId: polygonSniperRiflePneumatic01
+    prefab: {fileID: 1382996655360698, guid: dd5e78229ec4a3f4eb3b2ace8c44e70e, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u041F\u043D\u0435\u0432\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0430\u044F
+      \u0441\u043D\u0430\u0439\u043F\u0435\u0440\u0441\u043A\u0430\u044F \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430
+      01"
+    weight: 4
+  - itemId: polygonSpearGun01
+    prefab: {fileID: 1904344463030114, guid: a112f8928ad0cf148903646a811c1d4c, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u0413\u0430\u0440\u043F\u0443\u043D\u043D\u043E\u0435 \u0440\u0443\u0436\u044C\u0451
+      01"
+    weight: 4
+  - itemId: smg
+    prefab: {fileID: 1025874851918808, guid: e22ad038422a02c49b86a09ff69dedfc, type: 3}
+    rigId: smg
+    combatId: smg
+    displayName: "\u041F\u041F \xAB\u0428\u043E\u0440\u043E\u0445\xBB"
+    weight: 3.2
+  - itemId: polygonSubMGun02
+    prefab: {fileID: 1347991933923114, guid: e465d39263959404582f9fdf69f40c53, type: 3}
+    rigId: smg
+    combatId: smg
+    displayName: "\u041F\u0438\u0441\u0442\u043E\u043B\u0435\u0442-\u043F\u0443\u043B\u0435\u043C\u0451\u0442
+      02"
+    weight: 3.2
+  - itemId: polygonSubMGun03
+    prefab: {fileID: 1328033259041762, guid: 69b6ae1bb36dc814c9445c523810fe43, type: 3}
+    rigId: smg
+    combatId: smg
+    displayName: "\u041F\u0438\u0441\u0442\u043E\u043B\u0435\u0442-\u043F\u0443\u043B\u0435\u043C\u0451\u0442
+      03"
+    weight: 3.2
+  - itemId: polygonSubMGunClean03
+    prefab: {fileID: 1555594515587678, guid: b1dcc002da85e2145adcf0f42460ac4b, type: 3}
+    rigId: smg
+    combatId: smg
+    displayName: "\u041F\u0438\u0441\u0442\u043E\u043B\u0435\u0442-\u043F\u0443\u043B\u0435\u043C\u0451\u0442
+      (\u0447\u0438\u0441\u0442\u043E\u0435) 03"
+    weight: 3.2
+  - itemId: polygonBatMetal01
+    prefab: {fileID: 1123592119813206, guid: 40dbbe2f5b021f542a733e6210cfb3cb, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u041C\u0435\u0442\u0430\u043B\u043B\u0438\u0447\u0435\u0441\u043A\u0430\u044F
+      \u0431\u0438\u0442\u0430 01"
+    weight: 2.5
+  - itemId: polygonBatWood01
+    prefab: {fileID: 1145237178023060, guid: d855c6cd18605f34dbfdca25cb40d71c, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0414\u0435\u0440\u0435\u0432\u044F\u043D\u043D\u0430\u044F \u0431\u0438\u0442\u0430
+      01"
+    weight: 2.5
+  - itemId: polygonBatWood02
+    prefab: {fileID: 1844027589456706, guid: 30557939935d4ee48b28a5de57e9e605, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0414\u0435\u0440\u0435\u0432\u044F\u043D\u043D\u0430\u044F \u0431\u0438\u0442\u0430
+      02"
+    weight: 2.5
+  - itemId: polygonBaton01
+    prefab: {fileID: 1402644178857166, guid: 4deca74d46c275b40b3255680aa23aff, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0414\u0443\u0431\u0438\u043D\u043A\u0430 01"
+    weight: 2.5
+  - itemId: polygonBaton02
+    prefab: {fileID: 1962962617555930, guid: f7c206e9c665b9b4688e1963a3643a0c, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0414\u0443\u0431\u0438\u043D\u043A\u0430 02"
+    weight: 2.5
+  - itemId: polygonButcher01
+    prefab: {fileID: 1931374810083838, guid: 9f7c41ee6908ddc4f89559758aae9548, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u041C\u044F\u0441\u043D\u0438\u0446\u043A\u0438\u0439 \u0442\u0435\u0441\u0430\u043A
+      01"
+    weight: 2.5
+  - itemId: polygonCross01
+    prefab: {fileID: 1392198405331312, guid: 240208f58bf5c02448f4aa998c36718f, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0411\u043E\u0435\u0432\u043E\u0439 \u043A\u0440\u0435\u0441\u0442
+      01"
+    weight: 2.5
+  - itemId: polygonCrowbar01
+    prefab: {fileID: 1750927141268108, guid: 8775c006a5395ff488d9315934a2a901, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u041B\u043E\u043C 01"
+    weight: 2.5
+  - itemId: polygonCrutch01
+    prefab: {fileID: 1031729302790486, guid: b8f7f59681d5ce24993115ac47002433, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u041A\u043E\u0441\u0442\u044B\u043B\u044C 01"
+    weight: 2.5
+  - itemId: axe
+    prefab: {fileID: 1400711587830432, guid: cec5944b3fba5e643b7558cbd3366cd4, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0422\u043E\u043F\u043E\u0440 \xAB\u041F\u0440\u043E\u043B\u043E\u043C\xBB"
+    weight: 2.5
+  - itemId: polygonHammer01
+    prefab: {fileID: 1238499803652380, guid: 3cc39ba111da66a40812e82215b69d7f, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u041C\u043E\u043B\u043E\u0442 01"
+    weight: 2.5
+  - itemId: polygonKatana01
+    prefab: {fileID: 1104172259794306, guid: c93dc5e6b62380f499e6ec8328bc0160, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u041A\u0430\u0442\u0430\u043D\u0430 01"
+    weight: 2.5
+  - itemId: polygonMeleeGolfClub01
+    prefab: {fileID: 1033218996785696, guid: 8ecc451f0f51f8141bb8e67a42bfa293, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u041A\u043B\u044E\u0448\u043A\u0430 01"
+    weight: 2.5
+  - itemId: knife
+    prefab: {fileID: 1458518773578602, guid: 0382438fca188874582f78853c471286, type: 3}
+    rigId: knife
+    combatId: knife
+    displayName: "\u041D\u043E\u0436 \xAB\u0422\u0438\u0445\u0438\u0439\xBB"
+    weight: 0.5
+  - itemId: polygonMeleeMachete01
+    prefab: {fileID: 1167932600818802, guid: bef05be41376b52498b91573c3ff5a3b, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u041C\u0430\u0447\u0435\u0442\u0435 01"
+    weight: 2.5
+  - itemId: polygonMeleeSpearWood01
+    prefab: {fileID: 1590850306398420, guid: 33337a1d1a45e3d4c8d90a6a7fe5e611, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u041A\u043E\u043F\u044C\u0451 01"
+    weight: 2.5
+  - itemId: handPump
+    prefab: {fileID: 1458207331373352, guid: 67dc5c17caf2cce4b85e75244a2d8ce1, type: 3}
+    rigId: handPump
+    combatId: handPump
+    displayName: "\u041A\u043B\u044E\u0447 \xAB\u041F\u043E\u0442\u043E\u043A\xBB"
+    weight: 2.7
+  - itemId: polygonPipe01
+    prefab: {fileID: 1449313484441434, guid: e9ef675108448aa43848da8917e3f721, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0422\u0440\u0443\u0431\u0430 01"
+    weight: 2.5
+  - itemId: polygonPlank01
+    prefab: {fileID: 1589933292683632, guid: 1011c4b06c2192243a469c6bdd77475d, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0414\u043E\u0441\u043A\u0430 01"
+    weight: 2.5
+  - itemId: polygonRebarClub01
+    prefab: {fileID: 1713903467633356, guid: c6cc2d6819c0e0747bb86f4244ba73b2, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0410\u0440\u043C\u0430\u0442\u0443\u0440\u043D\u0430\u044F \u0434\u0443\u0431\u0438\u043D\u0430
+      01"
+    weight: 2.5
+  - itemId: pickaxe
+    prefab: {fileID: 1436426956864622, guid: 58a3f3f478bd0374aa7b5d42880672f5, type: 3}
+    rigId: pickaxe
+    combatId: pickaxe
+    displayName: "\u041B\u043E\u043F\u0430\u0442\u0430 \xAB\u041F\u043B\u0430\u0441\u0442\xBB"
+    weight: 3
+  - itemId: polygonWoodAxe01
+    prefab: {fileID: 1879840880504514, guid: 14b9097cb10b27d40a35dc944853603d, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0414\u0440\u043E\u0432\u044F\u043D\u043E\u0439 \u0442\u043E\u043F\u043E\u0440
+      01"
+    weight: 2.5
+  - itemId: polygonWrench01
+    prefab: {fileID: 1202836592725532, guid: 92d0d7425658b7548bb550389b91dc28, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u041A\u043B\u044E\u0447 01"
+    weight: 2.5
+  - itemId: polygonBombGasCan01
+    prefab: {fileID: 1681366452719782, guid: e18ec37c8cb6bb445b5675b3fddfcc7d, type: 3}
+    rigId: pistol
+    combatId: rocketLauncher
+    displayName: "\u0411\u043E\u043C\u0431\u0430 \u0438\u0437 \u043A\u0430\u043D\u0438\u0441\u0442\u0440\u044B
+      01"
+    weight: 0.65
+  - itemId: polygonBombPropane01
+    prefab: {fileID: 1815751844614860, guid: cb9b700ba66c187448feac54a5ec8fb6, type: 3}
+    rigId: pistol
+    combatId: rocketLauncher
+    displayName: "\u041F\u0440\u043E\u043F\u0430\u043D\u043E\u0432\u0430\u044F \u0431\u043E\u043C\u0431\u0430
+      01"
+    weight: 0.65
+  - itemId: polygonChainSaw01
+    prefab: {fileID: 1074116973428324, guid: d4ca9bcafe7b6124ba175d36e7661b84, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0411\u0435\u043D\u0437\u043E\u043F\u0438\u043B\u0430 01"
+    weight: 2.5
+  - itemId: polygonCrossBow01
+    prefab: {fileID: 1884461504653410, guid: ccd191fcb9ab4364c8eac9e2dc2b3bf1, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u0410\u0440\u0431\u0430\u043B\u0435\u0442 01"
+    weight: 4
+  - itemId: polygonCrossBowClean01
+    prefab: {fileID: 1675176113850882, guid: 03317d7eda984c14e93272de81884751, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u0410\u0440\u0431\u0430\u043B\u0435\u0442 (\u0447\u0438\u0441\u0442\u043E\u0435)
+      01"
+    weight: 4
+  - itemId: flamethrower
+    prefab: {fileID: 1172656402973578, guid: aef0a5fd18f8fc745b48fb751ebcf18b, type: 3}
+    rigId: flamethrower
+    combatId: flamethrower
+    displayName: "\u041E\u0433\u043D\u0435\u043C\u0451\u0442 \xAB\u0416\u0430\u0440\xBB"
+    weight: 7.4
+  - itemId: polygonFlareGun01
+    prefab: {fileID: 1695279696146886, guid: 2770997bfe351bd4d985f8b6244b90fb, type: 3}
+    rigId: pistol
+    combatId: pistol
+    displayName: "\u0421\u0438\u0433\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u043F\u0438\u0441\u0442\u043E\u043B\u0435\u0442
+      01"
+    weight: 1.5
+  - itemId: polygonFlashbang01
+    prefab: {fileID: 1514270269525414, guid: 68a54b2c9404fc044b701767629202a3, type: 3}
+    rigId: pistol
+    combatId: rocketLauncher
+    displayName: "\u0421\u0432\u0435\u0442\u043E\u0448\u0443\u043C\u043E\u0432\u0430\u044F
+      \u0433\u0440\u0430\u043D\u0430\u0442\u0430 01"
+    weight: 0.65
+  - itemId: polygonGrenade01
+    prefab: {fileID: 1029064837195810, guid: 458e22f46e00bf54cb86613b9402f9f4, type: 3}
+    rigId: pistol
+    combatId: rocketLauncher
+    displayName: "\u0413\u0440\u0430\u043D\u0430\u0442\u0430 01"
+    weight: 0.65
+  - itemId: polygonMolotov01
+    prefab: {fileID: 1118737024808968, guid: 4d62bfe4ec3b0b944a443fe0d37c906d, type: 3}
+    rigId: pistol
+    combatId: rocketLauncher
+    displayName: "\u041A\u043E\u043A\u0442\u0435\u0439\u043B\u044C \u041C\u043E\u043B\u043E\u0442\u043E\u0432\u0430
+      01"
+    weight: 0.65
+  - itemId: polygonNailBomb01
+    prefab: {fileID: 1114694132296820, guid: 16ba166c7db7fa345ab52f21849528f0, type: 3}
+    rigId: pistol
+    combatId: rocketLauncher
+    displayName: "\u0411\u043E\u043C\u0431\u0430 \u0441 \u0433\u0432\u043E\u0437\u0434\u044F\u043C\u0438
+      01"
+    weight: 0.65
+  - itemId: polygonPipeBomb01
+    prefab: {fileID: 1932305366181800, guid: 1a75ef4748f1f434a91631d321105b9f, type: 3}
+    rigId: pistol
+    combatId: rocketLauncher
+    displayName: "\u0422\u0440\u0443\u0431\u043D\u0430\u044F \u0431\u043E\u043C\u0431\u0430
+      01"
+    weight: 0.65
+  - itemId: polygonSignShield01
+    prefab: {fileID: 1566628258926534, guid: 730566b32d6a4ef4dae1f6a75858d6e7, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0429\u0438\u0442 01"
+    weight: 2.5
+  - itemId: polygonTrimmer01
+    prefab: {fileID: 1172279417112006, guid: 34edba7399d23fa44b95ae2b29a3e871, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0422\u0440\u0438\u043C\u043C\u0435\u0440 01"
+    weight: 2.5
+  - itemId: polygonTrimmerClean01
+    prefab: {fileID: 1037127450693462, guid: a3ddcb70e0d2aca4f92e1d4fb8d1057b, type: 3}
+    rigId: axe
+    combatId: axe
+    displayName: "\u0422\u0440\u0438\u043C\u043C\u0435\u0440 (\u0447\u0438\u0441\u0442\u043E\u0435)
+      01"
+    weight: 2.5
+  - itemId: polygonAAGun01
+    prefab: {fileID: 1638244575166490, guid: e10c556d4d4596f40b7d9dbc793c966d, type: 3}
+    rigId: machineGun
+    combatId: machineGun
+    displayName: "\u0417\u0435\u043D\u0438\u0442\u043D\u0430\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430
+      01"
+    weight: 15.84
+  - itemId: polygonVehAA01
+    prefab: {fileID: 1752639783993144, guid: c27d602dadf567a4ea306c40543331ea, type: 3}
+    rigId: machineGun
+    combatId: machineGun
+    displayName: "\u0422\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442\u043D\u0430\u044F
+      \u0437\u0435\u043D\u0438\u0442\u043D\u0430\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430
+      01"
+    weight: 15.84
+  - itemId: polygonVehHarpoon01
+    prefab: {fileID: 1955001300558480, guid: c362372e6331a7e42a30f6483a456270, type: 3}
+    rigId: rifle
+    combatId: rifle
+    displayName: "\u0422\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442\u043D\u044B\u0439
+      \u0433\u0430\u0440\u043F\u0443\u043D 01"
+    weight: 7.2
+  - itemId: polygonVehMachineGun01
+    prefab: {fileID: 1579042256172754, guid: 1ad7bb54d79e6514ba86e3016730c8ce, type: 3}
+    rigId: machineGun
+    combatId: machineGun
+    displayName: "\u0422\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442\u043D\u044B\u0439
+      \u043F\u0443\u043B\u0435\u043C\u0451\u0442 01"
+    weight: 15.84
+  - itemId: polygonVehMiniGun01
+    prefab: {fileID: 1277969264105640, guid: 370e17f25eab9c74fa0390384a0e49b7, type: 3}
+    rigId: machineGun
+    combatId: machineGun
+    displayName: "\u0422\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442\u043D\u044B\u0439
+      \u043C\u0438\u043D\u0438\u0433\u0430\u043D 01"
+    weight: 15.84
+  - itemId: polygonVehRocketLauncher01
+    prefab: {fileID: 1646432114360032, guid: dd404c768a9323b4fb42bd3f8ea5c2fe, type: 3}
+    rigId: rocketLauncher
+    combatId: rocketLauncher
+    displayName: "\u0422\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442\u043D\u0430\u044F
+      \u0440\u0430\u043A\u0435\u0442\u043D\u0430\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430
+      01"
+    weight: 17.28
+  - itemId: polygonVehSawLauncher01
+    prefab: {fileID: 1416433799646726, guid: ce887f4a50410e7478a3ca885ee4d379, type: 3}
+    rigId: rocketLauncher
+    combatId: rocketLauncher
+    displayName: "\u0422\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442\u043D\u0430\u044F
+      \u043F\u0438\u043B\u044C\u043D\u0430\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430
+      01"
+    weight: 17.28
+  - itemId: sawedOffShotgun
+    prefab: {fileID: 4723979879420744306, guid: a7d76a3efd43dd24badd15135f3c78cb, type: 3}
+    rigId: sawedOffShotgun
+    combatId: sawedOffShotgun
+    displayName: "\u0414\u0440\u043E\u0431\u043E\u0432\u0438\u043A \xAB\u041A\u043E\u0440\u043E\u0442\u044B\u0448\xBB"
+    weight: 2.4
+  items:
+  - itemId: ammo9
+    prefab: {fileID: 1202029276534874, guid: 86bb9dc1b51ac1b40881bebab79f89cf, type: 3}
+  - itemId: ammo556
+    prefab: {fileID: 1851930539644918, guid: f0fc41b28f2a6a943a204ab9ba84bc87, type: 3}
+  - itemId: shotgunShell
+    prefab: {fileID: 1890173635108940, guid: 3b0fb3fda92d12a4caa1fd3a00956fd1, type: 3}
+  - itemId: rocketAmmo
+    prefab: {fileID: 1740100772245106, guid: a284ce8a02abbd940b690c338a51f6d9, type: 3}
+  - itemId: ammoParts
+    prefab: {fileID: 1740100772245106, guid: a284ce8a02abbd940b690c338a51f6d9, type: 3}
+  - itemId: energyCell
+    prefab: {fileID: 1040866198591268, guid: e4cf0824496bede4bb19ba9967e020f6, type: 3}
+  - itemId: electronics
+    prefab: {fileID: 1641304953013102, guid: a605a5f87e9bb1a47b6377c2306c9dbd, type: 3}
+  - itemId: circuitModule
+    prefab: {fileID: 1641304953013102, guid: a605a5f87e9bb1a47b6377c2306c9dbd, type: 3}
+  - itemId: napalm
+    prefab: {fileID: 1544143072547004, guid: aa9d0fceec1d4814aa3e38892faa08a0, type: 3}
+  - itemId: oil
+    prefab: {fileID: 1544143072547004, guid: aa9d0fceec1d4814aa3e38892faa08a0, type: 3}
+  - itemId: medkit
+    prefab: {fileID: 1419824209681924, guid: e3c29f4b68873c34fb53043e28bd48ce, type: 3}
+  - itemId: medicine
+    prefab: {fileID: 1419824209681924, guid: e3c29f4b68873c34fb53043e28bd48ce, type: 3}
+  - itemId: bioReagent
+    prefab: {fileID: 1419824209681924, guid: e3c29f4b68873c34fb53043e28bd48ce, type: 3}
+  - itemId: stim
+    prefab: {fileID: 1337799580505134, guid: 07973e2f008580343949b7f8c06cf72c, type: 3}
+  - itemId: antibiotics
+    prefab: {fileID: 1337799580505134, guid: 07973e2f008580343949b7f8c06cf72c, type: 3}
+  - itemId: doctorBag
+    prefab: {fileID: 1326644470446332, guid: 29bbdad2089078346a5cb0efbe9d593e, type: 3}
+  - itemId: artifactContainer
+    prefab: {fileID: 1835224929256552, guid: df170dcae36ee024c81fa2300892e7e5, type: 3}
+  - itemId: repairKit
+    prefab: {fileID: 1835224929256552, guid: df170dcae36ee024c81fa2300892e7e5, type: 3}
+  - itemId: ore
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: scrap
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: alloyPlate
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: weaponParts
+    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+  - itemId: chemicals
+    prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
+  - itemId: spectrumSample
+    prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
+  - itemId: stabilizerCatalyst
+    prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
+  - itemId: wood
+    prefab: {fileID: 1350644683509884, guid: 76268956b264f0146950f405edf04c42, type: 3}
+  - itemId: food
+    prefab: {fileID: 1475631568837504, guid: 43c02ad0264295844bda05a0e56a7b21, type: 3}
+  - itemId: water
+    prefab: {fileID: 1129776882994900, guid: 6f4046d7967c3b74a88971615df168e4, type: 3}
+  - itemId: silver
+    prefab: {fileID: 1210496204973002, guid: 55e31d9d98e7506428bd5fc800ea4122, type: 3}
+  - itemId: blue
+    prefab: {fileID: 1210496204973002, guid: 55e31d9d98e7506428bd5fc800ea4122, type: 3}
+  - itemId: trophy
+    prefab: {fileID: 1515035654734784, guid: f5e52fc0c8d68eb4bb6f0a7fa8b6650a, type: 3}
+  - itemId: boots
+    prefab: {fileID: 1589785312988966, guid: 6f9d0770a1ad4b448850c6a1eb3d3b48, type: 3}
+  - itemId: scoutBoots
+    prefab: {fileID: 1329138557878446, guid: 8932795ce9ec8384590fd132f3bf331c, type: 3}
+  - itemId: reinforcedBoots
+    prefab: {fileID: 1085804807959586, guid: d7ba3e6a0b81e8c4fad5a40aae9c2dcc, type: 3}
+  - itemId: assaultBoots
+    prefab: {fileID: 1999848875218898, guid: 09098669b8359654fb104508fd7fc9b7, type: 3}
+  - itemId: backpack
+    prefab: {fileID: 1564870888801122, guid: ac097a787546bb24ebc0fce58ca8224d, type: 3}
+  - itemId: artifactDetectorMk1
+    prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+  - itemId: artifactDetectorMk2
+    prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+  - itemId: artifactDetectorMk3
+    prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+  - itemId: artifactBelt2
+    prefab: {fileID: 5068620470544949965, guid: ba195a88cc542844e9be28b4f1d3f784, type: 3}
+  - itemId: artifactBelt3
+    prefab: {fileID: 5068620470544949965, guid: ba195a88cc542844e9be28b4f1d3f784, type: 3}
+  - itemId: artifactBelt4
+    prefab: {fileID: 5068620470544949965, guid: ba195a88cc542844e9be28b4f1d3f784, type: 3}
+  - itemId: weldedHelmet
+    prefab: {fileID: 1162636574902710, guid: 403bac682a691c146a5d697d2e324167, type: 3}
+  - itemId: helmet
+    prefab: {fileID: 1261275721562882, guid: 65109d3ce3670da4598172f14c39a8b2, type: 3}
+  - itemId: tacticalHelmet
+    prefab: {fileID: 1262996259358930, guid: 7dea907e69fa1db4888c36ce5482a775, type: 3}
+  - itemId: assaultHelmet
+    prefab: {fileID: 1153852152701694, guid: cfe86ff67def9cd4bb8dc14105e1b710, type: 3}
+  - itemId: preWarHelmet
+    prefab: {fileID: 1210444806839874, guid: 27d7347987dcd1f48be7c4b55465a67e, type: 3}
+  - itemId: leather
+    prefab: {fileID: 1274019000965958, guid: af169be12f376ce46a3e6b4bee8b8ffe, type: 3}
+  - itemId: metalArmor
+    prefab: {fileID: 1962457702341656, guid: aab8f459d9f6f1840a3731182032078d, type: 3}
+  - itemId: ballisticVest
+    prefab: {fileID: 1820416473181658, guid: bb300d8944d3a594f8a617a030409eb4, type: 3}
+  - itemId: combatArmor
+    prefab: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+  - itemId: heavyArmor
+    prefab: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
+  - itemId: hazmatSuit
+    prefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
+  - itemId: energySuit
+    prefab: {fileID: 1074360255325880, guid: bb3dc6915a06dcb4796c2e62d7d40669, type: 3}
+  armor:
+  - itemId: leather
+    malePrefab: {fileID: 1274019000965958, guid: af169be12f376ce46a3e6b4bee8b8ffe, type: 3}
+    femalePrefab: {fileID: 1297223418881080, guid: 20d863b9f1bb8464f96d58e9319f7088, type: 3}
+  - itemId: metalArmor
+    malePrefab: {fileID: 1962457702341656, guid: aab8f459d9f6f1840a3731182032078d, type: 3}
+    femalePrefab: {fileID: 1904041790429094, guid: 027cd57972e60824ca74f44e0d80ea9a, type: 3}
+  - itemId: ballisticVest
+    malePrefab: {fileID: 1820416473181658, guid: bb300d8944d3a594f8a617a030409eb4, type: 3}
+    femalePrefab: {fileID: 1330945090685230, guid: 863a55b2639294147b8c2bb8a2147ae9, type: 3}
+  - itemId: combatArmor
+    malePrefab: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+    femalePrefab: {fileID: 1975523430147412, guid: b1b8d24198898074e9e7a0a14af7ba95, type: 3}
+  - itemId: heavyArmor
+    malePrefab: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
+    femalePrefab: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
+  - itemId: hazmatSuit
+    malePrefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
+    femalePrefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
+  - itemId: energySuit
+    malePrefab: {fileID: 1074360255325880, guid: bb3dc6915a06dcb4796c2e62d7d40669, type: 3}
+    femalePrefab: {fileID: 1096376965629970, guid: 5ca4581ce598741409bac0c6f1bcf24c, type: 3}
+  footwear:
+  - itemId: boots
+    malePrefab: {fileID: 1274019000965958, guid: af169be12f376ce46a3e6b4bee8b8ffe, type: 3}
+    femalePrefab: {fileID: 1297223418881080, guid: 20d863b9f1bb8464f96d58e9319f7088, type: 3}
+    leftKnee: {fileID: 1589785312988966, guid: 6f9d0770a1ad4b448850c6a1eb3d3b48, type: 3}
+    rightKnee: {fileID: 1796539692946910, guid: dff42a07df203be44b39ee8207193c3b, type: 3}
+    leftThigh: {fileID: 0}
+    rightThigh: {fileID: 0}
+  - itemId: scoutBoots
+    malePrefab: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+    femalePrefab: {fileID: 1975523430147412, guid: b1b8d24198898074e9e7a0a14af7ba95, type: 3}
+    leftKnee: {fileID: 1329138557878446, guid: 8932795ce9ec8384590fd132f3bf331c, type: 3}
+    rightKnee: {fileID: 1999848875218898, guid: 09098669b8359654fb104508fd7fc9b7, type: 3}
+    leftThigh: {fileID: 0}
+    rightThigh: {fileID: 0}
+  - itemId: reinforcedBoots
+    malePrefab: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
+    femalePrefab: {fileID: 1330945090685230, guid: 863a55b2639294147b8c2bb8a2147ae9, type: 3}
+    leftKnee: {fileID: 0}
+    rightKnee: {fileID: 0}
+    leftThigh: {fileID: 1085804807959586, guid: d7ba3e6a0b81e8c4fad5a40aae9c2dcc, type: 3}
+    rightThigh: {fileID: 1018390642978870, guid: 586908b2d1b1fd747af3f38eb93c48c8, type: 3}
+  - itemId: assaultBoots
+    malePrefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
+    femalePrefab: {fileID: 1904041790429094, guid: 027cd57972e60824ca74f44e0d80ea9a, type: 3}
+    leftKnee: {fileID: 1329138557878446, guid: 8932795ce9ec8384590fd132f3bf331c, type: 3}
+    rightKnee: {fileID: 1999848875218898, guid: 09098669b8359654fb104508fd7fc9b7, type: 3}
+    leftThigh: {fileID: 1085804807959586, guid: d7ba3e6a0b81e8c4fad5a40aae9c2dcc, type: 3}
+    rightThigh: {fileID: 1018390642978870, guid: 586908b2d1b1fd747af3f38eb93c48c8, type: 3}
+  creatures:
+  - modelKey: traderNpc
+    prefab: {fileID: 1109315531109580, guid: 978e4e824620a0f40a841eccaf23a994, type: 3}
+    pitch: 0
+  - modelKey: caravanMerchant
+    prefab: {fileID: 1109315531109580, guid: 978e4e824620a0f40a841eccaf23a994, type: 3}
+    pitch: 0
+  - modelKey: caravanGuard
+    prefab: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+    pitch: 0
+  - modelKey: klimPatrolGuard
+    prefab: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+    pitch: 0
+  - modelKey: wastelandSettler
+    prefab: {fileID: 1612642967817046, guid: 145e4b15636b57d47bb0d069eb16834f, type: 3}
+    pitch: 0
+  - modelKey: enemyRaider
+    prefab: {fileID: 1962457702341656, guid: aab8f459d9f6f1840a3731182032078d, type: 3}
+    pitch: 0
+  - modelKey: enemyGhoul
+    prefab: {fileID: 1187010538823314, guid: b87cb604b959698428935c5d56bd97c0, type: 3}
+    pitch: 0
+  - modelKey: kromkaBurned
+    prefab: {fileID: 1187010538823314, guid: b87cb604b959698428935c5d56bd97c0, type: 3}
+    pitch: 0
+  - modelKey: kromkaFold
+    prefab: {fileID: 1187010538823314, guid: b87cb604b959698428935c5d56bd97c0, type: 3}
+    pitch: 0
+  - modelKey: enemySuperMutant
+    prefab: {fileID: 1331328711462180, guid: e8e6a8d0d7d9a1245a0d143f23cc283b, type: 3}
+    pitch: 0
+  - modelKey: enemyAshWolf
+    prefab: {fileID: 1331328711462180, guid: e8e6a8d0d7d9a1245a0d143f23cc283b, type: 3}
+    pitch: 70
+  - modelKey: kromkaGari
+    prefab: {fileID: 1331328711462180, guid: e8e6a8d0d7d9a1245a0d143f23cc283b, type: 3}
+    pitch: 70
+  - modelKey: enemyGecko
+    prefab: {fileID: 1331328711462180, guid: e8e6a8d0d7d9a1245a0d143f23cc283b, type: 3}
+    pitch: 70
+  - modelKey: kromkaListener
+    prefab: {fileID: 1331328711462180, guid: e8e6a8d0d7d9a1245a0d143f23cc283b, type: 3}
+    pitch: 70
+  - modelKey: enemyRadscorpion
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 70
+  - modelKey: kromkaRykhlyak
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 70
+  - modelKey: enemyFireGecko
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 70
+  - modelKey: kromkaMourner
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 70
+  - modelKey: enemyMutantAnt
+    prefab: {fileID: 1015224441584018, guid: 807784d16a875e0499c116c9506424aa, type: 3}
+    pitch: 75
+  - modelKey: kromkaDustling
+    prefab: {fileID: 1015224441584018, guid: 807784d16a875e0499c116c9506424aa, type: 3}
+    pitch: 75
+  - modelKey: brahmin
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 55
+  - modelKey: friendlyBrahmin
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 55
+  - modelKey: kromkaLantern
+    prefab: {fileID: 1300917902799776, guid: 115e889341316e74b9a33d9cbcdd61b2, type: 3}
+    pitch: 55
+  environment:
+  - modelKey: armory_rack
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: asphalt_slab
+    prefab: {fileID: 1919677564439932, guid: f8a48f8be2524674799f72b2d14af8e9, type: 3}
+  - modelKey: barrel_cluster
+    prefab: {fileID: 1160118780968504, guid: 70fb46fb4d63e3340b0f223f24a9af39, type: 3}
+  - modelKey: brahmin_pen
+    prefab: {fileID: 1961064795716536, guid: 372805122ee98e544a98acf612666c14, type: 3}
+  - modelKey: campfire_rest
+    prefab: {fileID: 1250369813790830, guid: 43c5be087319b3f4dbba869a4752ee24, type: 3}
+  - modelKey: car_wreck
+    prefab: {fileID: 1572569093490736, guid: f6433493c51db7a4c9ea72ac5084e6c6, type: 3}
+  - modelKey: cargo_stack
+    prefab: {fileID: 1421640055835710, guid: f3bb2a070b022d8478a13ea41149c4a3, type: 3}
+  - modelKey: concrete_wall
+    prefab: {fileID: 1090662257128980, guid: fea05091ba5f3f84786932dfdddc3b23, type: 3}
+  - modelKey: cot_bed
+    prefab: {fileID: 1762450614453468, guid: 016ad3349798a984b85484ddf70a27dc, type: 3}
+  - modelKey: craft_station_ammo
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: craft_station_chem
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: craft_station_energy
+    prefab: {fileID: 1225048615775740, guid: 464f78a898f604d4aa6188472f930185, type: 3}
+  - modelKey: craft_station_repair
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: craft_station_tools
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: craft_station_weapon
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: dead_tree_a
+    prefab: {fileID: 1796885337435754, guid: 97eeef42e1d4d814db88bb348f6c5315, type: 3}
+  - modelKey: dead_tree_b
+    prefab: {fileID: 1118852644942752, guid: 2c6eea56361198e4e99317e1f87c7a3d, type: 3}
+  - modelKey: dead_tree_c
+    prefab: {fileID: 1369509060990928, guid: 541d55964971acb4badd8724436b8489, type: 3}
+  - modelKey: deadwood
+    prefab: {fileID: 1796885337435754, guid: 97eeef42e1d4d814db88bb348f6c5315, type: 3}
+  - modelKey: dry_bush
+    prefab: {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}
+  - modelKey: fence_segment
+    prefab: {fileID: 1961064795716536, guid: 372805122ee98e544a98acf612666c14, type: 3}
+  - modelKey: garden_patch
+    prefab: {fileID: 1822765171362998, guid: 3a58129ae5b98e54194c0043f168413f, type: 3}
+  - modelKey: highway_sign
+    prefab: {fileID: 1033860218315092, guid: ffc021460e31bd444a0c04338d020c57, type: 3}
+  - modelKey: job_board
+    prefab: {fileID: 1483296264772644, guid: 36f74d9c91369ee4cb733615548c6102, type: 3}
+  - modelKey: oil_pump_jack
+    prefab: {fileID: 1267131352853402, guid: 47da375f113338e47b5357cdd6284614, type: 3}
+  - modelKey: ore_outcrop
+    prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
+  - modelKey: perimeter_debris
+    prefab: {fileID: 1980102390720548, guid: 9b425efa126d5aa48aeda3fa09c70785, type: 3}
+  - modelKey: relay_antenna
+    prefab: {fileID: 1986437825360374, guid: 8baa48d3960ea2e478eab614acc048bf, type: 3}
+  - modelKey: road_tile
+    prefab: {fileID: 1549825329564326, guid: 4d7a1cef4b51c604a83e17a8a5dc96ed, type: 3}
+  - modelKey: roadblock_barricade
+    prefab: {fileID: 1627071915366092, guid: b092211bc2fc70a44b2d0923759d5c16, type: 3}
+  - modelKey: rubble_rock
+    prefab: {fileID: 1953317842719524, guid: 8d16041c0d131c94fa77f8401777777f, type: 3}
+  - modelKey: ruined_billboard
+    prefab: {fileID: 1620165169467740, guid: 9ff1382a89dbf2e458095fdd4294af51, type: 3}
+  - modelKey: rust_barrel_v1
+    prefab: {fileID: 1890296390273018, guid: 46b7bcd01c72c9148b72bd322a02225c, type: 3}
+  - modelKey: scrap_heap
+    prefab: {fileID: 1841504986358056, guid: 24fafb288dd79c64697b8bc01a50aeba, type: 3}
+  - modelKey: scrap_wall_segment
+    prefab: {fileID: 1022004951223104, guid: 6b4d26e24efa892498cc8703f5fd44d6, type: 3}
+  - modelKey: scrap_watch_tower
+    prefab: {fileID: 1986437825360374, guid: 8baa48d3960ea2e478eab614acc048bf, type: 3}
+  - modelKey: storage_chest
+    prefab: {fileID: 1082924602782462, guid: 54e8cd42ff115b14a90340ee66d64fa1, type: 3}
+  - modelKey: storage_lean_to
+    prefab: {fileID: 1623103741959910, guid: c808dd7672f316d4b95e2d0f05d6da22, type: 3}
+  - modelKey: tire_stack
+    prefab: {fileID: 1327414462953822, guid: 346855a62eb2ac047bad52a7b7e47549, type: 3}
+  - modelKey: trade_machine
+    prefab: {fileID: 1943517841819872, guid: fd5265e1bff79694782bf5c50669f524, type: 3}
+  - modelKey: trader_awning
+    prefab: {fileID: 1575535087174988, guid: 526a98456f094134ea335de6eac32587, type: 3}
+  - modelKey: utility_pole
+    prefab: {fileID: 1502806290364868, guid: 03b617bb9ab64ad40b20fa78525fcf7f, type: 3}
+  - modelKey: wasteland_shack
+    prefab: {fileID: 1179771526004886, guid: c3734c33154735c4abbbc836ff7e9b4b, type: 3}
+  - modelKey: watch_post
+    prefab: {fileID: 1986437825360374, guid: 8baa48d3960ea2e478eab614acc048bf, type: 3}
+  - modelKey: water_tank
+    prefab: {fileID: 1513997905505002, guid: 46133089344458744b67372c6e18592d, type: 3}
+  - modelKey: workshop_bench
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: roadblockBarricade
+    prefab: {fileID: 1627071915366092, guid: b092211bc2fc70a44b2d0923759d5c16, type: 3}
+  - modelKey: wastelandDoor
+    prefab: {fileID: 1955552677593894, guid: fab28ef8ce113454e9b6d3935ecd88a2, type: 3}
+  - modelKey: bed
+    prefab: {fileID: 1762450614453468, guid: 016ad3349798a984b85484ddf70a27dc, type: 3}
+  - modelKey: streetLamp
+    prefab: {fileID: 1010640589526748, guid: 131667f2eefb9b249b180d8b167153db, type: 3}
+  - modelKey: generator
+    prefab: {fileID: 1225048615775740, guid: 464f78a898f604d4aa6188472f930185, type: 3}
+  - modelKey: waterPump
+    prefab: {fileID: 1617334352007710, guid: 46811183dfd86f843b4fd9934f288d43, type: 3}
+  - modelKey: storageChest
+    prefab: {fileID: 1147856548608730, guid: 5396a093575259c498a56449c2d6a0cb, type: 3}
+  - modelKey: craftStationRepair
+    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+  - modelKey: craftStationChem
+    prefab: {fileID: 1977311790363920, guid: 855aa742b30e06d4598bd9cb0efad304, type: 3}
+  - modelKey: relayConsole
+    prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+  - modelKey: radioTower
+    prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+  - modelKey: planter
+    prefab: {fileID: 1822765171362998, guid: 3a58129ae5b98e54194c0043f168413f, type: 3}
+  - modelKey: tutorialTruck
+    prefab: {fileID: 1594861037966584, guid: 0450a127987e4124aa4c55845a477bf0, type: 3}
+  - modelKey: tutorialGate
+    prefab: {fileID: 1631585018466870, guid: db612fd44244f8841a97cbfe57c6d84b, type: 3}
+  - modelKey: tutorialTarget
+    prefab: {fileID: 1459172237601850, guid: 5fe2677ad5b95d349aa164b1a58bf0a3, type: 3}
+  - modelKey: tutorialWood
+    prefab: {fileID: 1789185446098736, guid: ce95f4e7bd2eaff4fb6400242652e280, type: 3}
+  defaultEnvironment: {fileID: 1980102390720548, guid: 9b425efa126d5aa48aeda3fa09c70785, type: 3}
+  roadEnvironment: {fileID: 1549825329564326, guid: 4d7a1cef4b51c604a83e17a8a5dc96ed, type: 3}
+  plantEnvironment: {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}
+  buildingEnvironment: {fileID: 1623103741959910, guid: c808dd7672f316d4b95e2d0f05d6da22, type: 3}
+  barrierEnvironment: {fileID: 1090662257128980, guid: fea05091ba5f3f84786932dfdddc3b23, type: 3}
+  towerEnvironment: {fileID: 1986437825360374, guid: 8baa48d3960ea2e478eab614acc048bf, type: 3}
+  industrialEnvironment: {fileID: 1225048615775740, guid: 464f78a898f604d4aa6188472f930185, type: 3}
+  rockEnvironment: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}

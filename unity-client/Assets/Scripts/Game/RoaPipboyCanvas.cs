@@ -581,7 +581,7 @@ namespace RealmOfAshes.Game
             AddHint("SHIFT+ЛКМ", "Экипировать");
             AddHint("ПКМ", "Действия");
             AddHint("Наведение", "Сведения");
-            AddHint("1–8", "Быстрый доступ");
+            AddHint("1–6", "Быстрый доступ");
 
             // На телефоне клавиш нет — и обещать их нельзя.
             _hintTouch = Label("HintTouch", page, 10, TextAnchor.MiddleCenter, RoaUiPalette.InkLabel);
@@ -774,8 +774,7 @@ namespace RealmOfAshes.Game
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             scroll.content = _itemsGrid;
 
-            // Быстрый доступ 1-8: без этого ряда слоты 5-8 недостижимы вовсе —
-            // контекстное меню предлагает только первые четыре.
+            // Быстрый доступ 1-6: все слоты доступны прямо из инвентаря.
             _quickRow = Child("QuickRow", panel);
             Place_(_quickRow, 0f, 0f, 1f, 0f, new Vector2(6f, 56f), new Vector2(-6f, 92f));
             for (int i = 0; i < RoaQuickbar.SlotCount; i++)

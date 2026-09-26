@@ -403,7 +403,7 @@ namespace RealmOfAshes.Game
             if (TryScreenPointToWorld(Input.mousePosition, out Vector3 cursor)
                 && TryResolvePrimaryTarget(cursor, out string resolvedEnemyId,
                     out Vector3 resolvedEnemyPosition, out PublicPlayer resolvedRemote,
-                    out Vector3 resolvedRemotePosition))
+                    out Vector3 resolvedRemotePosition, hoverCamera.ScreenPointToRay(Input.mousePosition)))
             {
                 if (resolvedRemote != null)
                 {
@@ -534,7 +534,7 @@ namespace RealmOfAshes.Game
             if (Time.time < _nextRequestAt || !TryScreenPointToWorld(screenPoint, out Vector3 cursor)) return false;
             EnsureFireMode();
             if (BlockForbiddenAttack()) return false;
-            AttackAt(cursor);
+            AttackAt(cursor, Camera.main.ScreenPointToRay(screenPoint));
             return true;
         }
 
@@ -546,7 +546,8 @@ namespace RealmOfAshes.Game
             target = null;
             targetPosition = Vector3.zero;
             if (Player == null || !TryScreenPointToWorld(screenPoint, out Vector3 cursor)) return false;
-            TryResolvePrimaryTarget(cursor, out _, out _, out target, out targetPosition);
+            TryResolvePrimaryTarget(cursor, out _, out _, out target, out targetPosition,
+                Camera.main.ScreenPointToRay(screenPoint));
             return target != null;
         }
 
@@ -806,7 +807,7 @@ namespace RealmOfAshes.Game
                 ack["combat"]?["cooldownRemainingMs"]?.ToObject<float>() ?? 0f);
             return Mathf.Clamp(Mathf.Max(retryMs, cooldownMs) / 1000f, 0f, 5f);
         }
-        private void AttackAt(Vector3 cursor)
+        private void AttackAt(Vector3 cursor, Ray? screenRay = null)
         {
             if (TryApplyHeldMedicine(cursor)) return;
             NotifyCombatPresentation();
@@ -869,63 +870,24 @@ namespace RealmOfAshes.Game
             BeginAttackRequest(attackToken, meleeAttack, attackVisualStartedAt);
             SendAttackVisual(self, targetPosition, selfX, selfZ, targetX, targetZ, angle);
 
-            if (weapon == "rocketLauncher")
+            if (RoaApocalypseModels.WeaponCombatId(weapon) == "rocketLauncher")
             {
                 SendExplosion(selfX, selfZ, targetX, targetZ, angle, targetPosition, attackToken);
                 return;
             }
 
             TryResolvePrimaryTarget(cursor, out string enemyId, out Vector3 enemyPosition,
-                out PublicPlayer remote, out Vector3 remotePosition);
+                out PublicPlayer remote, out Vector3 remotePosition, screenRay);
 
-            // Конус собирает только NPC, а сервер отклоняет повторный токен в PvP,
-            // поэтому веер и удар по игроку в одной атаке несовместимы. Если игрок
-            // целится в другого игрока, цель важнее веера: раньше дробовик в PvP не
-            // наносил ничего, стоило рядом оказаться любому мобу.
-            if ((weapon == "shotgun" || weapon == "flamethrower") && remote == null)
-            {
-                Vector3 shotDirection = cursor - self;
-                shotDirection.y = 0f;
-                List<RoaEnemies.ConeTarget> coneTargets =
-                    Enemies.FindTargetsInCone(self, shotDirection, weapon);
-                if (coneTargets.Count > 0)
-                {
-                    shotDirection.Normalize();
-                    RoaCoords.ToServer(shotDirection, out float shotDirX, out float shotDirZ);
-                    foreach (RoaEnemies.ConeTarget coneTarget in coneTargets)
-                    {
-                        RoaCoords.ToServer(coneTarget.Position, out float coneTargetX, out float coneTargetZ);
-                        SendAuthoritativeHit(coneTarget.Id,
-                            selfX, selfZ, coneTargetX, coneTargetZ, angle,
-                            coneTarget.Position, attackToken,
-                            true, coneTarget.Perp, coneTarget.Width, shotDirX, shotDirZ);
-                    }
-                    return;
-                }
-            }
-
-            if (remote != null)
-            {
-                RoaCoords.ToServer(remotePosition, out targetX, out targetZ);
-                SendAuthoritativePlayerHit(remote, selfX, selfZ, targetX, targetZ, angle,
-                    remotePosition, attackToken);
-            }
-            else if (!string.IsNullOrEmpty(enemyId))
-            {
-                if (meleeAttack)
-                    Enemies.BeginMeleePresentationHold(enemyId, RoaMeleeGrip.StrikeContactSeconds());
-                RoaCoords.ToServer(enemyPosition, out targetX, out targetZ);
-                Vector3 aimedDirection = cursor - self;
-                aimedDirection.y = 0f;
-                aimedDirection.Normalize();
-                RoaCoords.ToServer(aimedDirection, out float aimedX, out float aimedZ);
-                SendAuthoritativeHit(enemyId, selfX, selfZ, targetX, targetZ, angle,
-                    enemyPosition, attackToken, false, 0f, 0f, aimedX, aimedZ);
-            }
-            else
-            {
-                SendUntargetedAttack(selfX, selfZ, angle, attackToken);
-            }
+            // The server resolves the first actor along this aim, including actors
+            // hidden by fog or standing between us and the selected target.
+            if (remote != null) targetPosition = remotePosition;
+            else if (!string.IsNullOrEmpty(enemyId)) targetPosition = enemyPosition;
+            RoaCoords.ToServer(targetPosition, out targetX, out targetZ);
+            if (meleeAttack && !string.IsNullOrEmpty(enemyId))
+                Enemies.BeginMeleePresentationHold(enemyId, RoaMeleeGrip.StrikeContactSeconds());
+            SendUntargetedAttack(selfX, selfZ, targetX, targetZ, angle,
+                targetPosition, enemyId, attackToken);
         }
 
         public bool HasHeldMedkit => RoaArmorData.BaseId(
@@ -986,7 +948,7 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                if (ActiveWeapon() != "rocketLauncher") return false;
+                if (RoaApocalypseModels.WeaponCombatId(ActiveWeapon()) != "rocketLauncher") return false;
                 JToken safe = Socket?.Session?.Self?["zoneRules"]?["safe"];
                 if (safe != null && safe.Type == JTokenType.Boolean && safe.Value<bool>()) return false;
                 return Hud == null || Hud.PvpMode != "peaceful";
@@ -1011,7 +973,8 @@ namespace RealmOfAshes.Game
 
         private bool TryResolvePrimaryTarget(Vector3 cursor,
                                              out string enemyId, out Vector3 enemyPosition,
-                                             out PublicPlayer player, out Vector3 playerPosition)
+                                             out PublicPlayer player, out Vector3 playerPosition,
+                                             Ray? screenRay = null)
         {
             enemyId = null;
             enemyPosition = Vector3.zero;
@@ -1050,9 +1013,57 @@ namespace RealmOfAshes.Game
                 return true;
             }
 
+            // Курсор над высокой моделью проецируется на землю позади её ног.
+            // Подсветка уже использует hit-test модели, но раньше сам выстрел
+            // в такой ситуации отправлялся как combatAttack без цели и урона.
+            // Ближний бой также терял цель вплотную (along < 0.45 м).
+            if (screenRay.HasValue)
+            {
+                bool cursorEnemy = Enemies.TryFindTargetUnderCursor(screenRay.Value,
+                    out string hitEnemyId, out Vector3 hitEnemyPosition, out float enemyCursorDistance);
+                PublicPlayer hitPlayer = null;
+                Vector3 hitPlayerPosition = Vector3.zero;
+                float playerCursorDistance = float.PositiveInfinity;
+                bool cursorPlayer = RemotePlayers != null && RemotePlayers.TryFindTargetUnderCursor(
+                    screenRay.Value, out hitPlayer, out hitPlayerPosition,
+                    out playerCursorDistance);
+                if (cursorPlayer && playerCursorDistance < enemyCursorDistance
+                    && TargetWithinRange(origin, hitPlayerPosition, maxRange))
+                {
+                    player = hitPlayer;
+                    playerPosition = hitPlayerPosition;
+                    return true;
+                }
+                if (cursorEnemy && TargetWithinRange(origin, hitEnemyPosition, maxRange))
+                {
+                    enemyId = hitEnemyId;
+                    enemyPosition = hitEnemyPosition;
+                    return true;
+                }
+            }
+
+            // Для сенсорного управления и клика рядом с ногами модели берём
+            // ближайшую цель в настроенном радиусе. Дальность остаётся
+            // ограниченной оружием; окончательное решение принимает сервер.
+            if (Enemies.TryFindTarget(cursor, TargetRadius,
+                    out string nearbyId, out Vector3 nearbyPosition)
+                && TargetWithinRange(origin, nearbyPosition, maxRange))
+            {
+                enemyId = nearbyId;
+                enemyPosition = nearbyPosition;
+                return true;
+            }
+
             player = null;
             playerPosition = Vector3.zero;
             return false;
+        }
+
+        private static bool TargetWithinRange(Vector3 origin, Vector3 target, float maxRange)
+        {
+            Vector3 delta = target - origin;
+            delta.y = 0f;
+            return delta.sqrMagnitude <= maxRange * maxRange;
         }
 
         /// <summary>
@@ -1248,13 +1259,18 @@ namespace RealmOfAshes.Game
             });
         }
 
-        private void SendUntargetedAttack(float selfX, float selfZ, float angle, string attackToken)
+        private void SendUntargetedAttack(float selfX, float selfZ,
+                                          float targetX, float targetZ, float angle,
+                                          Vector3 aimedPosition, string intendedEnemyId,
+                                          string attackToken)
         {
             Socket.EmitWithAck("combatAttack", new Dictionary<string, object>
             {
                 ["attackToken"] = attackToken,
                 ["x"] = selfX,
                 ["z"] = selfZ,
+                ["targetX"] = targetX,
+                ["targetZ"] = targetZ,
                 ["angle"] = angle,
                 ["mode"] = _fireMode,
                 ["handSlot"] = ActiveHandSlot(),
@@ -1264,8 +1280,42 @@ namespace RealmOfAshes.Game
             }, ack =>
             {
                 CompleteAttackRequest(attackToken, ack);
-                TryTakeMeleePresentationDelay(attackToken, out float unusedPresentationDelay);
                 if (ack == null) return;
+                if (!string.IsNullOrEmpty(intendedEnemyId))
+                    Enemies.CompleteMeleePresentationHold(intendedEnemyId);
+                Vector3 sourcePosition = RoaCoords.ToUnity(selfX, selfZ);
+                if (ack["enemyResults"] is JArray enemyResults)
+                {
+                    foreach (JToken row in enemyResults)
+                    {
+                        if (!(row is JObject result)) continue;
+                        JObject struck = result["enemy"] as JObject;
+                        Vector3 impact = struck != null
+                            ? RoaCoords.ToUnity(struck["x"]?.ToObject<float>() ?? targetX,
+                                struck["z"]?.ToObject<float>() ?? targetZ)
+                            : aimedPosition;
+                        HandleHitResult(result, impact, sourcePosition, attackToken);
+                    }
+                    return;
+                }
+                if (ack["enemy"] is JObject enemy)
+                {
+                    Vector3 impact = RoaCoords.ToUnity(
+                        enemy["x"]?.ToObject<float>() ?? targetX,
+                        enemy["z"]?.ToObject<float>() ?? targetZ);
+                    HandleHitResult(ack, impact, sourcePosition, attackToken);
+                    return;
+                }
+                if (ack["target"] is JObject target)
+                {
+                    Vector3 impact = RoaCoords.ToUnity(
+                        target["x"]?.ToObject<float>() ?? targetX,
+                        target["z"]?.ToObject<float>() ?? targetZ);
+                    HandlePlayerHitResult(ack, target.ToObject<PublicPlayer>(), impact,
+                        sourcePosition, attackToken);
+                    return;
+                }
+                TryTakeMeleePresentationDelay(attackToken, out float unusedPresentationDelay);
                 Socket.ApplyGameplayAck(ack);
                 if (ack["ok"]?.ToObject<bool>() != true)
                 {

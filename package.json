@@ -48,7 +48,7 @@
     "check:kromka-combat": "npm run check:combat-authority && npm run check:death-loot && npm run check:world-model && npm run check:zone-modes && npm run check:creature-combat",
     "check:creature-combat": "node tools/check-creature-combat-network.js",
     "check:zone-modes": "node tools/check-zone-modes.js",
-    "check:combat-authority": "node tools/check-kromka-combat-contract.js && node tools/check-friendly-fire.js",
+    "check:combat-authority": "node tools/check-kromka-combat-contract.js && node tools/check-friendly-fire.js && node tools/check-free-aim-combat.js",
     "check:friendly-fire": "node tools/check-friendly-fire.js",
     "check:death-loot": "node tools/check-kromka-death-loot.js && node tools/check-death-loot-runtime.js && node tools/check-zone-ladder-runtime.js",
     "check:world-model": "node tools/check-world-model-flags.js && node tools/check-npc-corpse-economy.js && npm run check:black-market && npm run check:crafting-plots && npm run check:danger-cells && npm run check:zones && npm run check:danger-ecology && npm run check:account-sin && node tools/check-world-containers-network.js",

@@ -12,6 +12,7 @@ const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const manifest = json('public/assets/models/items/kromka/manifest.json');
 const sources = json('source-assets/items/free-catalog-v1/sources.json').sources;
 const items = json('data/kromka/items.json').items;
+const apocalypseWeapons = json('data/kromka/apocalypse-weapons.json').weapons;
 const artifacts = json('data/artifacts.json').types;
 const client = read('unity-client/Assets/Scripts/Game/RoaItemModelCatalog.cs');
 const ground = read('unity-client/Assets/Scripts/Game/RoaGroundItems.cs');
@@ -79,9 +80,11 @@ async function main() {
   // Транспорт лежит на земле своей моделью из RoaVehicleCatalog; файлы проверяет check-ground-item-models.
   const vehicleIds = new Set([...read('unity-client/Assets/Scripts/Game/RoaVehicleCatalog.cs')
     .matchAll(/\{ "([A-Za-z0-9]+)", "[^"]+\.glb" \}/g)].map(m => m[1]));
+  const apocalypseIds = new Set(apocalypseWeapons.map(row => row.itemId));
   for (const item of items) {
     if (item.id === 'fists') continue;
-    assert(existingIds.has(item.id) || vehicleIds.has(item.id) || manifest.files.some(r => r.id === item.id && !r.presentationOnly), `${item.id}: missing ground lookup`);
+    assert(existingIds.has(item.id) || vehicleIds.has(item.id) || apocalypseIds.has(item.id)
+      || manifest.files.some(r => r.id === item.id && !r.presentationOnly), `${item.id}: missing ground lookup`);
   }
   assert(ground.indexOf('RoaItemModelCatalog.Contains(itemId)') < ground.indexOf('if (LibraryItems.Contains(itemId))'), 'New medkit overrides old library');
   for (const type of artifacts) assert(client.includes(`case "${type.id}": return "${type.itemId}"`));

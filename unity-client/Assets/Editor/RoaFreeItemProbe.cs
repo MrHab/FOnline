@@ -244,7 +244,15 @@ namespace RealmOfAshes.EditorTools
             {
                 string id = row["id"].ToString();
                 Transform visual = ground.GetComponentsInChildren<Transform>().First(t => t.name == "GroundItemModel:" + id);
-                Bounds box = BoundsOf(visual);
+                Bounds box = BoundsOf(visual, true);
+                GameObject pack = GroundPack(id);
+                if (pack != null)
+                {
+                    Check(Vector3.Distance(visual.lossyScale, pack.transform.localScale) < .001f,
+                        id + ": pack model changed native size");
+                    Check(Mathf.Abs(box.min.y - .025f) < .01f, id + ": pack model is not grounded");
+                    continue;
+                }
                 JArray min = (JArray)row["bounds"]["min"], max = (JArray)row["bounds"]["max"];
                 Vector3 expected = new Vector3(max[0].Value<float>() - min[0].Value<float>(),
                     max[2].Value<float>() - min[2].Value<float>(), max[1].Value<float>() - min[1].Value<float>());
@@ -267,10 +275,10 @@ namespace RealmOfAshes.EditorTools
             ground.ApplyDropAck(new JObject { ["ok"] = true, ["item"] = Drop("backpack", "backpack", 24) });
             await Until(() => ground.LoadedVisualCountForItem("backpack") == 1, "dropped backpack", 30000);
             Transform droppedPack = ground.GetComponentsInChildren<Transform>().First(t => t.name == "GroundItemModel:backpack");
-            Check(droppedPack.GetComponentsInChildren<Transform>().Any(t => t.name.Contains("downloaded_sack")), "Dropped backpack uses old model");
-            Bounds packBounds = BoundsOf(droppedPack);
-            Check(Mathf.Abs(packBounds.min.y - .025f) < .01f && packBounds.size.x > .4f && packBounds.size.x < .9f
-                && packBounds.size.z > .35f && packBounds.size.z < .85f, "Dropped backpack scale/floor wrong: " + packBounds);
+            Check(Vector3.Distance(droppedPack.lossyScale, GroundPack("backpack").transform.localScale) < .001f,
+                "Dropped backpack changed native size");
+            Bounds packBounds = BoundsOf(droppedPack, true);
+            Check(Mathf.Abs(packBounds.min.y - .025f) < .01f, "Dropped backpack floor wrong: " + packBounds);
             Invoke(ground, "Remove", "backpack");
             // A request replaced and then removed in the same frame must not leave a late clone.
             ground.ApplyDropAck(new JObject { ["ok"] = true, ["item"] = Drop("race", "medkit", 30) });
@@ -290,9 +298,10 @@ namespace RealmOfAshes.EditorTools
             foreach (string id in gearIds)
             {
                 Transform visual = ground.GetComponentsInChildren<Transform>().First(t => t.name == "GroundItemModel:"+id);
-                Check(visual.GetComponentsInChildren<Transform>().Any(t => t.name.StartsWith("free_"+id+"_")), "Old dropped gear: "+id);
-                Bounds box=BoundsOf(visual);
-                Check(Mathf.Abs(box.min.y-.025f)<.01f && box.size.magnitude<1f && box.size.magnitude>.15f, "Dropped gear size/floor: "+id+" "+box);
+                Check(Vector3.Distance(visual.lossyScale, GroundPack(id).transform.localScale) < .001f,
+                    "Dropped gear changed native size: " + id);
+                Bounds box=BoundsOf(visual, true);
+                Check(Mathf.Abs(box.min.y-.025f)<.01f, "Dropped gear floor: "+id+" "+box);
             }
             await Capture(camera,"equipment-drops-desktop",1440,900);
             await Capture(camera,"equipment-drops-mobile",960,540);
@@ -306,9 +315,10 @@ namespace RealmOfAshes.EditorTools
             foreach(string id in suits)
             {
                 Transform visual=ground.GetComponentsInChildren<Transform>().First(t=>t.name=="GroundItemModel:"+id);
-                Check(visual.GetComponentsInChildren<Renderer>(true).Any(r=>r.name.Contains(RoaSuitModelCatalog.FootwearLayer)
-                    && r.gameObject.activeInHierarchy && r.enabled),"Dropped suit lost its integrated footwear: "+id);
-                Check(Mathf.Abs(BoundsOf(visual).min.y-.025f)<.01f,"Dropped suit not resting on ground: "+id);
+                Check(Vector3.Distance(visual.lossyScale, GroundPack(id).transform.localScale) < .001f
+                    && visual.GetComponentsInChildren<Renderer>(true).Any(r => r.enabled),
+                    "Dropped suit lost its native pack model: "+id);
+                Check(Mathf.Abs(BoundsOf(visual, true).min.y-.025f)<.01f,"Dropped suit not resting on ground: "+id);
             }
             await Capture(camera,"suit-drops-desktop",1440,900);
             await Capture(camera,"suit-drops-mobile",960,540);
@@ -360,7 +370,11 @@ namespace RealmOfAshes.EditorTools
             var tutorialView = tutorialCase.GetComponent<RoaItemPropView>();
             await tutorialView.Load(Origin);
             Check(tutorialView.Ready, "Tutorial medical case not loaded");
-            Check(tutorialCase.GetComponentsInChildren<Transform>().Any(t=>t.name=="item_medkit"), "Tutorial still uses procedural case");
+            Transform medicalArt = tutorialCase.transform.Find(RoaApocalypseVisuals.ChildName);
+            Check(medicalArt != null, "Tutorial medical case did not use the pack model");
+            Check(Vector3.Distance(medicalArt.lossyScale,
+                RoaApocalypseModels.Item("medkit").transform.localScale) < 0.001f,
+                "Tutorial medical case changed the pack model size");
             Check(!tutorialCase.GetComponentsInChildren<Transform>().Any(t=>t.name=="MedicalCase"), "Old tutorial cubes remain");
             Object.Destroy(tutorialCase);
             foreach (string sex in new[] { "male", "female" }) foreach (string body in new[] { "medium" })
@@ -463,6 +477,9 @@ namespace RealmOfAshes.EditorTools
             Animation animation=character.GetComponentInChildren<Animation>(true);
             int poseSamples=0, coverageSamples=0;
             float maxHeadSlip=0;
+            var skin=character.GetComponent<RoaApocalypseCharacterSkin>();
+            Check(skin!=null,"PolygonApocalypse body absent during helmet review");
+            if(bodyKey.StartsWith("male_")) Check(skin.NativeHairCount>0,"Native male hair absent before helmet review");
             await character.EquipWeapon(Origin, "");
             for(int outfit=0; outfit<helmets.Length+armor.Length; outfit++)
             {
@@ -476,6 +493,15 @@ namespace RealmOfAshes.EditorTools
                 await Task.Yield();
                 Check(character.HasLoadedEquipment("helmet",helmet) && character.HasLoadedEquipment("boots",boot),"Gear not ready "+bodyKey);
                 Check(!character.AnyHairVisible,"Hair protrudes through helmet");
+                Check(!skin.AnyNativeHairVisible,"PolygonApocalypse hair protrudes through helmet");
+                if(helmet=="preWarHelmet")
+                {
+                    GameObject nativeHelmet=skin.ActiveHelmetPrefab;
+                    Check(nativeHelmet==RoaApocalypseModels.Item(helmet),"Relict uses the wrong pack helmet");
+                    var filter=nativeHelmet.GetComponentInChildren<MeshFilter>(true);
+                    Check(filter!=null && filter.sharedMesh.bounds.size.y>=.3f,
+                        "Relict helmet is too flat at its authored size");
+                }
                 var renderers=new List<SkinnedMeshRenderer>();
                 character.CollectEquipmentRenderers(renderers);
                 foreach(string id in new[]{helmet,boot})
@@ -571,6 +597,7 @@ namespace RealmOfAshes.EditorTools
             }
             await character.EquipItems(Origin,new JObject());
             Check(character.AnyHairVisible,"Removing helmet did not restore hair");
+            if(skin.NativeHairCount>0) Check(skin.AnyNativeHairVisible,"Removing helmet did not restore PolygonApocalypse hair");
             Check(!character.HasLoadedEquipment("helmet",helmets[1]),"Removed gear remained visible");
             return new JObject { ["body"]=bodyKey, ["helmetModels"]=helmets.Length, ["bootModels"]=boots.Length,
                 ["armorCombinations"]=armor.Length, ["animationPoses"]=poseSamples, ["footCoverageRays"]=coverageSamples,
@@ -611,7 +638,7 @@ namespace RealmOfAshes.EditorTools
             var catalog=(JArray)JObject.Parse(File.ReadAllText("../data/kromka/items.json"))["items"];
             string[] ids=catalog.Where(i=>i["id"].ToString()!="fists" && i["compatibleSlots"] is JArray slots
                 && slots.Any(s=>s.ToString()=="offhand")).Select(i=>i["id"].ToString()).ToArray();
-            Check(ids.Length==6 && ids.All(RoaOffhandWeaponView.CanRender),"Incomplete authoritative offhand model coverage");
+            Check(ids.Length>=6 && ids.All(RoaOffhandWeaponView.CanRender),"Incomplete authoritative offhand model coverage");
             var bones=(Dictionary<string,Transform>)Field(character,"_bones").GetValue(character);
             var gate=character.gameObject.AddComponent<RoaVisibilityGate>();
             Animation animation=character.GetComponentInChildren<Animation>(true);
@@ -1071,6 +1098,9 @@ namespace RealmOfAshes.EditorTools
 
         private static float Cross2(Vector2 a,Vector2 b) => a.x*b.y-a.y*b.x;
 
+        private static GameObject GroundPack(string itemId) => RoaApocalypseModels.Weapon(itemId)
+            ?? RoaApocalypseModels.Vehicle(itemId) ?? RoaApocalypseModels.Item(itemId);
+
         private static JObject Drop(string id, string itemId, int index) => new JObject
         { ["id"] = id, ["itemId"] = itemId, ["qty"] = 1, ["x"] = index % 5, ["z"] = -(index / 5) * .85f };
         private static JObject Artifact(string id, string type, int index) => new JObject
@@ -1090,9 +1120,11 @@ namespace RealmOfAshes.EditorTools
         }
         private static FieldInfo Field(object obj, string name) => obj.GetType().GetField(name, Private);
         private static object Invoke(object obj, string name, params object[] args) => obj.GetType().GetMethod(name, Private).Invoke(obj,args);
-        private static Bounds BoundsOf(Transform root)
+        private static Bounds BoundsOf(Transform root, bool visibleOnly = false)
         {
             var renderers = root.GetComponentsInChildren<Renderer>(true);
+            if (visibleOnly) renderers = renderers
+                .Where(renderer => renderer.enabled && renderer.gameObject.activeInHierarchy).ToArray();
             Check(renderers.Length > 0, "No renderers on " + root.name);
             Bounds box = renderers[0].bounds;
             foreach (Renderer renderer in renderers.Skip(1)) box.Encapsulate(renderer.bounds);
@@ -1117,7 +1149,8 @@ namespace RealmOfAshes.EditorTools
             var previousRecalculation=skins.Select(r=>r.forceMatrixRecalculationPerRender).ToArray();
             var previousOffscreen=skins.Select(r=>r.updateWhenOffscreen).ToArray();
             var writers=root.GetComponentsInChildren<Behaviour>(true).Where(b=>
-                b is Animation || b is RoaCharacterView || b is RoaCharacterPreview).ToArray();
+                b is Animation || b is RoaCharacterView || b is RoaCharacterPreview
+                || b is RoaApocalypseCharacterSkin).ToArray();
             var previousEnabled=writers.Select(b=>b.enabled).ToArray();
             var bones=skins.SelectMany(r=>r.bones).Where(b=>b!=null).Distinct().ToArray();
             var positions=bones.Select(b=>b.localPosition).ToArray();

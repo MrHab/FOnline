@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace RealmOfAshes.Game
 {
@@ -84,7 +87,30 @@ namespace RealmOfAshes.Game
         public static Row Get(string itemOrRuntimeId)
         {
             string id = RoaArmorData.BaseId(itemOrRuntimeId ?? string.Empty);
-            return Rows.TryGetValue(id, out Row row) ? row : null;
+            string description = RoaItemData.Description(id);
+            if (Rows.TryGetValue(id, out Row row))
+                return string.IsNullOrEmpty(description) ? row
+                    : new Row(row.Type, description, row.Stat, row.Hands, row.HasAmmo, row.Usable);
+            if (!Rows.TryGetValue(RoaApocalypseModels.WeaponCombatId(id), out row)) return null;
+            if (!id.StartsWith("polygon", StringComparison.Ordinal)) return row;
+            var entries = RoaApocalypseModels.WeaponEntries;
+            if (entries == null) return row;
+            foreach (RoaApocalypseModels.WeaponEntry entry in entries)
+            {
+                if (entry.itemId != id) continue;
+                string weight = entry.weight.ToString("0.##", CultureInfo.GetCultureInfo("ru-RU"));
+                if (RoaApocalypseModels.WeaponRig(id) != RoaApocalypseModels.WeaponCombatId(id))
+                    return new Row("Оружие", "Бросковое взрывное оружие.",
+                        "Урон 24-38 · тип взрывной · одноручное · дальность 12 · навык: Метание · Вес "
+                        + weight + " кг", 1, true, false);
+                string stat = Regex.Replace(row.Stat, @"Вес [0-9,.]+ кг", "Вес " + weight + " кг");
+                if (id.StartsWith("polygonVeh", StringComparison.Ordinal)
+                    || id.StartsWith("polygonAAGun", StringComparison.Ordinal))
+                    stat = Regex.Replace(stat, @"треб\. Сила [0-9]+", "треб. Сила 8");
+                return new Row(row.Type, string.IsNullOrEmpty(description) ? entry.displayName : description,
+                    stat, row.Hands, row.HasAmmo, false);
+            }
+            return row;
         }
 
         public static string Desc(string id) { Row row = Get(id); return row != null ? row.Desc : string.Empty; }

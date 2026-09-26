@@ -132,6 +132,7 @@ namespace RealmOfAshes.Game
         private RoaWeaponView _weapon;
         private RoaOffhandWeaponView _offhandWeapon;
         private RoaEquipmentView _equipment;
+        private RoaApocalypseCharacterSkin _apocalypseSkin;
         // Транспорт под седоком. Пока _riding, клип — покой, а поверх него поза
         // седока (RoaRiderPose) с весом _riderWeight; при спешивании вес плавно
         // уходит, а отпущенный транспорт сам доигрывает уход и удаляется.
@@ -205,6 +206,7 @@ namespace RealmOfAshes.Game
 
         public bool Ready { get; private set; }
         public bool UsesProjectPrefab { get; private set; }
+        public bool UsesUnderwearBody { get; private set; }
 
         /// <summary>Изменилась иерархия визуала: туману войны надо обновить рендереры.</summary>
         public event Action OnVisualChanged;
@@ -470,7 +472,13 @@ namespace RealmOfAshes.Game
             bool changed = _presentationTier != tier;
             _presentationTier = tier;
             if (_animation != null)
-                _animation.cullingType = AnimationCullingType.BasedOnRenderers;
+                // The legacy rig's renderers are hidden behind the visible
+                // PolygonApocalypse body. Culling by those renderers freezes
+                // NPCs in their bind pose as soon as presentation LOD changes.
+                _animation.cullingType = _apocalypseSkin != null
+                    && tier != RoaActorPresentationTier.Hidden
+                    ? AnimationCullingType.AlwaysAnimate
+                    : AnimationCullingType.BasedOnRenderers;
 
             SetGroundingLod(tier == RoaActorPresentationTier.Near);
             if (tier != RoaActorPresentationTier.Near && changed)
@@ -980,7 +988,7 @@ namespace RealmOfAshes.Game
             return true;
         }
 
-        public async Task Load(string baseUrl, JObject appearance)
+        public async Task Load(string baseUrl, JObject appearance, bool useUnderwearBody = false)
         {
             int loadRequest = ++_loadRequest;
             string key = ModelKey(appearance);
@@ -990,6 +998,7 @@ namespace RealmOfAshes.Game
             string url = baseUrl.TrimEnd('/') + relativeUrl;
             Ready = false;
             UsesProjectPrefab = false;
+            UsesUnderwearBody = useUnderwearBody;
             _clips.Clear();
             _bones.Clear();
             _boneOffsets.Clear();
@@ -1052,8 +1061,30 @@ namespace RealmOfAshes.Game
             PrepareAppearance();
             ApplyAppearanceVisuals();
 
+            GameObject apocalypseBody = useUnderwearBody ? null : RoaApocalypseModels.Character(key);
+            if (_modelRoot != null && apocalypseBody != null)
+            {
+                _apocalypseSkin = GetComponent<RoaApocalypseCharacterSkin>();
+                if (_apocalypseSkin == null)
+                    _apocalypseSkin = gameObject.AddComponent<RoaApocalypseCharacterSkin>();
+                if (_apocalypseSkin.Bind(apocalypseBody))
+                    // The hidden GLB rig still drives the visible pack skin.
+                    // Renderer-based culling would stop its clips entirely.
+                    _animation.cullingType = AnimationCullingType.AlwaysAnimate;
+            }
+
             _animation.wrapMode = WrapMode.Loop;
             Play("idle");
+            // The creator exposes this rig directly. Apply its first idle pose
+            // before the preview becomes visible so loading never flashes a T-pose.
+            if (useUnderwearBody && _animation["idle"] != null)
+            {
+                AnimationState idle = _animation["idle"];
+                idle.enabled = true;
+                idle.weight = 1f;
+                idle.time = Mathf.Min(0.35f, idle.length * 0.35f);
+                _animation.Sample();
+            }
             Ready = true;
             if (_dead) SetDead(true);
 
@@ -1128,6 +1159,7 @@ namespace RealmOfAshes.Game
             bool showHair = !covered && hairId != "shaved";
             foreach (GameObject hairObject in _hairObjects)
                 if (hairObject != null && hairObject.activeSelf != showHair) hairObject.SetActive(showHair);
+            if (_apocalypseSkin != null) _apocalypseSkin.SetNativeHairVisible(showHair);
         }
 
         private static Color HairColor(string id)
@@ -1148,6 +1180,7 @@ namespace RealmOfAshes.Game
 
         private void NotifyVisualChanged()
         {
+            if (_apocalypseSkin != null) _apocalypseSkin.HideLegacyVisuals();
             RoaVisibilityGate gate = GetComponentInParent<RoaVisibilityGate>();
             if (gate != null) gate.Invalidate();
             if (OnVisualChanged != null) OnVisualChanged();

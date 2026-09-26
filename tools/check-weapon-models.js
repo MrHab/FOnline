@@ -299,20 +299,49 @@ for (const [id, config] of expected) {
 }
 assert(totalBytes < 5_000_000, `weapon library exceeds the 5 MB budget: ${totalBytes}`);
 
-// Every hand-held weapon or tool in the item catalog must have a physical GLB.
+// Every item uses either an original socket rig or a licensed pack prefab with
+// one of those rigs. The new variants do not need duplicate GLB geometry.
 const kromkaItems = JSON.parse(fs.readFileSync(itemsPath, 'utf8')).items || [];
+const apocalypseWeapons = JSON.parse(fs.readFileSync(path.join(__dirname,
+  '../data/kromka/apocalypse-weapons.json'), 'utf8')).weapons || [];
+const apocalypsePrefabRoot = path.join(__dirname,
+  '../unity-client/Assets/Synty/PolygonApocalypse/Prefabs');
+const apocalypseInstalled = fs.existsSync(path.join(apocalypsePrefabRoot, 'Weapons'));
+const packIds = new Set();
+const packNames = new Set();
+const itemById = new Map(kromkaItems.map(item => [item.id, item]));
+for (const row of apocalypseWeapons) {
+  assert(row.itemId && row.prefab && row.rigId && row.combatId && row.name,
+    'invalid pack weapon roster entry');
+  assert(!packIds.has(row.itemId), `${row.itemId}: duplicate pack weapon`);
+  packIds.add(row.itemId);
+  assert(!packNames.has(row.name), `${row.itemId}: duplicate display name`);
+  packNames.add(row.name);
+  assert(expected.has(row.rigId), `${row.itemId}: missing socket rig ${row.rigId}`);
+  assert(expected.has(row.combatId), `${row.itemId}: missing combat profile ${row.combatId}`);
+  const item = itemById.get(row.itemId);
+  assert(item && item.weight === row.weight,
+    `${row.itemId}: item is missing or weight differs from the roster`);
+  if (row.itemId.startsWith('polygon'))
+    assert(item.name === row.name, `${row.itemId}: item name differs from the roster`);
+  assert(/^Weapons\/(Guns|Melee|Misc|Weapons)\/SM_Wep_[A-Za-z0-9_]+$/.test(row.prefab),
+    `${row.itemId}: invalid PolygonApocalypse prefab path`);
+  if (apocalypseInstalled)
+    assert(fs.existsSync(path.join(apocalypsePrefabRoot, `${row.prefab}.prefab`)),
+      `${row.itemId}: missing PolygonApocalypse prefab`);
+}
 const physicalItemIds = kromkaItems
   .filter(item => item.slot === 'weapon' && ['weapons', 'tools'].includes(item.category))
   .map(item => item.id)
   .filter(id => id !== 'fists');
 assert.deepStrictEqual(
   [...new Set(physicalItemIds)].sort(),
-  [...expected.keys()].sort(),
-  'a weapon/tool item has no physical GLB model'
+  [...new Set([...expected.keys(), ...packIds])].sort(),
+  'a weapon/tool item has neither a socket rig nor a PolygonApocalypse prefab'
 );
 
-// Unity loads /assets/models/weapons/weapon_<id>.glb for every weapon id in
-// its catalog, so the catalog and the physical library must stay identical.
+// Unity's baked fallback still covers the socket rigs. Pack variants are read
+// from the runtime palette built from the same authored roster as the server.
 const unityWeaponData = fs.readFileSync(unityWeaponDataPath, 'utf8');
 const unityWeaponIds = [...unityWeaponData.matchAll(/^\s*Add\("([A-Za-z][A-Za-z0-9]*)"/gm)]
   .map(match => match[1])
@@ -322,9 +351,6 @@ assert.deepStrictEqual(
   [...expected.keys()].sort(),
   'a Unity weapon catalog entry has no physical GLB model'
 );
-const unityWeaponView = fs.readFileSync(unityWeaponViewPath, 'utf8');
-assert(unityWeaponView.includes('"/assets/models/weapons/weapon_" + weaponId + ".glb"'),
-  'Unity weapon view no longer loads the physical weapon GLB library');
 
 // Nginx отдаёт модели с max-age 30 дней и immutable, а Unity версионирует URL
 // оружия только строкой WeaponCatalogVersion (RoaModelUrl.Lite добавляет

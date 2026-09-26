@@ -42,10 +42,14 @@ namespace RealmOfAshes.Game
         {
             string id = RoaInventory.BaseId(itemOrRuntimeId);
             if (string.IsNullOrEmpty(id)) return null;
-            if (Cache.TryGetValue(id, out Sprite cached)) return cached;
-            Sprite sprite = Names.TryGetValue(id, out string name)
-                ? Resources.Load<Sprite>("ApocalypseHud/" + name) : null;
-            Cache[id] = sprite;
+            if (Cache.TryGetValue(id, out Sprite cached) && cached != null) return cached;
+            Texture2D rendered = Resources.Load<Texture2D>("RealmUi/items/item_" + id);
+            Sprite sprite = rendered != null
+                ? Sprite.Create(rendered, new Rect(0f, 0f, rendered.width, rendered.height),
+                    new Vector2(0.5f, 0.5f))
+                : Names.TryGetValue(id, out string name)
+                    ? Resources.Load<Sprite>("ApocalypseHud/" + name) : null;
+            if (sprite != null) Cache[id] = sprite;
             return sprite;
         }
     }

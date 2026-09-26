@@ -20,6 +20,13 @@ function constSource(name) {
   return source.slice(start, source.indexOf(';', start) + 1);
 }
 function handlerSource(event) {
+  if (event === 'enemyHit' || event === 'playerHit') {
+    const name = event === 'enemyHit' ? 'handleEnemyHit' : 'handlePlayerHit';
+    const start = source.indexOf(`  ${name} = (`);
+    assert(start >= 0, event);
+    const body = source.slice(start, source.indexOf('\n  };', start) + 5);
+    return `${body}\n  socket.on('${event}', ${name});`;
+  }
   const start = source.indexOf(`  socket.on('${event}',`);
   assert(start >= 0, event);
   return source.slice(start, source.indexOf('\n  });', start) + 6);
@@ -121,6 +128,7 @@ function fixture(mode = 'pvp') {
     'serverMarkAttackTargetHit', 'serverCurrentHp', 'serverAllowCosmeticRelay',
     'serverEmitPlayerVehicle', 'serverDismountVehicle', 'serverVehicleHitDismount'
   ]) vm.runInContext(functionSource(name), context);
+  vm.runInContext('let handleEnemyHit; let handlePlayerHit;', context);
   for (const event of ['shoot', 'melee', 'combatAttack', 'enemyHit', 'playerHit', 'explosionAttack'])
     vm.runInContext(handlerSource(event), context);
   let sequence = 0;
@@ -180,6 +188,7 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
   assert(f.attack('enemyHit').protected);
   assert(f.attack('playerHit').protected);
   f.weapon.id = 'rocketLauncher';
+  f.weapon.damageType = 'explosive';
   const explosion = f.attack('explosionAttack', { impactX: 10, impactZ: 0 });
   assert(explosion.ok, `${capital}: explosion near protected NPCs denied`);
   assert.equal(explosion.enemyHits.length + explosion.playerHits.length, 0);
@@ -191,6 +200,7 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
 {
   const f = fixture('pvpFullDrop');
   f.weapon.id = 'rocketLauncher';
+  f.weapon.damageType = 'explosive';
   f.p.socialState = { friends: [{ id: f.target.characterId }] };
   const foe = { ...f.enemy, id: 'raider', faction: 'raiders', hostileToPlayer: true };
   const opponent = { ...f.target, id: 'opponent', characterId: 'opponent-char' };
@@ -249,6 +259,7 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
   const f = fixture('pvp');
   const ride = () => ({ itemId: 'motorcycle', kind: 'motorcycle', speed: 11, since: 0 });
   f.weapon.id = 'rocketLauncher';
+  f.weapon.damageType = 'explosive';
   f.p.socialState = { friends: [{ id: f.target.characterId }] };
   f.target.mountedVehicle = ride();
   const opponent = { ...f.target, id: 'opponent', characterId: 'opponent-char', mountedVehicle: ride() };

@@ -10,6 +10,25 @@ namespace RealmOfAshes.Game
             var root = new GameObject("Tutorial_" + kind);
             root.transform.SetParent(parent, false);
             if (Application.isPlaying) root.AddComponent<RoaTutorialPropMaterials>();
+            if (kind != "medkit")
+            {
+                string modelKey = kind switch
+                {
+                    "truck" => "tutorialTruck",
+                    "gate" => "tutorialGate",
+                    "cot" => "cot_bed",
+                    "target" => "tutorialTarget",
+                    "bench" => "workshop_bench",
+                    "crate" => "storage_chest",
+                    "cover" => "concrete_wall",
+                    "ore" => "ore_outcrop",
+                    "wood" => "tutorialWood",
+                    _ => null
+                };
+                GameObject prefab = modelKey == null ? null : RoaApocalypseModels.Environment(modelKey);
+                if (prefab != null && RoaApocalypseVisuals.CreateGrounded(root.transform, prefab) != null)
+                    return root;
+            }
             Color wood = new Color(0.39f, 0.24f, 0.12f);
             Color steel = new Color(0.23f, 0.27f, 0.28f);
             Color concrete = new Color(0.58f, 0.57f, 0.50f);

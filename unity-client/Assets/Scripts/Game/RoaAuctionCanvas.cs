@@ -66,7 +66,8 @@ namespace RealmOfAshes.Game
         private int _sort;
         private int _page;
         private int _pageCount = 1;
-        private int _availability;
+        // Show every tradeable item on entry; the active offers remain a filter.
+        private int _availability = 2;
         private int _priceBand;
         private string _typeFilter = "all";
         private RectTransform _filterPopup;
@@ -1364,7 +1365,8 @@ namespace RealmOfAshes.Game
             List<JObject> visible = rows.ToList();
             _pageCount = Mathf.Max(1, (visible.Count + 6) / 7);
             _page = Mathf.Clamp(_page, 0, _pageCount - 1);
-            _pageLabel.text = (_page + 1) + " / " + _pageCount + " · " + visible.Count + " предложений";
+            _pageLabel.text = (_page + 1) + " / " + _pageCount + " · " + visible.Count
+                + (_availability == 2 ? " товаров" : " предложений");
             _previousPage.interactable = _page > 0;
             _nextPage.interactable = _page + 1 < _pageCount;
             AddBrowseColumns();

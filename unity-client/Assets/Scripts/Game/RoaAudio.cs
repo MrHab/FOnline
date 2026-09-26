@@ -272,7 +272,7 @@ namespace RealmOfAshes.Game
         public void PlayShot(Vector3 start, Vector3 end, string weaponId)
         {
             AudioClip clip = ShotClip(weaponId);
-            float volume = weaponId == "rocketLauncher" ? 1f
+            float volume = RoaApocalypseModels.WeaponCombatId(weaponId) == "rocketLauncher" ? 1f
                 : weaponId == "shotgun" ? 0.9f
                 : weaponId == "machineGun" ? 0.72f
                 : 0.78f;
@@ -517,7 +517,7 @@ namespace RealmOfAshes.Game
 
         private AudioClip ShotClip(string weaponId)
         {
-            switch (weaponId ?? string.Empty)
+            switch (RoaApocalypseModels.WeaponCombatId(weaponId) ?? string.Empty)
             {
                 case "shotgun":
                 case "sawedOffShotgun": return _shotgun;
@@ -535,7 +535,7 @@ namespace RealmOfAshes.Game
 
         private AudioClip MeleeSwingClip(string weaponId)
         {
-            switch (weaponId ?? string.Empty)
+            switch (RoaApocalypseModels.WeaponCombatId(weaponId) ?? string.Empty)
             {
                 case "knife": return _meleeSwing;
                 case "axe":
@@ -547,7 +547,7 @@ namespace RealmOfAshes.Game
 
         private AudioClip MeleeImpactClip(string weaponId)
         {
-            switch (weaponId ?? string.Empty)
+            switch (RoaApocalypseModels.WeaponCombatId(weaponId) ?? string.Empty)
             {
                 case "knife": return _meleeImpact;
                 case "axe":
@@ -559,7 +559,7 @@ namespace RealmOfAshes.Game
 
         private AudioClip ReloadClip(string weaponId)
         {
-            switch (weaponId ?? string.Empty)
+            switch (RoaApocalypseModels.WeaponCombatId(weaponId) ?? string.Empty)
             {
                 case "pistol":
                 case "revolver":

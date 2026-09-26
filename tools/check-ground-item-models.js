@@ -12,6 +12,7 @@ const MODEL_FILE = path.join(RUNTIME_DIR, 'ground_item_library.glb');
 const MANIFEST_FILE = path.join(RUNTIME_DIR, 'manifest.json');
 const CATALOG_MODEL_DIR = path.join(RUNTIME_DIR, 'kromka');
 const KROMKA_ITEMS_FILE = path.join(ROOT, 'data', 'kromka', 'items.json');
+const APOCALYPSE_WEAPONS_FILE = path.join(ROOT, 'data', 'kromka', 'apocalypse-weapons.json');
 const UNITY_ITEM_CATALOG_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaItemModelCatalog.cs');
 const UNITY_VEHICLE_CATALOG_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaVehicleCatalog.cs');
 const UNITY_GROUND_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaGroundItems.cs');
@@ -153,10 +154,22 @@ for (const [itemId, url] of unityVehicleModels) {
 }
 
 const kromkaItems = JSON.parse(fs.readFileSync(KROMKA_ITEMS_FILE, 'utf8')).items || [];
+const apocalypseWeapons = JSON.parse(fs.readFileSync(APOCALYPSE_WEAPONS_FILE, 'utf8')).weapons || [];
+const apocalypsePrefabRoot = path.join(ROOT, 'unity-client', 'Assets', 'Synty',
+  'PolygonApocalypse', 'Prefabs');
+const apocalypseInstalled = fs.existsSync(path.join(apocalypsePrefabRoot, 'Weapons'));
+for (const row of apocalypseWeapons) {
+  if (apocalypseInstalled)
+    assert(fs.existsSync(path.join(apocalypsePrefabRoot, `${row.prefab}.prefab`)),
+      `${row.itemId}: нет модели пака`);
+  assert(fs.existsSync(path.join(ROOT, 'public', 'assets', 'models', 'weapons',
+    `weapon_${row.rigId}.glb`)), `${row.itemId}: нет каркаса оружия`);
+}
 const authoredIds = kromkaItems.map(item => String(item?.id || ''));
 const covered = new Set([
   ...EXPECTED_LIBRARY_IDS, ...WEAPON_IDS, ...EQUIPMENT_IDS, 'fists',
-  ...unityLibraryAliases.keys(), ...unityCatalogIds, ...unityVehicleModels.keys()
+  ...unityLibraryAliases.keys(), ...unityCatalogIds, ...unityVehicleModels.keys(),
+  ...apocalypseWeapons.map(row => row.itemId)
 ]);
 assert.deepStrictEqual(
   [...new Set(authoredIds)].filter(id => !covered.has(id)),

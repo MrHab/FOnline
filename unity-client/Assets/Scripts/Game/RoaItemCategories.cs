@@ -111,6 +111,9 @@ namespace RealmOfAshes.Game
             Sprite apocalypseIcon = RoaApocalypseItemIcons.For(id);
             Texture2D texture = apocalypseIcon != null ? apocalypseIcon.texture : null;
             if (texture == null) texture = Resources.Load<Texture2D>("RealmUi/items/item_" + id);
+            if (texture == null && RoaApocalypseModels.Weapon(id) != null)
+                texture = Resources.Load<Texture2D>("RealmUi/items/item_"
+                    + RoaApocalypseModels.WeaponRig(id));
             if (texture == null)
             {
                 string key = ArtKey(itemOrRuntimeId);

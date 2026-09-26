@@ -1606,7 +1606,8 @@ namespace RealmOfAshes.Game
             if (preview == null || _previewImage == null) return;
             var rect = (RectTransform)_previewImage.transform;
             preview.Show(Bootstrap.AuthServerUrl, Bootstrap.Creator.Appearance,
-                Mathf.Max(64, Mathf.RoundToInt(rect.rect.width)), Mathf.Max(64, Mathf.RoundToInt(rect.rect.height)));
+                Mathf.Max(64, Mathf.RoundToInt(rect.rect.width)), Mathf.Max(64, Mathf.RoundToInt(rect.rect.height)),
+                showUnderwear: true);
             if (_previewImage.texture != preview.Texture) _previewImage.texture = preview.Texture;
             _previewImage.enabled = preview.Texture != null;
             _previewStatus.text = preview.StatusText ?? string.Empty;

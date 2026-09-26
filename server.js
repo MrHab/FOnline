@@ -820,6 +820,7 @@ const KROMKA_SIEGES_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'sieges.json');
 const KROMKA_WORLD_SIMULATION_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'world-simulation.json');
 const KROMKA_CHARACTER_PROGRESSION_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'character-progression.json');
 const KROMKA_ITEMS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'items.json');
+const KROMKA_APOCALYPSE_WEAPONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'apocalypse-weapons.json');
 const KROMKA_FIELD_RECIPES_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'field-recipes.json');
 const KROMKA_VEHICLES_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'vehicles.json');
 const WASTELAND_SIM_FILE = path.join(DATA_DIR, 'wasteland-sim.json');
@@ -881,6 +882,9 @@ function readJson(file, fallback) {
 // Authored gameplay catalogs are initialized before any sanitizer tables so
 // equipment, carry weight, prices and crafting all derive from the same rows.
 const KROMKA_ITEM_CATALOG = normalizeItemCatalog(readJson(KROMKA_ITEMS_FILE, { items: [] }));
+const KROMKA_APOCALYPSE_WEAPONS = readJson(KROMKA_APOCALYPSE_WEAPONS_FILE, { weapons: [] }).weapons;
+const KROMKA_APOCALYPSE_WEAPON_RIGS = new Map(KROMKA_APOCALYPSE_WEAPONS.map(row => [row.itemId, row.rigId]));
+const KROMKA_APOCALYPSE_WEAPON_COMBATS = new Map(KROMKA_APOCALYPSE_WEAPONS.map(row => [row.itemId, row.combatId]));
 const KROMKA_ITEM_INDEXES = itemCatalogIndexes(KROMKA_ITEM_CATALOG);
 const SERVER_ITEM_CATEGORY = new Map(KROMKA_ITEM_CATALOG.items.map(item => [item.id, String(item.category || '')]));
 const SERVER_ITEM_NAME = new Map(KROMKA_ITEM_CATALOG.items.map(item => [item.id, String(item.name || item.id)]));
@@ -5564,7 +5568,7 @@ function serverGearPower(p = {}) {
     const equippedId = String(p.equipment?.[slot] || '');
     if (!equippedId) continue;
     const baseId = serverBaseItemId(equippedId);
-    const tier = Number(GEAR_ITEM_TIERS[baseId] || 0);
+    const tier = Number(KROMKA_ITEM_INDEXES.byId[baseId]?.tier || GEAR_ITEM_TIERS[baseId] || 0);
     if (!tier) continue;
     const condition = Math.max(1, Math.min(100, Number(serverPlayerItemCondition(p, baseId) ?? 100)));
     total += GEAR_TIER_POINTS[tier] * weight * condition / 100;
@@ -5626,7 +5630,20 @@ function normalizeServerTraderProfiles(raw = {}) {
 }
 
 function loadServerTraderProfiles() {
-  return normalizeServerTraderProfiles(readAuthoredDataJson(TRADER_PROFILES_FILE, { profiles: {} }));
+  const profiles = normalizeServerTraderProfiles(readAuthoredDataJson(TRADER_PROFILES_FILE, { profiles: {} }));
+  for (const row of KROMKA_APOCALYPSE_WEAPONS) {
+    if (!row?.itemId?.startsWith('polygon')) continue;
+    const vendorId = row.kind === 'mounted' ? 'coreBaseArtels'
+      : row.kind === 'throwable' || ['plasmaRifle', 'laserPistol', 'flamethrower', 'rocketLauncher'].includes(row.rigId)
+        ? 'relay' : row.rigId === 'axe' || row.rigId === 'knife' ? 'scrap' : 'oldKlim';
+    const vendor = profiles[vendorId];
+    if (!vendor || vendor.stock.some(item => item.id === row.itemId)) continue;
+    vendor.stock.push({
+      id: row.itemId, qty: 1, price: Math.round((SERVER_ITEM_BASE_PRICES[row.itemId] || 1) * 1.15),
+      shelfMin: 0, shelfTarget: 1, shelfMax: 1, priority: 60
+    });
+  }
+  return profiles;
 }
 
 const SERVER_TRADER_PROFILES = loadServerTraderProfiles();
@@ -6510,6 +6527,28 @@ const SERVER_WEAPONS = {
   fists: { id: 'fists', name: 'Кулаки', hands: 1, weaponSkill: 'unarmed', damageType: 'ballistic', requiredStrength: 1, dmg: [2, 4], range: 1.35, ammoType: null, magSize: 0, fireRate: 0.62, apCost: 2 }
 };
 
+for (const row of KROMKA_APOCALYPSE_WEAPONS) {
+  if (!row || !row.itemId || !row.combatId) continue;
+  if (SERVER_WEAPONS[row.itemId]) {
+    SERVER_WEAPONS[row.itemId].name = row.name || SERVER_WEAPONS[row.itemId].name;
+    continue;
+  }
+  const rig = SERVER_WEAPONS[row.combatId];
+  const item = KROMKA_ITEM_INDEXES.byId[row.itemId];
+  if (!rig || !item) throw new Error(`Invalid PolygonApocalypse weapon: ${row.itemId}`);
+  SERVER_WEAPONS[row.itemId] = {
+    ...rig, id: row.itemId, name: row.name || item.name,
+    hands: item.hands || rig.hands,
+    dualWield: item.compatibleSlots.includes('offhand') && !!rig.dualWield,
+    ...(row.kind === 'mounted' ? { weaponSkill: 'heavyWeapons', requiredStrength: 8 } : {}),
+    ...(row.kind === 'throwable' ? {
+      weaponSkill: 'throwing', requiredStrength: 2, range: 12,
+      fireRate: 0.9, explosiveRadius: 2.8, dmg: [24, 38]
+    } : {})
+  };
+}
+SERVER_WEAPONS.sawedOffShotgun.name = KROMKA_ITEM_INDEXES.byId.sawedOffShotgun.name;
+
 const SERVER_WEAPON_MODIFICATION_SLOTS = new Set(['barrel', 'scope', 'magazine', 'forend']);
 const SERVER_WEAPON_MODIFICATION_CATALOG = Object.freeze({
   barrel_precision: { id: 'barrel_precision', slot: 'barrel', weaponIds: ['pistol', 'rifle', 'assaultRifle', 'machineGun', 'revolver', 'smg'], cost: { scrap: 3, weaponParts: 2 }, effects: { damageMul: 1.06, rangeMul: 1.12, fireRateMul: 1.05 } },
@@ -6535,9 +6574,11 @@ const SERVER_WEAPON_MODIFICATION_CATALOG = Object.freeze({
 
 function serverWeaponModificationCompatible(mod = {}, weapon = SERVER_WEAPONS.fists) {
   if (!mod || !weapon?.ammoType || !SERVER_WEAPON_MODIFICATION_SLOTS.has(mod.slot)) return false;
+  if (KROMKA_APOCALYPSE_WEAPONS.some(row => row.itemId === weapon.id && row.kind === 'throwable')) return false;
   if (mod.slot === 'forend' && Number(weapon.hands || 1) !== 2) return false;
-  if (Array.isArray(mod.weaponIds) && !mod.weaponIds.includes(weapon.id)) return false;
-  if (Array.isArray(mod.excludeWeaponIds) && mod.excludeWeaponIds.includes(weapon.id)) return false;
+  const rigId = KROMKA_APOCALYPSE_WEAPON_RIGS.get(weapon.id) || weapon.id;
+  if (Array.isArray(mod.weaponIds) && !mod.weaponIds.includes(rigId)) return false;
+  if (Array.isArray(mod.excludeWeaponIds) && mod.excludeWeaponIds.includes(rigId)) return false;
   return true;
 }
 
@@ -7519,12 +7560,20 @@ function sanitizePersistedQuickbar(slots = [], state = {}) {
     ...Object.keys(state.inventory || {}),
     ...Object.values(state.equipment || {}).filter(Boolean)
   ].map(String));
-  return slots.slice(0, 8).map(itemId => {
+  const sanitize = itemId => {
     const id = String(itemId || '').trim();
     if (!id || !allowed.has(id)) return null;
     const base = serverBaseItemId(id);
     return base && SERVER_ITEM_IDS.has(base) ? id : null;
-  });
+  };
+  const migrated = slots.slice(0, 6).map(sanitize);
+  for (const itemId of slots.slice(6)) {
+    const empty = migrated.findIndex(value => !value);
+    if (empty < 0) break;
+    const valid = sanitize(itemId);
+    if (valid) migrated[empty] = valid;
+  }
+  return migrated;
 }
 
 function sanitizePersistedEconomyState(state = {}) {
@@ -11758,6 +11807,42 @@ function serverLineOfFireClear(room, p, enemy, dist) {
   return serverLineOfFireClearFrom(room, p.x, p.z, enemy, { shooterCrouching: !!p.crouching });
 }
 
+// Resolve the first physical actor on a shot or swing using authoritative world
+// positions. Visibility is deliberately absent: fog only changes what the
+// shooter can see, not whether a projectile can hit someone inside it.
+function serverFirstActorOnAttackRay(room, attacker, origin, dirX, dirZ, range, weapon) {
+  const length = Math.hypot(dirX, dirZ);
+  if (!Number.isFinite(length) || length < 0.001) return null;
+  const x = dirX / length, z = dirZ / length;
+  const maxRange = Math.max(0.4, Number(range || 0));
+  const melee = !weapon?.ammoType;
+  const candidates = [];
+  const consider = (kind, actor, radius) => {
+    const dx = Number(actor.x) - origin.x, dz = Number(actor.z) - origin.z;
+    const along = dx * x + dz * z;
+    if (along < 0.1 || Math.hypot(dx, dz) > maxRange) return;
+    const side = Math.abs(dx * z - dz * x);
+    if (side > radius) return;
+    const entry = along - Math.sqrt(Math.max(0, radius * radius - side * side));
+    candidates.push({ kind, actor, entry: Math.max(0, entry) });
+  };
+  for (const enemy of room.enemies?.values() || []) {
+    if (enemy.dead || Number(enemy.hp || 0) <= 0) continue;
+    const radius = Math.max(melee ? 0.65 : 0.5, enemyBodyRadius(enemy));
+    consider('enemy', enemy, radius);
+  }
+  for (const player of players.values()) {
+    if (player.id === attacker.id || player.roomId !== room.id || player.dead || Number(player.hp || 0) <= 0) continue;
+    consider('player', player, Math.max(PLAYER_COLLISION_RADIUS, melee ? 0.65 : 0.5));
+  }
+  candidates.sort((a, b) => a.entry - b.entry);
+  for (const candidate of candidates) {
+    if (serverLineOfFireClearFrom(room, origin.x, origin.z, candidate.actor,
+      { shooterCrouching: !!attacker.crouching, targetCrouching: !!candidate.actor.crouching })) return candidate;
+  }
+  return null;
+}
+
 // Заявленная клиентом точка компенсации задержки обязана быть достижима от
 // авторитетной позиции по прямой. Без этой проверки хватало сдвига в пределах
 // допуска, чтобы объявить точку выстрела за стеной: линия огня считалась уже от
@@ -11850,12 +11935,12 @@ function serverAutomaticAccuracyPenalty(p = {}, w = SERVER_WEAPONS.fists, client
 
 function serverExplosiveRadius(p = {}, w = SERVER_WEAPONS.fists) {
   const base = Math.max(1.5, Number(w?.explosiveRadius || 3.6));
-  if (w?.id !== 'rocketLauncher') return base;
+  if (w?.damageType !== 'explosive') return base;
   return base + serverSkillNorm(p, 'throwing') * 0.45 + serverTalentLevel(p, 'grenadier') * 0.2;
 }
 
 function serverIsShotgunWeapon(w = SERVER_WEAPONS.fists) {
-  return w?.id === 'shotgun';
+  return (KROMKA_APOCALYPSE_WEAPON_COMBATS.get(w?.id) || w?.id) === 'shotgun';
 }
 
 function serverShotgunSpreadWidthAtDistance(w = SERVER_WEAPONS.shotgun, distance = 0) {
@@ -11915,8 +12000,8 @@ function serverShotgunSpreadSample(w = SERVER_WEAPONS.shotgun, origin = {}, enem
 
 function serverConeWidthAtDistance(w = SERVER_WEAPONS.fists, distance = 0) {
   const d = Math.max(0, Number(distance || 0));
-  if (w.id === 'flamethrower') return 0.42 + d * 0.24;
-  if (w.id === 'shotgun') return serverShotgunSpreadWidthAtDistance(w, d);
+  if ((KROMKA_APOCALYPSE_WEAPON_COMBATS.get(w.id) || w.id) === 'flamethrower') return 0.42 + d * 0.24;
+  if (serverIsShotgunWeapon(w)) return serverShotgunSpreadWidthAtDistance(w, d);
   return 0.45;
 }
 
@@ -11950,7 +12035,8 @@ function serverMarkAttackTargetHit(spend = {}, target = {}) {
 }
 
 function serverValidateMultiTargetHit(spend = {}, p = {}, weapon = SERVER_WEAPONS.fists, modeInfo = {}, origin = {}, enemy = {}, data = {}) {
-  if (!['shotgun', 'flamethrower'].includes(weapon.id)) return { ok: false, error: 'Это оружие не наносит конусный урон.' };
+  if (!['shotgun', 'flamethrower'].includes(KROMKA_APOCALYPSE_WEAPON_COMBATS.get(weapon.id) || weapon.id))
+    return { ok: false, error: 'Это оружие не наносит конусный урон.' };
   if (!spend.token || !spend.spent) return { ok: false, error: 'Сервер: отсутствует токен групповой атаки.' };
   const spent = spend.spent;
   let dirX = Number(spent.coneDirX);
@@ -30927,12 +31013,15 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ok: true, ...result, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
   });
 
+  let handleEnemyHit;
+  let handlePlayerHit;
   socket.on('combatAttack', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
     if (!room) return fail('Локация не найдена.');
+    ensureRoomWorld(room);
     const equippedWeaponId = serverActiveWeaponId(p);
     const weapon = serverWeaponDef(equippedWeaponId, p);
     const currentCombat = () => ({
@@ -30950,6 +31039,52 @@ io.on('connection', (socket) => {
     const attackPlan = serverResolvePlayerAttackPlan(p, data, Date.now());
     if (!attackPlan.ok) return fail(attackPlan.error || 'Сервер: атака отклонена.', currentCombat());
     const attackWeapon = attackPlan.entries[0].weapon;
+    if (attackWeapon.damageType === 'explosive') return fail('Взрыв обрабатывается отдельным серверным действием.', currentCombat());
+    const aimX = Number(data.targetX), aimZ = Number(data.targetZ);
+    if (Number.isFinite(aimX) && Number.isFinite(aimZ)) {
+      const origin = serverCombatOrigin(p, data, room);
+      const dirX = aimX - origin.x, dirZ = aimZ - origin.z;
+      const dirLength = Math.hypot(dirX, dirZ);
+      const effectiveRange = Math.min(...attackPlan.entries.map(entry => (
+        Math.max(0.4, Number(entry.weapon.range || 1) * Math.max(0.1, Number(entry.modeInfo?.rangeMul || 1))) + 0.85
+      )));
+      const first = serverFirstActorOnAttackRay(room, p, origin, dirX, dirZ, effectiveRange, attackWeapon);
+      const combatId = KROMKA_APOCALYPSE_WEAPON_COMBATS.get(attackWeapon.id) || attackWeapon.id;
+      if (dirLength > 0.001 && ['shotgun', 'flamethrower'].includes(combatId)
+        && first?.kind !== 'player') {
+        const ux = dirX / dirLength, uz = dirZ / dirLength;
+        const coneTargets = [...room.enemies.values()].filter(enemy => {
+          if (enemy.dead || Number(enemy.hp || 0) <= 0) return false;
+          const dx = enemy.x - origin.x, dz = enemy.z - origin.z;
+          const along = dx * ux + dz * uz;
+          const side = Math.abs(dx * uz - dz * ux);
+          const radius = Math.max(0.55 * Number(enemy.scale || 1) + 0.22, enemyBodyRadius(enemy));
+          return along >= 0.2 && Math.hypot(dx, dz) <= effectiveRange
+            && along <= Number(attackWeapon.range || 1) + radius
+            && side <= serverConeWidthAtDistance(attackWeapon, along) + radius
+            && serverLineOfFireClearFrom(room, origin.x, origin.z, enemy, { shooterCrouching: !!p.crouching });
+        }).sort((a, b) => Math.hypot(a.x - origin.x, a.z - origin.z) - Math.hypot(b.x - origin.x, b.z - origin.z)).slice(0, 12);
+        if (coneTargets.length) {
+          const results = [];
+          for (const enemy of coneTargets) {
+            handleEnemyHit({ ...data, enemyId: enemy.id, targetX: enemy.x, targetZ: enemy.z,
+              shotDirX: ux, shotDirZ: uz, multiTarget: true }, result => results.push(result));
+          }
+          if (typeof ack === 'function') ack({ ...results[results.length - 1],
+            enemyResults: results, combat: results[0]?.combat, combats: results[0]?.combats,
+            self: results[0]?.self });
+          return;
+        }
+      }
+      if (first) {
+        const forwarded = { ...data,
+          targetX: Number(first.actor.x), targetZ: Number(first.actor.z),
+          shotDirX: dirX, shotDirZ: dirZ
+        };
+        if (first.kind === 'enemy') return handleEnemyHit({ ...forwarded, enemyId: first.actor.id }, ack);
+        return handlePlayerHit({ ...forwarded, targetId: first.actor.id }, ack);
+      }
+    }
     const spend = serverValidateAndSpendAttack(p, { ...data, attackToken }, attackWeapon, attackPlan.modeInfo, Date.now(), attackPlan);
     if (!spend.ok) return fail(spend.error || 'Сервер: атака отклонена.', {
       ...currentCombat(),
@@ -30998,7 +31133,7 @@ io.on('connection', (socket) => {
       return fail('Сервер: экипировка изменилась; повторите атаку после сверки.', currentCombat());
     }
     if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не экипировано.', currentCombat());
-    if (weapon.id !== 'rocketLauncher') return fail('Это действие доступно только для ракетницы.', currentCombat());
+    if (weapon.damageType !== 'explosive') return fail('Это действие доступно только для взрывного оружия.', currentCombat());
     if (p.mountedVehicle) return fail(VEHICLE_ATTACK_REFUSAL, currentCombat());
     const modeInfo = serverWeaponModeInfo(p, weapon, String(data.mode || 'single'));
     const attackToken = serverCombatToken(data.attackToken || data.combat?.token || '');
@@ -31173,7 +31308,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('enemyHit', (data = {}, ack) => {
+  handleEnemyHit = (data = {}, ack) => {
     const p = players.get(socket.id);
     let failureContext = null;
     const fail = (error, extra = {}) => {
@@ -31196,7 +31331,7 @@ io.on('connection', (socket) => {
       const plan = serverResolvePlayerAttackPlan(p, data, Date.now());
       if (!plan.ok) return fail(plan.error);
       const weapon = plan.entries[0].weapon;
-      if (!weapon.ammoType || weapon.id === 'rocketLauncher') return fail('В мишень нужно выстрелить из огнестрельного оружия.');
+      if (!weapon.ammoType || weapon.damageType === 'explosive') return fail('В мишень нужно выстрелить из огнестрельного оружия.');
       const dx = enemy.x - p.x, dz = enemy.z - p.z;
       const dirX = Number(data.shotDirX), dirZ = Number(data.shotDirZ);
       const length = Math.hypot(dirX, dirZ);
@@ -31234,7 +31369,7 @@ io.on('connection', (socket) => {
     const attackPlan = serverResolvePlayerAttackPlan(p, data, Date.now());
     if (!attackPlan.ok) return fail(attackPlan.error || 'Сервер: атака отклонена.');
     const weapon = attackPlan.entries[0].weapon;
-    if (weapon.id === 'rocketLauncher' || data.explosive) return fail('Взрыв обрабатывается отдельным серверным действием.');
+    if (weapon.damageType === 'explosive' || data.explosive) return fail('Взрыв обрабатывается отдельным серверным действием.');
     const modeInfo = attackPlan.modeInfo;
     const origin = serverCombatOrigin(p, data, room);
     const targetPoint = serverCombatTargetPoint(enemy, data, weapon, room);
@@ -31379,9 +31514,10 @@ io.on('connection', (socket) => {
       combats: spend.combats,
       self: publicAuthoritativePlayerState(p)
     });
-  });
+  };
+  socket.on('enemyHit', handleEnemyHit);
 
-  socket.on('playerHit', (data = {}, ack) => {
+  handlePlayerHit = (data = {}, ack) => {
     const attacker = players.get(socket.id);
     const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
     if (!attacker || !attacker.roomId || attacker.dead || Number(attacker.hp || 0) <= 0) return fail('Игрок недоступен.');
@@ -31602,7 +31738,8 @@ io.on('connection', (socket) => {
         droppedItems
       });
     }
-  });
+  };
+  socket.on('playerHit', handlePlayerHit);
 
 
 

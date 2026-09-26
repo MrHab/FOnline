@@ -27,6 +27,8 @@ namespace RealmOfAshes.Game
         private CharacterAppearance _wantedAppearance;
         private string _wantedFingerprint = string.Empty;
         private string _loadingModelKey = string.Empty;
+        private bool _loadingUnderwear;
+        private bool _wantedUnderwear;
         private int _requestId;
         private bool _visible;
         private float _pointerOffset;
@@ -38,7 +40,8 @@ namespace RealmOfAshes.Game
         public bool IsVisible { get { return _visible; } }
         public string RequestedModelKey { get { return ModelKey(_wantedAppearance); } }
 
-        public void Show(string baseUrl, CharacterAppearance appearance, int width, int height)
+        public void Show(string baseUrl, CharacterAppearance appearance, int width, int height,
+            bool showUnderwear = false)
         {
             _visible = true;
             EnsureScene();
@@ -52,14 +55,16 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            string fingerprint = Fingerprint(appearance);
+            string fingerprint = Fingerprint(appearance) + ":" + showUnderwear;
             if (fingerprint == _wantedFingerprint) return;
 
             _wantedAppearance = Clone(appearance);
+            _wantedUnderwear = showUnderwear;
             _wantedFingerprint = fingerprint;
             string modelKey = ModelKey(_wantedAppearance);
 
             if (_view != null && _view.Ready && _view.BodyKey == modelKey
+                && _view.UsesUnderwearBody == showUnderwear
                 && _view.ApplyAppearance(_wantedAppearance))
             {
                 StatusText = AppearanceLabel(_wantedAppearance);
@@ -68,7 +73,8 @@ namespace RealmOfAshes.Game
 
             // Several face/hair clicks can arrive while the same body is loading.
             // Keep the latest draft and apply it when that one request completes.
-            if (!string.IsNullOrEmpty(_loadingModelKey) && _loadingModelKey == modelKey)
+            if (!string.IsNullOrEmpty(_loadingModelKey) && _loadingModelKey == modelKey
+                && _loadingUnderwear == showUnderwear)
             {
                 StatusText = "Загрузка: " + AppearanceLabel(_wantedAppearance) + "…";
                 return;
@@ -90,6 +96,7 @@ namespace RealmOfAshes.Game
             _visible = false;
             _requestId++;
             _loadingModelKey = string.Empty;
+            _loadingUnderwear = false;
             _wantedFingerprint = string.Empty;
             _wantedAppearance = null;
             StatusText = string.Empty;
@@ -134,6 +141,7 @@ namespace RealmOfAshes.Game
         public bool RenderNow()
         {
             if (!_visible || _camera == null || _texture == null || !IsReady) return false;
+            _modelObject?.GetComponentInChildren<RoaApocalypseCharacterSkin>(true)?.SyncPose();
             _camera.targetTexture = _texture;
             if (GraphicsSettings.currentRenderPipeline != null)
             {
@@ -177,6 +185,7 @@ namespace RealmOfAshes.Game
         {
             int request = ++_requestId;
             _loadingModelKey = modelKey;
+            _loadingUnderwear = _wantedUnderwear;
             StatusText = "Загрузка: " + AppearanceLabel(_wantedAppearance) + "…";
             DestroyModel();
             _ = LoadModel(baseUrl, modelKey, request);
@@ -191,7 +200,7 @@ namespace RealmOfAshes.Game
                 candidate.transform.SetParent(_sceneRoot, false);
                 SetLayerRecursively(candidate, PreviewLayer);
                 RoaCharacterView candidateView = candidate.AddComponent<RoaCharacterView>();
-                await candidateView.Load(baseUrl, ToJson(_wantedAppearance));
+                await candidateView.Load(baseUrl, ToJson(_wantedAppearance), _loadingUnderwear);
 
                 if (this == null || request != _requestId || ModelKey(_wantedAppearance) != modelKey)
                 {

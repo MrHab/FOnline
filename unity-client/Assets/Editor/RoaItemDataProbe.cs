@@ -1,4 +1,8 @@
 #if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.IO;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
@@ -19,6 +23,68 @@ namespace RealmOfAshes.Editor
             Require(Mathf.Abs(RoaItemData.CarryCapacity(5, true) - 90f) < 0.0001f, "неверный бонус рюкзака");
             Require(Mathf.Abs(RoaItemData.CarryCapacity(99, false) - 150f) < 0.0001f, "Сила не ограничена серверным максимумом");
             Debug.Log("[ПРЕДМЕТЫ/ВЕС] готово.");
+        }
+
+        [MenuItem("Realm of Ashes/PolygonApocalypse/Validate inventory art")]
+        public static void ValidateApocalypseInventory()
+        {
+            string path = Path.GetFullPath(Path.Combine(Application.dataPath,
+                "../../data/kromka/items.json"));
+            JObject catalog = JObject.Parse(File.ReadAllText(path));
+            if (!RoaItemData.ApplyCatalog(catalog, out string error))
+                throw new InvalidOperationException(error);
+            int count = 0;
+            foreach (JToken row in catalog["items"] as JArray ?? new JArray())
+            {
+                string id = row["id"]?.ToString();
+                Texture2D texture = Resources.Load<Texture2D>("RealmUi/items/item_" + id);
+                Sprite icon = RoaApocalypseItemIcons.For(id);
+                Require(texture != null && icon != null && icon.texture == texture,
+                    "нет игрового значка: " + id);
+                count++;
+            }
+            Require(RoaItemData.Name("smg") == "ПП «Шорох»", "старое оружие не обновлено");
+            Require(RoaItemInfo.Desc("smg") == RoaItemData.Description("smg"),
+                "описание оружия осталось старым");
+            Require(RoaGearData.Tier("smg") == 3, "тир оружия не загружен");
+            Require(RoaApocalypseModels.Weapon("smg")?.name == "SM_Wep_SubMGun_01",
+                "старый пистолет-пулемёт не получил модель пака");
+            Require(RoaApocalypseModels.Weapon("pickaxe")?.name == "SM_Wep_Spade_01",
+                "инструмент добычи не получил модель пака");
+            string[] armors =
+            {
+                "leather", "metalArmor", "ballisticVest", "combatArmor",
+                "heavyArmor", "hazmatSuit", "energySuit"
+            };
+            var male = new HashSet<GameObject>();
+            var female = new HashSet<GameObject>();
+            var armorIcons = new HashSet<Hash128>();
+            foreach (string id in armors)
+            {
+                GameObject malePrefab = RoaApocalypseModels.CharacterOutfit(false, id);
+                GameObject femalePrefab = RoaApocalypseModels.CharacterOutfit(true, id);
+                Require(malePrefab != null && male.Add(malePrefab),
+                    "мужская броня повторяет модель: " + id);
+                Require(femalePrefab != null && female.Add(femalePrefab),
+                    "женская броня повторяет модель: " + id);
+                Texture2D texture = Resources.Load<Texture2D>("RealmUi/items/item_" + id);
+                Require(texture != null && armorIcons.Add(texture.imageContentsHash),
+                    "значок брони повторяет другую модель: " + id);
+            }
+            var helmets = new HashSet<GameObject>();
+            foreach (string id in new[]
+                { "weldedHelmet", "helmet", "tacticalHelmet", "assaultHelmet", "preWarHelmet" })
+            {
+                GameObject prefab = RoaApocalypseModels.Item(id);
+                Require(prefab != null && helmets.Add(prefab),
+                    "шлем отсутствует или повторяет модель: " + id);
+            }
+            foreach (string id in new[]
+                { "boots", "scoutBoots", "reinforcedBoots", "assaultBoots" })
+                Require(RoaApocalypseModels.Footwear(id) != null,
+                    "нет модели защиты ног: " + id);
+            Debug.Log("[ROA APOCALYPSE] Inventory art PASS: " + count
+                + " catalog items, unique armor/helmet visuals and pack prefabs.");
         }
 
         private static void Require(bool condition, string message)

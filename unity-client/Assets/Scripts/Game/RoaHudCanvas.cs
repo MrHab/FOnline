@@ -83,11 +83,11 @@ namespace RealmOfAshes.Game
         public static LayoutProfile ResolveLayout(bool mobile)
         {
             return mobile
-                ? new LayoutProfile(0.9f, new Vector2(20f, -112f),
+                ? new LayoutProfile(0.9f, new Vector2(12f, -12f),
                     0.625f, new Vector2(0f, 44f),
                     0.625f, new Vector2(-62f, -8f),
                     0.625f, new Vector2(0f, 208f))
-                 : new LayoutProfile(1f, new Vector2(24f, -140f),
+                 : new LayoutProfile(1f, new Vector2(12f, -12f),
                     0.875f, new Vector2(0f, 16f),
                     0.875f, new Vector2(-56f, -18f),
                     0.875f, new Vector2(0f, 242f));
@@ -473,7 +473,7 @@ namespace RealmOfAshes.Game
         private void BuildPlayerPanel()
         {
             RectTransform panel = PanelRect("PlayerStatus", _safeRoot, new Vector2(0f, 1f),
-                                            new Vector2(0f, 1f), new Vector2(24f, -140f), new Vector2(230f, 48f));
+                                            new Vector2(0f, 1f), new Vector2(12f, -12f), new Vector2(230f, 48f));
             _playerPanel = panel.gameObject;
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("status");
             Image playerBackground = panel.GetComponent<Image>();

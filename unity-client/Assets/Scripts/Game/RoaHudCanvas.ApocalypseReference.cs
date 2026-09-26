@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -11,30 +12,20 @@ namespace RealmOfAshes.Game
         private GameObject _apocalypseCompass;
         private RectTransform _apocalypseCompassTape;
         private GameObject _apocalypseActionBar;
-        private Slider _apocalypseXpSlider;
-        private Slider _apocalypseHpReservoir;
-        private Slider _apocalypseApReservoir;
-        private Text _apocalypseXpLabel;
-        private Text _apocalypseBarLevel;
         private readonly Image[] _apocalypseSlotIcons = new Image[RoaQuickbar.SlotCount];
-        private GameObject _apocalypseHealth;
-        private Slider _apocalypseHealthSlider;
-        private readonly GameObject[] _apocalypseInjuryIcons = new GameObject[5];
+        private RectTransform _apocalypseApLampRow;
+        private GameObject _apocalypseApLampSample;
+        private readonly List<RectTransform> _apocalypseApLamps = new List<RectTransform>();
         private GameObject _apocalypseWeapon;
         private TextMeshProUGUI _apocalypseWeaponName;
         private TextMeshProUGUI _apocalypseWeaponAmmo;
         private Image _apocalypseWeaponIcon;
         private readonly Toggle[] _apocalypseBullets = new Toggle[16];
-        private GameObject _apocalypseApLamps;
-        private readonly GameObject[] _apocalypseApGlow = new GameObject[6];
-        private Text _apocalypseApLabel;
         private GameObject _apocalypseQuest;
         private TextMeshProUGUI _apocalypseQuestTitle;
         private readonly TextMeshProUGUI[] _apocalypseQuestRows =
             new TextMeshProUGUI[3];
         private readonly GameObject[] _apocalypseQuestItems = new GameObject[3];
-        private static readonly string[] ApocalypseInjuries =
-            { "brokenArm", "brokenLeg", "concussion", "infection", "bleeding" };
         private GameObject _apocalypseLevelUp;
         private Text _apocalypseLevelNumber;
         private Image _apocalypseCursor;
@@ -43,28 +34,27 @@ namespace RealmOfAshes.Game
 
         private bool TryBuildApocalypseActionBar(RectTransform panel)
         {
-            GameObject screen = Resources.Load<GameObject>(
-                "ApocalypseHud/Screen_HUD_Apocalypse_ARPG_01");
-            Transform source = screen != null
-                ? screen.transform.Find("ScreenSpace/Bottom/HUD_ARPGBar_02") : null;
-            if (source == null) return false;
-            Transform sourceItems = source.Find("Bar_Items");
-            if (sourceItems == null || sourceItems.childCount < RoaQuickbar.SlotCount)
-                return false;
+            GameObject source = Resources.Load<GameObject>(
+                "ApocalypseHud/HUD_Apocalypse_HotBar_03");
+            Transform sourceItems = source != null ? source.transform.Find("ActionBar") : null;
+            if (sourceItems == null) return false;
+            for (int i = 0; i < RoaQuickbar.SlotCount; i++)
+                if (sourceItems.Find("Item_" + i.ToString("00")) == null) return false;
+            if (sourceItems.Find("Item_00/Greeble_MetalValve01") == null) return false;
 
             Image panelBackground = panel.GetComponent<Image>();
             if (panelBackground != null) panelBackground.enabled = false;
             Outline panelBorder = panel.GetComponent<Outline>();
             if (panelBorder != null) panelBorder.enabled = false;
 
-            _apocalypseActionBar = Instantiate(source.gameObject, panel, false);
-            _apocalypseActionBar.name = "ApocalypseARPGBar";
+            _apocalypseActionBar = Instantiate(source, panel, false);
+            _apocalypseActionBar.name = "ApocalypseHotBar";
             RectTransform bar = (RectTransform)_apocalypseActionBar.transform;
             bar.anchorMin = bar.anchorMax = new Vector2(0.5f, 0f);
             bar.pivot = new Vector2(0.5f, 0f);
-            bar.anchoredPosition = new Vector2(0f, 75f);
-            bar.localScale = Vector3.one * 0.55f;
-            panel.sizeDelta = new Vector2(798f, 132f);
+            bar.anchoredPosition = new Vector2(0f, 50f);
+            bar.localScale = Vector3.one * 0.5f;
+            panel.sizeDelta = new Vector2(800f, 170f);
             foreach (Animator animator in bar.GetComponentsInChildren<Animator>(true))
                 animator.enabled = false;
             foreach (Graphic graphic in bar.GetComponentsInChildren<Graphic>(true))
@@ -73,25 +63,30 @@ namespace RealmOfAshes.Game
                 if (!(graphic is Image)) graphic.enabled = false;
             }
 
-            Transform items = bar.Find("Bar_Items");
+            Transform items = bar.Find("ActionBar");
             for (int i = 0; i < RoaQuickbar.SlotCount; i++)
             {
                 int index = i;
-                Transform slot = items.GetChild(i);
+                Transform slot = items.Find("Item_" + i.ToString("00"));
                 Button button = slot.GetComponent<Button>();
                 if (button == null) return false;
                 button.onClick = new Button.ButtonClickedEvent();
                 button.onClick.AddListener(() => _quickbar?.TriggerSlot(index));
                 Image plate = slot.GetComponent<Image>();
                 if (plate != null) plate.raycastTarget = true;
-                foreach (string part in new[] { "Input", "Item/Highlighted",
-                    "Item/Selected", "Item/HUD_ActionBar_Item/Cooldown",
-                    "Item/HUD_ActionBar_Item/Flash" })
+                foreach (string part in new[] { "Highlighted", "Selected",
+                    "Item/Slider - Vertical" })
                 {
                     Transform child = slot.Find(part);
                     if (child != null) child.gameObject.SetActive(false);
                 }
-                Transform icon = slot.Find("Item/HUD_ActionBar_Item/Item/Icon");
+                Transform lamp = slot.Find("Greeble_MetalValve01");
+                if (lamp != null)
+                {
+                    if (i == 0) _apocalypseApLampSample = lamp.gameObject;
+                    lamp.gameObject.SetActive(false);
+                }
+                Transform icon = slot.Find("Item/Icon");
                 if (icon != null)
                 {
                     _apocalypseSlotIcons[i] = icon.GetComponent<Image>();
@@ -99,41 +94,27 @@ namespace RealmOfAshes.Game
                         _apocalypseSlotIcons[i].enabled = false;
                 }
                 _slotButtons[i] = button;
-                _slotTexts[i] = Label("LiveSlotLabel", slot,
-                    Vector2.zero, new Vector2(120f, 120f), 28,
-                    TextAnchor.LowerCenter, Color.white, FontStyle.Bold);
-                Stretch(_slotTexts[i].rectTransform, new Vector2(5f, 3f));
             }
 
-            _apocalypseXpSlider = bar.Find("XPBar/HUD_XPBar/Slider_Horizontal")
-                ?.GetComponent<Slider>();
-            _apocalypseHpReservoir = bar.Find("Container_L/Container/Slider_Vertical")
-                ?.GetComponent<Slider>();
-            _apocalypseApReservoir = bar.Find("Container_R/Container/Slider_Vertical")
-                ?.GetComponent<Slider>();
-            foreach (Slider slider in new[] { _apocalypseXpSlider,
-                _apocalypseHpReservoir, _apocalypseApReservoir })
+            GameObject lampRow = new GameObject("ActionPointLamps", typeof(RectTransform));
+            _apocalypseApLampRow = (RectTransform)lampRow.transform;
+            _apocalypseApLampRow.SetParent(bar, false);
+            _apocalypseApLampRow.anchorMin = _apocalypseApLampRow.anchorMax =
+                new Vector2(0.5f, 0f);
+            _apocalypseApLampRow.pivot = new Vector2(0.5f, 0f);
+            _apocalypseApLampRow.anchoredPosition = Vector2.zero;
+            _apocalypseApLampRow.sizeDelta = new Vector2(800f, 260f);
+            for (int i = 0; i < RoaQuickbar.SlotCount; i++)
             {
-                if (slider == null) continue;
-                slider.interactable = false;
-                slider.minValue = 0f;
-                slider.maxValue = 1f;
-            }
-            Transform xp = bar.Find("XPBar/HUD_XPBar");
-            if (xp != null)
-            {
-                _apocalypseXpLabel = Label("LiveXp", xp, Vector2.zero,
-                    new Vector2(400f, 40f), 30, TextAnchor.MiddleCenter,
-                    Color.white, FontStyle.Bold);
-                Stretch(_apocalypseXpLabel.rectTransform, Vector2.zero);
-            }
-            Transform level = bar.Find("HUD_PlayerLevel/Content");
-            if (level != null)
-            {
-                _apocalypseBarLevel = Label("LiveLevel", level, Vector2.zero,
-                    new Vector2(60f, 60f), 23, TextAnchor.MiddleCenter,
-                    Color.white, FontStyle.Bold);
-                Stretch(_apocalypseBarLevel.rectTransform, Vector2.zero);
+                Text number = Label("LiveSlotLabel_" + i, bar, Vector2.zero,
+                    new Vector2(78f, 42f), 30, TextAnchor.MiddleCenter,
+                    Color.white);
+                RectTransform label = number.rectTransform;
+                label.anchorMin = label.anchorMax = new Vector2(0.5f, 0f);
+                label.pivot = new Vector2(0.5f, 0.5f);
+                label.anchoredPosition = new Vector2((i - 2.5f) * 133f, -25f);
+                number.text = (i + 1).ToString();
+                _slotTexts[i] = number;
             }
             _quickStatus = Label("Status", panel, new Vector2(10f, 5f),
                 new Vector2(778f, 18f), 11, TextAnchor.MiddleCenter, MutedInk);
@@ -143,19 +124,7 @@ namespace RealmOfAshes.Game
         private void RefreshApocalypseActionBar()
         {
             if (_quickbar == null || _hud == null) return;
-            if (_apocalypseXpSlider != null)
-                _apocalypseXpSlider.value = Mathf.Clamp01((float)_hud.Xp /
-                    Mathf.Max(1, _hud.XpNeeded));
-            if (_apocalypseXpLabel != null)
-                _apocalypseXpLabel.text = _hud.Xp + "/" + Mathf.Max(1, _hud.XpNeeded);
-            if (_apocalypseBarLevel != null)
-                _apocalypseBarLevel.text = _hud.Level.ToString();
-            if (_apocalypseHpReservoir != null)
-                _apocalypseHpReservoir.value = _hud.MaxHp > 0
-                    ? Mathf.Clamp01((float)_hud.Hp / _hud.MaxHp) : 0f;
-            if (_apocalypseApReservoir != null)
-                _apocalypseApReservoir.value = _hud.MaxAp > 0
-                    ? Mathf.Clamp01(_hud.Ap / _hud.MaxAp) : 0f;
+            RefreshApocalypseApLamps(_hud.MaxAp, _hud.Ap);
 
             for (int i = 0; i < _slotButtons.Length; i++)
             {
@@ -170,13 +139,51 @@ namespace RealmOfAshes.Game
                     icon.color = _quickbar.IsSlotAvailable(i) ? Color.white
                         : new Color(0.5f, 0.5f, 0.5f, 0.7f);
                 }
-                _slotTexts[i].text = sprite != null
-                    ? (i + 1).ToString() : _quickbar.SlotLabel(i, item);
-                Transform selected = _slotButtons[i].transform.Find("Item/Selected");
+                Transform selected = _slotButtons[i].transform.Find("Selected");
                 if (selected != null)
                     selected.gameObject.SetActive(_quickbar.IsSlotActive(i));
             }
             _quickStatus.text = _quickbar.CanvasStatus;
+        }
+
+        private void RefreshApocalypseApLamps(int maxAp, float currentAp)
+        {
+            if (_apocalypseApLampRow == null || _apocalypseApLampSample == null) return;
+            int count = Mathf.Clamp(maxAp, 0, 99);
+            while (_apocalypseApLamps.Count < count)
+            {
+                GameObject lamp = Instantiate(_apocalypseApLampSample,
+                    _apocalypseApLampRow, false);
+                lamp.name = "ActionPoint_" + (_apocalypseApLamps.Count + 1).ToString("00");
+                lamp.SetActive(true);
+                RectTransform rect = (RectTransform)lamp.transform;
+                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                foreach (Graphic graphic in lamp.GetComponentsInChildren<Graphic>(true))
+                    graphic.raycastTarget = false;
+                _apocalypseApLamps.Add(rect);
+            }
+
+            int lit = Mathf.Clamp(Mathf.FloorToInt(currentAp), 0, count);
+            int columns = count <= 12 ? count : count <= 24 ? 12
+                : Mathf.CeilToInt(count / 3f);
+            float pitch = columns > 0 ? Mathf.Min(105f, 720f / columns) : 105f;
+            float scale = Mathf.Min(0.48f, pitch * 0.8f / 120f);
+            for (int i = 0; i < _apocalypseApLamps.Count; i++)
+            {
+                RectTransform lamp = _apocalypseApLamps[i];
+                bool shown = i < count;
+                lamp.gameObject.SetActive(shown);
+                if (!shown) continue;
+                int row = i / columns;
+                int rowCount = Mathf.Min(columns, count - row * columns);
+                int column = i % columns;
+                lamp.anchoredPosition = new Vector2(
+                    (column - (rowCount - 1) * 0.5f) * pitch, 190f + row * 55f);
+                lamp.localScale = Vector3.one * scale;
+                Transform glow = lamp.Find("Valve_Active");
+                if (glow != null) glow.gameObject.SetActive(i < lit);
+            }
         }
 
         private void BuildApocalypseReferenceOverlays()
@@ -190,7 +197,7 @@ namespace RealmOfAshes.Game
                 RectTransform rect = (RectTransform)_apocalypseQuest.transform;
                 rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
                 rect.pivot = new Vector2(1f, 1f);
-                rect.anchoredPosition = new Vector2(-16f, -225f);
+                rect.anchoredPosition = new Vector2(108f, -225f);
                 rect.localScale = Vector3.one * 0.27f;
                 _apocalypseQuestTitle = rect.Find(
                     "Content/HUD_ChapterHeader/Content/Label_Location")
@@ -208,58 +215,6 @@ namespace RealmOfAshes.Game
                 foreach (Graphic graphic in rect.GetComponentsInChildren<Graphic>(true))
                     graphic.raycastTarget = false;
                 _apocalypseQuest.SetActive(false);
-            }
-
-            GameObject lampPrefab = Resources.Load<GameObject>(
-                "ApocalypseHud/HUD_Apocalypse_HotBar_03");
-            if (lampPrefab != null)
-            {
-                _apocalypseApLamps = Instantiate(lampPrefab, _safeRoot, false);
-                _apocalypseApLamps.name = "ApocalypseActionPoints";
-                RectTransform rect = (RectTransform)_apocalypseApLamps.transform;
-                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
-                rect.pivot = new Vector2(0.5f, 0f);
-                rect.anchoredPosition = new Vector2(0f, 145f);
-                rect.localScale = Vector3.one * 0.42f;
-                Transform actionBar = rect.Find("ActionBar");
-                if (actionBar != null)
-                {
-                    Transform frame = actionBar.Find("Frame");
-                    if (frame != null) frame.gameObject.SetActive(false);
-                    for (int i = 0; i < _apocalypseApGlow.Length; i++)
-                    {
-                        Transform item = actionBar.Find("Item_" + i.ToString("00"));
-                        if (item == null) continue;
-                        foreach (Transform child in item)
-                            if (child.name != "Greeble_MetalValve01")
-                                child.gameObject.SetActive(false);
-                        Image image = item.GetComponent<Image>();
-                        if (image != null) image.enabled = false;
-                        Button button = item.GetComponent<Button>();
-                        if (button != null) button.enabled = false;
-                        Transform valve = item.Find("Greeble_MetalValve01");
-                        if (valve != null)
-                        {
-                            valve.localScale = Vector3.one * 0.48f;
-                            Transform glow = valve.Find("Valve_Active");
-                            _apocalypseApGlow[i] = glow != null ? glow.gameObject : null;
-                        }
-                    }
-                }
-                foreach (Animator animator in rect.GetComponentsInChildren<Animator>(true))
-                    animator.enabled = false;
-                foreach (Graphic graphic in rect.GetComponentsInChildren<Graphic>(true))
-                    graphic.raycastTarget = false;
-                _apocalypseApLabel = Label("LiveActionPoints", rect,
-                    new Vector2(0f, 0f), new Vector2(250f, 40f), 24,
-                    TextAnchor.MiddleCenter, Color.white, FontStyle.Bold);
-                RectTransform apLabelRect = _apocalypseApLabel.rectTransform;
-                apLabelRect.anchorMin = apLabelRect.anchorMax = new Vector2(0.5f, 0f);
-                apLabelRect.pivot = new Vector2(0.5f, 0f);
-                apLabelRect.anchoredPosition = new Vector2(0f, -15f);
-                _apocalypseApLabel.raycastTarget = false;
-                _apocalypseApLabel.enabled = false;
-                _apocalypseApLamps.SetActive(false);
             }
 
             GameObject weaponPrefab = Resources.Load<GameObject>(
@@ -287,42 +242,6 @@ namespace RealmOfAshes.Game
                 foreach (Graphic graphic in rect.GetComponentsInChildren<Graphic>(true))
                     graphic.raycastTarget = false;
                 _apocalypseWeapon.SetActive(false);
-            }
-
-            GameObject healthPrefab = Resources.Load<GameObject>(
-                "ApocalypseHud/HUD_Apocalypse_HealthStats_01");
-            if (healthPrefab != null)
-            {
-                _apocalypseHealth = Instantiate(healthPrefab, _safeRoot, false);
-                _apocalypseHealth.name = "ApocalypseHealthAndEffects";
-                RectTransform rect = (RectTransform)_apocalypseHealth.transform;
-                rect.anchorMin = rect.anchorMax = new Vector2(0f, 0f);
-                rect.pivot = new Vector2(0f, 0f);
-                rect.anchoredPosition = new Vector2(18f, 88f);
-                rect.localScale = Vector3.one * 0.45f;
-                Transform healthSlider = rect.Find("Content/HealthBar/Slider");
-                if (healthSlider != null)
-                {
-                    _apocalypseHealthSlider = healthSlider.GetComponent<Slider>();
-                    if (_apocalypseHealthSlider != null)
-                    {
-                        _apocalypseHealthSlider.interactable = false;
-                        _apocalypseHealthSlider.minValue = 0f;
-                        _apocalypseHealthSlider.maxValue = 1f;
-                    }
-                }
-                for (int i = 0; i < _apocalypseInjuryIcons.Length; i++)
-                {
-                    Transform icon = rect.Find("Content/Stats_List/Stat_Box_0" + i);
-                    if (icon == null) continue;
-                    _apocalypseInjuryIcons[i] = icon.gameObject;
-                    icon.gameObject.SetActive(false);
-                }
-                foreach (Animator animator in rect.GetComponentsInChildren<Animator>(true))
-                    animator.enabled = false;
-                foreach (Graphic graphic in rect.GetComponentsInChildren<Graphic>(true))
-                    graphic.raycastTarget = false;
-                _apocalypseHealth.SetActive(false);
             }
 
             GameObject compassPrefab = Resources.Load<GameObject>(
@@ -399,26 +318,15 @@ namespace RealmOfAshes.Game
         {
             bool visible = worldHud && _hud != null && _hud.HasState;
             if (_apocalypseQuest != null)
-                _apocalypseQuest.transform.localScale = Vector3.one * (mobile ? 0.32f : 0.27f);
-            RefreshApocalypseCurrentQuest(visible);
-            if (_apocalypseApLamps != null)
             {
-                _apocalypseApLamps.SetActive(visible);
-                RectTransform lamps = (RectTransform)_apocalypseApLamps.transform;
-                lamps.localScale = Vector3.one * (mobile ? 0.32f : 0.42f);
-                lamps.anchoredPosition = new Vector2(0f, mobile ? 180f : 145f);
-                if (visible)
-                {
-                    int lit = _hud.MaxAp > 0 ? Mathf.CeilToInt(
-                        Mathf.Clamp01(_hud.Ap / _hud.MaxAp) * _apocalypseApGlow.Length) : 0;
-                    for (int i = 0; i < _apocalypseApGlow.Length; i++)
-                        if (_apocalypseApGlow[i] != null)
-                            _apocalypseApGlow[i].SetActive(i < lit);
-                    if (_apocalypseApLabel != null)
-                        _apocalypseApLabel.text = "ОД " + Mathf.FloorToInt(_hud.Ap)
-                            + "/" + _hud.MaxAp;
-                }
+                RectTransform quest = (RectTransform)_apocalypseQuest.transform;
+                quest.localScale = Vector3.one * (mobile ? 0.30f : 0.27f);
+                quest.anchoredPosition = new Vector2(mobile ? 160f : 108f, -225f);
             }
+            RefreshApocalypseCurrentQuest(visible);
+            if (_apocalypseActionBar != null)
+                _apocalypseActionBar.transform.localScale = Vector3.one *
+                    (mobile ? 0.625f : 0.5f);
             if (_apocalypseWeapon != null)
             {
                 _apocalypseWeapon.SetActive(visible && _hud.WeaponId != "fists");
@@ -438,20 +346,6 @@ namespace RealmOfAshes.Game
                     for (int i = 0; i < _apocalypseBullets.Length; i++)
                         if (_apocalypseBullets[i] != null)
                             _apocalypseBullets[i].isOn = i < _hud.Loaded;
-                }
-            }
-            if (_apocalypseHealth != null)
-            {
-                _apocalypseHealth.SetActive(visible);
-                if (visible)
-                {
-                    if (_apocalypseHealthSlider != null)
-                        _apocalypseHealthSlider.value = _hud.MaxHp > 0
-                            ? Mathf.Clamp01((float)_hud.Hp / _hud.MaxHp) : 0f;
-                    for (int i = 0; i < _apocalypseInjuryIcons.Length; i++)
-                        if (_apocalypseInjuryIcons[i] != null)
-                            _apocalypseInjuryIcons[i].SetActive(
-                                _hud.HasInjury(ApocalypseInjuries[i]));
                 }
             }
             if (_apocalypseCompass != null)

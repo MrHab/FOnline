@@ -164,6 +164,19 @@ namespace RealmOfAshes.EditorTools
         private static GameObject Instantiate(string itemId, out GameObject focus, out string kind)
         {
             focus = null;
+            GameObject apocalypse = PackPrefab(itemId, out kind);
+            if (apocalypse != null)
+            {
+                var packInstance = (GameObject)PrefabUtility.InstantiatePrefab(apocalypse);
+                if (packInstance != null)
+                {
+                    packInstance.hideFlags = HideFlags.HideAndDontSave;
+                    foreach (Animator animator in packInstance.GetComponentsInChildren<Animator>(true))
+                        animator.enabled = false;
+                    focus = packInstance;
+                    return packInstance;
+                }
+            }
             string url = ModelUrl(itemId, out kind);
             if (string.IsNullOrEmpty(url)) return null;
 
@@ -190,6 +203,38 @@ namespace RealmOfAshes.EditorTools
             if (wanted == null) { Object.DestroyImmediate(instance); return null; }
             focus = wanted.gameObject;
             return instance;
+        }
+
+        private static GameObject PackPrefab(string itemId, out string kind)
+        {
+            kind = "item";
+            GameObject weapon = RoaApocalypseModels.Weapon(itemId);
+            if (weapon != null) { kind = "weapon"; return weapon; }
+            switch (itemId)
+            {
+                case "leather": case "metalArmor": case "ballisticVest":
+                case "combatArmor": case "heavyArmor": case "hazmatSuit":
+                case "energySuit":
+                    kind = "equipment";
+                    return RoaApocalypseModels.CharacterOutfit(false, itemId);
+                case "backpack": kind = "equipment"; return RoaApocalypseModels.BackpackAttachment;
+                case "weldedHelmet": case "helmet": case "tacticalHelmet":
+                case "assaultHelmet": case "preWarHelmet": kind = "equipment";
+                    return RoaApocalypseModels.Item(itemId);
+                case "boots": kind = "footwear";
+                    return RoaApocalypseModels.CharacterOutfit(false, "default");
+                case "scoutBoots": kind = "footwear";
+                    return RoaApocalypseModels.CharacterOutfit(true, "default");
+                case "reinforcedBoots": kind = "footwear";
+                    return RoaApocalypseModels.CharacterOutfit(false, "soldier");
+                case "assaultBoots": kind = "footwear";
+                    return RoaApocalypseModels.CharacterOutfit(false, "riot");
+            }
+            GameObject item = RoaApocalypseModels.Item(itemId);
+            if (item != null) return item;
+            GameObject vehicle = RoaApocalypseModels.Vehicle(itemId);
+            if (vehicle != null) { kind = "vehicle"; return vehicle; }
+            return null;
         }
 
         /// <summary>Гасит всё, что не входит в снимаемую ветку.</summary>
@@ -289,6 +334,14 @@ namespace RealmOfAshes.EditorTools
             Bounds bounds = renderers[0].bounds;
             for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
             if (bounds.extents.sqrMagnitude <= 0f) return false;
+            if (kind == "footwear")
+            {
+                float height = bounds.size.y;
+                bounds.center = new Vector3(bounds.center.x,
+                    bounds.min.y + height * 0.16f, bounds.center.z);
+                bounds.size = new Vector3(height * 0.30f, height * 0.30f,
+                    height * 0.30f);
+            }
 
             // Наклон кадра подбираем, а не задаём таблицей по семействам: длинные
             // предметы (ствол при соотношении 5.5:1 занимает пятую часть квадрата)
@@ -298,13 +351,14 @@ namespace RealmOfAshes.EditorTools
             // Снаряжение — это одежда, сшитая по телу: у неё нет лежачей позы, и
             // взгляд сверху-сбоку показывает пустую изнанку. Почти фронтальный
             // ракурс читается как вещь на витрине, а не как оболочка.
-            bool worn = kind == "equipment" || kind == "equipment-catalog";
+            bool worn = kind == "equipment" || kind == "equipment-catalog"
+                || kind == "footwear";
             float pitch = worn ? 6f : Pitch;
             float yaw = worn ? -16f : Yaw;
 
             Quaternion rotation = Quaternion.identity;
             float ex = 0f, ey = 0f, ez = 0f, best = float.MaxValue;
-            foreach (float roll in RollCandidates)
+            foreach (float roll in kind == "footwear" ? new[] { 0f } : RollCandidates)
             {
                 Quaternion candidate = Quaternion.Euler(pitch, yaw, roll);
                 Vector3 r = candidate * Vector3.right;

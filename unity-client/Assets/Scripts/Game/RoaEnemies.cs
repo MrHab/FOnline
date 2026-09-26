@@ -1539,8 +1539,8 @@ namespace RealmOfAshes.Game
                 holder.transform.localPosition =
                     -holder.transform.InverseTransformPoint(grip.position);
 
-            // Оружие врага окрашено тиром: по цвету видно, насколько он опасен.
-            RoaApocalypseModels.ApplyEquipmentTier(RoaApocalypseVisuals.AttachStatic(holder.transform,
+            // На оружии врага метка тира: по ней видно, насколько он опасен.
+            RoaApocalypseModels.MarkItem(RoaApocalypseVisuals.AttachStatic(holder.transform,
                 RoaApocalypseModels.Weapon(modelId), 180f), modelId);
 
             enemy.WeaponHolder = holder;

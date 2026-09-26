@@ -18,6 +18,8 @@ namespace RealmOfAshes.Game
             public string combatId;
             public string displayName;
             public float weight;
+            /// <summary>Метка тира на этой модели (изолента на тонкой части).</summary>
+            public RoaTierMarkPlacement mark = new RoaTierMarkPlacement();
         }
 
         [Serializable]
@@ -25,10 +27,8 @@ namespace RealmOfAshes.Game
         {
             public string itemId;
             public GameObject prefab;
-            /// <summary>Оттенок префаба (тиры руды, шкур): белый — без окраски.</summary>
-            public Color tint = Color.white;
-            /// <summary>Закрасить целиком: атлас пака заменяется белым, объект становится цвета tint.</summary>
-            public bool paint;
+            /// <summary>Метка тира на этой модели: изолента или мазок краски сверху.</summary>
+            public RoaTierMarkPlacement mark = new RoaTierMarkPlacement();
         }
 
         [Serializable]
@@ -73,8 +73,8 @@ namespace RealmOfAshes.Game
             public string resourceType;
             public int tier;
             public GameObject prefab;
-            public Color tint = Color.white;
-            public bool paint;
+            /// <summary>Кольцо краски цвета тира у основания точки.</summary>
+            public RoaTierMarkPlacement mark = new RoaTierMarkPlacement();
         }
 
         [SerializeField] private GameObject male;
@@ -215,133 +215,60 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>Префаб точки добычи этого типа и тира; null — остаётся модель набора зон.</summary>
-        public static GameObject TierNode(string resourceType, int tier)
-        {
-            RoaApocalypseModels palette = Instance;
-            if (palette == null || string.IsNullOrEmpty(resourceType) || tier < 1) return null;
-            foreach (TierNodeEntry entry in palette.tierNodes)
-                if (entry != null && entry.tier == tier && entry.resourceType == resourceType) return entry.prefab;
-            return null;
-        }
-
-        /// <summary>Оттенок точки добычи тира (белый — префаб как есть).</summary>
-        public static Color TierNodeTint(string resourceType, int tier) => TierNodeEntryFor(resourceType, tier)?.tint ?? Color.white;
+        public static GameObject TierNode(string resourceType, int tier) => TierNodeEntryFor(resourceType, tier)?.prefab;
 
         private static TierNodeEntry TierNodeEntryFor(string resourceType, int tier)
         {
             RoaApocalypseModels palette = Instance;
-            if (palette == null) return null;
+            if (palette == null || string.IsNullOrEmpty(resourceType) || tier < 1) return null;
             foreach (TierNodeEntry entry in palette.tierNodes)
                 if (entry != null && entry.tier == tier && entry.resourceType == resourceType) return entry;
             return null;
         }
 
-        private static ItemEntry OwnItemEntry(string itemId)
+        /// <summary>Запись предмета: своя (материал тира), иначе облика-исходника.</summary>
+        private static ItemEntry ItemEntryFor(string itemId)
         {
             RoaApocalypseModels palette = Instance;
             if (palette == null || string.IsNullOrEmpty(itemId)) return null;
-            string id = RoaInventory.BaseId(itemId);
+            string own = RoaInventory.BaseId(itemId);
+            string visual = RoaItemData.VisualId(own);
+            ItemEntry fallback = null;
             foreach (ItemEntry entry in palette.items)
-                if (entry != null && entry.itemId == id) return entry;
+            {
+                if (entry == null) continue;
+                if (entry.itemId == own) return entry;
+                if (entry.itemId == visual) fallback = entry;
+            }
+            return fallback;
+        }
+
+        private static WeaponEntry WeaponEntryFor(string itemId)
+        {
+            RoaApocalypseModels palette = Instance;
+            if (palette == null || string.IsNullOrEmpty(itemId)) return null;
+            string visual = RoaItemData.VisualId(itemId);
+            foreach (WeaponEntry entry in palette.weapons)
+                if (entry != null && entry.itemId == visual) return entry;
             return null;
         }
 
-        /// <summary>Оттенок собственного префаба предмета (без облика-заместителя).</summary>
-        public static Color ItemTint(string itemId) => OwnItemEntry(itemId)?.tint ?? Color.white;
-
-        /// <summary>Облик собственного префаба предмета: оттенок и закраска; экипировка — цвет тира.</summary>
-        public static void ApplyItemLook(GameObject root, string itemId)
-        {
-            ItemEntry entry = OwnItemEntry(itemId);
-            if (entry != null) ApplyTint(root, entry.tint, entry.paint);
-            else ApplyEquipmentTier(root, itemId);
-        }
-
-        /// <summary>Насколько цвет тира перекрывает свой цвет модели экипировки.</summary>
-        public const float EquipmentTierStrength = 0.85f;
-
-        /// <summary>Слабое свечение цветом тира: тёмный металл оружия умножением почти не красится.</summary>
-        public const float EquipmentTierGlow = 0.12f;
-
-        /// <summary>Оттенок экипировки тира: смесь белого с цветом тира; белый — не тировой предмет.</summary>
-        public static Color EquipmentTierTint(string itemId)
-        {
-            if (!RoaItemData.IsTieredGear(itemId)) return Color.white;
-            return Color.Lerp(Color.white, RoaTierData.TierColor(RoaItemData.Tier(itemId)), EquipmentTierStrength);
-        }
-
         /// <summary>
-        /// Оружие, инструмент, шлем тира окрашиваются в цвет тира (умножением, чтобы
-        /// детали модели читались). Надетые комплекты брони — модель персонажа целиком,
-        /// их не красим: окрасились бы лицо и руки.
+        /// Метка тира на модели предмета (в руках, у врага, на земле, на иконке):
+        /// родная модель остаётся как есть, тир виден по цветной детали.
         /// </summary>
-        public static void ApplyEquipmentTier(GameObject root, string itemId)
+        public static void MarkItem(GameObject visual, string itemId)
         {
-            Color tint = EquipmentTierTint(itemId);
-            if (root == null || tint == Color.white) return;
-            ApplyTint(root, tint);
-            Color glow = RoaTierData.TierColor(RoaItemData.Tier(itemId)) * EquipmentTierGlow;
-            var block = new MaterialPropertyBlock();
-            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
-            {
-                renderer.GetPropertyBlock(block);
-                block.SetFloat("_Enable_Emission", 1f);
-                block.SetColor("_Emission_Color", glow);
-                block.SetTexture("_Emission_Map", Texture2D.whiteTexture);
-                renderer.SetPropertyBlock(block);
-            }
+            if (visual == null || !RoaItemData.IsTiered(itemId)) return;
+            RoaTierMarkPlacement placement = WeaponEntryFor(itemId)?.mark;
+            if (placement == null || !placement.valid) placement = ItemEntryFor(itemId)?.mark;
+            RoaTierMark.Attach(visual, placement, RoaItemData.Tier(itemId));
         }
 
-        /// <summary>Облик точки добычи тира: оттенок и закраска из палитры.</summary>
-        public static void ApplyTierNodeLook(GameObject root, string resourceType, int tier)
+        /// <summary>Кольцо краски цвета тира у основания точки добычи.</summary>
+        public static void MarkTierNode(GameObject visual, string resourceType, int tier)
         {
-            TierNodeEntry entry = TierNodeEntryFor(resourceType, tier);
-            if (entry != null) ApplyTint(root, entry.tint, entry.paint);
-        }
-
-        /// <summary>
-        /// Окрашивает все рендереры блоком свойств, не трогая общие материалы.
-        /// Умножение (_BaseColor) меняет серые меши пака; paint ещё и подменяет атлас
-        /// белым — так насыщенный рисунок атласа (узор ковра, надпись) уходит под цвет.
-        /// </summary>
-        private static Texture2D _paintBase;
-
-        /// <summary>
-        /// Подложка закраски: светло-серая, по яркости как средний цвет атласа пака.
-        /// Чисто белая под светом сцены выгорает, и оттенок читается бледным пятном.
-        /// </summary>
-        private static Texture2D PaintBase
-        {
-            get
-            {
-                if (_paintBase != null) return _paintBase;
-                _paintBase = new Texture2D(4, 4, TextureFormat.RGBA32, false) { name = "RoaTierPaintBase", hideFlags = HideFlags.DontSave };
-                var pixels = new Color32[16];
-                for (int i = 0; i < pixels.Length; i++) pixels[i] = new Color32(118, 118, 118, 255);
-                _paintBase.SetPixels32(pixels);
-                _paintBase.Apply(false, true);
-                return _paintBase;
-            }
-        }
-
-        public static void ApplyTint(GameObject root, Color tint, bool paint = false)
-        {
-            bool white = tint.a <= 0f || (tint.r >= 0.999f && tint.g >= 0.999f && tint.b >= 0.999f);
-            if (root == null || (white && !paint)) return;
-            var block = new MaterialPropertyBlock();
-            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
-            {
-                renderer.GetPropertyBlock(block);
-                block.SetColor("_BaseColor", tint);
-                block.SetColor("_Color", tint);
-                if (paint)
-                {
-                    block.SetTexture("_Albedo_Map", PaintBase);
-                    block.SetTexture("_BaseMap", PaintBase);
-                    block.SetTexture("_MainTex", PaintBase);
-                }
-                renderer.SetPropertyBlock(block);
-            }
+            RoaTierMark.Attach(visual, TierNodeEntryFor(resourceType, tier)?.mark, tier);
         }
 
         public void ConfigureTierNodes(IEnumerable<TierNodeEntry> rows)

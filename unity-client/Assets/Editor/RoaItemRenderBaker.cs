@@ -51,7 +51,12 @@ namespace RealmOfAshes.EditorTools
 
         /// <summary>Только материалы тиров (data/kromka/tiers.json): сырьё и полуфабрикаты T1–T5.</summary>
         [MenuItem("Realm of Ashes/Напечь рендеры материалов тиров")]
-        public static void RunTierMaterials() { Bake(ReadTierMaterialIds()); }
+        public static void RunTierMaterials()
+        {
+            // Метка тира зависит от каталога сервера (тир, облик): берём его, как сервер.
+            RoaTierCraftCaptureProbe.LoadServerCatalogs();
+            Bake(ReadTierMaterialIds());
+        }
 
         private static void Bake(List<string> ids)
         {
@@ -191,7 +196,7 @@ namespace RealmOfAshes.EditorTools
                 if (packInstance != null)
                 {
                     packInstance.hideFlags = HideFlags.HideAndDontSave;
-                    RoaApocalypseModels.ApplyItemLook(packInstance, itemId);
+                    RoaApocalypseModels.MarkItem(packInstance, itemId);
                     foreach (Animator animator in packInstance.GetComponentsInChildren<Animator>(true))
                         animator.enabled = false;
                     focus = packInstance;

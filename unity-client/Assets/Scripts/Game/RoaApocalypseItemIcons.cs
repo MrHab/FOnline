@@ -40,11 +40,11 @@ namespace RealmOfAshes.Game
 
         private static readonly Dictionary<string, Sprite> TierCache = new Dictionary<string, Sprite>();
 
-        /// <summary>Значок предмета; у экипировки тира — в цвете тира.</summary>
+        /// <summary>Значок предмета; у предмета с тиром — с точкой цвета тира в углу.</summary>
         public static Sprite For(string itemOrRuntimeId)
         {
             string exact = RoaInventory.BaseId(itemOrRuntimeId);
-            if (!RoaItemData.IsTieredGear(exact)) return Untinted(itemOrRuntimeId);
+            if (!RoaItemData.IsTiered(exact)) return Untinted(itemOrRuntimeId);
             if (TierCache.TryGetValue(exact, out Sprite tinted) && tinted != null) return tinted;
             Texture2D art = RoaItemCategories.Art(exact);
             if (art == null) return null;

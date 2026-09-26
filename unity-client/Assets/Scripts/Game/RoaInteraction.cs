@@ -1801,7 +1801,7 @@ namespace RealmOfAshes.Game
                 foreach (Transform node in visual.GetComponentsInChildren<Transform>(true))
                     node.gameObject.layer = root.layer;
                 foreach (Collider collider in visual.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
-                RoaApocalypseModels.ApplyTierNodeLook(visual, type, tier);
+                RoaApocalypseModels.MarkTierNode(visual, type, tier);
                 existing = visual.transform;
             }
             foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))

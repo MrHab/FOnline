@@ -99,8 +99,15 @@ namespace RealmOfAshes.EditorTools
                             continue;
                         }
                         string path = prefabs[row][tier - 1].ToString();
-                        // Ресурс — цвет тира заливкой, как его ставит палитра.
-                        Texture2D render = RenderPrefab(path, RoaTierData.TierColor(tier), true, out float size);
+                        // Родная модель и метка тира — как их ставит клиент.
+                        string markedItem = items[row][tier - 1];
+                        string resourceType = family["resourceType"].ToString();
+                        int markTier = tier;
+                        Texture2D render = RenderPrefab(path, out float size, instance =>
+                        {
+                            if (string.IsNullOrEmpty(markedItem)) RoaApocalypseModels.MarkTierNode(instance, resourceType, markTier);
+                            else RoaApocalypseModels.MarkItem(instance, markedItem);
+                        });
                         if (render == null) { missing.Add(path); continue; }
                         renders.Add(render);
                         RawImage image = Raw(panel, render);
@@ -152,13 +159,14 @@ namespace RealmOfAshes.EditorTools
                                 failures.Add(pair.Key + " T" + tier + ": видна не та модель (" + renderer.name + ")");
                         if (Vector3.Distance(visual.lossyScale, expected.transform.localScale) > 0.001f)
                             failures.Add(pair.Key + " T" + tier + ": модель пака не в родном размере");
-                        Color tint = RoaApocalypseModels.TierNodeTint(pair.Key, tier);
-                        if (tint != Color.white)
+                        Transform mark = visual.Find(RoaTierMark.ChildName);
+                        if (mark == null) failures.Add(pair.Key + " T" + tier + ": нет метки тира");
+                        else
                         {
                             var block = new MaterialPropertyBlock();
-                            visual.GetComponentInChildren<Renderer>().GetPropertyBlock(block);
-                            if (block.GetColor("_BaseColor") != tint)
-                                failures.Add(pair.Key + " T" + tier + ": оттенок тира не применён");
+                            mark.GetComponent<Renderer>().GetPropertyBlock(block);
+                            if (block.GetColor("_BaseColor") != RoaTierData.TierColor(tier))
+                                failures.Add(pair.Key + " T" + tier + ": метка не цвета тира");
                         }
                     }
                     finally { UnityEngine.Object.DestroyImmediate(root); }
@@ -183,7 +191,7 @@ namespace RealmOfAshes.EditorTools
                 Canvas canvas = canvasGo.AddComponent<Canvas>();
                 canvasGo.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
                 var panel = (RectTransform)canvasGo.transform;
-                Text title = Label(panel, "Экипировка — цвет тира на модели и значке", 22, FontStyle.Bold);
+                Text title = Label(panel, "Экипировка — метка тира на модели и значке", 22, FontStyle.Bold);
                 Place(title.rectTransform, 24, 18, Width - 48, 32);
                 for (int tier = 1; tier <= 5; tier++)
                 {
@@ -213,7 +221,9 @@ namespace RealmOfAshes.EditorTools
                         {
                             GameObject prefab = RoaApocalypseModels.Weapon(id) ?? RoaApocalypseModels.Item(id);
                             if (prefab == null) { missing.Add("модель " + id); continue; }
-                            picture = RenderPrefab(AssetDatabase.GetAssetPath(prefab), Color.white, false, out float _, id);
+                            string markedId = id;
+                            picture = RenderPrefab(AssetDatabase.GetAssetPath(prefab), out float _,
+                                instance => RoaApocalypseModels.MarkItem(instance, markedId));
                             if (picture != null) renders.Add(picture);
                         }
                         if (picture == null) { missing.Add("картинка " + id); continue; }
@@ -236,7 +246,7 @@ namespace RealmOfAshes.EditorTools
         private static float ColumnX(int tier) => 210 + (tier - 1) * 204;
 
         /// <summary>Префаб пака в авторском размере, снятый камерой по своим габаритам.</summary>
-        private static Texture2D RenderPrefab(string packPath, Color tint, bool paint, out float largest, string equipmentId = null)
+        private static Texture2D RenderPrefab(string packPath, out float largest, Action<GameObject> decorate)
         {
             largest = 0f;
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
@@ -255,9 +265,8 @@ namespace RealmOfAshes.EditorTools
                 instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
                 instance.transform.position = new Vector3(0f, -12000f, 0f);
                 SetLayer(instance, CaptureLayer);
-                RoaApocalypseModels.ApplyTint(instance, tint, paint);
-                // Экипировка — ровно та окраска, что ставит клиент (оттенок и свечение тира).
-                if (!string.IsNullOrEmpty(equipmentId)) RoaApocalypseModels.ApplyEquipmentTier(instance, equipmentId);
+                decorate?.Invoke(instance);
+                SetLayer(instance, CaptureLayer);
                 var bounds = new Bounds(instance.transform.position, Vector3.zero);
                 bool first = true;
                 foreach (Renderer renderer in instance.GetComponentsInChildren<Renderer>())

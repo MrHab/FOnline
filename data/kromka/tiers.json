@@ -1,7 +1,7 @@
 {
   "schema": "kromka.tiers.v1",
   "version": 1,
-  "note": "Тиры мира: тир зоны равен её опасности (1–5), в зоне растут ресурсы и живут враги только её тира. Оружие, броня и инструменты существуют во всех пяти тирах: исходный id предмета — вариант его авторского тира, остальные получают суффикс T<n> (smgT1, oreT4). power — множитель урона и защиты, durability — стойкость к износу, price — множитель цены, modSlots — сколько слотов модификаций открыто, level — уровень профессии, с которого тир доступен в добыче, переработке и ремесле, xp — опыт профессии за единицу работы этого тира, color — цвет тира: им целиком окрашены ресурсы и частично экипировка.",
+  "note": "Тиры мира: тир зоны равен её опасности (1–5), в зоне растут ресурсы и живут враги только её тира. Оружие, броня и инструменты существуют во всех пяти тирах: исходный id предмета — вариант его авторского тира, остальные получают суффикс T<n> (smgT1, oreT4). power — множитель урона и защиты, durability — стойкость к износу, price — множитель цены, modSlots — сколько слотов модификаций открыто, level — уровень профессии, с которого тир доступен в добыче, переработке и ремесле, xp — опыт профессии за единицу работы этого тира, color — цвет тира: им помечены ресурсы и экипировка (цветная обмотка, мазок или кольцо краски; текстура модели своя).",
   "tiers": [
     {
       "tier": 1,
@@ -361,10 +361,10 @@
         ],
         "refined": [
           "Props/SM_Prop_Sandbag_01",
-          "Props/SM_Prop_Sheet_01",
           "Props/SM_Prop_Sheet_04",
-          "Props/SM_Prop_Sheet_02",
-          "Props/SM_Prop_Sheet_03"
+          "Props/SM_Prop_Sheet_04",
+          "Props/SM_Prop_Sleeping_Bag_Rolled_01",
+          "Props/SM_Prop_Sleeping_Bag_Rolled_01"
         ]
       }
     },
@@ -419,11 +419,11 @@
           "Props/SM_Prop_Rug_05",
           "Props/SM_Prop_Rug_06",
           "Props/SM_Prop_Rug_04",
-          "Props/SM_Prop_Rug_01",
-          "Props/SM_Prop_Rug_02"
+          "Props/SM_Prop_Rug_05",
+          "Props/SM_Prop_Rug_06"
         ],
         "refined": [
-          "Props/SM_Prop_Sleeping_Bag_Rolled_01",
+          "Props/SM_Prop_Sleeping_Bag_Rolled_02",
           "Props/SM_Prop_Sleeping_Bag_Rolled_02",
           "Props/SM_Prop_Sleeping_Bag_01",
           "Characters/Attachments/SM_Chr_Attach_Bedroll_01",

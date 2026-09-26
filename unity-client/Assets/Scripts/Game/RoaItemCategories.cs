@@ -104,14 +104,14 @@ namespace RealmOfAshes.Game
         /// </summary>
         public static Texture2D Art(string itemOrRuntimeId)
         {
-            // Экипировка тира — картинка исходника в цвете тира (своя копия на каждый тир).
+            // Предмет с тиром — своя картинка и точка цвета тира в углу (копия на каждый тир).
             string exact = RoaInventory.BaseId(itemOrRuntimeId);
-            if (RoaItemData.IsTieredGear(exact))
+            if (RoaItemData.IsTiered(exact))
             {
-                if (TierArtCache.TryGetValue(exact, out Texture2D tinted) && tinted != null) return tinted;
-                tinted = TierTinted(ArtOf(itemOrRuntimeId), RoaApocalypseModels.EquipmentTierTint(exact));
-                TierArtCache[exact] = tinted;
-                return tinted;
+                if (TierArtCache.TryGetValue(exact, out Texture2D badged) && badged != null) return badged;
+                badged = TierBadged(ArtOf(itemOrRuntimeId), RoaTierData.TierColor(RoaItemData.Tier(exact)));
+                TierArtCache[exact] = badged;
+                return badged;
             }
             return ArtOf(itemOrRuntimeId);
         }
@@ -119,12 +119,12 @@ namespace RealmOfAshes.Game
         private static readonly Dictionary<string, Texture2D> TierArtCache = new Dictionary<string, Texture2D>();
 
         /// <summary>
-        /// Копия картинки, умноженная на цвет тира. Иконки не читаемы с диска, поэтому
-        /// копия снимается через RenderTexture (в sRGB, чтобы не сдвинуть яркость).
+        /// Копия картинки с точкой цвета тира в правом нижнем углу (с тёмной обводкой).
+        /// Иконки не читаемы с диска, поэтому копия снимается через RenderTexture (в sRGB).
         /// </summary>
-        public static Texture2D TierTinted(Texture2D source, Color tint)
+        public static Texture2D TierBadged(Texture2D source, Color tier)
         {
-            if (source == null || tint == Color.white) return source;
+            if (source == null) return source;
             RenderTexture target = RenderTexture.GetTemporary(source.width, source.height, 0,
                 RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
             RenderTexture previous = RenderTexture.active;
@@ -140,13 +140,17 @@ namespace RealmOfAshes.Game
                 };
                 copy.ReadPixels(new Rect(0f, 0f, source.width, source.height), 0, 0);
                 Color32[] pixels = copy.GetPixels32();
-                Color32 t = tint;
-                for (int i = 0; i < pixels.Length; i++)
-                {
-                    pixels[i].r = (byte)(pixels[i].r * t.r / 255);
-                    pixels[i].g = (byte)(pixels[i].g * t.g / 255);
-                    pixels[i].b = (byte)(pixels[i].b * t.b / 255);
-                }
+                int w = source.width, h = source.height;
+                float radius = Mathf.Max(4f, w * 0.085f);
+                float cx = w - radius * 1.5f, cy = radius * 1.5f;
+                Color32 fill = tier, edge = new Color32(22, 20, 16, 255);
+                for (int y = Mathf.Max(0, (int)(cy - radius - 2)); y < Mathf.Min(h, (int)(cy + radius + 3)); y++)
+                    for (int x = Mathf.Max(0, (int)(cx - radius - 2)); x < Mathf.Min(w, (int)(cx + radius + 3)); x++)
+                    {
+                        float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                        if (d <= radius - 1.5f) pixels[y * w + x] = fill;
+                        else if (d <= radius + 1f) pixels[y * w + x] = edge;
+                    }
                 copy.SetPixels32(pixels);
                 copy.Apply(false, true);
                 return copy;

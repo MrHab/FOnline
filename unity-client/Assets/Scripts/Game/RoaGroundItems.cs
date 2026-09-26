@@ -366,8 +366,8 @@ namespace RealmOfAshes.Game
                     : kind == "vehicle" ? RoaApocalypseModels.Vehicle(itemId)
                     : RoaApocalypseModels.Item(itemId);
                 GameObject packVisual = RoaApocalypseVisuals.AttachStatic(holder.transform, packPrefab);
-                // Тиры руды и шкур различаются оттенком одного префаба пака.
-                RoaApocalypseModels.ApplyItemLook(packVisual, itemId);
+                // Тир предмета на земле — по цветной метке на родной модели.
+                RoaApocalypseModels.MarkItem(packVisual, itemId);
 
                 item.Visual = holder;
                 // Visibility updates must not re-enable the hidden legacy meshes.

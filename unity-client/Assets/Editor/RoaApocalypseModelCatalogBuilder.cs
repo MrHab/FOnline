@@ -143,8 +143,6 @@ namespace RealmOfAshes.EditorTools
             // Материалы и точки добычи по тирам — из data/kromka/tiers.json (visuals):
             // у каждого тира сырья и полуфабриката свой префаб пака.
             var tierNodes = new List<RoaApocalypseModels.TierNodeEntry>();
-            var itemTints = new Dictionary<string, Color>(StringComparer.Ordinal);
-            var itemPaints = new HashSet<string>(StringComparer.Ordinal);
             JObject tierData = JObject.Parse(File.ReadAllText(Path.Combine(Application.dataPath, "..", "..", "data", "kromka", "tiers.json")));
             foreach (JObject family in (JArray)tierData["families"])
             {
@@ -154,13 +152,8 @@ namespace RealmOfAshes.EditorTools
                 {
                     JArray ids = (JArray)family[kind]["ids"];
                     JArray paths = (JArray)visuals[kind];
-                    // Ресурс тира окрашен цветом тира целиком (заливкой атласа).
                     for (int i = 0; i < ids.Count && i < paths.Count; i++)
-                    {
                         itemPaths[ids[i].ToString()] = VisualPath(paths[i]);
-                        itemTints[ids[i].ToString()] = TierColor(tierData, i + 1);
-                        itemPaints.Add(ids[i].ToString());
-                    }
                 }
                 JArray nodes = (JArray)visuals["nodes"];
                 for (int i = 0; nodes != null && i < nodes.Count; i++)
@@ -169,8 +162,8 @@ namespace RealmOfAshes.EditorTools
                         resourceType = family["resourceType"].ToString(),
                         tier = i + 1,
                         prefab = Require(VisualPath(nodes[i])),
-                        tint = TierColor(tierData, i + 1),
-                        paint = true
+                        // Кольцо краски у основания: место — по вершинам самого префаба.
+                        mark = RoaTierMarkLayout.Compute(Require(VisualPath(nodes[i])), true)
                     });
             }
             var items = new List<RoaApocalypseModels.ItemEntry>();
@@ -179,9 +172,11 @@ namespace RealmOfAshes.EditorTools
                 {
                     itemId = pair.Key,
                     prefab = Require(pair.Value),
-                    tint = itemTints.TryGetValue(pair.Key, out Color tint) ? tint : Color.white,
-                    paint = itemPaints.Contains(pair.Key)
+                    mark = RoaTierMarkLayout.Compute(Require(pair.Value), false)
                 });
+            // Оружие и инструменты тиров: изолента на тонкой части модели.
+            foreach (RoaApocalypseModels.WeaponEntry weapon in weapons)
+                weapon.mark = RoaTierMarkLayout.Compute(weapon.prefab, false);
 
             var creatures = new List<RoaApocalypseModels.CreatureEntry>();
             AddCreatures(creatures, "Characters/SM_Chr_Wanderer_Male_01", 0f,
@@ -326,15 +321,6 @@ namespace RealmOfAshes.EditorTools
         private static string VisualPath(JToken visual)
         {
             return visual is JObject row ? row["prefab"]?.ToString() : visual?.ToString();
-        }
-
-        /// <summary>Цвет тира из tiers.json (tiers[].color).</summary>
-        private static Color TierColor(JObject tierData, int tier)
-        {
-            foreach (JToken row in (JArray)tierData["tiers"])
-                if (row["tier"]?.ToObject<int>() == tier
-                    && ColorUtility.TryParseHtmlString(row["color"]?.ToString() ?? string.Empty, out Color color)) return color;
-            return Color.white;
         }
 
         private static GameObject Require(string relativePath)

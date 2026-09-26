@@ -47,7 +47,7 @@ namespace RealmOfAshes.EditorTools
         }
 
         /// <summary>Каталоги /api/kromka/items без сервера: node собирает их из data/kromka.</summary>
-        private static void LoadServerCatalogs()
+        internal static void LoadServerCatalogs()
         {
             string root = Path.GetFullPath(Path.Combine(Application.dataPath, "..", ".."));
             const string script = "const t=require('./src/server/kromka-tiers');const k=require('./src/server/kromka-items');"

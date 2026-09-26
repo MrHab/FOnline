@@ -44,8 +44,6 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     state.currentLocationId = LOCATION;
     state.serverLocationContext = { locationId: LOCATION };
     state.inventory.silver = 1000;
-    state.inventory.ore = 20;
-    state.inventory.wood = 10;
     // Нож T1 куют из железной болванки и грубых досок; T2 — из материалов второго тира.
     state.inventory.metalBar = 4;
     state.inventory.plank = 4;

@@ -47,9 +47,14 @@ namespace RealmOfAshes.EditorTools
         private static readonly float[] RollCandidates = { 0f, -15f, -30f, -45f, 15f, 30f, 45f };
 
         [MenuItem("Realm of Ashes/Напечь рендеры предметов")]
-        public static void Run()
+        public static void Run() { Bake(ReadCatalogIds()); }
+
+        /// <summary>Только материалы тиров (data/kromka/tiers.json): сырьё и полуфабрикаты T1–T5.</summary>
+        [MenuItem("Realm of Ashes/Напечь рендеры материалов тиров")]
+        public static void RunTierMaterials() { Bake(ReadTierMaterialIds()); }
+
+        private static void Bake(List<string> ids)
         {
-            List<string> ids = ReadCatalogIds();
             if (ids.Count == 0)
             {
                 Debug.LogError("[ITEM BAKE] каталог предметов не прочитан: " + Path.GetFullPath(CatalogPath));
@@ -130,6 +135,21 @@ namespace RealmOfAshes.EditorTools
                 string id = row["id"]?.ToString();
                 if (!string.IsNullOrEmpty(id)) ids.Add(id);
             }
+            foreach (string id in ReadTierMaterialIds())
+                if (!ids.Contains(id)) ids.Add(id);
+            return ids;
+        }
+
+        /// <summary>Материалы тиров не лежат в items.json: сервер разворачивает их из tiers.json.</summary>
+        private static List<string> ReadTierMaterialIds()
+        {
+            var ids = new List<string>();
+            string path = Path.Combine(Path.GetDirectoryName(CatalogPath), "tiers.json");
+            if (!File.Exists(path)) return ids;
+            foreach (JToken family in JObject.Parse(File.ReadAllText(path))["families"] as JArray ?? new JArray())
+                foreach (string kind in new[] { "raw", "refined" })
+                    foreach (JToken id in family[kind]?["ids"] as JArray ?? new JArray())
+                        ids.Add(id.ToString());
             return ids;
         }
 

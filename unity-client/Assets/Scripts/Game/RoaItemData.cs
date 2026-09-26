@@ -103,6 +103,15 @@ namespace RealmOfAshes.Game
                 ? definition.VisualId : id;
         }
 
+        /// <summary>Id картинки: своя item_(id), если напечена, иначе облик-заместитель.</summary>
+        public static string IconId(string itemOrRuntimeId)
+        {
+            string exact = RoaInventory.BaseId(itemOrRuntimeId);
+            if (string.IsNullOrEmpty(exact)) return exact;
+            return UnityEngine.Resources.Load<UnityEngine.Texture2D>("RealmUi/items/item_" + exact) != null
+                ? exact : VisualId(exact);
+        }
+
         /// <summary>Группа тировых вариантов предмета; у предмета без тиров — сам id.</summary>
         public static string TierGroup(string itemOrRuntimeId)
         {

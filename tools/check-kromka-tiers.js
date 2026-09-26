@@ -71,6 +71,25 @@ for (const family of config.families) {
   }
 }
 
+// --- облик по тирам: префабы PolygonApocalypse (visuals в tiers.json) ------------------------
+const rawTiers = require(path.join(ROOT, 'data/kromka/tiers.json'));
+const packRoot = path.join(ROOT, 'unity-client/Assets/Synty/PolygonApocalypse/Prefabs');
+const packInstalled = require('fs').existsSync(packRoot);
+for (const family of rawTiers.families) {
+  const visuals = family.visuals || {};
+  for (const kind of ['raw', 'refined']) {
+    assert.equal((visuals[kind] || []).length, T, `${family.id}: ${kind} needs a pack prefab per tier`);
+    assert.equal(new Set(visuals[kind]).size, T, `${family.id}: ${kind} tiers must look different`);
+  }
+  // Шкуры снимаются с убитого зверя — своей точки добычи у них нет.
+  assert.equal((visuals.nodes || []).length, family.resourceType === 'hide' ? 0 : T, `${family.id}: node prefab per tier`);
+  if (packInstalled) {
+    for (const prefab of [...visuals.nodes, ...visuals.raw, ...visuals.refined]) {
+      assert(require('fs').existsSync(path.join(packRoot, `${prefab}.prefab`)), `${family.id}: missing pack prefab ${prefab}`);
+    }
+  }
+}
+
 // --- рецепты снаряжения: пять тиров, материалы своего тира, профессия и уровень ------------
 const smg = [1, 2, 3, 4, 5].map(tier => recipes[tiers.tierVariantId('smgcraft', tier, items.smg.tier)]);
 smg.forEach((recipe, index) => {

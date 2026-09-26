@@ -1763,6 +1763,8 @@ namespace RealmOfAshes.Game
             {
                 if (view.Marker != null) Destroy(view.Marker);
                 view.Marker = null;
+                if (Loader != null && Loader.TryGetObjectRoot(id, out GameObject nodeRoot))
+                    ApplyTierNodeVisual(nodeRoot, row["type"]?.ToString(), row["tier"]?.ToObject<int?>() ?? 0);
                 Loader?.SetObjectVisible(id, available);
             }
             else if (_locationReady)
@@ -1771,6 +1773,38 @@ namespace RealmOfAshes.Game
                 view.Marker.transform.position = view.Position;
                 view.Marker.SetActive(available);
             }
+        }
+
+        private const string TierNodeChild = "TierResourceVisual";
+
+        /// <summary>
+        /// Точка добычи выглядит по тиру зоны: вместо модели набора зон (и её
+        /// замены из пака) ставится префаб PolygonApocalypse этого тира в родном
+        /// размере. Повторный вызов ничего не пересоздаёт и снова гасит остальное.
+        /// </summary>
+        private static void ApplyTierNodeVisual(GameObject root, string type, int tier)
+        {
+            if (root == null || tier < 1) return;
+            Transform existing = root.transform.Find(TierNodeChild);
+            if (existing == null)
+            {
+                GameObject prefab = RoaApocalypseModels.TierNode(type, tier);
+                if (prefab == null) return;
+                GameObject visual = Instantiate(prefab, root.transform, false);
+                visual.name = TierNodeChild;
+                Vector3 parentScale = root.transform.lossyScale;
+                Vector3 native = prefab.transform.localScale;
+                visual.transform.localScale = new Vector3(
+                    native.x / Mathf.Max(0.0001f, Mathf.Abs(parentScale.x)),
+                    native.y / Mathf.Max(0.0001f, Mathf.Abs(parentScale.y)),
+                    native.z / Mathf.Max(0.0001f, Mathf.Abs(parentScale.z)));
+                foreach (Transform node in visual.GetComponentsInChildren<Transform>(true))
+                    node.gameObject.layer = root.layer;
+                foreach (Collider collider in visual.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+                existing = visual.transform;
+            }
+            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+                if (!renderer.transform.IsChildOf(existing)) renderer.enabled = false;
         }
 
         private void RefreshResourceViews()

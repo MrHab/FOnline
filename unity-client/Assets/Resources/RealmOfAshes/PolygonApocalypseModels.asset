@@ -556,7 +556,7 @@ MonoBehaviour:
   - itemId: repairKit
     prefab: {fileID: 1835224929256552, guid: df170dcae36ee024c81fa2300892e7e5, type: 3}
   - itemId: ore
-    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+    prefab: {fileID: 1734453325600402, guid: 5a1f6391313114f4ab30c313efb97ae8, type: 3}
   - itemId: scrap
     prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
   - itemId: alloyPlate
@@ -627,6 +627,100 @@ MonoBehaviour:
     prefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
   - itemId: energySuit
     prefab: {fileID: 1074360255325880, guid: bb3dc6915a06dcb4796c2e62d7d40669, type: 3}
+  - itemId: oreT2
+    prefab: {fileID: 1690247541683866, guid: d8c037247812d25488e711028faa7b49, type: 3}
+  - itemId: oreT3
+    prefab: {fileID: 1771740753285238, guid: 715a9ecf31213914b8c48bf28132a534, type: 3}
+  - itemId: oreT4
+    prefab: {fileID: 1975549760567462, guid: 9aaf6ee41c0ba774b8703c41860bcf9b, type: 3}
+  - itemId: oreT5
+    prefab: {fileID: 1512058194556154, guid: ae2a479efddf9a54aaf770066160a93d, type: 3}
+  - itemId: metalBar
+    prefab: {fileID: 1740159825050108, guid: 9ec5c47e508672046a6b4fb0ef032ae0, type: 3}
+  - itemId: metalBarT2
+    prefab: {fileID: 1422194030587680, guid: 1e2df45cd640c87499fb4a0f91ede38f, type: 3}
+  - itemId: metalBarT3
+    prefab: {fileID: 1960109127320382, guid: a962b80504c904c4d926fbb7f50cef74, type: 3}
+  - itemId: metalBarT4
+    prefab: {fileID: 1903179404475428, guid: d6f0caf79b0d37549b0e6108f0d34b14, type: 3}
+  - itemId: metalBarT5
+    prefab: {fileID: 1050018400099216, guid: 71eb3a3860ddc3744995b865c12dae20, type: 3}
+  - itemId: woodT2
+    prefab: {fileID: 1978815189665294, guid: 9fb49ad0440681b4493820bc697b4680, type: 3}
+  - itemId: woodT3
+    prefab: {fileID: 1204843447569306, guid: d4ba06f688ca5c9489d121c2497c63f3, type: 3}
+  - itemId: woodT4
+    prefab: {fileID: 1264090075301404, guid: b365b833ab258da41bc7f258dea7992d, type: 3}
+  - itemId: woodT5
+    prefab: {fileID: 1303663450289950, guid: 7ca9915df67a66d43991170ba2400f17, type: 3}
+  - itemId: plank
+    prefab: {fileID: 1390090078305650, guid: f41a7face91c60c4f830c977faaf3138, type: 3}
+  - itemId: plankT2
+    prefab: {fileID: 1262515273233578, guid: 4885767d079f05a4581a8eeba98b325c, type: 3}
+  - itemId: plankT3
+    prefab: {fileID: 1030515876107612, guid: 70c4f34a01ff2d44990c22a48fb28063, type: 3}
+  - itemId: plankT4
+    prefab: {fileID: 1885250039984892, guid: c448102c269e94f4d95e9a4877b55b09, type: 3}
+  - itemId: plankT5
+    prefab: {fileID: 1803607707975584, guid: 19e1b9e23eca85545a88214845be8df6, type: 3}
+  - itemId: fiber
+    prefab: {fileID: 1904356791742696, guid: e85a5f270aefc744d86962e605a57bb3, type: 3}
+  - itemId: fiberT2
+    prefab: {fileID: 1406762892669528, guid: efed0d9bfc3a06841bdac6f14c559c13, type: 3}
+  - itemId: fiberT3
+    prefab: {fileID: 1246845882456928, guid: 6cf91da3d004a0b4096c83c7a865dfec, type: 3}
+  - itemId: fiberT4
+    prefab: {fileID: 1585323693196822, guid: eabca08e95a9cb44aa7dcf3f4597c780, type: 3}
+  - itemId: fiberT5
+    prefab: {fileID: 1667549893534606, guid: c3cded31a068e524ba09e5f78e63899d, type: 3}
+  - itemId: cloth
+    prefab: {fileID: 1923436127841654, guid: 1774fe93c36d1034db8e878267008e01, type: 3}
+  - itemId: clothT2
+    prefab: {fileID: 1056820984508630, guid: 29e90f084dbe5504c8e2ea7691edb9c0, type: 3}
+  - itemId: clothT3
+    prefab: {fileID: 1898980893148434, guid: 8b58c4261b2d002448d6650144d6524e, type: 3}
+  - itemId: clothT4
+    prefab: {fileID: 1849830538105032, guid: 9888cc354f0db164e83fb93f855fbc36, type: 3}
+  - itemId: clothT5
+    prefab: {fileID: 1601925588779386, guid: df852e25306e5884181e6fdab11b6c3b, type: 3}
+  - itemId: hide
+    prefab: {fileID: 1494552526043320, guid: b02bfd6e5cc0ba84283f809c15b5eeda, type: 3}
+  - itemId: hideT2
+    prefab: {fileID: 1450902690143878, guid: e64d11a1ee5e8c74e9b54d07273486fa, type: 3}
+  - itemId: hideT3
+    prefab: {fileID: 1936296572197054, guid: bc7405876eb03cf419e76727648969ac, type: 3}
+  - itemId: hideT4
+    prefab: {fileID: 1661139685211656, guid: fa13aecf5da33384e9f57335cbc2cc81, type: 3}
+  - itemId: hideT5
+    prefab: {fileID: 1809841070471890, guid: 0e4082dba9eb0ad4b821534ba7c54dd3, type: 3}
+  - itemId: tannedHide
+    prefab: {fileID: 1149454225023612, guid: 5eeebf207d3132f4896345ca101fe4ee, type: 3}
+  - itemId: tannedHideT2
+    prefab: {fileID: 1223997312163924, guid: 67f32a009e5dde04ebd61fae3db3d284, type: 3}
+  - itemId: tannedHideT3
+    prefab: {fileID: 1304215742492940, guid: d06389c47b933e8439add707caa92991, type: 3}
+  - itemId: tannedHideT4
+    prefab: {fileID: 1326644470446332, guid: 29bbdad2089078346a5cb0efbe9d593e, type: 3}
+  - itemId: tannedHideT5
+    prefab: {fileID: 1484124097767750, guid: a052e8ab2b05c5848ac30c50603edc4b, type: 3}
+  - itemId: oilT2
+    prefab: {fileID: 1302950925058072, guid: ba8f09511f4e7a448867acaedb592a0b, type: 3}
+  - itemId: oilT3
+    prefab: {fileID: 1006637963614218, guid: 74bb9c0d68e161047ba2ff77572a8f6f, type: 3}
+  - itemId: oilT4
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - itemId: oilT5
+    prefab: {fileID: 1649920933936872, guid: 408a269eab4673c4a9d74010e3f61298, type: 3}
+  - itemId: fuel
+    prefab: {fileID: 1906401972103044, guid: ce5e76ba17268e64783bd8d5212a8c02, type: 3}
+  - itemId: fuelT2
+    prefab: {fileID: 1450819416614728, guid: c79615aa59b92cc4eab7c677ede3a060, type: 3}
+  - itemId: fuelT3
+    prefab: {fileID: 1610639356653788, guid: 58ee3df2b81b0de49a953371616e8154, type: 3}
+  - itemId: fuelT4
+    prefab: {fileID: 1257984996261748, guid: 5ecd7ef4327b4dd40800a95e990697ef, type: 3}
+  - itemId: fuelT5
+    prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
   armor:
   - itemId: leather
     malePrefab: {fileID: 1274019000965958, guid: af169be12f376ce46a3e6b4bee8b8ffe, type: 3}
@@ -873,6 +967,67 @@ MonoBehaviour:
     prefab: {fileID: 1459172237601850, guid: 5fe2677ad5b95d349aa164b1a58bf0a3, type: 3}
   - modelKey: tutorialWood
     prefab: {fileID: 1789185446098736, guid: ce95f4e7bd2eaff4fb6400242652e280, type: 3}
+  tierNodes:
+  - resourceType: ore
+    tier: 1
+    prefab: {fileID: 1180258198902434, guid: b6f032838b08973418ef2f5b8cf54a86, type: 3}
+  - resourceType: ore
+    tier: 2
+    prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
+  - resourceType: ore
+    tier: 3
+    prefab: {fileID: 1953317842719524, guid: 8d16041c0d131c94fa77f8401777777f, type: 3}
+  - resourceType: ore
+    tier: 4
+    prefab: {fileID: 1287420723893824, guid: f7fd817848832db4db5fbe24c4bdd2c5, type: 3}
+  - resourceType: ore
+    tier: 5
+    prefab: {fileID: 1730580723473140, guid: 4cf36b5720257b84cbbe03a1a528803d, type: 3}
+  - resourceType: wood
+    tier: 1
+    prefab: {fileID: 1139796795624570, guid: bff2e4d1b38f7264b9a067e055e3e986, type: 3}
+  - resourceType: wood
+    tier: 2
+    prefab: {fileID: 1796885337435754, guid: 97eeef42e1d4d814db88bb348f6c5315, type: 3}
+  - resourceType: wood
+    tier: 3
+    prefab: {fileID: 1118852644942752, guid: 2c6eea56361198e4e99317e1f87c7a3d, type: 3}
+  - resourceType: wood
+    tier: 4
+    prefab: {fileID: 1369509060990928, guid: 541d55964971acb4badd8724436b8489, type: 3}
+  - resourceType: wood
+    tier: 5
+    prefab: {fileID: 1750051835719524, guid: ddf1dea042d8f3d42a7f813667437cb9, type: 3}
+  - resourceType: fiber
+    tier: 1
+    prefab: {fileID: 1904356791742696, guid: e85a5f270aefc744d86962e605a57bb3, type: 3}
+  - resourceType: fiber
+    tier: 2
+    prefab: {fileID: 1154606685033784, guid: 38a679cbf2c60174f878721348dc3381, type: 3}
+  - resourceType: fiber
+    tier: 3
+    prefab: {fileID: 1406762892669528, guid: efed0d9bfc3a06841bdac6f14c559c13, type: 3}
+  - resourceType: fiber
+    tier: 4
+    prefab: {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}
+  - resourceType: fiber
+    tier: 5
+    prefab: {fileID: 1646082096404570, guid: 53cc0a19e09835f4fb0adef80edc5bc9, type: 3}
+  - resourceType: oil
+    tier: 1
+    prefab: {fileID: 1890296390273018, guid: 46b7bcd01c72c9148b72bd322a02225c, type: 3}
+  - resourceType: oil
+    tier: 2
+    prefab: {fileID: 1569311349296154, guid: 4fd3fd966a4c8a344836e1de87d78767, type: 3}
+  - resourceType: oil
+    tier: 3
+    prefab: {fileID: 1814280914598658, guid: a9ed394184d8bdb4c8fb252de32f39a0, type: 3}
+  - resourceType: oil
+    tier: 4
+    prefab: {fileID: 1160118780968504, guid: 70fb46fb4d63e3340b0f223f24a9af39, type: 3}
+  - resourceType: oil
+    tier: 5
+    prefab: {fileID: 1267131352853402, guid: 47da375f113338e47b5357cdd6284614, type: 3}
   defaultEnvironment: {fileID: 1980102390720548, guid: 9b425efa126d5aa48aeda3fa09c70785, type: 3}
   roadEnvironment: {fileID: 1549825329564326, guid: 4d7a1cef4b51c604a83e17a8a5dc96ed, type: 3}
   plantEnvironment: {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}

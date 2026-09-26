@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
@@ -139,9 +140,43 @@ namespace RealmOfAshes.EditorTools
             AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Scout_Female_Hat_01", "preWarHelmet");
             foreach (RoaApocalypseModels.ArmorEntry row in armor)
                 itemPaths[row.itemId] = "Characters/" + row.malePrefab.name;
+            // Материалы и точки добычи по тирам — из data/kromka/tiers.json (visuals):
+            // у каждого тира сырья и полуфабриката свой префаб пака.
+            var tierNodes = new List<RoaApocalypseModels.TierNodeEntry>();
+            JObject tierData = JObject.Parse(File.ReadAllText(Path.Combine(Application.dataPath, "..", "..", "data", "kromka", "tiers.json")));
+            foreach (JObject family in (JArray)tierData["families"])
+            {
+                JObject visuals = (JObject)family["visuals"];
+                if (visuals == null) continue;
+                foreach (string kind in new[] { "raw", "refined" })
+                {
+                    JArray ids = (JArray)family[kind]["ids"];
+                    JArray paths = (JArray)visuals[kind];
+                    for (int i = 0; i < ids.Count && i < paths.Count; i++)
+                        itemPaths[ids[i].ToString()] = VisualPath(paths[i]);
+                }
+                JArray nodes = (JArray)visuals["nodes"];
+                for (int i = 0; nodes != null && i < nodes.Count; i++)
+                    tierNodes.Add(new RoaApocalypseModels.TierNodeEntry
+                    {
+                        resourceType = family["resourceType"].ToString(),
+                        tier = i + 1,
+                        prefab = Require(VisualPath(nodes[i])),
+                        // Кольцо краски у основания: место — по вершинам самого префаба.
+                        mark = RoaTierMarkLayout.Compute(Require(VisualPath(nodes[i])), true)
+                    });
+            }
             var items = new List<RoaApocalypseModels.ItemEntry>();
             foreach (KeyValuePair<string, string> pair in itemPaths)
-                items.Add(new RoaApocalypseModels.ItemEntry { itemId = pair.Key, prefab = Require(pair.Value) });
+                items.Add(new RoaApocalypseModels.ItemEntry
+                {
+                    itemId = pair.Key,
+                    prefab = Require(pair.Value),
+                    mark = RoaTierMarkLayout.Compute(Require(pair.Value), false)
+                });
+            // Оружие и инструменты тиров: изолента на тонкой части модели.
+            foreach (RoaApocalypseModels.WeaponEntry weapon in weapons)
+                weapon.mark = RoaTierMarkLayout.Compute(weapon.prefab, false);
 
             var creatures = new List<RoaApocalypseModels.CreatureEntry>();
             AddCreatures(creatures, "Characters/SM_Chr_Wanderer_Male_01", 0f,
@@ -197,6 +232,7 @@ namespace RealmOfAshes.EditorTools
                 Require("Buildings/SM_Bld_RadioTower_01"),
                 Require("Props/SM_Prop_Generator_01"),
                 Require("Environment/SM_Env_Rock_01"));
+            catalog.ConfigureTierNodes(tierNodes);
             EditorUtility.SetDirty(catalog);
             AssetDatabase.SaveAssets();
             Debug.Log("[ROA APOCALYPSE] Runtime palette: " + weapons.Count
@@ -279,6 +315,12 @@ namespace RealmOfAshes.EditorTools
             foreach (string key in modelKeys)
                 entries.Add(new RoaApocalypseModels.CreatureEntry
                     { modelKey = key, prefab = model, pitch = pitch });
+        }
+
+        /// <summary>Облик в tiers.json: строка пути префаба или { prefab, tint: "#RRGGBB" }.</summary>
+        private static string VisualPath(JToken visual)
+        {
+            return visual is JObject row ? row["prefab"]?.ToString() : visual?.ToString();
         }
 
         private static GameObject Require(string relativePath)

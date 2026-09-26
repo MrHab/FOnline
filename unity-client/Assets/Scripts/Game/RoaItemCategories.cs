@@ -104,11 +104,72 @@ namespace RealmOfAshes.Game
         /// </summary>
         public static Texture2D Art(string itemOrRuntimeId)
         {
-            string id = RoaInventory.BaseId(itemOrRuntimeId);
+            // Предмет с тиром — своя картинка и точка цвета тира в углу (копия на каждый тир).
+            string exact = RoaInventory.BaseId(itemOrRuntimeId);
+            if (RoaItemData.IsTiered(exact))
+            {
+                if (TierArtCache.TryGetValue(exact, out Texture2D badged) && badged != null) return badged;
+                badged = TierBadged(ArtOf(itemOrRuntimeId), RoaTierData.TierColor(RoaItemData.Tier(exact)));
+                TierArtCache[exact] = badged;
+                return badged;
+            }
+            return ArtOf(itemOrRuntimeId);
+        }
+
+        private static readonly Dictionary<string, Texture2D> TierArtCache = new Dictionary<string, Texture2D>();
+
+        /// <summary>
+        /// Копия картинки с точкой цвета тира в правом нижнем углу (с тёмной обводкой).
+        /// Иконки не читаемы с диска, поэтому копия снимается через RenderTexture (в sRGB).
+        /// </summary>
+        public static Texture2D TierBadged(Texture2D source, Color tier)
+        {
+            if (source == null) return source;
+            RenderTexture target = RenderTexture.GetTemporary(source.width, source.height, 0,
+                RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            RenderTexture previous = RenderTexture.active;
+            try
+            {
+                Graphics.Blit(source, target);
+                RenderTexture.active = target;
+                var copy = new Texture2D(source.width, source.height, TextureFormat.RGBA32, false)
+                {
+                    name = source.name + "_tier",
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = source.filterMode
+                };
+                copy.ReadPixels(new Rect(0f, 0f, source.width, source.height), 0, 0);
+                Color32[] pixels = copy.GetPixels32();
+                int w = source.width, h = source.height;
+                float radius = Mathf.Max(4f, w * 0.085f);
+                float cx = w - radius * 1.5f, cy = radius * 1.5f;
+                Color32 fill = tier, edge = new Color32(22, 20, 16, 255);
+                for (int y = Mathf.Max(0, (int)(cy - radius - 2)); y < Mathf.Min(h, (int)(cy + radius + 3)); y++)
+                    for (int x = Mathf.Max(0, (int)(cx - radius - 2)); x < Mathf.Min(w, (int)(cx + radius + 3)); x++)
+                    {
+                        float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                        if (d <= radius - 1.5f) pixels[y * w + x] = fill;
+                        else if (d <= radius + 1f) pixels[y * w + x] = edge;
+                    }
+                copy.SetPixels32(pixels);
+                copy.Apply(false, true);
+                return copy;
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                RenderTexture.ReleaseTemporary(target);
+            }
+        }
+
+        private static Texture2D ArtOf(string itemOrRuntimeId)
+        {
+            // Своя картинка (у каждого тира материала она своя), иначе — исходного предмета.
+            string id = RoaItemData.IconId(itemOrRuntimeId);
             if (string.IsNullOrEmpty(id)) id = "misc";
             if (ArtCache.TryGetValue(id, out Texture2D cached)) return cached;
 
-            Sprite apocalypseIcon = RoaApocalypseItemIcons.For(id);
+            Sprite apocalypseIcon = RoaApocalypseItemIcons.Untinted(id);
             Texture2D texture = apocalypseIcon != null ? apocalypseIcon.texture : null;
             if (texture == null) texture = Resources.Load<Texture2D>("RealmUi/items/item_" + id);
             if (texture == null && RoaApocalypseModels.Weapon(id) != null)

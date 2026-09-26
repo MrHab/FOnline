@@ -426,6 +426,8 @@ namespace RealmOfAshes.Game
             SetAccessory(ref _backpack, showBackpack,
                 RoaApocalypseModels.BackpackAttachment, "Spine_03");
             SetAccessory(ref _helmet, helmetPrefab != null, helmetPrefab, "Head");
+            // Тиры шлема — один префаб: метка тира ставится при каждой смене предмета.
+            if (_helmet != null) RoaApocalypseModels.MarkItem(_helmet, _view.EquippedItemId("helmet"));
             RefreshFootwear();
         }
 

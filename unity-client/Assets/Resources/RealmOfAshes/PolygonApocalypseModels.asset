@@ -28,6 +28,12 @@ MonoBehaviour:
     combatId: assaultRifle
     displayName: "\u0410\u0432\u0442\u043E\u043C\u0430\u0442 \xAB\u0420\u0443\u0431\u0435\u0436\xBB"
     weight: 4.8
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.000057004392, y: -0.17063998, z: 0.25091308}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.038101178, y: 0.02, z: 0.036801685}
   - itemId: polygonAssaultRifle02
     prefab: {fileID: 1263777055603640, guid: d9f9bf1ca5142254ba3a359ff4a34b3e, type: 3}
     rigId: assaultRifle
@@ -35,6 +41,12 @@ MonoBehaviour:
     displayName: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0430\u044F \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430
       02"
     weight: 4.8
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.019799627, y: -0.15749656, z: 0.29640472}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.028506532, y: 0.02, z: 0.042864747}
   - itemId: polygonAssaultRifle03
     prefab: {fileID: 1490873028196816, guid: a3fe0be603767ae42a0d14c81d777c2b, type: 3}
     rigId: assaultRifle
@@ -42,12 +54,24 @@ MonoBehaviour:
     displayName: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0430\u044F \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430
       03"
     weight: 4.8
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.000057000667, y: -0.13045089, z: 0.15904076}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.038911775, y: 0.02, z: 0.047136366}
   - itemId: rifle
     prefab: {fileID: 1862461175073062, guid: f8ee5a952b0a300448ad8d17e2ab2584, type: 3}
     rigId: rifle
     combatId: rifle
     displayName: "\u0412\u0438\u043D\u0442\u043E\u0432\u043A\u0430 \xAB\u0421\u043B\u0435\u0434\xBB"
     weight: 4
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.0028687324, y: -0.110960804, z: -0.32354653}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.04605503, y: 0.02, z: 0.055189244}
   - itemId: polygonHuntingRifleClean01
     prefab: {fileID: 1311854592980844, guid: 339cc5e61566f63428dc7728c5c3c5a0, type: 3}
     rigId: rifle
@@ -55,18 +79,36 @@ MonoBehaviour:
     displayName: "\u041E\u0445\u043E\u0442\u043D\u0438\u0447\u044C\u044F \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430
       (\u0447\u0438\u0441\u0442\u043E\u0435) 01"
     weight: 4
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.0007656021, y: -0.11009754, z: -0.3263721}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.038793292, y: 0.02, z: 0.04953611}
   - itemId: laserPistol
     prefab: {fileID: 1607563544594070, guid: 8b4c47d9211a9784fb3b35a87af8b353, type: 3}
     rigId: laserPistol
     combatId: laserPistol
     displayName: "\u0413\u0438\u0431\u0440\u0438\u0434 \xAB\u0420\u0430\u0437\u0440\u044F\u0434\xBB"
     weight: 2.2
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.0003542006, y: 0.07397414, z: 0.19535823}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.063676074, y: 0.054871395, z: 0.0603695}
   - itemId: plasmaRifle
     prefab: {fileID: 1216028739883728, guid: 99819784f3e024e4c848e39a0da42d59, type: 3}
     rigId: plasmaRifle
     combatId: plasmaRifle
     displayName: "\u0413\u0438\u0431\u0440\u0438\u0434 \xAB\u0417\u0430\u0440\u044F\xBB"
     weight: 5.1
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.0013334807, y: 0.08926742, z: 0.35665873}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.051135406, y: 0.0960567, z: 0.07236768}
   - itemId: polygonHybrid03
     prefab: {fileID: 1092074819094010, guid: 6e2b4b3768b35104ca1726c44266e483, type: 3}
     rigId: plasmaRifle
@@ -74,24 +116,48 @@ MonoBehaviour:
     displayName: "\u0413\u0438\u0431\u0440\u0438\u0434\u043D\u043E\u0435 \u043E\u0440\u0443\u0436\u0438\u0435
       03"
     weight: 5.1
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.0000018225983, y: -0.11049497, z: -0.24949487}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.036360193, y: 0.02, z: 0.039433263}
   - itemId: machineGun
     prefab: {fileID: 1167886286928202, guid: c10ff4af96f3d7243ae6a36a3377ce60, type: 3}
     rigId: machineGun
     combatId: machineGun
     displayName: "\u041F\u0443\u043B\u0435\u043C\u0451\u0442 \xAB\u0413\u0440\u043E\u043C\xBB"
     weight: 8.8
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.000000022351742, y: 0.09892999, z: 0.4040162}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.08700904, y: 0.106174804, z: 0.098496646}
   - itemId: polygonMachineGun02
     prefab: {fileID: 1395857700468264, guid: 3e9dcf9e9d8d7a4438ae8cfb9e5badf2, type: 3}
     rigId: machineGun
     combatId: machineGun
     displayName: "\u041F\u0443\u043B\u0435\u043C\u0451\u0442 02"
     weight: 8.8
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.0013240092, y: 0.12266024, z: 0.34127688}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.073341206, y: 0.144782, z: 0.07273153}
   - itemId: polygonMinigun01
     prefab: {fileID: 1946215608911346, guid: a807abad9d573264b96019ffcfcae869, type: 3}
     rigId: machineGun
     combatId: machineGun
     displayName: "\u041C\u0438\u043D\u0438\u0433\u0430\u043D 01"
     weight: 8.8
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0000000037252903, y: -0.16933174, z: 0.6923882}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.13896722, y: 0.104157306, z: 0.14823449}
   - itemId: polygonMinigunClean01
     prefab: {fileID: 1485816507113764, guid: a2670dd89e8f6534aa5e4457957a84c8, type: 3}
     rigId: machineGun
@@ -99,12 +165,24 @@ MonoBehaviour:
     displayName: "\u041C\u0438\u043D\u0438\u0433\u0430\u043D (\u0447\u0438\u0441\u0442\u043E\u0435)
       01"
     weight: 8.8
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0000000037252903, y: -0.16933174, z: 0.6300413}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.13896722, y: 0.10262353, z: 0.14823449}
   - itemId: polygonNailgun01
     prefab: {fileID: 1976984469360624, guid: f5c3bc26a8c162c4a9d22dbbcc59f479, type: 3}
     rigId: smg
     combatId: smg
     displayName: "\u0413\u0432\u043E\u0437\u0434\u043E\u043C\u0451\u0442 01"
     weight: 3.2
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.003356188, y: -0.30422798, z: -0.015035737}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.023791471, y: 0.025877614, z: 0.05183425}
   - itemId: polygonNailgunClean01
     prefab: {fileID: 1809121837865474, guid: 2673249e51517794ba8e07feee2a1d39, type: 3}
     rigId: smg
@@ -112,54 +190,108 @@ MonoBehaviour:
     displayName: "\u0413\u0432\u043E\u0437\u0434\u043E\u043C\u0451\u0442 (\u0447\u0438\u0441\u0442\u043E\u0435)
       01"
     weight: 3.2
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: 0.05006356, z: 0.09182047}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.052540027, y: 0.099164546, z: 0.099164546}
   - itemId: pistol
     prefab: {fileID: 1562996608389564, guid: a1608518da2a041418e8a5351d223d94, type: 3}
     rigId: pistol
     combatId: pistol
     displayName: "\u041F\u0438\u0441\u0442\u043E\u043B\u0435\u0442 \xAB\u0418\u0441\u043A\u0440\u0430\xBB"
     weight: 1.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.000056915917, y: -0.19016781, z: -0.035881255}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.038024094, y: 0.02, z: 0.061628837}
   - itemId: revolver
     prefab: {fileID: 1111015175407080, guid: 151fe3144103e1440900697f4b29c68e, type: 3}
     rigId: revolver
     combatId: revolver
     displayName: "\u0420\u0435\u0432\u043E\u043B\u044C\u0432\u0435\u0440 \xAB\u0428\u0435\u0440\u0438\u0444\xBB"
     weight: 2
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00049063005, y: -0.09485893, z: -0.02521387}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.046620585, y: 0.02, z: 0.06702564}
   - itemId: polygonRevolver02
     prefab: {fileID: 1319036115938546, guid: 379c13fc7bb54114e8f838c5ad3a0eab, type: 3}
     rigId: revolver
     combatId: revolver
     displayName: "\u0420\u0435\u0432\u043E\u043B\u044C\u0432\u0435\u0440 02"
     weight: 2
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0, y: 0.07390332, z: 0.46426174}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.04115564, y: 0.07738496, z: 0.036311764}
   - itemId: polygonRifle01
     prefab: {fileID: 1072090535415360, guid: ac46653d56756124eb294a6b8c58d2d3, type: 3}
     rigId: rifle
     combatId: rifle
     displayName: "\u0412\u0438\u043D\u0442\u043E\u0432\u043A\u0430 01"
     weight: 4
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: -0.11370377, z: 0.20566611}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.03334992, y: 0.02, z: 0.09546701}
   - itemId: polygonRifle02
     prefab: {fileID: 1952938124507012, guid: 9281ea4fb86d62a4882324b916876584, type: 3}
     rigId: rifle
     combatId: rifle
     displayName: "\u0412\u0438\u043D\u0442\u043E\u0432\u043A\u0430 02"
     weight: 4
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.025466383, y: -0.16752717, z: 0.18797398}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.022217432, y: 0.02, z: 0.032466743}
   - itemId: polygonRifle03
     prefab: {fileID: 1652972229580220, guid: d6c28b427b8bce649b57606441c2061d, type: 3}
     rigId: rifle
     combatId: rifle
     displayName: "\u0412\u0438\u043D\u0442\u043E\u0432\u043A\u0430 03"
     weight: 4
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.0000000018626451, y: -0.08743909, z: -0.24681917}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.042013727, y: 0.02, z: 0.09162696}
   - itemId: rocketLauncher
     prefab: {fileID: 1265324198127248, guid: 5f73668964f88164aae003225d1f933f, type: 3}
     rigId: rocketLauncher
     combatId: rocketLauncher
     displayName: "\u0420\u0430\u043A\u0435\u0442\u043E\u043C\u0451\u0442 \xAB\u041F\u0435\u043F\u0435\u043B\xBB"
     weight: 9.6
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.000000033527613, y: -0.106503986, z: -0.004823435}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.03682974, y: 0.02, z: 0.07410669}
   - itemId: shotgun
     prefab: {fileID: 1105646471333690, guid: a2458a3a2318bb64ea864a87f6558170, type: 3}
     rigId: shotgun
     combatId: shotgun
     displayName: "\u0414\u0440\u043E\u0431\u043E\u0432\u0438\u043A \xAB\u0413\u0440\u0430\u0434\xBB"
     weight: 4.2
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.0000000027939677, y: -0.09506412, z: -0.0105175}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.01814876, y: 0.02, z: 0.04351829}
   - itemId: polygonSniperRifle01
     prefab: {fileID: 1658074229854742, guid: adc01ffa88b3d6744a5eb21a731f6c23, type: 3}
     rigId: rifle
@@ -167,6 +299,12 @@ MonoBehaviour:
     displayName: "\u0421\u043D\u0430\u0439\u043F\u0435\u0440\u0441\u043A\u0430\u044F
       \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430 01"
     weight: 4
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.00025940966, y: -0.12716961, z: -0.28206277}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.038106248, y: 0.02, z: 0.050587133}
   - itemId: polygonSniperRifle02
     prefab: {fileID: 1886666021998926, guid: 3027fd935d242c541a7114d06d974130, type: 3}
     rigId: rifle
@@ -174,6 +312,12 @@ MonoBehaviour:
     displayName: "\u0421\u043D\u0430\u0439\u043F\u0435\u0440\u0441\u043A\u0430\u044F
       \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430 02"
     weight: 4
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.000057850033, y: -0.110349804, z: 0.15218526}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.033087585, y: 0.02, z: 0.029412616}
   - itemId: polygonSniperRiflePneumatic01
     prefab: {fileID: 1382996655360698, guid: dd5e78229ec4a3f4eb3b2ace8c44e70e, type: 3}
     rigId: rifle
@@ -182,6 +326,12 @@ MonoBehaviour:
       \u0441\u043D\u0430\u0439\u043F\u0435\u0440\u0441\u043A\u0430\u044F \u0432\u0438\u043D\u0442\u043E\u0432\u043A\u0430
       01"
     weight: 4
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0057415105, y: 0.04420744, z: 0.28305963}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.050685767, y: 0.09171283, z: 0.050685767}
   - itemId: polygonSpearGun01
     prefab: {fileID: 1904344463030114, guid: a112f8928ad0cf148903646a811c1d4c, type: 3}
     rigId: rifle
@@ -189,12 +339,24 @@ MonoBehaviour:
     displayName: "\u0413\u0430\u0440\u043F\u0443\u043D\u043D\u043E\u0435 \u0440\u0443\u0436\u044C\u0451
       01"
     weight: 4
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0, y: -0.0995596, z: -0.011149647}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.04621655, y: 0.02, z: 0.053797174}
   - itemId: smg
     prefab: {fileID: 1025874851918808, guid: e22ad038422a02c49b86a09ff69dedfc, type: 3}
     rigId: smg
     combatId: smg
     displayName: "\u041F\u041F \xAB\u0428\u043E\u0440\u043E\u0445\xBB"
     weight: 3.2
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.0077912034, y: -0.22931421, z: -0.04826463}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.052810594, y: 0.02, z: 0.039752647}
   - itemId: polygonSubMGun02
     prefab: {fileID: 1347991933923114, guid: e465d39263959404582f9fdf69f40c53, type: 3}
     rigId: smg
@@ -202,6 +364,12 @@ MonoBehaviour:
     displayName: "\u041F\u0438\u0441\u0442\u043E\u043B\u0435\u0442-\u043F\u0443\u043B\u0435\u043C\u0451\u0442
       02"
     weight: 3.2
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.0022324026, y: -0.14578263, z: 0.19735289}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.05896958, y: 0.02, z: 0.014457997}
   - itemId: polygonSubMGun03
     prefab: {fileID: 1328033259041762, guid: 69b6ae1bb36dc814c9445c523810fe43, type: 3}
     rigId: smg
@@ -209,6 +377,12 @@ MonoBehaviour:
     displayName: "\u041F\u0438\u0441\u0442\u043E\u043B\u0435\u0442-\u043F\u0443\u043B\u0435\u043C\u0451\u0442
       03"
     weight: 3.2
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.0006014891, y: -0.25793245, z: 0.106819674}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.05896982, y: 0.021671763, z: 0.014459422}
   - itemId: polygonSubMGunClean03
     prefab: {fileID: 1555594515587678, guid: b1dcc002da85e2145adcf0f42460ac4b, type: 3}
     rigId: smg
@@ -216,6 +390,12 @@ MonoBehaviour:
     displayName: "\u041F\u0438\u0441\u0442\u043E\u043B\u0435\u0442-\u043F\u0443\u043B\u0435\u043C\u0451\u0442
       (\u0447\u0438\u0441\u0442\u043E\u0435) 03"
     weight: 3.2
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: -0.22360753, z: 0.119523585}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.027445609, y: 0.02052542, z: 0.0509246}
   - itemId: polygonBatMetal01
     prefab: {fileID: 1123592119813206, guid: 40dbbe2f5b021f542a733e6210cfb3cb, type: 3}
     rigId: axe
@@ -223,6 +403,12 @@ MonoBehaviour:
     displayName: "\u041C\u0435\u0442\u0430\u043B\u043B\u0438\u0447\u0435\u0441\u043A\u0430\u044F
       \u0431\u0438\u0442\u0430 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.00040197466, y: -0.12038464, z: 0.71746993}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.016496945, y: 0.02, z: 0.07910962}
   - itemId: polygonBatWood01
     prefab: {fileID: 1145237178023060, guid: d855c6cd18605f34dbfdca25cb40d71c, type: 3}
     rigId: axe
@@ -230,6 +416,12 @@ MonoBehaviour:
     displayName: "\u0414\u0435\u0440\u0435\u0432\u044F\u043D\u043D\u0430\u044F \u0431\u0438\u0442\u0430
       01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.001960693, y: 0.000086545944, z: 0.28579667}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.0552198, y: 0.066685885, z: 0.051096704}
   - itemId: polygonBatWood02
     prefab: {fileID: 1844027589456706, guid: 30557939935d4ee48b28a5de57e9e605, type: 3}
     rigId: axe
@@ -237,18 +429,36 @@ MonoBehaviour:
     displayName: "\u0414\u0435\u0440\u0435\u0432\u044F\u043D\u043D\u0430\u044F \u0431\u0438\u0442\u0430
       02"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.001960691, y: -0.00008664839, z: 0.28579667}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.055219807, y: 0.06668589, z: 0.05109647}
   - itemId: polygonBaton01
     prefab: {fileID: 1402644178857166, guid: 4deca74d46c275b40b3255680aa23aff, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u0414\u0443\u0431\u0438\u043D\u043A\u0430 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0016284287, y: 0.00052683055, z: 0.40583423}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.059396133, y: 0.05038887, z: 0.06609665}
   - itemId: polygonBaton02
     prefab: {fileID: 1962962617555930, guid: f7c206e9c665b9b4688e1963a3643a0c, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u0414\u0443\u0431\u0438\u043D\u043A\u0430 02"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0016284287, y: 0.00052683055, z: 0.40583423}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.059396148, y: 0.05038887, z: 0.06609665}
   - itemId: polygonButcher01
     prefab: {fileID: 1931374810083838, guid: 9f7c41ee6908ddc4f89559758aae9548, type: 3}
     rigId: axe
@@ -256,6 +466,12 @@ MonoBehaviour:
     displayName: "\u041C\u044F\u0441\u043D\u0438\u0446\u043A\u0438\u0439 \u0442\u0435\u0441\u0430\u043A
       01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: -0.08414359, z: 0.19003038}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.016549949, y: 0.02, z: 0.23232849}
   - itemId: polygonCross01
     prefab: {fileID: 1392198405331312, guid: 240208f58bf5c02448f4aa998c36718f, type: 3}
     rigId: axe
@@ -263,78 +479,156 @@ MonoBehaviour:
     displayName: "\u0411\u043E\u0435\u0432\u043E\u0439 \u043A\u0440\u0435\u0441\u0442
       01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.0012304692, y: -0.2843125, z: -0.0075768563}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.013914905, y: 0.02600987, z: 0.018240936}
   - itemId: polygonCrowbar01
     prefab: {fileID: 1750927141268108, guid: 8775c006a5395ff488d9315934a2a901, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u041B\u043E\u043C 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.0000004582107, y: -0.14671981, z: 0.5475377}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.042499036, y: 0.02, z: 0.04487641}
   - itemId: polygonCrutch01
     prefab: {fileID: 1031729302790486, guid: b8f7f59681d5ce24993115ac47002433, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u041A\u043E\u0441\u0442\u044B\u043B\u044C 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0, y: -0.000041604042, z: 0.69806075}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.037747104, y: 0.08926326, z: 0.090171}
   - itemId: axe
     prefab: {fileID: 1400711587830432, guid: cec5944b3fba5e643b7558cbd3366cd4, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u0422\u043E\u043F\u043E\u0440 \xAB\u041F\u0440\u043E\u043B\u043E\u043C\xBB"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -9.313226e-10, y: -0.12993002, z: 0.5095218}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.019888554, y: 0.02, z: 0.14730898}
   - itemId: polygonHammer01
     prefab: {fileID: 1238499803652380, guid: 3cc39ba111da66a40812e82215b69d7f, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u041C\u043E\u043B\u043E\u0442 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0000010440126, y: -0.00026801415, z: 0.15978165}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.036772527, y: 0.031248037, z: 0.04662239}
   - itemId: polygonKatana01
     prefab: {fileID: 1104172259794306, guid: c93dc5e6b62380f499e6ec8328bc0160, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u041A\u0430\u0442\u0430\u043D\u0430 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.00025337096, y: 0.0023683794, z: 0.37111762}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.013608714, y: 0.054693215, z: 0.05539975}
   - itemId: polygonMeleeGolfClub01
     prefab: {fileID: 1033218996785696, guid: 8ecc451f0f51f8141bb8e67a42bfa293, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u041A\u043B\u044E\u0448\u043A\u0430 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00035639293, y: 9.313226e-10, z: 0.292698}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.062011734, y: 0.10959058, z: 0.027030677}
   - itemId: knife
     prefab: {fileID: 1458518773578602, guid: 0382438fca188874582f78853c471286, type: 3}
     rigId: knife
     combatId: knife
     displayName: "\u041D\u043E\u0436 \xAB\u0422\u0438\u0445\u0438\u0439\xBB"
     weight: 0.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: 0.0000190977, z: 0.10123851}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.015216667, y: 0.04426174, z: 0.027454589}
   - itemId: polygonMeleeMachete01
     prefab: {fileID: 1167932600818802, guid: bef05be41376b52498b91573c3ff5a3b, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u041C\u0430\u0447\u0435\u0442\u0435 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.0022280663, y: -0.14383432, z: 0.09068207}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.08275208, y: 0.02, z: 0.04860245}
   - itemId: polygonMeleeSpearWood01
     prefab: {fileID: 1590850306398420, guid: 33337a1d1a45e3d4c8d90a6a7fe5e611, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u041A\u043E\u043F\u044C\u0451 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.00008212961, y: 0.0043938467, z: -0.1948017}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.05036477, y: 0.046011597, z: 0.16364586}
   - itemId: handPump
     prefab: {fileID: 1458207331373352, guid: 67dc5c17caf2cce4b85e75244a2d8ce1, type: 3}
     rigId: handPump
     combatId: handPump
     displayName: "\u041A\u043B\u044E\u0447 \xAB\u041F\u043E\u0442\u043E\u043A\xBB"
     weight: 2.7
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.020900998, y: -0.0011746222, z: 0.38082573}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.009964237, y: 0.06181196, z: 0.037750915}
   - itemId: polygonPipe01
     prefab: {fileID: 1449313484441434, guid: e9ef675108448aa43848da8917e3f721, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u0422\u0440\u0443\u0431\u0430 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000031851232, y: -0.0000000018626451, z: -0.08496246}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.048182163, y: 0.066805124, z: 0.048182245}
   - itemId: polygonPlank01
     prefab: {fileID: 1589933292683632, guid: 1011c4b06c2192243a469c6bdd77475d, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u0414\u043E\u0441\u043A\u0430 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.000114466995, y: 0.00007877499, z: 0.10163742}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.026148021, y: 0.087416835, z: 0.07682876}
   - itemId: polygonRebarClub01
     prefab: {fileID: 1713903467633356, guid: c6cc2d6819c0e0747bb86f4244ba73b2, type: 3}
     rigId: axe
@@ -342,12 +636,24 @@ MonoBehaviour:
     displayName: "\u0410\u0440\u043C\u0430\u0442\u0443\u0440\u043D\u0430\u044F \u0434\u0443\u0431\u0438\u043D\u0430
       01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0000007338822, y: -0.0036264248, z: 0.13376845}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.041224785, y: 0.096480295, z: 0.06960906}
   - itemId: pickaxe
     prefab: {fileID: 1436426956864622, guid: 58a3f3f478bd0374aa7b5d42880672f5, type: 3}
     rigId: pickaxe
     combatId: pickaxe
     displayName: "\u041B\u043E\u043F\u0430\u0442\u0430 \xAB\u041F\u043B\u0430\u0441\u0442\xBB"
     weight: 3
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0055688787, y: 0.000023083761, z: 0.120545484}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.036100578, y: 0.10072463, z: 0.04079654}
   - itemId: polygonWoodAxe01
     prefab: {fileID: 1879840880504514, guid: 14b9097cb10b27d40a35dc944853603d, type: 3}
     rigId: axe
@@ -355,12 +661,24 @@ MonoBehaviour:
     displayName: "\u0414\u0440\u043E\u0432\u044F\u043D\u043E\u0439 \u0442\u043E\u043F\u043E\u0440
       01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.000000013038516, y: -0.1612343, z: 0.3902407}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.017870147, y: 0.02, z: 0.16390909}
   - itemId: polygonWrench01
     prefab: {fileID: 1202836592725532, guid: 92d0d7425658b7548bb550389b91dc28, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u041A\u043B\u044E\u0447 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0, y: -0.00041301176, z: 0.059965875}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.017728714, y: 0.041976124, z: 0.051214986}
   - itemId: polygonBombGasCan01
     prefab: {fileID: 1681366452719782, guid: e18ec37c8cb6bb445b5675b3fddfcc7d, type: 3}
     rigId: pistol
@@ -368,6 +686,12 @@ MonoBehaviour:
     displayName: "\u0411\u043E\u043C\u0431\u0430 \u0438\u0437 \u043A\u0430\u043D\u0438\u0441\u0442\u0440\u044B
       01"
     weight: 0.65
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0042907447, y: 0.41094682, z: 0.000000074505806}
+      rotation: {x: -0, y: 0, z: 0, w: 1}
+      scale: {x: 0.105324075, y: 0.010532408, z: 0.105324075}
   - itemId: polygonBombPropane01
     prefab: {fileID: 1815751844614860, guid: cb9b700ba66c187448feac54a5ec8fb6, type: 3}
     rigId: pistol
@@ -375,18 +699,36 @@ MonoBehaviour:
     displayName: "\u041F\u0440\u043E\u043F\u0430\u043D\u043E\u0432\u0430\u044F \u0431\u043E\u043C\u0431\u0430
       01"
     weight: 0.65
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0020608157, y: 0.4558855, z: -0.00022785542}
+      rotation: {x: -0.051161133, y: 0, z: 0, w: 0.99869037}
+      scale: {x: 0.111422434, y: 0.011142244, z: 0.111422434}
   - itemId: polygonChainSaw01
     prefab: {fileID: 1074116973428324, guid: d4ca9bcafe7b6124ba175d36e7661b84, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u0411\u0435\u043D\u0437\u043E\u043F\u0438\u043B\u0430 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.079249, y: -0.055895306, z: 0.40297303}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.018393755, y: 0.15055244, z: 0.07678379}
   - itemId: polygonCrossBow01
     prefab: {fileID: 1884461504653410, guid: ccd191fcb9ab4364c8eac9e2dc2b3bf1, type: 3}
     rigId: rifle
     combatId: rifle
     displayName: "\u0410\u0440\u0431\u0430\u043B\u0435\u0442 01"
     weight: 4
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00000003594584, y: 0.10625397, z: 0.25568637}
+      rotation: {x: 0, y: 0, z: -0.00000074213006, w: 1}
+      scale: {x: 0.2069555, y: 0.02069555, z: 0.2069555}
   - itemId: polygonCrossBowClean01
     prefab: {fileID: 1675176113850882, guid: 03317d7eda984c14e93272de81884751, type: 3}
     rigId: rifle
@@ -394,12 +736,24 @@ MonoBehaviour:
     displayName: "\u0410\u0440\u0431\u0430\u043B\u0435\u0442 (\u0447\u0438\u0441\u0442\u043E\u0435)
       01"
     weight: 4
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00000003594584, y: 0.10625397, z: 0.25568637}
+      rotation: {x: 0, y: 0, z: -0.00000074213006, w: 1}
+      scale: {x: 0.2069555, y: 0.02069555, z: 0.2069555}
   - itemId: flamethrower
     prefab: {fileID: 1172656402973578, guid: aef0a5fd18f8fc745b48fb751ebcf18b, type: 3}
     rigId: flamethrower
     combatId: flamethrower
     displayName: "\u041E\u0433\u043D\u0435\u043C\u0451\u0442 \xAB\u0416\u0430\u0440\xBB"
     weight: 7.4
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.002078509, y: 0.096909486, z: 0.5036025}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.045040186, y: 0.14934349, z: 0.10723884}
   - itemId: polygonFlareGun01
     prefab: {fileID: 1695279696146886, guid: 2770997bfe351bd4d985f8b6244b90fb, type: 3}
     rigId: pistol
@@ -407,6 +761,12 @@ MonoBehaviour:
     displayName: "\u0421\u0438\u0433\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u043F\u0438\u0441\u0442\u043E\u043B\u0435\u0442
       01"
     weight: 1.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.00049063563, y: -0.096262805, z: -0.014632933}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.045891896, y: 0.02, z: 0.07151866}
   - itemId: polygonFlashbang01
     prefab: {fileID: 1514270269525414, guid: 68a54b2c9404fc044b701767629202a3, type: 3}
     rigId: pistol
@@ -414,12 +774,24 @@ MonoBehaviour:
     displayName: "\u0421\u0432\u0435\u0442\u043E\u0448\u0443\u043C\u043E\u0432\u0430\u044F
       \u0433\u0440\u0430\u043D\u0430\u0442\u0430 01"
     weight: 0.65
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0000000018626451, y: 0.0005470599, z: -0.008067943}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.053313684, y: 0.02, z: 0.072386}
   - itemId: polygonGrenade01
     prefab: {fileID: 1029064837195810, guid: 458e22f46e00bf54cb86613b9402f9f4, type: 3}
     rigId: pistol
     combatId: rocketLauncher
     displayName: "\u0413\u0440\u0430\u043D\u0430\u0442\u0430 01"
     weight: 0.65
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0022620596, y: 0.063041344, z: -0.0024341978}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.081542164, y: 0.02, z: 0.081708714}
   - itemId: polygonMolotov01
     prefab: {fileID: 1118737024808968, guid: 4d62bfe4ec3b0b944a443fe0d37c906d, type: 3}
     rigId: pistol
@@ -427,6 +799,12 @@ MonoBehaviour:
     displayName: "\u041A\u043E\u043A\u0442\u0435\u0439\u043B\u044C \u041C\u043E\u043B\u043E\u0442\u043E\u0432\u0430
       01"
     weight: 0.65
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0000002682209, y: 0.13692902, z: 0.00000033900142}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.106584966, y: 0.02, z: 0.12183629}
   - itemId: polygonNailBomb01
     prefab: {fileID: 1114694132296820, guid: 16ba166c7db7fa345ab52f21849528f0, type: 3}
     rigId: pistol
@@ -434,6 +812,12 @@ MonoBehaviour:
     displayName: "\u0411\u043E\u043C\u0431\u0430 \u0441 \u0433\u0432\u043E\u0437\u0434\u044F\u043C\u0438
       01"
     weight: 0.65
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0006881931, y: 0.1915396, z: -0.011684791}
+      rotation: {x: -0.14437264, y: 0, z: -0.2673441, w: 0.95272434}
+      scale: {x: 0.053523377, y: 0.006, z: 0.053523377}
   - itemId: polygonPipeBomb01
     prefab: {fileID: 1932305366181800, guid: 1a75ef4748f1f434a91631d321105b9f, type: 3}
     rigId: pistol
@@ -441,18 +825,36 @@ MonoBehaviour:
     displayName: "\u0422\u0440\u0443\u0431\u043D\u0430\u044F \u0431\u043E\u043C\u0431\u0430
       01"
     weight: 0.65
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.007373821, y: -0.029368991, z: -0.0028548166}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.056580395, y: 0.02, z: 0.08123283}
   - itemId: polygonSignShield01
     prefab: {fileID: 1566628258926534, guid: 730566b32d6a4ef4dae1f6a75858d6e7, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u0429\u0438\u0442 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.0040050223, y: -0.23326966, z: 0.11112513}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.263221, y: 0.025355399, z: 0.06105996}
   - itemId: polygonTrimmer01
     prefab: {fileID: 1172279417112006, guid: 34edba7399d23fa44b95ae2b29a3e871, type: 3}
     rigId: axe
     combatId: axe
     displayName: "\u0422\u0440\u0438\u043C\u043C\u0435\u0440 01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.032421418, y: -0.14516357, z: 0.87501675}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.051789958, y: 0.12920822, z: 0.05179028}
   - itemId: polygonTrimmerClean01
     prefab: {fileID: 1037127450693462, guid: a3ddcb70e0d2aca4f92e1d4fb8d1057b, type: 3}
     rigId: axe
@@ -460,6 +862,12 @@ MonoBehaviour:
     displayName: "\u0422\u0440\u0438\u043C\u043C\u0435\u0440 (\u0447\u0438\u0441\u0442\u043E\u0435)
       01"
     weight: 2.5
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.03441573, y: -0.3790718, z: 1.562417}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.15173559, y: 0.020525925, z: 0.042421654}
   - itemId: polygonAAGun01
     prefab: {fileID: 1638244575166490, guid: e10c556d4d4596f40b7d9dbc793c966d, type: 3}
     rigId: machineGun
@@ -467,6 +875,12 @@ MonoBehaviour:
     displayName: "\u0417\u0435\u043D\u0438\u0442\u043D\u0430\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430
       01"
     weight: 15.84
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.03394407, y: 0.30410552, z: -0.11642653}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.7269366, y: 0.080027774, z: 1.1403239}
   - itemId: polygonVehAA01
     prefab: {fileID: 1752639783993144, guid: c27d602dadf567a4ea306c40543331ea, type: 3}
     rigId: machineGun
@@ -475,6 +889,12 @@ MonoBehaviour:
       \u0437\u0435\u043D\u0438\u0442\u043D\u0430\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430
       01"
     weight: 15.84
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0000000037252903, y: 0.099046506, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.096130624, y: 0.02606487, z: 0.09613061}
   - itemId: polygonVehHarpoon01
     prefab: {fileID: 1955001300558480, guid: c362372e6331a7e42a30f6483a456270, type: 3}
     rigId: rifle
@@ -482,6 +902,12 @@ MonoBehaviour:
     displayName: "\u0422\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442\u043D\u044B\u0439
       \u0433\u0430\u0440\u043F\u0443\u043D 01"
     weight: 7.2
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: 0.20212267, z: -0.09029139}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.12609842, y: 0.16659842, z: 0.07672565}
   - itemId: polygonVehMachineGun01
     prefab: {fileID: 1579042256172754, guid: 1ad7bb54d79e6514ba86e3016730c8ce, type: 3}
     rigId: machineGun
@@ -489,6 +915,12 @@ MonoBehaviour:
     displayName: "\u0422\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442\u043D\u044B\u0439
       \u043F\u0443\u043B\u0435\u043C\u0451\u0442 01"
     weight: 15.84
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0, y: 0.059411205, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.088027924, y: 0.02, z: 0.088027924}
   - itemId: polygonVehMiniGun01
     prefab: {fileID: 1277969264105640, guid: 370e17f25eab9c74fa0390384a0e49b7, type: 3}
     rigId: machineGun
@@ -496,6 +928,12 @@ MonoBehaviour:
     displayName: "\u0422\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442\u043D\u044B\u0439
       \u043C\u0438\u043D\u0438\u0433\u0430\u043D 01"
     weight: 15.84
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.000000029802322, y: 0.22260223, z: 0.50591594}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.13896722, y: 0.10124377, z: 0.1482343}
   - itemId: polygonVehRocketLauncher01
     prefab: {fileID: 1646432114360032, guid: dd404c768a9323b4fb42bd3f8ea5c2fe, type: 3}
     rigId: rocketLauncher
@@ -504,6 +942,12 @@ MonoBehaviour:
       \u0440\u0430\u043A\u0435\u0442\u043D\u0430\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430
       01"
     weight: 17.28
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000008195639, y: 0.25990248, z: -0.22589652}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.2614212, y: 0.06305171, z: 0.26142108}
   - itemId: polygonVehSawLauncher01
     prefab: {fileID: 1416433799646726, guid: ce887f4a50410e7478a3ca885ee4d379, type: 3}
     rigId: rocketLauncher
@@ -512,121 +956,833 @@ MonoBehaviour:
       \u043F\u0438\u043B\u044C\u043D\u0430\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430
       01"
     weight: 17.28
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.0023426563, y: 0.11422421, z: 0.5942098}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.38941392, y: 0.0746949, z: 0.092006996}
   - itemId: sawedOffShotgun
     prefab: {fileID: 4723979879420744306, guid: a7d76a3efd43dd24badd15135f3c78cb, type: 3}
     rigId: sawedOffShotgun
     combatId: sawedOffShotgun
     displayName: "\u0414\u0440\u043E\u0431\u043E\u0432\u0438\u043A \xAB\u041A\u043E\u0440\u043E\u0442\u044B\u0448\xBB"
     weight: 2.4
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.0000000027939677, y: -0.09506412, z: -0.0105175}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.01814876, y: 0.02, z: 0.04351829}
   items:
   - itemId: ammo9
     prefab: {fileID: 1202029276534874, guid: 86bb9dc1b51ac1b40881bebab79f89cf, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.00837519, y: 0.039415203, z: -0.042042874}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.13109727, y: 0.09171345, z: 0.014715007}
   - itemId: ammo556
     prefab: {fileID: 1851930539644918, guid: f0fc41b28f2a6a943a204ab9ba84bc87, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0, y: 0.06660649, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.03941528, y: 0.006, z: 0.03941528}
   - itemId: shotgunShell
     prefab: {fileID: 1890173635108940, guid: 3b0fb3fda92d12a4caa1fd3a00956fd1, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0, y: 0.0800304, z: 0.000000044703484}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.03941528, y: 0.006, z: 0.03941528}
   - itemId: rocketAmmo
     prefab: {fileID: 1740100772245106, guid: a284ce8a02abbd940b690c338a51f6d9, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0, y: 0.30160624, z: 0.0000012218952}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.089942224, y: 0.008994223, z: 0.089942224}
   - itemId: ammoParts
     prefab: {fileID: 1740100772245106, guid: a284ce8a02abbd940b690c338a51f6d9, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0, y: 0.30160624, z: 0.0000012218952}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.089942224, y: 0.008994223, z: 0.089942224}
   - itemId: energyCell
     prefab: {fileID: 1040866198591268, guid: e4cf0824496bede4bb19ba9967e020f6, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: 0, z: -0.020355852}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.07601553, y: 0.049882937, z: 0.012}
   - itemId: electronics
     prefab: {fileID: 1641304953013102, guid: a605a5f87e9bb1a47b6377c2306c9dbd, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000031292439, y: 0.2873292, z: 0.000026866794}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.09285103, y: 0.009285103, z: 0.09285103}
   - itemId: circuitModule
     prefab: {fileID: 1641304953013102, guid: a605a5f87e9bb1a47b6377c2306c9dbd, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000031292439, y: 0.2873292, z: 0.000026866794}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.09285103, y: 0.009285103, z: 0.09285103}
   - itemId: napalm
     prefab: {fileID: 1544143072547004, guid: aa9d0fceec1d4814aa3e38892faa08a0, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000014901161, y: 0.45243967, z: 0.000000037252903}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.12096194, y: 0.012096195, z: 0.12096194}
   - itemId: oil
     prefab: {fileID: 1544143072547004, guid: aa9d0fceec1d4814aa3e38892faa08a0, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000014901161, y: 0.45243967, z: 0.000000037252903}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.12096194, y: 0.012096195, z: 0.12096194}
   - itemId: medkit
     prefab: {fileID: 1419824209681924, guid: e3c29f4b68873c34fb53043e28bd48ce, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0004336238, y: 0.12688114, z: -0.00032407045}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.10417909, y: 0.010417909, z: 0.10417909}
   - itemId: medicine
     prefab: {fileID: 1419824209681924, guid: e3c29f4b68873c34fb53043e28bd48ce, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0004336238, y: 0.12688114, z: -0.00032407045}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.10417909, y: 0.010417909, z: 0.10417909}
   - itemId: bioReagent
     prefab: {fileID: 1419824209681924, guid: e3c29f4b68873c34fb53043e28bd48ce, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0004336238, y: 0.12688114, z: -0.00032407045}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.10417909, y: 0.010417909, z: 0.10417909}
   - itemId: stim
     prefab: {fileID: 1337799580505134, guid: 07973e2f008580343949b7f8c06cf72c, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0000000037252903, y: 0.09465616, z: 0.00000016018748}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.13946106, y: 0.02, z: 0.1394612}
   - itemId: antibiotics
     prefab: {fileID: 1337799580505134, guid: 07973e2f008580343949b7f8c06cf72c, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0000000037252903, y: 0.09465616, z: 0.00000016018748}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.13946106, y: 0.02, z: 0.1394612}
   - itemId: doctorBag
     prefab: {fileID: 1326644470446332, guid: 29bbdad2089078346a5cb0efbe9d593e, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.19208884, y: 0.15900497, z: 0.0014374107}
+      rotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
+      scale: {x: 0.37119168, y: 0.06429238, z: 0.46201274}
   - itemId: artifactContainer
     prefab: {fileID: 1835224929256552, guid: df170dcae36ee024c81fa2300892e7e5, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0000000046589315, y: 0.4798745, z: -0.00034582615}
+      rotation: {x: 0, y: -0, z: 0.000000813908, w: 1}
+      scale: {x: 0.14310375, y: 0.014310375, z: 0.14310375}
   - itemId: repairKit
     prefab: {fileID: 1835224929256552, guid: df170dcae36ee024c81fa2300892e7e5, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0000000046589315, y: 0.4798745, z: -0.00034582615}
+      rotation: {x: 0, y: -0, z: 0.000000813908, w: 1}
+      scale: {x: 0.14310375, y: 0.014310375, z: 0.14310375}
   - itemId: ore
-    prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+    prefab: {fileID: 1975549760567462, guid: 9aaf6ee41c0ba774b8703c41860bcf9b, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0002064272, y: 0.0790203, z: -0.00020185359}
+      rotation: {x: -0.06703813, y: 0, z: -0.06855213, w: 0.9953927}
+      scale: {x: 0.07562409, y: 0.0075624096, z: 0.07562409}
   - itemId: scrap
     prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000011920929, y: 0.44530147, z: 0.000000044703484}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.1327937, y: 0.01327937, z: 0.1327937}
   - itemId: alloyPlate
     prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000011920929, y: 0.44530147, z: 0.000000044703484}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.1327937, y: 0.01327937, z: 0.1327937}
   - itemId: weaponParts
     prefab: {fileID: 1306924218609970, guid: fae614550b766604bb03f019f586c0a1, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000011920929, y: 0.44530147, z: 0.000000044703484}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.1327937, y: 0.01327937, z: 0.1327937}
   - itemId: chemicals
     prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.000000074505806, y: 0.14162426, z: 0.0019360948}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.14335133, y: 0.02, z: 0.062222783}
   - itemId: spectrumSample
     prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.000000074505806, y: 0.14162426, z: 0.0019360948}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.14335133, y: 0.02, z: 0.062222783}
   - itemId: stabilizerCatalyst
     prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.000000074505806, y: 0.14162426, z: 0.0019360948}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.14335133, y: 0.02, z: 0.062222783}
   - itemId: wood
     prefab: {fileID: 1350644683509884, guid: 76268956b264f0146950f405edf04c42, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.000000007450581, y: -0.059542663, z: -0.000000007450581}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.2501406, y: 0.029771334, z: 0.25014076}
   - itemId: food
     prefab: {fileID: 1475631568837504, guid: 43c02ad0264295844bda05a0e56a7b21, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00054790825, y: 0.08161606, z: 0.00053762645}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.16089538, y: 0.02, z: 0.14440773}
   - itemId: water
     prefab: {fileID: 1129776882994900, guid: 6f4046d7967c3b74a88971615df168e4, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0, y: -0.034056094, z: -0.017832968}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.14273724, y: 0.02, z: 0.124685846}
   - itemId: silver
     prefab: {fileID: 1210496204973002, guid: 55e31d9d98e7506428bd5fc800ea4122, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00005118032, y: 0.021192893, z: 0.00020296409}
+      rotation: {x: 0.08489437, y: 0, z: -0.021407336, w: 0.99616}
+      scale: {x: 0.036614504, y: 0.006, z: 0.036614504}
   - itemId: blue
     prefab: {fileID: 1210496204973002, guid: 55e31d9d98e7506428bd5fc800ea4122, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00005118032, y: 0.021192893, z: 0.00020296409}
+      rotation: {x: 0.08489437, y: 0, z: -0.021407336, w: 0.99616}
+      scale: {x: 0.036614504, y: 0.006, z: 0.036614504}
   - itemId: trophy
     prefab: {fileID: 1515035654734784, guid: f5e52fc0c8d68eb4bb6f0a7fa8b6650a, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00042590033, y: 0.17386843, z: -0.017234446}
+      rotation: {x: 0.062137704, y: -0, z: 0.105847135, w: 0.9924391}
+      scale: {x: 0.10135964, y: 0.0101359645, z: 0.10135964}
   - itemId: boots
     prefab: {fileID: 1589785312988966, guid: 6f9d0770a1ad4b448850c6a1eb3d3b48, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0038532987, y: -0.07630788, z: 0.06345317}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.08597484, y: 0.02, z: 0.030413784}
   - itemId: scoutBoots
     prefab: {fileID: 1329138557878446, guid: 8932795ce9ec8384590fd132f3bf331c, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0106277, y: 0.07786916, z: 0.070341446}
+      rotation: {x: -0.39418945, y: 0, z: -0.18116687, w: 0.9009957}
+      scale: {x: 0.046769958, y: 0.006, z: 0.046769958}
   - itemId: reinforcedBoots
     prefab: {fileID: 1085804807959586, guid: d7ba3e6a0b81e8c4fad5a40aae9c2dcc, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.12655863, y: -0.21321389, z: 0.0011543483}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.03887428, y: 0.02, z: 0.09191523}
   - itemId: assaultBoots
     prefab: {fileID: 1999848875218898, guid: 09098669b8359654fb104508fd7fc9b7, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.005299501, y: 0.0618166, z: 0.07264701}
+      rotation: {x: -0.13020833, y: 0, z: -0.054154232, w: 0.9900067}
+      scale: {x: 0.04676478, y: 0.006, z: 0.04676478}
   - itemId: backpack
     prefab: {fileID: 1564870888801122, guid: ac097a787546bb24ebc0fce58ca8224d, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0002134898, y: 0.13402511, z: -0.19394702}
+      rotation: {x: -0.17773193, y: 0, z: 0.04004884, w: 0.98326373}
+      scale: {x: 0.13553677, y: 0.013553678, z: 0.13553677}
   - itemId: artifactDetectorMk1
     prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00073593855, y: 0.22414854, z: 0.0105502345}
+      rotation: {x: -0, y: 0, z: 0, w: 1}
+      scale: {x: 0.11587015, y: 0.011587015, z: 0.11587015}
   - itemId: artifactDetectorMk2
     prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00073593855, y: 0.22414854, z: 0.0105502345}
+      rotation: {x: -0, y: 0, z: 0, w: 1}
+      scale: {x: 0.11587015, y: 0.011587015, z: 0.11587015}
   - itemId: artifactDetectorMk3
     prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00073593855, y: 0.22414854, z: 0.0105502345}
+      rotation: {x: -0, y: 0, z: 0, w: 1}
+      scale: {x: 0.11587015, y: 0.011587015, z: 0.11587015}
   - itemId: artifactBelt2
     prefab: {fileID: 5068620470544949965, guid: ba195a88cc542844e9be28b4f1d3f784, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.1468081, y: 0.15220378, z: 0.00000074133277}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.03602319, y: 0.017590337, z: 0.14078645}
   - itemId: artifactBelt3
     prefab: {fileID: 5068620470544949965, guid: ba195a88cc542844e9be28b4f1d3f784, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.1468081, y: 0.15220378, z: 0.00000074133277}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.03602319, y: 0.017590337, z: 0.14078645}
   - itemId: artifactBelt4
     prefab: {fileID: 5068620470544949965, guid: ba195a88cc542844e9be28b4f1d3f784, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.1468081, y: 0.15220378, z: 0.00000074133277}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.03602319, y: 0.017590337, z: 0.14078645}
   - itemId: weldedHelmet
     prefab: {fileID: 1162636574902710, guid: 403bac682a691c146a5d697d2e324167, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: -0.10243116, z: 0.14822115}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.08115386, y: 0.02, z: 0.045580573}
   - itemId: helmet
     prefab: {fileID: 1261275721562882, guid: 65109d3ce3670da4598172f14c39a8b2, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00029829657, y: 0.26777333, z: 0.0072509614}
+      rotation: {x: 0.011901226, y: 0, z: -0.07792475, w: 0.9968882}
+      scale: {x: 0.095164515, y: 0.0095164515, z: 0.095164515}
   - itemId: tacticalHelmet
     prefab: {fileID: 1262996259358930, guid: 7dea907e69fa1db4888c36ce5482a775, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.001023367, y: -0.109792165, z: 0.2042974}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.18032321, y: 0.02, z: 0.05524497}
   - itemId: assaultHelmet
     prefab: {fileID: 1153852152701694, guid: cfe86ff67def9cd4bb8dc14105e1b710, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: -0.014618599, z: 0.12973651}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.23050007, y: 0.02, z: 0.07747206}
   - itemId: preWarHelmet
     prefab: {fileID: 1210444806839874, guid: 27d7347987dcd1f48be7c4b55465a67e, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.08344154, y: -0.1031606, z: 0.0047345418}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.022880852, y: 0.02, z: 0.030817961}
   - itemId: leather
     prefab: {fileID: 1274019000965958, guid: af169be12f376ce46a3e6b4bee8b8ffe, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00014138222, y: 0.17963402, z: -0.045112923}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.3807977, y: 0.09130689, z: 0.14182648}
   - itemId: metalArmor
     prefab: {fileID: 1962457702341656, guid: aab8f459d9f6f1840a3731182032078d, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.000018313527, y: 0.12536372, z: -0.044830672}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.39088243, y: 0.09167391, z: 0.14613596}
   - itemId: ballisticVest
     prefab: {fileID: 1820416473181658, guid: bb300d8944d3a594f8a617a030409eb4, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.003277421, y: 0.12821525, z: -0.050582737}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.36320338, y: 0.091582194, z: 0.15877832}
   - itemId: combatArmor
     prefab: {fileID: 1399122269168980, guid: 0a08fd84400ab0c41b7a22b7fd0b90a3, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0, y: 0.18089686, z: -0.04699026}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.383022, y: 0.09193831, z: 0.1368192}
   - itemId: heavyArmor
     prefab: {fileID: 1791362862288902, guid: 040c180181105224d8d03746446e080a, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: 0.1255254, z: -0.051484223}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.3452965, y: 0.09179123, z: 0.095097505}
   - itemId: hazmatSuit
     prefab: {fileID: 1467590972069000, guid: d91ede30c57f9e64cb6e7ac51e28ff35, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.00003144145, y: 0.12743665, z: -0.04816515}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.34045658, y: 0.09315458, z: 0.09867379}
   - itemId: energySuit
     prefab: {fileID: 1074360255325880, guid: bb3dc6915a06dcb4796c2e62d7d40669, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.0000018030405, y: 0.07254419, z: -0.022080041}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.35220137, y: 0.09066959, z: 0.16591841}
+  - itemId: oreT2
+    prefab: {fileID: 1690247541683866, guid: d8c037247812d25488e711028faa7b49, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0012416887, y: 0.06491595, z: 0.00029361356}
+      rotation: {x: 0.08032892, y: 0, z: -0.3397619, w: 0.9370747}
+      scale: {x: 0.09749981, y: 0.009749982, z: 0.09749981}
+  - itemId: oreT3
+    prefab: {fileID: 1771740753285238, guid: 715a9ecf31213914b8c48bf28132a534, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.02002827, y: 0.014370374, z: 0.03716962}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.20172873, y: 0.036614824, z: 0.052037455}
+  - itemId: oreT4
+    prefab: {fileID: 1975549760567462, guid: 9aaf6ee41c0ba774b8703c41860bcf9b, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0002064272, y: 0.0790203, z: -0.00020185359}
+      rotation: {x: -0.06703813, y: 0, z: -0.06855213, w: 0.9953927}
+      scale: {x: 0.07562409, y: 0.0075624096, z: 0.07562409}
+  - itemId: oreT5
+    prefab: {fileID: 1690247541683866, guid: d8c037247812d25488e711028faa7b49, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0012416887, y: 0.06491595, z: 0.00029361356}
+      rotation: {x: 0.08032892, y: 0, z: -0.3397619, w: 0.9370747}
+      scale: {x: 0.09749981, y: 0.009749982, z: 0.09749981}
+  - itemId: metalBar
+    prefab: {fileID: 1740159825050108, guid: 9ec5c47e508672046a6b4fb0ef032ae0, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.010460377, y: 0.03454056, z: 0.088327825}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.9552292, y: 0.11958615, z: 0.12671766}
+  - itemId: metalBarT2
+    prefab: {fileID: 1422194030587680, guid: 1e2df45cd640c87499fb4a0f91ede38f, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.052010626, y: 0.026091736, z: -0.077703275}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.82792807, y: 0.0956055, z: 0.12245542}
+  - itemId: metalBarT3
+    prefab: {fileID: 1960109127320382, guid: a962b80504c904c4d926fbb7f50cef74, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.037495434, y: 0.04865638, z: 0.0011170879}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.29193822, y: 0.29193822, z: 0.06367838}
+  - itemId: metalBarT4
+    prefab: {fileID: 1312267116750424, guid: d101aa80cae075448acbe3fef69e529e, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.010460347, y: 0.034540553, z: 0.08832756}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.9552292, y: 0.11958613, z: 0.1267177}
+  - itemId: metalBarT5
+    prefab: {fileID: 1050192036017312, guid: ebd44adc0d24bf948bf9fe8306802017, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: -0.053071737, y: 0.024894748, z: -0.15743454}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.81707937, y: 0.102478206, z: 0.12155278}
+  - itemId: woodT2
+    prefab: {fileID: 1204843447569306, guid: d4ba06f688ca5c9489d121c2497c63f3, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.000000007450581, y: -0.059542663, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.15151998, y: 0.029771334, z: 0.15152004}
+  - itemId: woodT3
+    prefab: {fileID: 1350644683509884, guid: 76268956b264f0146950f405edf04c42, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.000000007450581, y: -0.059542663, z: -0.000000007450581}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.2501406, y: 0.029771334, z: 0.25014076}
+  - itemId: woodT4
+    prefab: {fileID: 1264090075301404, guid: b365b833ab258da41bc7f258dea7992d, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0031469166, y: -0.059542663, z: -0.011784337}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.15617691, y: 0.029771334, z: 0.1513142}
+  - itemId: woodT5
+    prefab: {fileID: 1303663450289950, guid: 7ca9915df67a66d43991170ba2400f17, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00869441, y: -0.059542663, z: -0.0100405365}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.09535338, y: 0.029771334, z: 0.094428875}
+  - itemId: plank
+    prefab: {fileID: 1390090078305650, guid: f41a7face91c60c4f830c977faaf3138, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.00000031292439, y: 0.028186135, z: -0.68781066}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.3834936, y: 0.0670095, z: 0.22}
+  - itemId: plankT2
+    prefab: {fileID: 1886075303413064, guid: b3a3a6bb9e6be4b4ba0e9ce04a13469a, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: 0.03871081, z: 0.69848514}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.35555518, y: 0.073560715, z: 0.22}
+  - itemId: plankT3
+    prefab: {fileID: 1030515876107612, guid: 70c4f34a01ff2d44990c22a48fb28063, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000017881393, y: 0.05266373, z: 0}
+      rotation: {x: 0, y: -0, z: 0, w: 1}
+      scale: {x: 0.16609204, y: 0.016609205, z: 0.16609204}
+  - itemId: plankT4
+    prefab: {fileID: 1138131664617212, guid: 5b6c5207dfaa25f4bac3c6145bc0e80c, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.00000059604645, y: 0.038912788, z: 0.6455971}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.4183526, y: 0.07311635, z: 0.22}
+  - itemId: plankT5
+    prefab: {fileID: 1030515876107612, guid: 70c4f34a01ff2d44990c22a48fb28063, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000017881393, y: 0.05266373, z: 0}
+      rotation: {x: 0, y: -0, z: 0, w: 1}
+      scale: {x: 0.16609204, y: 0.016609205, z: 0.16609204}
+  - itemId: fiber
+    prefab: {fileID: 1904356791742696, guid: e85a5f270aefc744d86962e605a57bb3, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.008517344, y: -0.020121157, z: -0.016271368}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.12484382, y: 0.03744632, z: 0.12242973}
+  - itemId: fiberT2
+    prefab: {fileID: 1406762892669528, guid: efed0d9bfc3a06841bdac6f14c559c13, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.020363685, y: -0.00075846293, z: -0.020838603}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.114694916, y: 0.02191986, z: 0.12928346}
+  - itemId: fiberT3
+    prefab: {fileID: 1154606685033784, guid: 38a679cbf2c60174f878721348dc3381, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.02024243, y: -0.0017658214, z: 0.009045821}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.16266121, y: 0.02, z: 0.13499317}
+  - itemId: fiberT4
+    prefab: {fileID: 1585323693196822, guid: eabca08e95a9cb44aa7dcf3f4597c780, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0015693903, y: -0.0026943088, z: -0.02895847}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.14673685, y: 0.04307318, z: 0.17345971}
+  - itemId: fiberT5
+    prefab: {fileID: 1585323693196822, guid: eabca08e95a9cb44aa7dcf3f4597c780, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0015693903, y: -0.0026943088, z: -0.02895847}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.14673685, y: 0.04307318, z: 0.17345971}
+  - itemId: cloth
+    prefab: {fileID: 1484124097767750, guid: a052e8ab2b05c5848ac30c50603edc4b, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00005986005, y: 0.21399614, z: -0.0000036740175}
+      rotation: {x: -0.000497571, y: 0, z: 0.010954299, w: 0.9999399}
+      scale: {x: 0.13668938, y: 0.013668939, z: 0.13668938}
+  - itemId: clothT2
+    prefab: {fileID: 1898980893148434, guid: 8b58c4261b2d002448d6650144d6524e, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.06024909, y: -1.1922987, z: -0.021250896}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.3, y: 0.3, z: 0.18678577}
+  - itemId: clothT3
+    prefab: {fileID: 1898980893148434, guid: 8b58c4261b2d002448d6650144d6524e, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.06024909, y: -1.1922987, z: -0.021250896}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.3, y: 0.3, z: 0.18678577}
+  - itemId: clothT4
+    prefab: {fileID: 1849830538105032, guid: 9888cc354f0db164e83fb93f855fbc36, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00076614367, y: 0.20420405, z: 0.010030687}
+      rotation: {x: -0, y: 0, z: -0.1601811, w: 0.98708767}
+      scale: {x: 0.121143505, y: 0.012114351, z: 0.121143505}
+  - itemId: clothT5
+    prefab: {fileID: 1849830538105032, guid: 9888cc354f0db164e83fb93f855fbc36, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00076614367, y: 0.20420405, z: 0.010030687}
+      rotation: {x: -0, y: 0, z: -0.1601811, w: 0.98708767}
+      scale: {x: 0.121143505, y: 0.012114351, z: 0.121143505}
+  - itemId: hide
+    prefab: {fileID: 1450902690143878, guid: e64d11a1ee5e8c74e9b54d07273486fa, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0019951144, y: 0.02259815, z: 0.009400997}
+      rotation: {x: 0.007995067, y: -0, z: 0.00083680975, w: 0.9999677}
+      scale: {x: 0.3, y: 0.030000001, z: 0.3}
+  - itemId: hideT2
+    prefab: {fileID: 1936296572197054, guid: bc7405876eb03cf419e76727648969ac, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.9837681, y: 0.024983995, z: -0.00021883275}
+      rotation: {x: 0.00046489495, y: 0, z: -0.0008189501, w: 0.9999996}
+      scale: {x: 0.3, y: 0.030000001, z: 0.3}
+  - itemId: hideT3
+    prefab: {fileID: 1661139685211656, guid: fa13aecf5da33384e9f57335cbc2cc81, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0026863376, y: 0.039082866, z: 0.00010408077}
+      rotation: {x: -0.0019859152, y: 0, z: -0.0033912142, w: 0.9999923}
+      scale: {x: 0.3, y: 0.030000001, z: 0.3}
+  - itemId: hideT4
+    prefab: {fileID: 1450902690143878, guid: e64d11a1ee5e8c74e9b54d07273486fa, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0019951144, y: 0.02259815, z: 0.009400997}
+      rotation: {x: 0.007995067, y: -0, z: 0.00083680975, w: 0.9999677}
+      scale: {x: 0.3, y: 0.030000001, z: 0.3}
+  - itemId: hideT5
+    prefab: {fileID: 1936296572197054, guid: bc7405876eb03cf419e76727648969ac, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.9837681, y: 0.024983995, z: -0.00021883275}
+      rotation: {x: 0.00046489495, y: 0, z: -0.0008189501, w: 0.9999996}
+      scale: {x: 0.3, y: 0.030000001, z: 0.3}
+  - itemId: tannedHide
+    prefab: {fileID: 1223997312163924, guid: 67f32a009e5dde04ebd61fae3db3d284, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.1597722, y: -0.00031380355, z: 0.00000040233135}
+      rotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
+      scale: {x: 0.26995414, y: 0.055920277, z: 0.2810345}
+  - itemId: tannedHideT2
+    prefab: {fileID: 1223997312163924, guid: 67f32a009e5dde04ebd61fae3db3d284, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.1597722, y: -0.00031380355, z: 0.00000040233135}
+      rotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
+      scale: {x: 0.26995414, y: 0.055920277, z: 0.2810345}
+  - itemId: tannedHideT3
+    prefab: {fileID: 1304215742492940, guid: d06389c47b933e8439add707caa92991, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0, y: 0.09528864, z: 0.30174127}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.8251793, y: 0.20019199, z: 0.1408125}
+  - itemId: tannedHideT4
+    prefab: {fileID: 1601925588779386, guid: df852e25306e5884181e6fdab11b6c3b, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.075092845, y: 0.016642172, z: 0.008662514}
+      rotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
+      scale: {x: 0.16415897, y: 0.035042126, z: 0.1704666}
+  - itemId: tannedHideT5
+    prefab: {fileID: 1326644470446332, guid: 29bbdad2089078346a5cb0efbe9d593e, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.19208884, y: 0.15900497, z: 0.0014374107}
+      rotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
+      scale: {x: 0.37119168, y: 0.06429238, z: 0.46201274}
+  - itemId: oilT2
+    prefab: {fileID: 1028305517566684, guid: d6b062349986fcf4cbd2cdef910c6482, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0027682893, y: -0.026824636, z: 0.00054678693}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.11846088, y: 0.02, z: 0.1377488}
+  - itemId: oilT3
+    prefab: {fileID: 1006637963614218, guid: 74bb9c0d68e161047ba2ff77572a8f6f, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.000042037092, y: 0.21770443, z: -0.000106908934}
+      rotation: {x: -0.043752916, y: 0, z: 0.07143824, w: 0.996485}
+      scale: {x: 0.061413303, y: 0.0061413306, z: 0.061413303}
+  - itemId: oilT4
+    prefab: {fileID: 1524708790358150, guid: a799b90d2d301fa47a7dd9cff7d121b2, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00013872981, y: 0.21291094, z: 0.0001654476}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.36512142, y: 0.026613867, z: 0.36512175}
+  - itemId: oilT5
+    prefab: {fileID: 1649920933936872, guid: 408a269eab4673c4a9d74010e3f61298, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00019910932, y: 0.4181759, z: -0.00036159158}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.73748195, y: 0.05227199, z: 0.7156718}
+  - itemId: fuel
+    prefab: {fileID: 1333788564670996, guid: 7e25cc1253205ab45bf2f21ac7f68181, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00022614002, y: 0.07554833, z: -0.0004975796}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.056318533, y: 0.006, z: 0.056318533}
+  - itemId: fuelT2
+    prefab: {fileID: 1687963133933838, guid: fe7485ddc63a5764981aa828ce2734e4, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.000000007450581, y: -0.035160914, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.14313559, y: 0.02, z: 0.12503083}
+  - itemId: fuelT3
+    prefab: {fileID: 1333788564670996, guid: 7e25cc1253205ab45bf2f21ac7f68181, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00022614002, y: 0.07554833, z: -0.0004975796}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.056318533, y: 0.006, z: 0.056318533}
+  - itemId: fuelT4
+    prefab: {fileID: 1361809144838438, guid: a321c8f4a1227f64a9050963e27f81e0, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.000000074505806, y: 0.14162426, z: 0.0019360948}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.14335133, y: 0.02, z: 0.062222783}
+  - itemId: fuelT5
+    prefab: {fileID: 1544143072547004, guid: aa9d0fceec1d4814aa3e38892faa08a0, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.00000014901161, y: 0.45243967, z: 0.000000037252903}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.12096194, y: 0.012096195, z: 0.12096194}
   armor:
   - itemId: leather
     malePrefab: {fileID: 1274019000965958, guid: af169be12f376ce46a3e6b4bee8b8ffe, type: 3}
@@ -873,6 +2029,187 @@ MonoBehaviour:
     prefab: {fileID: 1459172237601850, guid: 5fe2677ad5b95d349aa164b1a58bf0a3, type: 3}
   - modelKey: tutorialWood
     prefab: {fileID: 1789185446098736, guid: ce95f4e7bd2eaff4fb6400242652e280, type: 3}
+  tierNodes:
+  - resourceType: ore
+    tier: 1
+    prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.16696675, y: 0.6761079, z: -0.15407756}
+      rotation: {x: -0.056989755, y: 0, z: -0.03700567, w: 0.99768865}
+      scale: {x: 0.40274718, y: 0.04027472, z: 0.40274718}
+  - resourceType: ore
+    tier: 2
+    prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.16696675, y: 0.6761079, z: -0.15407756}
+      rotation: {x: -0.056989755, y: 0, z: -0.03700567, w: 0.99768865}
+      scale: {x: 0.40274718, y: 0.04027472, z: 0.40274718}
+  - resourceType: ore
+    tier: 3
+    prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.16696675, y: 0.6761079, z: -0.15407756}
+      rotation: {x: -0.056989755, y: 0, z: -0.03700567, w: 0.99768865}
+      scale: {x: 0.40274718, y: 0.04027472, z: 0.40274718}
+  - resourceType: ore
+    tier: 4
+    prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.16696675, y: 0.6761079, z: -0.15407756}
+      rotation: {x: -0.056989755, y: 0, z: -0.03700567, w: 0.99768865}
+      scale: {x: 0.40274718, y: 0.04027472, z: 0.40274718}
+  - resourceType: ore
+    tier: 5
+    prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.16696675, y: 0.6761079, z: -0.15407756}
+      rotation: {x: -0.056989755, y: 0, z: -0.03700567, w: 0.99768865}
+      scale: {x: 0.40274718, y: 0.04027472, z: 0.40274718}
+  - resourceType: wood
+    tier: 1
+    prefab: {fileID: 1139796795624570, guid: bff2e4d1b38f7264b9a067e055e3e986, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.000069330206, y: 0.44063807, z: -0.0003073383}
+      rotation: {x: -0.032941, y: 0, z: 0.0071500973, w: 0.9994317}
+      scale: {x: 0.23326853, y: 0.023326853, z: 0.23326853}
+  - resourceType: wood
+    tier: 2
+    prefab: {fileID: 1691466447685246, guid: 823fa5dbf20779e4fb6e204b95a29062, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.022612616, y: 0.4952227, z: 0.06962341}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.2872662, y: 0.12, z: 0.32315823}
+  - resourceType: wood
+    tier: 3
+    prefab: {fileID: 1232429670324094, guid: ec861ae4eb8a8164ea47630c36d2a366, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.111774474, y: 0.3255436, z: -0.006787002}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.30314076, y: 0.12, z: 0.3183233}
+  - resourceType: wood
+    tier: 4
+    prefab: {fileID: 1369509060990928, guid: 541d55964971acb4badd8724436b8489, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.014476761, y: 0.76389956, z: 0.007300228}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.5324594, y: 0.12, z: 0.4841149}
+  - resourceType: wood
+    tier: 5
+    prefab: {fileID: 1750051835719524, guid: ddf1dea042d8f3d42a7f813667437cb9, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.009653449, y: 0.907577, z: 0.0008570552}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.35186493, y: 0.12, z: 0.37352347}
+  - resourceType: fiber
+    tier: 1
+    prefab: {fileID: 1904356791742696, guid: e85a5f270aefc744d86962e605a57bb3, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.008517344, y: -0.020121157, z: -0.016271368}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.12484382, y: 0.03744632, z: 0.12242973}
+  - resourceType: fiber
+    tier: 2
+    prefab: {fileID: 1154606685033784, guid: 38a679cbf2c60174f878721348dc3381, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.02024243, y: -0.0017658214, z: 0.009045821}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.16266121, y: 0.02, z: 0.13499317}
+  - resourceType: fiber
+    tier: 3
+    prefab: {fileID: 1410177089634338, guid: 22d1bb3c605f0a047a3df61400d33cd6, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0022908382, y: 1.8447069, z: 0.0040985253}
+      rotation: {x: 0.21120153, y: -0, z: 0.11804943, w: 0.97028774}
+      scale: {x: 0.5, y: 0.05, z: 0.5}
+  - resourceType: fiber
+    tier: 4
+    prefab: {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.006713224, y: 1.4392642, z: -0.005417399}
+      rotation: {x: -0.3121696, y: 0, z: -0.3868396, w: 0.8677012}
+      scale: {x: 0.5, y: 0.05, z: 0.5}
+  - resourceType: fiber
+    tier: 5
+    prefab: {fileID: 1536043230066214, guid: 5bdebad866447df48805ee507df9bead, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0006648915, y: 1.2792182, z: 0.0007528848}
+      rotation: {x: 0.037691925, y: -0, z: 0.033286687, w: 0.99873483}
+      scale: {x: 0.5, y: 0.05, z: 0.5}
+  - resourceType: oil
+    tier: 1
+    prefab: {fileID: 1890296390273018, guid: 46b7bcd01c72c9148b72bd322a02225c, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: -0.0036531985, y: 0.41254506, z: -0.0002976954}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.72250694, y: 0.051568132, z: 0.7105362}
+  - resourceType: oil
+    tier: 2
+    prefab: {fileID: 1569311349296154, guid: 4fd3fd966a4c8a344836e1de87d78767, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.0006932914, y: 0.4181758, z: 0.0005529821}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.70455813, y: 0.052271973, z: 0.737652}
+  - resourceType: oil
+    tier: 3
+    prefab: {fileID: 1984875063549348, guid: d17191aac136baf4388e8d209448c295, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00020879507, y: -0.104544, z: -0.00034731627}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.7374595, y: 0.052271973, z: 0.71566546}
+  - resourceType: oil
+    tier: 4
+    prefab: {fileID: 1177563166683432, guid: b0fe48a0043aa464c81ce5b7a4a903f6, type: 3}
+    mark:
+      valid: 1
+      round: 1
+      position: {x: 0.00020939112, y: 0.4181759, z: -0.00034731627}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 0.7374595, y: 0.05227199, z: 0.71566546}
+  - resourceType: oil
+    tier: 5
+    prefab: {fileID: 1267131352853402, guid: 47da375f113338e47b5357cdd6284614, type: 3}
+    mark:
+      valid: 1
+      round: 0
+      position: {x: 0.072392344, y: 0.9419661, z: 0.000076279044}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1.2776914, y: 0.10706148, z: 0.48121086}
   defaultEnvironment: {fileID: 1980102390720548, guid: 9b425efa126d5aa48aeda3fa09c70785, type: 3}
   roadEnvironment: {fileID: 1549825329564326, guid: 4d7a1cef4b51c604a83e17a8a5dc96ed, type: 3}
   plantEnvironment: {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}

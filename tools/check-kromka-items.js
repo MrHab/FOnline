@@ -6,21 +6,22 @@ const fs = require('fs');
 const path = require('path');
 const {
   fieldRecipeCatalogIndexes,
-  itemCatalogIndexes,
-  normalizeFieldRecipeCatalog,
-  normalizeItemCatalog
+  itemCatalogIndexes
 } = require('../src/server/kromka-items');
+const { readTieredCatalogs, tierRow } = require('../src/server/kromka-tiers');
 
 const ROOT = path.resolve(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 const json = relative => JSON.parse(read(relative));
 
-const catalog = normalizeItemCatalog(json('data/kromka/items.json'));
+// Каталоги во всех тирах — те же ряды, что собирает сервер.
+const tiered = readTieredCatalogs(path.join(ROOT, 'data'));
+const catalog = tiered.itemCatalog;
 const packWeapons = json('data/kromka/apocalypse-weapons.json').weapons;
 const throwableIds = new Set(packWeapons
   .filter(row => row.kind === 'throwable').map(row => row.itemId));
 const indexes = itemCatalogIndexes(catalog);
-const recipes = normalizeFieldRecipeCatalog(json('data/kromka/field-recipes.json'), catalog);
+const recipes = tiered.recipeCatalog;
 const recipeIndexes = fieldRecipeCatalogIndexes(recipes);
 for (const weapon of packWeapons) {
   const item = indexes.byId[weapon.itemId];
@@ -73,8 +74,13 @@ for (const item of catalog.items) {
     assert(item.compatibleSlots.length > 0, `${item.id}: missing equipment compatibility`);
   }
   if (item.conditionMode === 'runtime') {
-    assert(item.ammoType && (throwableIds.has(item.id)
-      ? item.modificationSlots.length === 0 : item.modificationSlots.length >= 3),
+    // Слоты модификаций открываются тиром: младший вариант — не больше слотов своего тира.
+    const group = throwableIds.has(item.tierGroup || item.id);
+    const authored = indexes.byId[item.tierGroup || item.id];
+    const open = item.tier < authored.tier ? tierRow(tiered.config, item.tier).modSlots : authored.modificationSlots.length;
+    assert(item.ammoType && (group
+      ? item.modificationSlots.length === 0
+      : item.modificationSlots.length >= 1 && item.modificationSlots.length <= open),
       `${item.id}: runtime weapon lacks magazine/modification identity`);
   }
 }

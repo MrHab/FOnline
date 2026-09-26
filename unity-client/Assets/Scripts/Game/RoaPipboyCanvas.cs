@@ -2267,7 +2267,7 @@ namespace RealmOfAshes.Game
             {
                 _craftPairRow = null;
                 _craftPairCount = 0;
-                foreach (RoaCraftRecipe recipe in RoaCraftingData.Recipes)
+                foreach (RoaCraftRecipe recipe in RoaCraftingData.GroupRepresentatives(Pipboy?.Self))
                     AddCraftCard(recipe, NextCraftCell());
             });
             LayoutRebuilder.ForceRebuildLayoutImmediate(_craftList);

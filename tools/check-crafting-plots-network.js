@@ -16,6 +16,7 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
 const zoneWalk = require('./lib/zone-walk');
+const { readTieredCatalogs } = require('../src/server/kromka-tiers');
 const accounts = {};
 
 const LOCATION = 'scrapTown';
@@ -34,16 +35,20 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   const PLOT_ID = `${LOCATION}__${plot.id}`;
   const STATION_OBJECT = `station_${plot.id}`;
   const spot = zoneWalk.cityWorld(LOCATION, plot);
-  const knifePrice = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'items.json'))).items
-    .find(row => row.id === 'knife').basePrice;
+  // Цены — из каталога во всех тирах, как у сервера.
+  const tieredItems = readTieredCatalogs(path.join(__dirname, '..', 'data')).itemCatalog.items;
+  const knifePrice = tieredItems.find(row => row.id === 'knife').basePrice;
 
   const place = (role, dx, builder = false) => {
     const state = stateFor(role);
     state.currentLocationId = LOCATION;
     state.serverLocationContext = { locationId: LOCATION };
     state.inventory.silver = 1000;
-    state.inventory.ore = 20;
-    state.inventory.wood = 10;
+    // Нож T1 куют из железной болванки и грубых досок; T2 — из материалов второго тира.
+    state.inventory.metalBar = 4;
+    state.inventory.plank = 4;
+    state.inventory.metalBarT2 = 1;
+    state.inventory.plankT2 = 1;
     // Материалы ровно на один станок и только будущему строителю: оружейный
     // стоит 20 лома и 6 оружейных частей, а с лишним грузом не скрафтить нож.
     if (builder) {
@@ -169,6 +174,14 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
 
     const own = await craft('trade', 0, 'craft-own');
     assert(own.ok && own.fee === 0, 'владелец работает бесплатно: ' + JSON.stringify(own).slice(0, 200));
+    // Опыт профессии за изделие: по 20 за каждую единицу материала T1 (болванка + доски).
+    assert.equal(own.profession?.id, 'craftMelee', 'нож качает кузнеца холодного оружия: ' + JSON.stringify(own.profession));
+    assert.equal(own.profession?.gained, 40, 'опыт — по единицам тирового материала');
+    // Нож T2 требует уровень 10 «Кузнеца холодного оружия»: материалы есть, навыка нет.
+    const tierTwo = await craft('trade', 0, 'craft-tier-2', { recipeId: 'knifecraftT2' });
+    assert(!tierTwo.ok && /Тир 2 требует навык/.test(tierTwo.error), 'тир 2 закрыт без навыка: ' + JSON.stringify(tierTwo).slice(0, 200));
+    assert.equal(qty(tierTwo.self || own.self, 'metalBarT2'), 1, 'отказ по навыку не тратит материалы');
+    console.log('PASS crafting grants profession xp and a higher tier waits for the profession level');
     const ownerSilver = qty(own.self, 'silver');
     const lesseeFee = feeFor(knifePrice, 0.2);
     const stale = await craft('harvest', feeFor(knifePrice, 0.05), 'craft-stale');

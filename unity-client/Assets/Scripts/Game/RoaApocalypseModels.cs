@@ -73,8 +73,6 @@ namespace RealmOfAshes.Game
             public string resourceType;
             public int tier;
             public GameObject prefab;
-            /// <summary>Кольцо краски цвета тира у основания точки.</summary>
-            public RoaTierMarkPlacement mark = new RoaTierMarkPlacement();
         }
 
         [SerializeField] private GameObject male;
@@ -255,7 +253,7 @@ namespace RealmOfAshes.Game
 
         /// <summary>
         /// Метка тира на модели предмета (в руках, у врага, на земле, на иконке):
-        /// родная модель остаётся как есть, тир виден по цветной детали.
+        /// родная текстура остаётся, тир виден по мазку краски из баллончика.
         /// </summary>
         public static void MarkItem(GameObject visual, string itemId)
         {
@@ -265,10 +263,10 @@ namespace RealmOfAshes.Game
             RoaTierMark.Attach(visual, placement, RoaItemData.Tier(itemId));
         }
 
-        /// <summary>Кольцо краски цвета тира у основания точки добычи.</summary>
-        public static void MarkTierNode(GameObject visual, string resourceType, int tier)
+        /// <summary>Искры цвета тира у основания точки добычи: здесь можно добывать.</summary>
+        public static void MarkTierNode(GameObject visual, int tier)
         {
-            RoaTierMark.Attach(visual, TierNodeEntryFor(resourceType, tier)?.mark, tier);
+            RoaTierGlow.Attach(visual, tier);
         }
 
         public void ConfigureTierNodes(IEnumerable<TierNodeEntry> rows)

@@ -6,15 +6,16 @@ using UnityEngine;
 namespace RealmOfAshes.EditorTools
 {
     /// <summary>
-    /// Где на префабе пака лежит метка тира (RoaTierMark). Считается по треугольникам в
-    /// редакторе и хранится в палитре: в сборке вершины моделей пака не читаются.
-    ///   * вытянутый предмет — изолента поперёк самой тонкой части в середине длины;
-    ///   * ствол, бочка, пучок стеблей — обмотка вплотную к узкому месту у основания;
-    ///   * плоский предмет (лист, ткань) — пятно краски на широкой грани;
-    ///   * остальное (камень, пень, мешок, шлем) — пятно краски сверху.
-    /// Пятно ставится лучом на саму поверхность и ложится по её нормали, поэтому не висит
-    /// в воздухе. Сечения берутся плоскостью по рёбрам треугольников: у low-poly моделей
-    /// вершины бывают только на концах, и выборка вершин середины пуста.
+    /// Где на префабе пака лежит краска тира (RoaTierMark) — объём, внутри которого
+    /// шейдер красит поверхность. Считается по треугольникам в редакторе и хранится в
+    /// палитре: в сборке вершины моделей пака не читаются.
+    ///   * вытянутый предмет — полоса поперёк самой тонкой части в середине длины;
+    ///   * пучок стеблей — полоса у основания, бутылка или бочонок — пояс по корпусу;
+    ///   * стоячий лист (жесть, ткань) — пятно на середине, насквозь;
+    ///   * остальное (камень, мешок, шлем) — пятно сверху, там, куда попал луч.
+    /// Полосы и пояса вдвое шире сечения поперёк: граница краски — только вдоль длины.
+    /// Сечения берутся плоскостью по рёбрам треугольников: у low-poly моделей вершины
+    /// бывают только на концах, и выборка вершин середины пуста.
     /// </summary>
     public static class RoaTierMarkLayout
     {
@@ -25,7 +26,7 @@ namespace RealmOfAshes.EditorTools
             public Bounds Bounds;
         }
 
-        public static RoaTierMarkPlacement Compute(GameObject prefab, bool node)
+        public static RoaTierMarkPlacement Compute(GameObject prefab)
         {
             var placement = new RoaTierMarkPlacement();
             Shape shape = Read(prefab);
@@ -33,30 +34,22 @@ namespace RealmOfAshes.EditorTools
             Bounds bounds = shape.Bounds;
             Vector3 size = bounds.size;
 
-            if (node)
-            {
-                // Ствол или горловина пучка — обмотка у основания; бочка, колонка — пояс
-                // краски на корпусе; приземистое (камень, пень, куст) — пятно сверху.
-                if (TrunkLike(shape, out RoaTierMarkPlacement trunk)) return trunk;
-                if (size.y >= 1.2f * Mathf.Max(size.x, size.z)) return Band(shape, 0.4f, 0.4f, out _);
-                return Dab(shape, 1, Mathf.Clamp(0.3f * Mathf.Min(size.x, size.z), 0.12f, 0.5f));
-            }
-
             int[] axes = { 0, 1, 2 };
             System.Array.Sort(axes, (a, b) => size[b].CompareTo(size[a]));
             int along = axes[0];
             float length = size[along];
             float width = Mathf.Max(size[axes[1]], 0.001f);
-            // Пучок травы — обвязка у основания; бутылка, бочонок — обмотка по корпусу.
+            // Лежачее вытянутое (оружие, инструмент, доска) — полоса поперёк; у плоского
+            // (ковёр, лист железа) — только если это рейка, иначе пятно.
+            bool flatLying = size.y < 0.2f * width;
+            if (along != 1 && length >= (flatLying ? 4f : 1.8f) * width)
+                return Tape(shape, along, axes);
+            // Пучок травы — полоса у основания; бутылка, бочонок — пояс по корпусу.
             if (TrunkLike(shape, out RoaTierMarkPlacement tie)) return tie;
             if (along == 1 && length >= 1.3f * width) return Band(shape, 0.4f, 0.4f, out _);
-            // Плоское и лежачее (ковёр, лист железа): изолента только на рейке, иначе пятно.
-            bool flatLying = size.y < 0.2f * width;
-            if (length >= (flatLying ? 4f : 1.8f) * width)
-                return Tape(shape, along, axes);
             float patch = Mathf.Clamp(0.3f * width, 0.03f, 0.3f);
             int thin = axes[2];
-            // Стоячий лист (жесть, полотно) — сквозная нашивка: видна с обеих сторон.
+            // Стоячий лист (жесть, полотно) — пятно насквозь: видно с обеих сторон.
             if (thin != 1 && size[thin] < 0.3f * width) return Patch(shape, thin, patch);
             return Dab(shape, 1, patch);
         }
@@ -94,18 +87,17 @@ namespace RealmOfAshes.EditorTools
                 if (sectionArea < area) { area = sectionArea; bestAt = at; best = section; round = sectionRound; }
             }
             if (area == float.MaxValue) return new RoaTierMarkPlacement();
-            float band = Mathf.Clamp(0.05f * height, 0.02f, 0.12f);
-            float grow = round ? 1.06f : 1.04f;
+            float band = Mathf.Clamp(0.08f * height, 0.03f, 0.16f);
             return new RoaTierMarkPlacement
             {
                 valid = true,
-                round = round,
+                shape = round ? RoaTierMarkPlacement.Cylinder : RoaTierMarkPlacement.Box,
                 position = new Vector3(best.center.x, bestAt, best.center.z),
-                scale = new Vector3(best.size.x * grow + 0.008f, band, best.size.z * grow + 0.008f)
+                scale = new Vector3(best.size.x * 2f + 0.02f, band, best.size.z * 2f + 0.02f)
             };
         }
 
-        /// <summary>Изолента поперёк вытянутого предмета: где сечение между 30% и 70% длины самое тонкое.</summary>
+        /// <summary>Полоса краски поперёк вытянутого предмета: где сечение между 30% и 70% длины самое тонкое.</summary>
         private static RoaTierMarkPlacement Tape(Shape shape, int along, int[] axes)
         {
             Bounds bounds = shape.Bounds;
@@ -121,11 +113,11 @@ namespace RealmOfAshes.EditorTools
                 if (area < bestArea) { bestArea = area; bestAt = at; best = section; round = sectionRound; found = true; }
             }
             if (!found) return new RoaTierMarkPlacement();
-            float thickness = Mathf.Clamp(0.07f * length, 0.012f, 0.22f);
+            float thickness = Mathf.Clamp(0.13f * length, 0.03f, 0.3f);
             Vector3 position = best.center;
             position[along] = bounds.min[along] + bestAt * length;
-            Vector3 scale = best.size * 1.1f + Vector3.one * 0.005f;
-            // Цилиндр метки стоит вдоль Y: повернуть его вдоль длины предмета.
+            Vector3 scale = best.size * 2f + Vector3.one * 0.01f;
+            // Цилиндр объёма стоит вдоль Y: повернуть его вдоль длины предмета.
             Quaternion rotation = Quaternion.identity;
             if (round && along != 1)
             {
@@ -134,20 +126,26 @@ namespace RealmOfAshes.EditorTools
                 scale = new Vector3(first, thickness, second);
             }
             else scale[along] = thickness;
-            return new RoaTierMarkPlacement { valid = true, round = round, position = position, rotation = rotation, scale = scale };
+            return new RoaTierMarkPlacement
+            {
+                valid = true,
+                shape = round ? RoaTierMarkPlacement.Cylinder : RoaTierMarkPlacement.Box,
+                position = position, rotation = rotation, scale = scale
+            };
         }
 
-        /// <summary>Нашивка сквозь тонкий стоячий лист на середине высоты (брусок на всю толщину).</summary>
+        /// <summary>Пятно сквозь тонкий стоячий лист на середине высоты (на всю толщину).</summary>
         private static RoaTierMarkPlacement Patch(Shape shape, int thin, float patch)
         {
             Bounds bounds = shape.Bounds;
             float at = bounds.min.y + 0.55f * bounds.size.y;
             if (!Section(shape, 1, at, out Bounds section, out _)) return new RoaTierMarkPlacement();
-            Vector3 scale = Vector3.one * patch;
-            scale[thin] = section.size[thin] + 0.01f;
+            Vector3 scale = Vector3.one * patch * 1.3f;
+            scale[thin] = section.size[thin] * 2f + 0.02f;
             return new RoaTierMarkPlacement
             {
                 valid = true,
+                shape = RoaTierMarkPlacement.Box,
                 position = new Vector3(section.center.x, at, section.center.z),
                 scale = scale
             };
@@ -155,7 +153,7 @@ namespace RealmOfAshes.EditorTools
 
         /// <summary>
         /// Пятно краски: луч вдоль оси axis (сверху вниз или с «передней» стороны) бьёт по
-        /// сетке точек у центра; выигрывает ближайшее попадание, пятно ложится по нормали.
+        /// сетке точек у центра; выигрывает ближайшее попадание, там центр шара краски.
         /// </summary>
         private static RoaTierMarkPlacement Dab(Shape shape, int axis, float patch)
         {
@@ -163,7 +161,7 @@ namespace RealmOfAshes.EditorTools
             Vector3 direction = Vector3.zero;
             direction[axis] = -1f;
             float bestDistance = float.MaxValue;
-            Vector3 hitPoint = Vector3.zero, hitNormal = Vector3.up;
+            Vector3 hitPoint = Vector3.zero;
             // От центра к краям: первое кольцо с попаданием (центральное — лучшее).
             for (int ring = 0; ring <= 3 && bestDistance == float.MaxValue; ring++)
             {
@@ -177,33 +175,27 @@ namespace RealmOfAshes.EditorTools
                         origin[u] += ring == 0 ? 0f : i * reach / ring * bounds.size[u];
                         origin[v] += ring == 0 ? 0f : j * reach / ring * bounds.size[v];
                         origin[axis] = bounds.max[axis] + 0.1f;
-                        if (Raycast(shape, origin, direction, out float distance, out Vector3 normal) && distance < bestDistance)
+                        if (Raycast(shape, origin, direction, out float distance) && distance < bestDistance)
                         {
                             bestDistance = distance;
                             hitPoint = origin + direction * distance;
-                            hitNormal = normal;
                         }
                     }
             }
             if (bestDistance == float.MaxValue) return new RoaTierMarkPlacement();
-            if (Vector3.Dot(hitNormal, direction) > 0f) hitNormal = -hitNormal;
-            float depth = Mathf.Max(0.006f, 0.1f * patch);
             return new RoaTierMarkPlacement
             {
                 valid = true,
-                round = true,
-                // Утоплено на треть: края диска не торчат над изгибом поверхности.
-                position = hitPoint + hitNormal * (depth * 0.2f),
-                rotation = Quaternion.FromToRotation(Vector3.up, hitNormal),
-                scale = new Vector3(patch, depth, patch)
+                shape = RoaTierMarkPlacement.Sphere,
+                position = hitPoint,
+                scale = Vector3.one * patch * 1.4f
             };
         }
 
         /// <summary>Ближайшее пересечение луча с треугольниками (Мёллер — Трумбор).</summary>
-        private static bool Raycast(Shape shape, Vector3 origin, Vector3 direction, out float distance, out Vector3 normal)
+        private static bool Raycast(Shape shape, Vector3 origin, Vector3 direction, out float distance)
         {
             distance = float.MaxValue;
-            normal = Vector3.up;
             List<Vector3> v = shape.Vertices;
             List<int> t = shape.Triangles;
             for (int i = 0; i + 2 < t.Count; i += 3)
@@ -223,7 +215,6 @@ namespace RealmOfAshes.EditorTools
                 float d = Vector3.Dot(ac, q) * inverse;
                 if (d <= 0f || d >= distance) continue;
                 distance = d;
-                normal = Vector3.Cross(ab, ac).normalized;
             }
             return distance < float.MaxValue;
         }

@@ -105,7 +105,7 @@ namespace RealmOfAshes.EditorTools
                         int markTier = tier;
                         Texture2D render = RenderPrefab(path, out float size, instance =>
                         {
-                            if (string.IsNullOrEmpty(markedItem)) RoaApocalypseModels.MarkTierNode(instance, resourceType, markTier);
+                            if (string.IsNullOrEmpty(markedItem)) RoaApocalypseModels.MarkTierNode(instance, markTier);
                             else RoaApocalypseModels.MarkItem(instance, markedItem);
                         });
                         if (render == null) { missing.Add(path); continue; }
@@ -159,15 +159,16 @@ namespace RealmOfAshes.EditorTools
                                 failures.Add(pair.Key + " T" + tier + ": видна не та модель (" + renderer.name + ")");
                         if (Vector3.Distance(visual.lossyScale, expected.transform.localScale) > 0.001f)
                             failures.Add(pair.Key + " T" + tier + ": модель пака не в родном размере");
-                        Transform mark = visual.Find(RoaTierMark.ChildName);
-                        if (mark == null) failures.Add(pair.Key + " T" + tier + ": нет метки тира");
-                        else
-                        {
-                            var block = new MaterialPropertyBlock();
-                            mark.GetComponent<Renderer>().GetPropertyBlock(block);
-                            if (block.GetColor("_BaseColor") != RoaTierData.TierColor(tier))
-                                failures.Add(pair.Key + " T" + tier + ": метка не цвета тира");
-                        }
+                        // Точка добычи — искры цвета тира, сама модель без краски.
+                        ParticleSystem glow = visual.Find(RoaTierGlow.ChildName)?.GetComponent<ParticleSystem>();
+                        if (glow == null) failures.Add(pair.Key + " T" + tier + ": нет искр тира");
+                        else if (glow.main.startColor.color != RoaTierData.TierColor(tier))
+                            failures.Add(pair.Key + " T" + tier + ": искры не цвета тира");
+                        else if (glow.particleCount == 0)
+                            failures.Add(pair.Key + " T" + tier + ": искры не появились");
+                        foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true))
+                            if (RoaTierMark.IsSprayed(renderer, out _))
+                                failures.Add(pair.Key + " T" + tier + ": точка добычи покрашена");
                     }
                     finally { UnityEngine.Object.DestroyImmediate(root); }
                 }
@@ -191,7 +192,7 @@ namespace RealmOfAshes.EditorTools
                 Canvas canvas = canvasGo.AddComponent<Canvas>();
                 canvasGo.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
                 var panel = (RectTransform)canvasGo.transform;
-                Text title = Label(panel, "Экипировка — метка тира на модели и значке", 22, FontStyle.Bold);
+                Text title = Label(panel, "Экипировка — краска тира на модели и точка на значке", 22, FontStyle.Bold);
                 Place(title.rectTransform, 24, 18, Width - 48, 32);
                 for (int tier = 1; tier <= 5; tier++)
                 {
@@ -271,6 +272,8 @@ namespace RealmOfAshes.EditorTools
                 bool first = true;
                 foreach (Renderer renderer in instance.GetComponentsInChildren<Renderer>())
                 {
+                    // Искры точки добычи не входят в размер модели.
+                    if (renderer is ParticleSystemRenderer) continue;
                     if (first) { bounds = renderer.bounds; first = false; }
                     else bounds.Encapsulate(renderer.bounds);
                 }

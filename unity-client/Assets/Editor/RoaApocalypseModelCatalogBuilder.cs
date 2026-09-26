@@ -161,9 +161,7 @@ namespace RealmOfAshes.EditorTools
                     {
                         resourceType = family["resourceType"].ToString(),
                         tier = i + 1,
-                        prefab = Require(VisualPath(nodes[i])),
-                        // Кольцо краски у основания: место — по вершинам самого префаба.
-                        mark = RoaTierMarkLayout.Compute(Require(VisualPath(nodes[i])), true)
+                        prefab = Require(VisualPath(nodes[i]))
                     });
             }
             var items = new List<RoaApocalypseModels.ItemEntry>();
@@ -172,11 +170,11 @@ namespace RealmOfAshes.EditorTools
                 {
                     itemId = pair.Key,
                     prefab = Require(pair.Value),
-                    mark = RoaTierMarkLayout.Compute(Require(pair.Value), false)
+                    mark = RoaTierMarkLayout.Compute(Require(pair.Value))
                 });
-            // Оружие и инструменты тиров: изолента на тонкой части модели.
+            // Оружие и инструменты тиров: полоса краски на тонкой части модели.
             foreach (RoaApocalypseModels.WeaponEntry weapon in weapons)
-                weapon.mark = RoaTierMarkLayout.Compute(weapon.prefab, false);
+                weapon.mark = RoaTierMarkLayout.Compute(weapon.prefab);
 
             var creatures = new List<RoaApocalypseModels.CreatureEntry>();
             AddCreatures(creatures, "Characters/SM_Chr_Wanderer_Male_01", 0f,

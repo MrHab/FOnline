@@ -191,6 +191,7 @@ namespace RealmOfAshes.EditorTools
                 if (packInstance != null)
                 {
                     packInstance.hideFlags = HideFlags.HideAndDontSave;
+                    RoaApocalypseModels.ApplyItemLook(packInstance, itemId);
                     foreach (Animator animator in packInstance.GetComponentsInChildren<Animator>(true))
                         animator.enabled = false;
                     focus = packInstance;

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEditor;
@@ -45,11 +46,11 @@ namespace RealmOfAshes.EditorTools
         {
             string id = family["id"].ToString();
             JObject visuals = (JObject)family["visuals"];
-            string[][] prefabs =
+            JToken[][] prefabs =
             {
-                ((JArray)visuals["nodes"]).ToObject<string[]>(),
-                ((JArray)visuals["raw"]).ToObject<string[]>(),
-                ((JArray)visuals["refined"]).ToObject<string[]>()
+                ((JArray)visuals["nodes"]).ToArray(),
+                ((JArray)visuals["raw"]).ToArray(),
+                ((JArray)visuals["refined"]).ToArray()
             };
             string[][] items =
             {
@@ -96,16 +97,21 @@ namespace RealmOfAshes.EditorTools
                             Place(none.rectTransform, x, y + Cell / 2f - 20, Cell, 40);
                             continue;
                         }
-                        string path = prefabs[row][tier - 1];
-                        Texture2D render = RenderPrefab(path);
+                        JToken visual = prefabs[row][tier - 1];
+                        string path = visual is JObject entry ? entry["prefab"].ToString() : visual.ToString();
+                        string hex = visual is JObject tinted ? tinted["tint"]?.ToString() : null;
+                        Color tint = !string.IsNullOrEmpty(hex) && ColorUtility.TryParseHtmlString(hex, out Color parsed) ? parsed : Color.white;
+                        bool paint = visual is JObject painted && painted["paint"]?.Type == JTokenType.Boolean && painted["paint"].ToObject<bool>();
+                        Texture2D render = RenderPrefab(path, tint, paint, out float size);
                         if (render == null) { missing.Add(path); continue; }
                         renders.Add(render);
                         RawImage image = Raw(panel, render);
                         Place(image.rectTransform, x, y, Cell, Cell);
                         string itemId = items[row][tier - 1];
-                        string caption = string.IsNullOrEmpty(itemId)
-                            ? Path.GetFileName(path)
-                            : RoaItemData.Name(itemId) + "\n" + Path.GetFileName(path);
+                        string shown = Path.GetFileName(path).Replace("SM_", string.Empty)
+                            + (string.IsNullOrEmpty(hex) ? string.Empty : (paint ? " заливка " : " оттенок ") + hex)
+                            + " · " + size.ToString("0.0") + " м";
+                        string caption = string.IsNullOrEmpty(itemId) ? shown : RoaItemData.Name(itemId) + "\n" + shown;
                         Text label = Label(panel, caption, 12, FontStyle.Normal);
                         label.alignment = TextAnchor.UpperCenter;
                         Place(label.rectTransform, x - 10, y + Cell + 4, Cell + 20, 52);
@@ -149,6 +155,14 @@ namespace RealmOfAshes.EditorTools
                                 failures.Add(pair.Key + " T" + tier + ": видна не та модель (" + renderer.name + ")");
                         if (Vector3.Distance(visual.lossyScale, expected.transform.localScale) > 0.001f)
                             failures.Add(pair.Key + " T" + tier + ": модель пака не в родном размере");
+                        Color tint = RoaApocalypseModels.TierNodeTint(pair.Key, tier);
+                        if (tint != Color.white)
+                        {
+                            var block = new MaterialPropertyBlock();
+                            visual.GetComponentInChildren<Renderer>().GetPropertyBlock(block);
+                            if (block.GetColor("_BaseColor") != tint)
+                                failures.Add(pair.Key + " T" + tier + ": оттенок тира не применён");
+                        }
                     }
                     finally { UnityEngine.Object.DestroyImmediate(root); }
                 }
@@ -157,8 +171,9 @@ namespace RealmOfAshes.EditorTools
         private static float ColumnX(int tier) => 210 + (tier - 1) * 204;
 
         /// <summary>Префаб пака в авторском размере, снятый камерой по своим габаритам.</summary>
-        private static Texture2D RenderPrefab(string packPath)
+        private static Texture2D RenderPrefab(string packPath, Color tint, bool paint, out float largest)
         {
+            largest = 0f;
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PackRoot + packPath + ".prefab");
             if (prefab == null) return null;
             GameObject instance = null, cameraGo = null;
@@ -174,6 +189,7 @@ namespace RealmOfAshes.EditorTools
                 instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
                 instance.transform.position = new Vector3(0f, -12000f, 0f);
                 SetLayer(instance, CaptureLayer);
+                RoaApocalypseModels.ApplyTint(instance, tint, paint);
                 var bounds = new Bounds(instance.transform.position, Vector3.zero);
                 bool first = true;
                 foreach (Renderer renderer in instance.GetComponentsInChildren<Renderer>())
@@ -182,6 +198,7 @@ namespace RealmOfAshes.EditorTools
                     else bounds.Encapsulate(renderer.bounds);
                 }
                 float size = Mathf.Max(bounds.extents.magnitude, 0.05f);
+                largest = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
 
                 cameraGo = new GameObject("NodeCamera");
                 Camera camera = cameraGo.AddComponent<Camera>();

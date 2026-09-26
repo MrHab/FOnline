@@ -25,6 +25,10 @@ namespace RealmOfAshes.Game
         {
             public string itemId;
             public GameObject prefab;
+            /// <summary>Оттенок префаба (тиры руды, шкур): белый — без окраски.</summary>
+            public Color tint = Color.white;
+            /// <summary>Закрасить целиком: атлас пака заменяется белым, объект становится цвета tint.</summary>
+            public bool paint;
         }
 
         [Serializable]
@@ -69,6 +73,8 @@ namespace RealmOfAshes.Game
             public string resourceType;
             public int tier;
             public GameObject prefab;
+            public Color tint = Color.white;
+            public bool paint;
         }
 
         [SerializeField] private GameObject male;
@@ -216,6 +222,90 @@ namespace RealmOfAshes.Game
             foreach (TierNodeEntry entry in palette.tierNodes)
                 if (entry != null && entry.tier == tier && entry.resourceType == resourceType) return entry.prefab;
             return null;
+        }
+
+        /// <summary>Оттенок точки добычи тира (белый — префаб как есть).</summary>
+        public static Color TierNodeTint(string resourceType, int tier) => TierNodeEntryFor(resourceType, tier)?.tint ?? Color.white;
+
+        private static TierNodeEntry TierNodeEntryFor(string resourceType, int tier)
+        {
+            RoaApocalypseModels palette = Instance;
+            if (palette == null) return null;
+            foreach (TierNodeEntry entry in palette.tierNodes)
+                if (entry != null && entry.tier == tier && entry.resourceType == resourceType) return entry;
+            return null;
+        }
+
+        private static ItemEntry OwnItemEntry(string itemId)
+        {
+            RoaApocalypseModels palette = Instance;
+            if (palette == null || string.IsNullOrEmpty(itemId)) return null;
+            string id = RoaInventory.BaseId(itemId);
+            foreach (ItemEntry entry in palette.items)
+                if (entry != null && entry.itemId == id) return entry;
+            return null;
+        }
+
+        /// <summary>Оттенок собственного префаба предмета (без облика-заместителя).</summary>
+        public static Color ItemTint(string itemId) => OwnItemEntry(itemId)?.tint ?? Color.white;
+
+        /// <summary>Облик собственного префаба предмета: оттенок и, если задано, закраска.</summary>
+        public static void ApplyItemLook(GameObject root, string itemId)
+        {
+            ItemEntry entry = OwnItemEntry(itemId);
+            if (entry != null) ApplyTint(root, entry.tint, entry.paint);
+        }
+
+        /// <summary>Облик точки добычи тира: оттенок и закраска из палитры.</summary>
+        public static void ApplyTierNodeLook(GameObject root, string resourceType, int tier)
+        {
+            TierNodeEntry entry = TierNodeEntryFor(resourceType, tier);
+            if (entry != null) ApplyTint(root, entry.tint, entry.paint);
+        }
+
+        /// <summary>
+        /// Окрашивает все рендереры блоком свойств, не трогая общие материалы.
+        /// Умножение (_BaseColor) меняет серые меши пака; paint ещё и подменяет атлас
+        /// белым — так насыщенный рисунок атласа (узор ковра, надпись) уходит под цвет.
+        /// </summary>
+        private static Texture2D _paintBase;
+
+        /// <summary>
+        /// Подложка закраски: светло-серая, по яркости как средний цвет атласа пака.
+        /// Чисто белая под светом сцены выгорает, и оттенок читается бледным пятном.
+        /// </summary>
+        private static Texture2D PaintBase
+        {
+            get
+            {
+                if (_paintBase != null) return _paintBase;
+                _paintBase = new Texture2D(4, 4, TextureFormat.RGBA32, false) { name = "RoaTierPaintBase", hideFlags = HideFlags.DontSave };
+                var pixels = new Color32[16];
+                for (int i = 0; i < pixels.Length; i++) pixels[i] = new Color32(150, 150, 150, 255);
+                _paintBase.SetPixels32(pixels);
+                _paintBase.Apply(false, true);
+                return _paintBase;
+            }
+        }
+
+        public static void ApplyTint(GameObject root, Color tint, bool paint = false)
+        {
+            bool white = tint.a <= 0f || (tint.r >= 0.999f && tint.g >= 0.999f && tint.b >= 0.999f);
+            if (root == null || (white && !paint)) return;
+            var block = new MaterialPropertyBlock();
+            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.GetPropertyBlock(block);
+                block.SetColor("_BaseColor", tint);
+                block.SetColor("_Color", tint);
+                if (paint)
+                {
+                    block.SetTexture("_Albedo_Map", PaintBase);
+                    block.SetTexture("_BaseMap", PaintBase);
+                    block.SetTexture("_MainTex", PaintBase);
+                }
+                renderer.SetPropertyBlock(block);
+            }
         }
 
         public void ConfigureTierNodes(IEnumerable<TierNodeEntry> rows)

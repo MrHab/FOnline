@@ -204,25 +204,69 @@
       },
       "visuals": {
         "nodes": [
-          "Generic/SM_Generic_Small_Rocks_02",
-          "Environment/SM_Env_Rock_01",
-          "Environment/SM_Env_Rock_02",
-          "Environment/SM_Env_Rock_03",
-          "Props/SM_Prop_Wall_Brick_Pile_01"
+          {
+            "prefab": "Environment/SM_Env_Rock_01",
+            "tint": "#B8653F"
+          },
+          {
+            "prefab": "Environment/SM_Env_Rock_01",
+            "tint": "#7FA6E8"
+          },
+          {
+            "prefab": "Environment/SM_Env_Rock_01",
+            "tint": "#6EC1B8"
+          },
+          {
+            "prefab": "Environment/SM_Env_Rock_01",
+            "tint": "#6A4CA8"
+          },
+          {
+            "prefab": "Environment/SM_Env_Rock_01",
+            "tint": "#E0B040"
+          }
         ],
         "raw": [
-          "Generic/SM_Generic_Small_Rocks_01",
-          "Generic/SM_Generic_Small_Rocks_03",
-          "Generic/SM_Generic_Small_Rocks_04",
-          "Generic/SM_Generic_Small_Rocks_05",
-          "Props/SM_Prop_Brick_01"
+          {
+            "prefab": "Generic/SM_Generic_Small_Rocks_05",
+            "tint": "#B8653F"
+          },
+          {
+            "prefab": "Generic/SM_Generic_Small_Rocks_03",
+            "tint": "#7FA6E8"
+          },
+          {
+            "prefab": "Generic/SM_Generic_Small_Rocks_04",
+            "tint": "#6EC1B8"
+          },
+          {
+            "prefab": "Generic/SM_Generic_Small_Rocks_05",
+            "tint": "#6A4CA8"
+          },
+          {
+            "prefab": "Generic/SM_Generic_Small_Rocks_03",
+            "tint": "#E0B040"
+          }
         ],
         "refined": [
           "Props/SM_Prop_Iron_Sheet_01",
-          "Props/SM_Prop_Iron_Sheet_02",
-          "Props/SM_Prop_MetalSheet_01",
-          "Props/SM_Prop_MetalSheet_02",
-          "Props/SM_Prop_Beam_01"
+          {
+            "prefab": "Props/SM_Prop_Iron_Sheet_02",
+            "tint": "#7FA6E8"
+          },
+          {
+            "prefab": "Props/SM_Prop_MetalSheet_01",
+            "tint": "#9ED3CC"
+          },
+          {
+            "prefab": "Props/SM_Prop_Iron_Sheet_04",
+            "tint": "#6A4CA8",
+            "paint": true
+          },
+          {
+            "prefab": "Props/SM_Prop_Iron_Sheet_03",
+            "tint": "#E0B040",
+            "paint": true
+          }
         ]
       }
     },
@@ -273,24 +317,50 @@
       "visuals": {
         "nodes": [
           "Generic/SM_Generic_TreeStump_01",
-          "Environment/SM_Env_Tree_Dead_01",
-          "Environment/SM_Env_Tree_Dead_02",
+          "Generic/SM_Generic_Tree_01",
+          "Generic/SM_Generic_Tree_02",
           "Environment/SM_Env_Tree_Dead_03",
-          "Generic/SM_Generic_TreeDead_01"
+          {
+            "prefab": "Generic/SM_Generic_TreeDead_01",
+            "tint": "#8C8C88",
+            "paint": true
+          }
         ],
         "raw": [
           "Item/SM_Item_Log_01",
-          "Item/SM_Item_Log_02",
-          "Item/SM_Item_Log_03",
+          {
+            "prefab": "Item/SM_Item_Log_03",
+            "tint": "#B98A58",
+            "paint": true
+          },
+          {
+            "prefab": "Item/SM_Item_Log_01",
+            "tint": "#5C4630",
+            "paint": true
+          },
           "Item/SM_Item_Log_04",
-          "Item/SM_Item_Log_05"
+          {
+            "prefab": "Item/SM_Item_Log_05",
+            "tint": "#9A9A94",
+            "paint": true
+          }
         ],
         "refined": [
           "Props/SM_Prop_Plank_01",
-          "Props/SM_Prop_Fence_Wood_Post_01",
+          {
+            "prefab": "Props/SM_Prop_Plank_02",
+            "tint": "#D9B98A"
+          },
           "Props/SM_Prop_Plank_Block_01",
-          "Props/SM_Prop_WoodSheet_01",
-          "Props/SM_Prop_Wood_Pole_01"
+          {
+            "prefab": "Props/SM_Prop_Plank_03",
+            "tint": "#5A4638"
+          },
+          {
+            "prefab": "Props/SM_Prop_Plank_Block_01",
+            "tint": "#A8A8A2",
+            "paint": true
+          }
         ]
       }
     },
@@ -343,23 +413,51 @@
         "nodes": [
           "Environment/SM_Env_Grass_Tuft_01",
           "Environment/SM_Env_Grass_Tuft_02",
-          "Environment/SM_Env_Grass_Tuft_03",
+          "Environment/SM_Env_Bushes_03",
           "Environment/SM_Env_Bushes_01",
-          "Environment/SM_Env_Bushes_02"
+          {
+            "prefab": "Environment/SM_Env_Bushes_04",
+            "tint": "#A8A8A0",
+            "paint": true
+          }
         ],
         "raw": [
           "Environment/SM_Env_Grass_Tuft_01",
           "Environment/SM_Env_Grass_Tuft_03",
-          "Item/SM_Item_Stick_01",
-          "Item/SM_Item_Rope_Detailed_01",
-          "Props/SM_Prop_TrashBag_01"
+          {
+            "prefab": "Environment/SM_Env_Grass_Tuft_02",
+            "tint": "#6E8A34",
+            "paint": true
+          },
+          {
+            "prefab": "Item/SM_Item_Rope_Detailed_01",
+            "tint": "#56687A",
+            "paint": true
+          },
+          {
+            "prefab": "Item/SM_Item_Rope_Detailed_01",
+            "tint": "#E4E4EA",
+            "paint": true
+          }
         ],
         "refined": [
-          "Props/SM_Prop_Sheet_01",
-          "Props/SM_Prop_Curtain_01",
+          "Props/SM_Prop_Sandbag_01",
+          {
+            "prefab": "Props/SM_Prop_Sheet_01",
+            "tint": "#E6DAC0",
+            "paint": true
+          },
           "Props/SM_Prop_Sheet_04",
-          "Props/SM_Prop_Sleeping_Bag_Rolled_01",
-          "Characters/Attachments/SM_Chr_Attach_Bedroll_01"
+          {
+            "prefab": "Props/SM_Prop_Sheet_02",
+            "tint": "#6A7458",
+            "paint": true
+          },
+          {
+            "prefab": "Props/SM_Prop_Sheet_03",
+            "tint": "#6E6E7C",
+            "paint": true
+          }
         ]
       }
     },
@@ -411,18 +509,58 @@
       "visuals": {
         "nodes": [],
         "raw": [
-          "Item/SM_Item_Meat_01",
-          "Props/SM_Prop_Rug_05",
-          "Props/SM_Prop_Rug_06",
-          "Props/SM_Prop_Rug_04",
-          "Props/SM_Prop_Rug_01"
+          {
+            "prefab": "Props/SM_Prop_Rug_05",
+            "tint": "#D2A878",
+            "paint": true
+          },
+          {
+            "prefab": "Props/SM_Prop_Rug_06",
+            "tint": "#A87650",
+            "paint": true
+          },
+          {
+            "prefab": "Props/SM_Prop_Rug_04",
+            "tint": "#70482F",
+            "paint": true
+          },
+          {
+            "prefab": "Props/SM_Prop_Rug_01",
+            "tint": "#8A6E48",
+            "paint": true
+          },
+          {
+            "prefab": "Props/SM_Prop_Rug_02",
+            "tint": "#5A2A3E",
+            "paint": true
+          }
         ],
         "refined": [
-          "Characters/Attachments/SM_Chr_Attach_SupplyBag_01",
-          "Props/SM_Prop_Sleeping_Bag_Rolled_02",
-          "Props/SM_Prop_Sleeping_Bag_01",
-          "Item/SM_Item_Duffle_Bag_01",
-          "Props/SM_Prop_Sandbag_01"
+          {
+            "prefab": "Props/SM_Prop_Sleeping_Bag_Rolled_01",
+            "tint": "#D8B48A",
+            "paint": true
+          },
+          {
+            "prefab": "Props/SM_Prop_Sleeping_Bag_Rolled_02",
+            "tint": "#A0703F",
+            "paint": true
+          },
+          {
+            "prefab": "Props/SM_Prop_Sleeping_Bag_01",
+            "tint": "#7A5030",
+            "paint": true
+          },
+          {
+            "prefab": "Characters/Attachments/SM_Chr_Attach_Bedroll_01",
+            "tint": "#4E5A44",
+            "paint": true
+          },
+          {
+            "prefab": "Item/SM_Item_Duffle_Bag_01",
+            "tint": "#5A2A3E",
+            "paint": true
+          }
         ]
       }
     },
@@ -474,23 +612,55 @@
         "nodes": [
           "Props/SM_Prop_Barrel_Old_01",
           "Props/SM_Prop_Barrel_01",
-          "Props/SM_Prop_Barrel_Open_01",
-          "Props/SM_Prop_BarrelStack_01",
+          "Props/SM_Prop_Barrel_Warning_01",
+          "Props/SM_Prop_Barrel_Nuke_01",
           "Props/SM_Prop_Gaspump_01"
         ],
         "raw": [
           "Props/SM_Prop_GasCan_01",
-          "Item/SM_Item_Can_03",
-          "Item/SM_Item_Jar_01",
-          "Props/SM_Prop_Chemical_02",
-          "Props/SM_Prop_Barrel_Coloured_01"
+          {
+            "prefab": "Item/SM_Item_Can_05",
+            "tint": "#2A2420",
+            "paint": true
+          },
+          {
+            "prefab": "Item/SM_Item_Jar_01",
+            "tint": "#D8B040",
+            "paint": true
+          },
+          "Props/SM_Prop_Propane_01",
+          {
+            "prefab": "Props/SM_Prop_Barrel_Coloured_01",
+            "tint": "#2F6FD0",
+            "paint": true
+          }
         ],
         "refined": [
-          "Item/SM_Item_Bottle_01",
-          "Item/SM_Item_Bottle_02",
-          "Item/SM_Item_Alcohol_01",
-          "Item/SM_Item_Alcohol_03",
-          "Props/SM_Prop_Chemical_01"
+          {
+            "prefab": "Item/SM_Item_Can_07",
+            "tint": "#2A2420",
+            "paint": true
+          },
+          {
+            "prefab": "Item/SM_Item_Drink_Bottle_02",
+            "tint": "#C8A040",
+            "paint": true
+          },
+          {
+            "prefab": "Item/SM_Item_Can_07",
+            "tint": "#E07020",
+            "paint": true
+          },
+          {
+            "prefab": "Props/SM_Prop_Chemical_01",
+            "tint": "#9AB0C0",
+            "paint": true
+          },
+          {
+            "prefab": "Props/SM_Prop_GasCan_01",
+            "tint": "#2F6FD0",
+            "paint": true
+          }
         ]
       }
     }

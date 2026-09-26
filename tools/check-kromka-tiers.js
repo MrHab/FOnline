@@ -75,16 +75,27 @@ for (const family of config.families) {
 const rawTiers = require(path.join(ROOT, 'data/kromka/tiers.json'));
 const packRoot = path.join(ROOT, 'unity-client/Assets/Synty/PolygonApocalypse/Prefabs');
 const packInstalled = require('fs').existsSync(packRoot);
+// Облик — путь префаба или { prefab, tint }: один префаб разного оттенка — разный облик.
+const visualPrefab = visual => (typeof visual === 'string' ? visual : visual.prefab);
+const visualKey = visual => (typeof visual === 'string' ? visual : `${visual.prefab} ${visual.tint} ${visual.paint === true}`);
 for (const family of rawTiers.families) {
   const visuals = family.visuals || {};
+  for (const kind of ['raw', 'refined', 'nodes']) {
+    for (const visual of visuals[kind] || []) {
+      if (typeof visual !== 'string') {
+        assert(/^#[0-9A-F]{6}$/i.test(visual.tint || ''), `${family.id}: bad tint ${visual.tint}`);
+        assert(visual.paint === undefined || typeof visual.paint === 'boolean', `${family.id}: paint must be true or false`);
+      }
+    }
+  }
   for (const kind of ['raw', 'refined']) {
     assert.equal((visuals[kind] || []).length, T, `${family.id}: ${kind} needs a pack prefab per tier`);
-    assert.equal(new Set(visuals[kind]).size, T, `${family.id}: ${kind} tiers must look different`);
+    assert.equal(new Set(visuals[kind].map(visualKey)).size, T, `${family.id}: ${kind} tiers must look different`);
   }
   // Шкуры снимаются с убитого зверя — своей точки добычи у них нет.
   assert.equal((visuals.nodes || []).length, family.resourceType === 'hide' ? 0 : T, `${family.id}: node prefab per tier`);
   if (packInstalled) {
-    for (const prefab of [...visuals.nodes, ...visuals.raw, ...visuals.refined]) {
+    for (const prefab of [...visuals.nodes, ...visuals.raw, ...visuals.refined].map(visualPrefab)) {
       assert(require('fs').existsSync(path.join(packRoot, `${prefab}.prefab`)), `${family.id}: missing pack prefab ${prefab}`);
     }
   }

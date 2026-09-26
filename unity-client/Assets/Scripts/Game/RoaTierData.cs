@@ -91,6 +91,13 @@ namespace RealmOfAshes.Game
         /// </summary>
         public static Color TierColor(int tier) => Get(tier)?.Color ?? DefaultColor(tier);
 
+        /// <summary>Значок тира для текста с разметкой: «T3» цветом тира; без тира — пусто.</summary>
+        public static string Badge(int tier)
+        {
+            if (tier < 1) return string.Empty;
+            return "<color=#" + ColorUtility.ToHtmlStringRGB(TierColor(tier)) + ">T" + tier + "</color>";
+        }
+
         private static Color DefaultColor(int tier)
         {
             switch (tier)

@@ -29,11 +29,14 @@ namespace RealmOfAshes.Game
         {
             public MarkerKind Kind;
             public Vector3 Position;
+            /// <summary>Тир узла добычи (0 — не узел): метка рисуется цветом тира.</summary>
+            public int Tier;
 
-            public Marker(MarkerKind kind, Vector3 position)
+            public Marker(MarkerKind kind, Vector3 position, int tier = 0)
             {
                 Kind = kind;
                 Position = position;
+                Tier = tier;
             }
         }
 
@@ -103,6 +106,14 @@ namespace RealmOfAshes.Game
         public int StaticFeatureCount { get; private set; }
         public int MarkerCount { get { return _markers.Count; } }
         public string LocationName { get; private set; } = string.Empty;
+        /// <summary>Тир локации из worldState: ресурсы и враги здесь этого тира (0 — неизвестен).</summary>
+        public int LocationTier { get; set; }
+        /// <summary>Заголовок карты: имя локации и значок её тира.</summary>
+        public string TitleWithTier(string name)
+        {
+            string badge = RoaTierData.Badge(LocationTier);
+            return string.IsNullOrEmpty(badge) ? name : name + "  " + badge;
+        }
         public Texture2D StaticTexture { get { return _staticTexture; } }
 
         /// <summary>Снимок локации сверху; пока он не снят — миникарта рисует схему.</summary>
@@ -170,6 +181,7 @@ namespace RealmOfAshes.Game
             _markers.Clear();
             StaticFeatureCount = 0;
             LocationName = location?.Name ?? location?.Id ?? string.Empty;
+            LocationTier = 0;
             MapWidth = location?.TileWidth ?? 0;
             MapDepth = location?.TileDepth ?? 0;
             DestroyRuntime(_staticTexture);

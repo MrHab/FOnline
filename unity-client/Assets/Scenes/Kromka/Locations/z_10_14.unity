@@ -99075,7 +99075,6 @@ MonoBehaviour:
   _serverArchetypeId: gardenPatch
   _role: scenery
   _gameplayTags:
-  - resource
   - food
   - zone-kit
   _serverAuthoritative: 1
@@ -134062,7 +134061,6 @@ MonoBehaviour:
   _serverArchetypeId: gardenPatch
   _role: scenery
   _gameplayTags:
-  - resource
   - food
   - zone-kit
   _serverAuthoritative: 1
@@ -138557,7 +138555,6 @@ MonoBehaviour:
   _serverArchetypeId: scrapHeap
   _role: scenery
   _gameplayTags:
-  - resource
   - scrap
   - zone-kit
   _serverAuthoritative: 1
@@ -142918,7 +142915,6 @@ MonoBehaviour:
   _serverArchetypeId: scrapHeap
   _role: scenery
   _gameplayTags:
-  - resource
   - scrap
   - zone-kit
   _serverAuthoritative: 1
@@ -166906,7 +166902,6 @@ MonoBehaviour:
   _serverArchetypeId: gardenPatch
   _role: scenery
   _gameplayTags:
-  - resource
   - food
   - zone-kit
   _serverAuthoritative: 1
@@ -167892,7 +167887,6 @@ MonoBehaviour:
   _serverArchetypeId: scrapHeap
   _role: scenery
   _gameplayTags:
-  - resource
   - scrap
   - zone-kit
   _serverAuthoritative: 1
@@ -176393,7 +176387,6 @@ MonoBehaviour:
   _serverArchetypeId: scrapHeap
   _role: scenery
   _gameplayTags:
-  - resource
   - scrap
   - zone-kit
   _serverAuthoritative: 1
@@ -195241,7 +195234,6 @@ MonoBehaviour:
   _serverArchetypeId: scrapHeap
   _role: scenery
   _gameplayTags:
-  - resource
   - scrap
   - zone-kit
   _serverAuthoritative: 1
@@ -213061,7 +213053,6 @@ MonoBehaviour:
   _serverArchetypeId: scrapHeap
   _role: scenery
   _gameplayTags:
-  - resource
   - scrap
   - zone-kit
   _serverAuthoritative: 1
@@ -213634,7 +213625,6 @@ MonoBehaviour:
   _serverArchetypeId: scrapHeap
   _role: scenery
   _gameplayTags:
-  - resource
   - scrap
   - zone-kit
   _serverAuthoritative: 1
@@ -234435,7 +234425,6 @@ MonoBehaviour:
   _serverArchetypeId: scrapHeap
   _role: scenery
   _gameplayTags:
-  - resource
   - scrap
   - zone-kit
   _serverAuthoritative: 1
@@ -237633,7 +237622,6 @@ MonoBehaviour:
   _serverArchetypeId: gardenPatch
   _role: scenery
   _gameplayTags:
-  - resource
   - food
   - zone-kit
   _serverAuthoritative: 1

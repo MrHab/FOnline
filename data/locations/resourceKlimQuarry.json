@@ -171,12 +171,8 @@
       },
       "collision": "none",
       "tags": [
-        "resource",
         "scrap"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "vision": {
         "mode": "cover"
       },

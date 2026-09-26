@@ -1647,12 +1647,8 @@
       },
       "collision": "none",
       "tags": [
-        "resource",
         "water"
       ],
-      "resourceType": "water",
-      "hp": 7,
-      "maxHp": 7,
       "vision": {
         "mode": "cover"
       },

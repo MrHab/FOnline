@@ -24,6 +24,7 @@ const PICKAXE_HIT_WEAR = (() => {
   return 1.5 * tierWearMultiplier(config, itemCatalog.items.find(item => item.id === 'pickaxe').tier);
 })();
 const COMBAT_LOCATION_ID = 'combatRuntimeArena';
+const HARVEST_NODE_ID = 'depot_scrap_01';
 const NPC_LOCATION_TAGS = new Set([
   'npc', 'enemy', 'monster', 'living', 'friendly', 'guard', 'merchant', 'trader'
 ]);
@@ -466,8 +467,12 @@ function seedCombatFixtures(accounts) {
     id: COMBAT_LOCATION_ID,
     name: 'Combat runtime arena',
     pvpMode: 'pvp',
+    // Куча лома депо — декор (лом не узел добычи): на арене она служит рудной жилой.
     objects: (Array.isArray(sourceLocation.objects) ? sourceLocation.objects : [])
       .filter(row => !authoredLocationObjectIsNpc(row))
+      .map(row => row.id === HARVEST_NODE_ID
+        ? { ...row, resourceType: 'ore', hp: 6, maxHp: 6, tags: [...new Set([...(row.tags || []), 'resource', 'ore'])] }
+        : row)
   };
   delete arenaLocation.worldSiteId;
   delete arenaLocation.siteId;
@@ -1710,9 +1715,9 @@ async function assertHarvestRequiresEquippedTool(accounts) {
 
   const resource = (Array.isArray(account.join.worldState?.resources)
     ? account.join.worldState.resources
-    : []).find(row => row?.id === 'depot_scrap_01');
-  invariant(resource && resource.type === 'scrap' && Number(resource.hp) > 0,
-    'Harvest fixture is missing the authored scrap resource', account.join.worldState?.resources);
+    : []).find(row => row?.id === HARVEST_NODE_ID);
+  invariant(resource && resource.type === 'ore' && resource.tier === 1 && Number(resource.hp) > 0,
+    'Harvest fixture is missing the authored T1 ore node', account.join.worldState?.resources);
   const resourceX = (Number(resource.tx) - 19 + 0.5) * 2;
   const resourceZ = (Number(resource.tz) - 19 + 0.5) * 2;
   invariant(Math.hypot(Number(account.join.x) - resourceX, Number(account.join.z) - resourceZ) <= 3.2,
@@ -1723,7 +1728,7 @@ async function assertHarvestRequiresEquippedTool(accounts) {
 
   const initialAp = Number(account.join.self?.combat?.ap);
   const initialCondition = Number(account.join.self?.itemConditions?.pickaxe);
-  const initialScrap = inventoryRowQty(account.join.self?.inventory, 'scrap');
+  const initialOre = inventoryRowQty(account.join.self?.inventory, 'ore');
   invariant(inventoryRowQty(account.join.self?.inventory, 'pickaxe') === 1
     && initialCondition === 100,
   'Harvest fixture does not carry one full-condition pickaxe in its bag', account.join.self);
@@ -1757,7 +1762,7 @@ async function assertHarvestRequiresEquippedTool(accounts) {
       });
     invariant(Number(afterRejected.self?.itemConditions?.pickaxe) === initialCondition,
       'Rejected harvest wore the bagged pickaxe', afterRejected.self?.itemConditions);
-    invariant(inventoryRowQty(afterRejected.self?.inventory, 'scrap') === initialScrap,
+    invariant(inventoryRowQty(afterRejected.self?.inventory, 'ore') === initialOre,
       'Rejected harvest granted resource loot', afterRejected.self?.inventory);
     invariant(rejectedResource && Number(rejectedResource.hp) === Number(resource.hp),
       'Rejected harvest damaged the resource node', {
@@ -1795,7 +1800,7 @@ async function assertHarvestRequiresEquippedTool(accounts) {
       skillRanks: {},
       talentRanks: {}
     });
-    invariant(harvested.ok === true && harvested.item?.id === 'scrap',
+    invariant(harvested.ok === true && harvested.item?.id === 'ore',
       'Server rejected harvesting with the required tool equipped', harvested);
     invariant(Number(resource.hp) - Number(harvested.resource?.hp) === 1,
       'Successful harvest did not damage the resource exactly once', {
@@ -1808,10 +1813,10 @@ async function assertHarvestRequiresEquippedTool(accounts) {
         before: beforeSuccessCondition,
         after: harvested.self?.itemConditions?.pickaxe
       });
-    invariant(inventoryRowQty(harvested.inventory, 'scrap')
-      === initialScrap + Number(harvested.item?.qty || 0),
+    invariant(inventoryRowQty(harvested.inventory, 'ore')
+      === initialOre + Number(harvested.item?.qty || 0),
     'Successful harvest did not grant exactly its acknowledged loot', {
-      before: initialScrap,
+      before: initialOre,
       item: harvested.item,
       inventory: harvested.inventory
     });
@@ -1833,7 +1838,7 @@ async function assertHarvestRequiresEquippedTool(accounts) {
 
     // Истощение в мире физическое: выработанный узел исчезает с карты и
     // возвращается по таймеру. Это должно работать и вне точек мировой карты,
-    // иначе срубленное дерево пропадало бы навсегда. Сливаем запас лома
+    // иначе срубленное дерево пропадало бы навсегда. Сливаем запас жилы
     // подряд — очков действий хватает, а задерживаться в опасной локации нельзя.
     let drained = harvested;
     for (let attempt = 0; attempt < 10 && drained.depleted !== true; attempt += 1) {

@@ -128,6 +128,16 @@ namespace RealmOfAshes.Game
                 + "<color=#9e1452>■</color> чёрная — выпадает всё";
         }
 
+        /// <summary>Тир зоны или места из /api/world-map (0 — не пришёл).</summary>
+        public static int Tier(JObject row) => row?["tier"]?.ToObject<int?>() ?? 0;
+
+        /// <summary>Строка карточки о тире: какие здесь ресурсы и враги.</summary>
+        public static string TierRulesText(int tier)
+        {
+            if (tier < 1) return string.Empty;
+            return "Тир " + RoaTierData.Badge(tier) + ": ресурсы и враги только " + tier + "-го тира";
+        }
+
         public static string DangerRulesText(string mode)
         {
             switch (DangerRank(mode))
@@ -331,6 +341,8 @@ namespace RealmOfAshes.Game
             bool isCity = !string.IsNullOrEmpty(zone["city"]?.ToString());
             if (isCity) body.Append("Город занимает сектор целиком: ворота соседей ведут прямо в него.\n");
             body.Append("Зона ").Append(DangerRulesText(zone["mode"]?.ToString())).Append('\n');
+            string tierLine = TierRulesText(Tier(_selectedPlace ?? zone));
+            if (!string.IsNullOrEmpty(tierLine)) body.Append(tierLine).Append('\n');
             string gates = zone["gates"]?.ToString() ?? string.Empty;
             var open = new List<string>();
             foreach (char side in RoaWorldMapRoute.Sides) if (gates.IndexOf(side) >= 0) open.Add(RoaWorldMapRoute.GateName(side));
@@ -435,12 +447,16 @@ namespace RealmOfAshes.Game
             float distance = _map3D.Distance;
             foreach (JObject zone in _zonesById.Values)
             {
-                if (distance <= ZoneNumbersDistance && _map3D.PointToScreen(ZoneCentre(zone), 0.12f, out Vector2 centre))
+                // Тир зоны виден на любом масштабе, номер — вблизи.
+                int zoneTier = Tier(zone);
+                bool near = distance <= ZoneNumbersDistance;
+                if ((near || zoneTier > 0) && _map3D.PointToScreen(ZoneCentre(zone), 0.12f, out Vector2 centre))
                 {
                     Text number = TakeViewLabel(ref used);
-                    number.fontSize = 11;
+                    number.fontSize = near ? 11 : 10;
                     number.color = new Color(1f, 1f, 1f, 0.72f);
-                    number.text = "№" + zone["n"];
+                    string badge = RoaTierData.Badge(zoneTier);
+                    number.text = near ? "№" + zone["n"] + (badge.Length > 0 ? " " + badge : string.Empty) : badge;
                     PlaceViewLabel(number, centre + new Vector2(0f, 12f));
                 }
                 // Город занял сектор целиком: его имя стоит в центре сектора и видно всегда.
@@ -463,7 +479,8 @@ namespace RealmOfAshes.Game
                     Text name = TakeViewLabel(ref used);
                     name.fontSize = capital ? 14 : 11;
                     name.color = capital ? Accent : Ink;
-                    name.text = (capital ? "◆ " : string.Empty) + (place["name"]?.ToString() ?? string.Empty);
+                    name.text = (capital ? "◆ " : string.Empty) + (place["name"]?.ToString() ?? string.Empty)
+                        + PlaceTierSuffix(zone, place);
                     PlaceViewLabel(name, at + new Vector2(0f, 16f));
                 }
             }
@@ -631,7 +648,8 @@ namespace RealmOfAshes.Game
                 number.fontSize = Mathf.Clamp(Mathf.RoundToInt(scale * 0.28f), 8, 12);
                 number.color = new Color(0f, 0f, 0f, 0.62f);
                 number.alignment = TextAnchor.UpperLeft;
-                number.text = zone["n"]?.ToString() ?? string.Empty;
+                string flatBadge = RoaTierData.Badge(Tier(zone));
+                number.text = (zone["n"]?.ToString() ?? string.Empty) + (flatBadge.Length > 0 ? " " + flatBadge : string.Empty);
                 SetLabelRect(number, cell + new Vector2(2f, -2f), new Vector2(scale, scale * 0.4f), new Vector2(0f, 1f));
                 // Город занимает сектор: его знак и имя стоят в центре клетки.
                 string cityId = zone["city"]?.ToString() ?? string.Empty;
@@ -669,7 +687,7 @@ namespace RealmOfAshes.Game
                     name.fontSize = capital ? 12 : 10;
                     name.color = capital ? Accent : Ink;
                     name.alignment = TextAnchor.UpperCenter;
-                    name.text = place["name"]?.ToString() ?? string.Empty;
+                    name.text = (place["name"]?.ToString() ?? string.Empty) + PlaceTierSuffix(zone, place);
                     SetLabelRect(name, at + new Vector2(0f, -8f), new Vector2(scale * 2.4f, 16f), new Vector2(0.5f, 1f));
                 }
             }
@@ -701,7 +719,16 @@ namespace RealmOfAshes.Game
                 case 4: mode = "чёрная"; break;
                 default: mode = "жёлтая"; break;
             }
-            return (zone["title"]?.ToString() ?? zone["id"]?.ToString() ?? "зона") + " · " + mode + " зона";
+            string badge = RoaTierData.Badge(Tier(zone));
+            return (zone["title"]?.ToString() ?? zone["id"]?.ToString() ?? "зона") + " · " + mode + " зона"
+                + (badge.Length > 0 ? " · " + badge : string.Empty);
+        }
+
+        /// <summary>Значок тира места, когда он не тот, что у его зоны (у прочих мест тир зоны).</summary>
+        private static string PlaceTierSuffix(JObject zone, JObject place)
+        {
+            int tier = Tier(place);
+            return tier > 0 && tier != Tier(zone) ? " " + RoaTierData.Badge(tier) : string.Empty;
         }
 
         /// <summary>Левый верхний угол клетки зоны в координатах карты (начало — левый верхний угол карты).</summary>

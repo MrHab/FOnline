@@ -27493,13 +27493,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "food",
         "zone-kit"
       ],
-      "resourceType": "food",
-      "hp": 6,
-      "maxHp": 6,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },

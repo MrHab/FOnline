@@ -1814,6 +1814,10 @@ namespace RealmOfAshes.Game
                 if (view.Data != null) UpsertResource(view.Data);
         }
 
+        /// <summary>
+        /// Узел без объекта локации (город, дополненный узел, встреча в пути): своя
+        /// модель, а поверх — префаб тира с искрами, как у авторских узлов.
+        /// </summary>
         private GameObject CreateResourceMarker(string id, JObject row)
         {
             var root = new GameObject("Resource:" + id);
@@ -1822,12 +1826,10 @@ namespace RealmOfAshes.Game
             string type = row?["type"]?.ToString();
             string modelKey = type == "ore" ? "ore_outcrop"
                 : type == "wood" ? "tutorialWood"
-                : type == "food" || type == "medicine" ? "garden_patch"
-                : type == "water" ? "water_tank"
-                : type == "oil" || type == "chemicals" ? "rust_barrel_v1"
-                : type == "electronics" || type == "ammoParts" || type == "weaponParts" ? "storage_chest"
-                : "scrap_heap";
+                : type == "oil" ? "rust_barrel_v1"
+                : "garden_patch";
             RoaApocalypseVisuals.CreateGrounded(root.transform, RoaApocalypseModels.Environment(modelKey));
+            ApplyTierNodeVisual(root, type, row?["tier"]?.ToObject<int?>() ?? 0);
             return root;
         }
 
@@ -2019,7 +2021,8 @@ namespace RealmOfAshes.Game
             {
                 if (view == null || view.Data == null || view.Data["hp"]?.ToObject<float>() <= 0f) continue;
                 if (Fog != null && !Fog.IsVisible(view.Position)) continue;
-                markers.Add(new RoaMinimap.Marker(RoaMinimap.MarkerKind.Resource, view.Position));
+                markers.Add(new RoaMinimap.Marker(RoaMinimap.MarkerKind.Resource, view.Position,
+                    view.Data["tier"]?.ToObject<int?>() ?? 0));
             }
         }
 
@@ -3417,29 +3420,10 @@ namespace RealmOfAshes.Game
         {
             if (type == "ore") return "Руда";
             if (type == "wood") return "Древесина";
-            if (type == "scrap") return "Металлолом";
-            if (type == "water") return "Вода";
             if (type == "oil") return "Нефть";
-            if (type == "chemicals") return "Химикаты";
-            if (type == "medicine") return "Лекарственные растения";
-            if (type == "food") return "Пищевые растения";
-            if (type == "electronics") return "Электроника";
-            if (type == "ammoParts") return "Детали боеприпасов";
-            if (type == "weaponParts") return "Оружейные детали";
             if (type == "fiber") return "Волокно";
             if (type == "blue") return "Синь";
             return "Ресурс";
-        }
-
-        private static Color ResourceColor(string type)
-        {
-            if (type == "wood" || type == "food" || type == "medicine") return new Color(0.35f, 0.55f, 0.24f);
-            if (type == "fiber") return new Color(0.66f, 0.62f, 0.36f);
-            if (type == "water") return new Color(0.20f, 0.48f, 0.68f);
-            if (type == "oil") return new Color(0.16f, 0.14f, 0.12f);
-            if (type == "chemicals") return new Color(0.45f, 0.72f, 0.30f);
-            if (type == "electronics") return new Color(0.25f, 0.65f, 0.62f);
-            return new Color(0.56f, 0.48f, 0.34f);
         }
 
         private JObject WorldSite(string siteId)

@@ -5,6 +5,9 @@
 // тира 3, кирка ниже тира узла и навык «Рудокоп» ниже 30 получают отказ без
 // траты ОД и износа, добыча начисляет опыт профессии по тиру, а враждебный
 // налётчик этой локации сильнее своего базового тира и одет в снаряжение T3.
+// Старых узлов (лом, вода, пища…) в комнате нет, недостающие семейства тиров
+// дополнены узлами тира локации, а карта мира несёт тир каждой зоны и места:
+// город — первый, прочие — опасность зоны или явная разметка locationTiers.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -15,6 +18,8 @@ const tiers = require('../src/server/kromka-tiers');
 const ROOT = path.resolve(__dirname, '..');
 const LOCATION = 'tierArena';
 const TIER = 3;
+// Город самого опасного сектора: всё равно первый тир и свои узлы у стен.
+const CITY = 'balanceBunker';
 const NODE_ID = 'depot_scrap_01';
 const { config, itemCatalog } = tiers.readTieredCatalogs(path.join(ROOT, 'data'));
 const itemTier = id => itemCatalog.items.find(item => item.id === id)?.tier || 0;
@@ -59,6 +64,10 @@ const harvest = account => h.socketAck(account.socket, 'harvestResource', { id: 
   seed(stateFor('target'), 'pickaxe');
   seed(stateFor('harvest'), 'pickaxeT3');
   seed(stateFor('trade'), 'pickaxeT3', { gatherMetal: miner });
+  const citizen = stateFor('progression');
+  citizen.currentLocationId = CITY;
+  citizen.serverLocationContext = { locationId: CITY };
+  if (citizen.player) { delete citizen.player.x; delete citizen.player.z; }
   fs.writeFileSync(savesPath, JSON.stringify(saves));
 
   await h.startServer();
@@ -69,6 +78,51 @@ const harvest = account => h.socketAck(account.socket, 'harvestResource', { id: 
     }
     const node = (accounts.trade.join.worldState?.resources || []).find(row => row.id === NODE_ID);
     assert(node && node.type === 'ore' && node.tier === TIER, 'the ore node carries the location tier: ' + JSON.stringify(node));
+    assert.equal(accounts.trade.join.worldState?.tier, TIER, 'the room state names the location tier');
+
+    // Только семейства тиров, все — тира локации, каждого семейства хватает.
+    const resources = accounts.trade.join.worldState?.resources || [];
+    const families = new Set(config.families.map(family => family.resourceType).filter(Boolean));
+    for (const row of resources) {
+      assert(families.has(row.type), `an old resource node is left in the room: ${JSON.stringify(row)}`);
+      assert.equal(row.tier, TIER, `a node of the room carries its tier: ${JSON.stringify(row)}`);
+    }
+    for (const type of ['ore', 'wood', 'fiber', 'oil']) {
+      assert(resources.filter(row => row.type === type).length >= 2, `the room has ${type} nodes: `
+        + JSON.stringify(resources.map(row => `${row.id}:${row.type}`)));
+    }
+    console.log('PASS the room holds only tiered nodes of its tier, every family present');
+
+    // Карта мира: тир у каждой зоны и места; город — первый, зона — её опасность.
+    const graph = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
+    const difficulty = new Map(graph.zones.map(zone => [zone.city || zone.id, zone.difficulty]));
+    const response = await fetch(`${h.baseUrl()}/api/world-map`);
+    const map = (await response.json()).map;
+    for (const zone of map.zones) {
+      const expected = zone.city ? 1 : config.locationTiers[zone.id] || difficulty.get(zone.id);
+      assert.equal(zone.tier, expected, `zone ${zone.id} carries its tier on the world map`);
+      for (const place of zone.places) {
+        assert.equal(place.tier, config.locationTiers[place.id] || (zone.city ? 1 : difficulty.get(zone.id)),
+          `place ${place.id} carries its tier on the world map`);
+      }
+    }
+    const cities = map.zones.filter(zone => zone.city);
+    assert.equal(cities.length, 7, 'the world map has its seven cities');
+    assert(map.zones.some(zone => !zone.city && zone.tier === 5) && map.zones.some(zone => !zone.city && zone.tier === 1),
+      'the world map spans the tiers');
+    console.log('PASS the world map carries the tier of every zone and place, cities are tier 1');
+
+    // Город: первый тир при опасности сектора 5, узлы всех семейств, у стен.
+    await h.connectAndJoin(accounts.progression);
+    const city = accounts.progression.join;
+    assert.equal(city.roomId.split(':')[0], CITY, 'the citizen joined the city');
+    assert.equal(city.worldState?.tier, 1, 'a city is tier 1 whatever its sector danger');
+    const cityNodes = city.worldState?.resources || [];
+    for (const type of ['ore', 'wood', 'fiber', 'oil']) {
+      const rows = cityNodes.filter(row => row.type === type);
+      assert(rows.length >= 2 && rows.every(row => row.tier === 1), `the city grows T1 ${type}: ` + JSON.stringify(cityNodes));
+    }
+    console.log(`PASS the city holds tier 1 nodes of every family (${cityNodes.length})`);
 
     // Кирка T2 не берёт жилу тира 3: отказ до траты ОД и износа.
     const lowTool = await harvest(accounts.target);
@@ -116,7 +170,7 @@ const harvest = account => h.socketAck(account.socket, 'harvestResource', { id: 
   const xp = saved.characters[users.users[accounts.trade.login].id][accounts.trade.characterId].state.professionXp;
   assert(Number(xp?.gatherMetal) > miner, 'profession xp survives the save: ' + JSON.stringify(xp));
   h.cleanupSync();
-  console.log('Kromka tiers network OK: node tier from the location, tool tier and profession gates, tiered yield and xp, saved professions, tier-scaled raiders.');
+  console.log('Kromka tiers network OK: node tier from the location, only tiered nodes with every family, tier on the world map and in the room state, tool tier and profession gates, tiered yield and xp, saved professions, tier-scaled raiders.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

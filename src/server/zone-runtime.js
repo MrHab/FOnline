@@ -220,12 +220,18 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
     return definition;
   }
 
-  /** Что знает о секторе клиент: номер, название, цвет и куда ведут ворота. Город — тоже сектор. */
-  function view(locationId) {
+  /**
+   * Что знает о секторе клиент: номер, название, цвет, тир и куда ведут ворота.
+   * Город — тоже сектор. tierOf(locationId) — тир локации по правилам сервера
+   * (город — первый при любой опасности); без него тир равен опасности.
+   */
+  function view(locationId, tierOf = null) {
     const zone = zoneOfLocation(graph, locationId);
     if (!zone) return null;
+    const id = zoneLocationId(zone);
     return {
-      id: zoneLocationId(zone), n: zone.n, title: zone.title, name: zone.name, mode: zone.mode, difficulty: zone.difficulty,
+      id, n: zone.n, title: zone.title, name: zone.name, mode: zone.mode, difficulty: zone.difficulty,
+      tier: tierOf ? tierOf(id) : zone.difficulty,
       col: zone.col, row: zone.row, cols: graph.grid.cols, rows: graph.grid.rows,
       ...(zone.city ? { city: zone.city } : {}),
       gates: Object.entries(zone.edges).filter(([, edge]) => edge.open).map(([dir, edge]) => {
@@ -239,9 +245,11 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
   /**
    * Обзорная карта мира: сетка зон с цветами, номерами и открытыми воротами,
    * места зон (скрытые базы — нет) и столицы. Своё положение игрок берёт из self.zone.
-   * nameOf(locationId) — имя места, как его видит игрок.
+   * nameOf(locationId) — имя места, как его видит игрок; tierOf(locationId) — тир
+   * зоны и места (значок тира на карте), без него — опасность зоны.
    */
-  function worldMap(nameOf = () => '') {
+  function worldMap(nameOf = () => '', tierOf = null) {
+    const tierOfZone = zone => tierOf ? tierOf(zoneLocationId(zone)) : zone.difficulty;
     return {
       schema: 'kromka.worldMap.v1',
       worldRevision: graph.worldRevision,
@@ -251,11 +259,13 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
       capitals: [...(graph.capitals || [])],
       zones: graph.zones.map(zone => ({
         id: zoneLocationId(zone), n: zone.n, col: zone.col, row: zone.row, title: zone.title, region: zone.region, mode: zone.mode,
+        tier: tierOfZone(zone),
         ...(zone.city ? { city: zone.city } : {}),
         // Открытые стороны: n, e, s, w.
         gates: ['north', 'east', 'south', 'west'].filter(side => zone.edges[side]?.open).map(side => side[0]).join(''),
         places: zone.places.filter(place => !place.hidden).map(place => ({
           id: place.locationId, name: nameOf(place.locationId) || place.name, kind: place.kind,
+          tier: tierOf ? tierOf(place.locationId) : zone.difficulty,
           u: Number(Number(place.u).toFixed(3)), v: Number(Number(place.v).toFixed(3))
         }))
       }))

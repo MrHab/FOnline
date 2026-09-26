@@ -2121,7 +2121,7 @@ app.get('/api/locations', (_, res) => {
 let worldMapResponse = null;
 app.get('/api/world-map', (_, res) => {
   if (!worldMapResponse || worldMapResponse.revision !== ZONE_RUNTIME.graph.worldRevision) {
-    const body = Buffer.from(JSON.stringify({ ok: true, map: ZONE_RUNTIME.worldMap(serverLocationPublicName) }), 'utf8');
+    const body = Buffer.from(JSON.stringify({ ok: true, map: ZONE_RUNTIME.worldMap(serverLocationPublicName, serverLocationTier) }), 'utf8');
     worldMapResponse = { revision: ZONE_RUNTIME.graph.worldRevision, body, gzip: gzipJsonBuffer(body) };
   }
   sendJsonBuffer(res, worldMapResponse.body, worldMapResponse.gzip);
@@ -6542,11 +6542,19 @@ function serverPvePackYieldIds(pack = {}) {
 }
 
 // Ресурсные узлы самого логова — такая же настоящая добыча области.
+/**
+ * Что дают узлы угодий: сырьё семейств тиров тира их локации. Сначала семейства
+ * авторских узлов, затем прочие — их всегда дополняет ensureTierResourceNodes.
+ */
 function serverPveAreaNodeYieldIds(area = {}) {
-  const loc = LOCATIONS[normalizeLocationId(area?.locationId || '')];
-  return (Array.isArray(loc?.objects) ? loc.objects : [])
-    .map(row => serverResourceDef(locationObjectResourceType(row))?.itemId || '')
-    .filter(Boolean);
+  const locationId = normalizeLocationId(area?.locationId || '');
+  const loc = LOCATIONS[locationId];
+  const tier = serverLocationTier(locationId);
+  const types = [
+    ...(Array.isArray(loc?.objects) ? loc.objects : []).map(row => locationObjectResourceType(row)),
+    ...Object.keys(SERVER_TIER_RESOURCE_MINIMUM)
+  ].filter(type => SERVER_TIER_FAMILY_BY_RESOURCE.has(type));
+  return [...new Set(types)].map(type => SERVER_TIER_FAMILY_BY_RESOURCE.get(type).raw.ids[tier - 1]);
 }
 
 function serverPveAreaRewardIds(area = {}) {
@@ -16526,6 +16534,9 @@ function locationObjectModelRef(row = {}) {
   return String(row.url || row.file || serverModelFileForRef(row.model || '') || '').trim();
 }
 
+// Узлы добычи — только семейства тиров: руда, древесина, нефть и волокно растут
+// тиром локации. Лом, вода, пища, химия, электроника и детали — не узлы: их
+// дают разбор, трофеи, контейнеры и торговля.
 const SERVER_RESOURCE_DEFS = {
   ore: {
     itemId: 'ore',
@@ -16541,68 +16552,12 @@ const SERVER_RESOURCE_DEFS = {
     label: 'древесина',
     needTool: 'Для заготовки древесины нужен топор.'
   },
-  scrap: {
-    itemId: 'scrap',
-    tile: TILE_TYPES.ORE,
-    toolId: 'pickaxe',
-    label: 'металлолом',
-    needTool: 'Для разборки металлолома нужна кирка.'
-  },
-  water: {
-    itemId: 'water',
-    tile: TILE_TYPES.OIL,
-    toolId: 'handPump',
-    label: 'вода',
-    needTool: 'Для откачки воды нужен ручной насос.'
-  },
   oil: {
     itemId: 'oil',
     tile: TILE_TYPES.OIL,
     toolId: 'handPump',
     label: 'нефть',
     needTool: 'Для добычи нефти нужен ручной насос.'
-  },
-  chemicals: {
-    itemId: 'chemicals',
-    tile: TILE_TYPES.OIL,
-    toolId: 'handPump',
-    label: 'химикаты',
-    needTool: 'Для сбора химикатов нужен ручной насос.'
-  },
-  medicine: {
-    itemId: 'medicine',
-    tile: TILE_TYPES.WOOD,
-    toolId: 'axe',
-    label: 'медикаменты',
-    needTool: 'Для сбора лекарственных растений нужен топор.'
-  },
-  food: {
-    itemId: 'food',
-    tile: TILE_TYPES.WOOD,
-    toolId: 'axe',
-    label: 'еда',
-    needTool: 'Для заготовки пищи нужен топор.'
-  },
-  electronics: {
-    itemId: 'electronics',
-    tile: TILE_TYPES.ORE,
-    toolId: 'pickaxe',
-    label: 'электроника',
-    needTool: 'Для разбора электроники нужна кирка.'
-  },
-  ammoParts: {
-    itemId: 'ammoParts',
-    tile: TILE_TYPES.ORE,
-    toolId: 'pickaxe',
-    label: 'детали патронов',
-    needTool: 'Для разбора деталей патронов нужна кирка.'
-  },
-  weaponParts: {
-    itemId: 'weaponParts',
-    tile: TILE_TYPES.ORE,
-    toolId: 'pickaxe',
-    label: 'оружейные детали',
-    needTool: 'Для разбора оружейных деталей нужна кирка.'
   },
   fiber: {
     itemId: 'fiber',
@@ -16613,15 +16568,15 @@ const SERVER_RESOURCE_DEFS = {
   }
 };
 
-// Семейство тиров по типу узла: руда, древесина, волокно и нефть растут тиром
-// зоны. Лом, вода, пища и прочие узлы тира не имеют.
+// Семейство тиров по типу узла: руда, древесина, волокно и нефть растут тиром локации.
 const SERVER_TIER_FAMILY_BY_RESOURCE = new Map(KROMKA_TIER_CONFIG.families
   .filter(family => family.resourceType)
   .map(family => [family.resourceType, family]));
 
 /**
- * Тир зоны = её опасность. Авторская локация может назначить тир сама (поле
- * tier), место внутри зоны берёт тир зоны, прочее вне сетки (учебный двор) — первый.
+ * Тир локации. Назначенный явно (поле tier локации или locationTiers в tiers.json:
+ * города, места вне сетки, лаборатории Сердцевины) важнее опасности зоны; прочие
+ * зоны и места в них берут опасность своей зоны, остальное — первый тир.
  */
 function serverLocationTier(locationId = '') {
   const id = normalizeLocationId(locationId || '');
@@ -16689,14 +16644,8 @@ function serverProfessionTierRefusal(p = {}, skillId = '', tier = 1) {
   return `Тир ${tier} требует навык «${skill.name}» ${need} (сейчас ${have}).`;
 }
 
-const SERVER_RESOURCE_TYPE_ALIASES = {
-  ammoparts: 'ammoParts',
-  weaponparts: 'weaponParts'
-};
-
 function normalizeServerResourceType(type = '') {
-  const key = String(type || '').trim().toLowerCase();
-  return SERVER_RESOURCE_TYPE_ALIASES[key] || key;
+  return String(type || '').trim().toLowerCase();
 }
 
 function serverResourceDef(type = '') {
@@ -16716,8 +16665,6 @@ function locationObjectResourceType(row = {}) {
   const isResourceCandidate = collision === 'resource' || tags.includes('resource') || tags.includes('harvestable') || tags.includes('resource-node');
   if (!isResourceCandidate) return '';
   if (tags.includes('oil') || model.includes('oil_pump') || model.includes('oilpump')) return 'oil';
-  if (tags.includes('scrap') || model.includes('scrap')) return 'scrap';
-  if (tags.includes('water') || model.includes('water_tank') || model.includes('watertank')) return 'water';
   if (tags.includes('ore') || model.includes('ore')) return 'ore';
   if (tags.includes('wood') || model.includes('deadwood')) return 'wood';
   if (collision === 'resource' && tags.includes('tree')) return 'wood';
@@ -16917,7 +16864,7 @@ function markAuthoredObjectTiles(room, row = {}) {
       tx: center.tx,
       tz: center.tz,
       type: resourceType,
-      tier: SERVER_TIER_FAMILY_BY_RESOURCE.has(resourceType) ? serverRoomTier(room) : 0,
+      tier: serverRoomTier(room),
       hp: Math.max(1, Math.round(Number(row.hp || 3))),
       maxHp: Math.max(1, Math.round(Number(row.maxHp || row.hp || 3))),
       authoredObjectId: id
@@ -17082,6 +17029,7 @@ function ensureWastelandSiteResourceNodes(room, loc = roomLocation(room)) {
         tx: tile.tx,
         tz: tile.tz,
         type: row.type,
+        tier: serverRoomTier(room),
         hp: maxHp,
         maxHp,
         resourceSiteId: String(site.id || '').slice(0, 64),
@@ -17096,6 +17044,108 @@ function ensureWastelandSiteResourceNodes(room, loc = roomLocation(room)) {
 
   room.worldSiteId = room.worldSiteId || worldSiteIdFromRoomId(room.id, room.locationId);
   room.resourceSiteProfileKey = `${site.id}:${rows.map(row => `${row.type}=${row.amount}`).join(',')}`;
+  if (changed) {
+    room.staticCollisionKey = '';
+    room.staticCollisionObjects = null;
+  }
+  return changed;
+}
+
+// Сколько узлов каждого семейства тиров должно быть в локации: чего не хватает
+// среди авторских объектов (или их нет вовсе, как в городах), дополняется узлами
+// на свободной земле. Учебный двор — сценарий, осада — арена: их не трогаем.
+const SERVER_TIER_RESOURCE_MINIMUM = Object.freeze({ wood: 3, ore: 3, fiber: 3, oil: 2 });
+const SERVER_TIER_RESOURCE_SKIP = new Set(['tutorialCaravanYard', 'clanSiege']);
+
+/** Точки, у которых узел не ставим: входы, выходы, ворота, торговец, хранилище. */
+function serverResourceKeepClearTiles(room, loc = {}) {
+  const dims = roomTileDims(room);
+  const points = [loc.spawn, loc.respawn, loc.trader, loc.storage, loc.exit,
+    ...(Array.isArray(loc.transitions) ? loc.transitions : []),
+    ...(Array.isArray(loc.portals) ? loc.portals : []),
+    ...Object.keys(loc).filter(key => key.startsWith('entry')).map(key => loc[key])];
+  const tiles = [];
+  for (const point of points) {
+    if (!point || typeof point !== 'object') continue;
+    if (Number.isFinite(Number(point.tx)) && Number.isFinite(Number(point.tz))) {
+      tiles.push({ tx: Number(point.tx), tz: Number(point.tz) });
+    } else if (Number.isFinite(Number(point.x)) && Number.isFinite(Number(point.z))) {
+      tiles.push(worldToTile(Number(point.x), Number(point.z), dims));
+    }
+  }
+  return tiles;
+}
+
+/**
+ * Старые узлы (лом, вода, пища и прочее без тира) из комнаты убираются, у узлов
+ * семейств проставляется тир комнаты, а семейство, которого в локации меньше
+ * минимума, дополняется узлами на свободной проходимой земле. Места выбираются
+ * детерминированно (хеш id локации), подальше от входов и других узлов, в городе —
+ * ближе к окраине, чтобы не перегородить улицы.
+ */
+function ensureTierResourceNodes(room, loc = roomLocation(room)) {
+  if (!room || !(room.resources instanceof Map) || !Array.isArray(room.map)) return false;
+  let changed = false;
+  for (const [id, resource] of [...room.resources.entries()]) {
+    if (SERVER_TIER_FAMILY_BY_RESOURCE.has(normalizeServerResourceType(resource?.type))) continue;
+    room.resources.delete(id);
+    clearRoomResourceTile(room, resource);
+    changed = true;
+  }
+  const tier = serverRoomTier(room);
+  for (const resource of room.resources.values()) {
+    if (resource.tier === tier) continue;
+    resource.tier = tier;
+    changed = true;
+  }
+  const locationId = String(loc?.id || room.locationId || '');
+  if (!locationId || SERVER_TIER_RESOURCE_SKIP.has(locationId)) return changed;
+
+  const dims = roomTileDims(room);
+  const bounds = normalizedLocationPlayableBounds(loc);
+  const minX = Math.max(3, bounds.minX + 3), maxX = Math.min(dims.w - 4, bounds.maxX - 3);
+  const minZ = Math.max(3, bounds.minZ + 3), maxZ = Math.min(dims.h - 4, bounds.maxZ - 3);
+  if (maxX <= minX || maxZ <= minZ) return changed;
+  const centreX = (minX + maxX) / 2, centreZ = (minZ + maxZ) / 2;
+  const halfSize = Math.max(1, Math.min(maxX - minX, maxZ - minZ) / 2);
+  const city = !!(loc?.cityZone || ZONE_RUNTIME.cityOf(locationId));
+  const keepClear = serverResourceKeepClearTiles(room, loc);
+  const nearest = (tx, tz) => {
+    let best = Infinity;
+    for (const other of room.resources.values()) best = Math.min(best, Math.hypot(other.tx - tx, other.tz - tz));
+    return best;
+  };
+
+  for (const [type, minimum] of Object.entries(SERVER_TIER_RESOURCE_MINIMUM)) {
+    let count = [...room.resources.values()].filter(resource => normalizeServerResourceType(resource.type) === type).length;
+    for (let index = 0; count < minimum && index < minimum; index++) {
+      const id = `tier_${type}_${index + 1}`;
+      if (room.resources.has(id)) continue;
+      // До 30 годных клеток по хешу, из них — самая удалённая от других узлов.
+      let chosen = null, chosenScore = -Infinity, valid = 0;
+      for (let attempt = 0; attempt < 400 && valid < 30; attempt++) {
+        const hash = stableSiteResourceHash(`${locationId}:${type}:${index}:${attempt}`);
+        const tx = minX + (hash % (maxX - minX + 1));
+        const tz = minZ + (Math.floor(hash / 65536) % (maxZ - minZ + 1));
+        const tile = room.map?.[tz]?.[tx];
+        if (tile !== TILE_TYPES.GRASS && tile !== TILE_TYPES.DARK && tile !== TILE_TYPES.PATH) continue;
+        if (roomTileHasResource(room, tx, tz, 2) || roomTileHasContainer(room, tx, tz, 2)) continue;
+        if (keepClear.some(point => Math.hypot(point.tx - tx, point.tz - tz) < 6)) continue;
+        const pos = tileToWorld(tx, tz, dims);
+        // Вокруг узла свободно: он не перекроет проход.
+        if (!isRoomWalkableWorld(room, pos.x, pos.z, 1.4)) continue;
+        valid++;
+        const outskirts = Math.hypot(tx - centreX, tz - centreZ) / halfSize;
+        const score = Math.min(nearest(tx, tz), 14) + (city ? outskirts * 10 : 0);
+        if (score > chosenScore) { chosen = { tx, tz }; chosenScore = score; }
+      }
+      if (!chosen) break;
+      room.resources.set(id, { id, tx: chosen.tx, tz: chosen.tz, type, tier, hp: 3, maxHp: 3, tierResourceNode: true });
+      room.map[chosen.tz][chosen.tx] = serverResourceTile(type);
+      count++;
+      changed = true;
+    }
+  }
   if (changed) {
     room.staticCollisionKey = '';
     room.staticCollisionObjects = null;
@@ -18868,6 +18918,7 @@ function buildAuthoredRoomWorld(room, loc) {
   specialPoints.forEach(p => clearSpawnArea(room, p));
   spawnRoomWorldContainers(room, { silent: true });
   ensureWastelandSiteResourceNodes(room, loc);
+  ensureTierResourceNodes(room, loc);
   room.environmentVersion = WORLD_ENVIRONMENT_VERSION;
   room.worldReady = true;
   room.worldSiteTemplateSignature = String(loc.worldSiteTemplateSignature || '');
@@ -18958,7 +19009,7 @@ function generateRoomWorld(room) {
       if (!inBounds(tx, tz, roomTileDims(room))) return;
       room.map[tz][tx] = serverResourceTile(type);
       const id = `res_${tx}_${tz}_${type}`;
-      room.resources.set(id, { id, tx, tz, type, hp: 3, maxHp: 3 });
+      room.resources.set(id, { id, tx, tz, type, tier: serverRoomTier(room), hp: 3, maxHp: 3 });
     };
     const worldSiteInstance = loc.worldSiteInstance === true || loc.runtimeMode === 'worldSiteInstance';
     const proceduralArchetype = String(loc.templateLocationId || loc.id || '');
@@ -19081,6 +19132,7 @@ function generateRoomWorld(room) {
   applyWorldExitEdges();
   spawnRoomWorldContainers(room, { silent: true });
   ensureWastelandSiteResourceNodes(room, loc);
+  ensureTierResourceNodes(room, loc);
   room.environmentVersion = WORLD_ENVIRONMENT_VERSION;
   room.worldReady = true;
   room.worldSiteTemplateSignature = String(loc.worldSiteTemplateSignature || '');
@@ -19170,6 +19222,7 @@ function ensureRoomWorld(room) {
     }
   }
   ensureWastelandSiteResourceNodes(room, loc);
+  ensureTierResourceNodes(room, loc);
   restockRoomWorldContainersIfNeeded(room);
   return false;
 }
@@ -20565,6 +20618,9 @@ function serverEnterSiegeRoom(player = {}, event = {}) {
   if (event.phase !== 'relay' && clan.id !== event.defenderClanId && clan.id !== event.qualifiedAttackerClanId) return false;
   const room = getOrCreateRoom(event.roomId, 'clanSiege');
   room.siegeEventId = event.id; room.pvpModeOverride = 'pvp';
+  // Осада идёт тиром осаждаемой базы: её враги и трофеи.
+  const siegeBase = (KROMKA_CLAN_BASE_CATALOG.bases || []).find(row => row.id === event.baseId);
+  if (siegeBase?.locationId) room.zoneTier = serverLocationTier(siegeBase.locationId);
   const roster = event.rosters?.[clan.id] || [];
   const lane = Math.max(0, roster.indexOf(player.characterId));
   const defender = clan.id === event.defenderClanId;
@@ -22947,6 +23003,8 @@ function publicWorldState(room, includeMap = true) {
     pvpMode,
     pvpLabel: LOCATION_PVP_LABELS[pvpMode] || LOCATION_PVP_LABELS.peaceful,
     pvpEnabled,
+    // Тир локации: ресурсы и враги здесь только этого тира (значок на карте).
+    tier: serverRoomTier(room),
     clanBase: clanBaseProfile ? {
       id: clanBaseProfile.id,
       displayName: clanBaseProfile.displayName,
@@ -27537,7 +27595,7 @@ function publicAuthoritativePlayerState(p = {}) {
 }
 
 function serverZoneSelfView(p = {}) {
-  const view = ZONE_RUNTIME.view(p.locationId);
+  const view = ZONE_RUNTIME.view(p.locationId, serverLocationTier);
   if (!view) return null;
   const now = Date.now();
   return {

@@ -9714,13 +9714,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "scrap",
         "zone-kit"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -16449,13 +16445,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "scrap",
         "zone-kit"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -16489,13 +16481,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "scrap",
         "zone-kit"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -16529,13 +16517,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "scrap",
         "zone-kit"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -16569,13 +16553,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "scrap",
         "zone-kit"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },

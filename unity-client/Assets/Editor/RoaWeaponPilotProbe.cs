@@ -208,14 +208,33 @@ namespace RealmOfAshes.EditorTools
                     Transform weaponRoot = weaponRootField.GetValue(weapon) as Transform;
                     Check(grip != null && hand != null && weaponRoot != null,
                         weaponId + ": grip or runtime root is missing");
-                    // The socket is intentionally offset from the wrist bone.
-                    // Validate the production mount transform, not wrist=socket.
-                    Matrix4x4 handToSocket = RoaWeaponGrip.HandToMount
-                        * Matrix4x4.Translate(new Vector3(0.03f, -0.02f, 0.025f));
-                    Vector3 expectedGrip = (hand.localToWorldMatrix * handToSocket).GetColumn(3);
-                    float gripError = Vector3.Distance(grip.position, expectedGrip);
-                    Check(gripError < 0.015f,
-                        weaponId + ": primary grip misses the hand by " + gripError.ToString("0.000") + " m");
+                    float gripError;
+                    if (weapon.HoldActive)
+                    {
+                        // Хват по модели: оружие ставит стойка, видимые кисти ложатся на
+                        // места рук, снятые с модели. Проверяем ладони на рукоятях.
+                        RoaApocalypseCharacterSkin skin = character.GetComponent<RoaApocalypseCharacterSkin>();
+                        Check(skin != null, weaponId + ": visible body is missing");
+                        skin.SyncPose();
+                        gripError = Mathf.Max(skin.HoldMissPrimary, skin.HoldMissSupport);
+                        if (weapon.HoldRight.Active)
+                            Check(skin.HoldMissPrimary >= 0f && skin.HoldMissPrimary < 0.02f,
+                                weaponId + ": right palm misses the grip by " + skin.HoldMissPrimary.ToString("0.000") + " m");
+                        if (weapon.HoldLeft.Active)
+                            Check(skin.HoldMissSupport >= 0f && skin.HoldMissSupport < 0.02f,
+                                weaponId + ": left palm misses the grip by " + skin.HoldMissSupport.ToString("0.000") + " m");
+                    }
+                    else
+                    {
+                        // The socket is intentionally offset from the wrist bone.
+                        // Validate the production mount transform, not wrist=socket.
+                        Matrix4x4 handToSocket = RoaWeaponGrip.HandToMount
+                            * Matrix4x4.Translate(new Vector3(0.03f, -0.02f, 0.025f));
+                        Vector3 expectedGrip = (hand.localToWorldMatrix * handToSocket).GetColumn(3);
+                        gripError = Vector3.Distance(grip.position, expectedGrip);
+                        Check(gripError < 0.015f,
+                            weaponId + ": primary grip misses the hand by " + gripError.ToString("0.000") + " m");
+                    }
                     if (MeleeIds.Contains(weaponId))
                         Check(weapon.PrimaryHandSolved, weaponId + ": primary arm did not solve");
                     bool twoHanded = weaponId != "knife";
@@ -223,8 +242,10 @@ namespace RealmOfAshes.EditorTools
                         Check(weapon.SupportHandSolved, weaponId + ": support arm did not solve");
 
                     bool hasMuzzle = character.TryGetMuzzle(out Vector3 muzzle);
+                    // Хват по модели: дуло меряется от рукояти в кисти, а не от сокета GLB.
+                    Vector3 gripPoint = weapon.HoldActive && weapon.HoldRight.Active ? weapon.HoldRight.Centre : grip.position;
                     float muzzleDistance = hasMuzzle
-                        ? Vector3.Distance(muzzle, grip.position) : 0f;
+                        ? Vector3.Distance(muzzle, gripPoint) : 0f;
                     if (!MeleeIds.Contains(weaponId))
                         Check(hasMuzzle && muzzleDistance > 0.18f && muzzleDistance < 1.65f,
                             weaponId + ": muzzle is missing or outside the grip envelope: " + muzzleDistance);

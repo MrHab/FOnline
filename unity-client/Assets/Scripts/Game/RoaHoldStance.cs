@@ -186,7 +186,7 @@ namespace RealmOfAshes.Game
             {
                 { "SM_Wep_ChainSaw_01", (
                     new RoaHandSpec { Active = true, Centre = new Vector3(0f, 0.015f, 0.02f), Axis = Vector3.forward, Back = Vector3.up, Radius = 0.016f },
-                    new RoaHandSpec { Active = true, Centre = new Vector3(0.1f, 0.155f, 0.259f), Axis = Vector3.right, Back = (Vector3.up + Vector3.forward * 0.4f).normalized, Radius = 0.015f }) },
+                    new RoaHandSpec { Active = true, Centre = new Vector3(0.0f, 0.155f, 0.259f), Axis = Vector3.right, Back = (Vector3.up + Vector3.forward * 0.4f).normalized, Radius = 0.015f }) },
                 { "SM_Wep_Trimmer_01", (
                     // Правая — на штанге у мотора (рукоять с газом), левая — на петле в 35 см впереди.
                     new RoaHandSpec { Active = true, Centre = new Vector3(0.03f, -0.135f, 0.3f), Axis = Vector3.forward, Back = Vector3.up, Radius = 0.017f },
@@ -685,9 +685,9 @@ namespace RealmOfAshes.Game
                     {
                         // Бензопила: полотно вперёд и чуть наружу; замах — назад и вверх, удар — вперёд-вниз.
                         // Полотно по линии реза, не больше 15° вправо от направления вперёд.
-                        ready = P(new Vector3(0.21f, 1.0f, 0.24f), new Vector3(0.22f, -0.08f, 0.97f), Vector3.up);
-                        windup = P(new Vector3(0.22f, 1.12f, 0.02f), new Vector3(0.05f, 0.35f, 0.94f), Vector3.up);
-                        strike = P(new Vector3(0.2f, 1.02f, 0.46f), new Vector3(0.05f, -0.32f, 0.95f), Vector3.up);
+                        ready = P(new Vector3(0.21f, 1.0f, 0.44f), new Vector3(0.06f, -0.08f, 0.99f), Vector3.up);
+                        windup = P(new Vector3(0.22f, 1.12f, 0.08f), new Vector3(0.04f, 0.35f, 0.94f), Vector3.up);
+                        strike = P(new Vector3(0.2f, 1.02f, 0.5f), new Vector3(0.04f, -0.32f, 0.95f), Vector3.up);
                     }
                     break;
                 case RoaHoldKind.Shield:

@@ -22,6 +22,8 @@ namespace RealmOfAshes.EditorTools
     {
         private const string ResultFile = "roa-frozen-bone-probe.json";
 
+        private static readonly Vector3 CrouchWalk = new Vector3(0f, 0f, 2f);
+
         [MenuItem("Realm of Ashes/Проверить заморозку костей (перелом ноги)")]
         public static void Run()
         {
@@ -99,9 +101,10 @@ namespace RealmOfAshes.EditorTools
                 Check(healed < 0.5f,
                     "после снятия перелома бедро не вернулось к позе клипа: " + healed.ToString("0.00") + "°");
 
-                // Присед на месте — idle плюс аддитивная поза RoaCharacterPose на тазе,
-                // позвоночнике, шее и голове. Таз — корень скелета: если его наклон
-                // копится по кадрам, всё тело кувыркается.
+                // Присед в движении — клип плюс аддитивная поза RoaCharacterPose на тазе,
+                // позвоночнике, шее и голове (присед на месте играет свой клип и позу
+                // не добавляет). Таз — корень скелета: если его наклон копится по
+                // кадрам, всё тело кувыркается.
                 Transform pelvis = null;
                 foreach (Transform node in view.GetComponentsInChildren<Transform>(true))
                     if (node.name == "pelvis") { pelvis = node; break; }
@@ -114,7 +117,7 @@ namespace RealmOfAshes.EditorTools
                 animation.Sample();
                 Quaternion authoredPelvis = pelvis.localRotation;
                 // Разгон blend приседа: в edit mode dt зажат к 0.001 с на вызов.
-                for (int frame = 0; frame < 400; frame++) view.UpdateLocomotion(Vector3.zero, 0f, false, true);
+                for (int frame = 0; frame < 400; frame++) view.UpdateLocomotion(CrouchWalk, 0f, true, true);
                 animation.Stop();
                 lateUpdate.Invoke(view, null);
                 Quaternion crouchedPelvis = pelvis.localRotation;
@@ -122,7 +125,7 @@ namespace RealmOfAshes.EditorTools
                 float crouchDrift = 0f;
                 for (int frame = 0; frame < 60; frame++)
                 {
-                    view.UpdateLocomotion(Vector3.zero, 0f, false, true);
+                    view.UpdateLocomotion(CrouchWalk, 0f, true, true);
                     lateUpdate.Invoke(view, null);
                     crouchDrift = Mathf.Max(crouchDrift, Quaternion.Angle(crouchedPelvis, pelvis.localRotation));
                 }

@@ -640,7 +640,7 @@ namespace RealmOfAshes.Game
                     // Бита на правом плече; замах — назад за плечо; удар — горизонтально,
                     // бита поперёк корпуса, дальше влево-вперёд.
                     ready = P(new Vector3(0.14f, 1.2f, 0.16f), new Vector3(0.22f, 0.72f, -0.66f), Vector3.forward);
-                    windup = P(new Vector3(0.22f, 1.36f, -0.04f), new Vector3(0.35f, 0.45f, -0.82f), Vector3.forward);
+                    windup = P(new Vector3(0.23f, 1.5f, -0.05f), new Vector3(0.12f, 0.7f, -0.7f), Vector3.forward);
                     // Контакт: бита поперёк линии удара, руки у пупка, рукоять ведёт.
                     strike = P(new Vector3(0.06f, 1.08f, 0.52f), new Vector3(-0.72f, 0.05f, 0.69f), Vector3.forward);
                     break;
@@ -666,7 +666,7 @@ namespace RealmOfAshes.Game
                     // Кулак у бедра, ручка вертикально, древко вдоль предплечья к локтю;
                     // удар — кулаком вперёд, древко прикрывает предплечье.
                     // Рука висит: ручка вперёд, древко вверх вдоль предплечья к локтю.
-                    ready = P(new Vector3(0.24f, 0.96f, 0.1f), new Vector3(0f, 0.12f, 0.99f), new Vector3(0f, 0.99f, -0.12f));
+                    ready = P(new Vector3(0.25f, 0.72f, 0.02f), new Vector3(0f, 0.12f, 0.99f), new Vector3(0f, 0.99f, -0.12f));
                     // Замах: предплечье поперёк груди, древко прикрывает его к правому локтю.
                     // Замах: кулак отведён к бедру, древко вдоль предплечья назад к локтю.
                     windup = P(new Vector3(0.25f, 1.05f, -0.02f), new Vector3(0f, 0.95f, 0.3f), new Vector3(0f, 0.05f, -1f));
@@ -687,7 +687,7 @@ namespace RealmOfAshes.Game
                         // Полотно по линии реза, не больше 15° вправо от направления вперёд.
                         ready = P(new Vector3(0.21f, 1.0f, 0.24f), new Vector3(0.22f, -0.08f, 0.97f), Vector3.up);
                         windup = P(new Vector3(0.22f, 1.12f, 0.02f), new Vector3(0.05f, 0.35f, 0.94f), Vector3.up);
-                        strike = P(new Vector3(0.12f, 1.02f, 0.46f), new Vector3(0.05f, -0.32f, 0.95f), Vector3.up);
+                        strike = P(new Vector3(0.2f, 1.02f, 0.46f), new Vector3(0.05f, -0.32f, 0.95f), Vector3.up);
                     }
                     break;
                 case RoaHoldKind.Shield:

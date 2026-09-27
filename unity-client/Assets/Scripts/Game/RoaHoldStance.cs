@@ -685,9 +685,9 @@ namespace RealmOfAshes.Game
                     {
                         // Бензопила: полотно вперёд и чуть наружу; замах — назад и вверх, удар — вперёд-вниз.
                         // Полотно по линии реза, не больше 15° вправо от направления вперёд.
-                        ready = P(new Vector3(0.21f, 1.0f, 0.44f), new Vector3(0.06f, -0.08f, 0.99f), Vector3.up);
+                        ready = P(new Vector3(0.21f, 0.97f, 0.57f), new Vector3(0.06f, -0.08f, 0.99f), Vector3.up);
                         windup = P(new Vector3(0.22f, 1.12f, 0.08f), new Vector3(0.04f, 0.35f, 0.94f), Vector3.up);
-                        strike = P(new Vector3(0.2f, 1.02f, 0.5f), new Vector3(0.04f, -0.32f, 0.95f), Vector3.up);
+                        strike = P(new Vector3(0.2f, 1.0f, 0.6f), new Vector3(0.04f, -0.22f, 0.97f), Vector3.up);
                     }
                     break;
                 case RoaHoldKind.Shield:

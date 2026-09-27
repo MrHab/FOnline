@@ -225,8 +225,9 @@ namespace RealmOfAshes.Game
         private static readonly Dictionary<string, float> SupportShift = new Dictionary<string, float>(StringComparer.Ordinal)
         {
             { "SM_Wep_SubMGun_01", -0.1f }, { "SM_Wep_SubMGun_02", -0.04f }, { "SM_Wep_SubMGun_03", -0.04f },
-            { "SM_Wep_SubMGun_Clean_03", -0.04f }, { "SM_Wep_SniperRifle_01", 0.05f },
-            { "SM_Wep_Hybrid_02", 0.13f }, { "SM_Wep_Hybrid_01", 0.04f }, { "sawedOffShotgun", -0.03f }
+            { "SM_Wep_SubMGun_Clean_03", -0.04f }, { "SM_Wep_SniperRifle_01", 0.09f },
+            { "SM_Wep_Hybrid_02", 0.17f }, { "SM_Wep_Hybrid_01", 0.07f }, { "sawedOffShotgun", -0.03f },
+            { "SM_Wep_FlameThrower_01", 0.08f }
         };
 
         // Толстые рукояти (ракетница): радиус кисти по ширине самой рукояти.
@@ -248,6 +249,7 @@ namespace RealmOfAshes.Game
             // Гвоздомёт: корпус наклонён в модели — в готовности носом вниз сильнее.
             { "SM_Wep_Nailgun_01", 55f }, { "SM_Wep_Nailgun_Clean_01", 45f },
             { "SM_Wep_FlameThrower_01", 20f }, { "SM_Wep_SniperRifle_Pneumatic_01", 22f },
+            { "SM_Wep_SubMGun_01", 40f }, { "SM_Wep_SubMGun_02", 40f }, { "SM_Wep_SubMGun_03", 40f },
             { "SM_Wep_Veh_Harpoon_01", 22f }
         };
 
@@ -328,13 +330,13 @@ namespace RealmOfAshes.Game
             if (hold.Prefab.StartsWith("SM_Wep_Nailgun"))
             {
                 // Инструмент далеко от лица, магазин всегда наклонён ~20° от вертикали.
-                hold.AimOffset = new Vector3(0.05f, -0.14f, 0.12f);
+                hold.AimOffset = new Vector3(0.05f, -0.14f, 0.07f);
                 hold.ReadyOffset = new Vector3(0.03f, -0.1f, 0.04f);
                 hold.ReadyPitch = 30f;
                 hold.AimPitch = 20f;
             }
             if (hold.Prefab == "SM_Wep_Hybrid_01") hold.AimOffset = new Vector3(0f, -0.02f, 0f);
-            if (hold.Prefab == "SM_Wep_FlareGun_01") hold.AimOffset = new Vector3(0f, 0f, 0.02f);
+            if (hold.Prefab == "SM_Wep_FlareGun_01") { hold.AimOffset = new Vector3(0f, 0f, 0.02f); hold.AimPitch = 10f; }
             if (hold.Prefab.StartsWith("SM_Wep_CrossBow")) hold.AimOffset = new Vector3(0f, -0.015f, 0f);
             if (RecoilScaleByPrefab.TryGetValue(hold.Prefab, out float recoil)) hold.RecoilScale = recoil;
             if (GripRadiusByPrefab.TryGetValue(hold.Prefab, out float gripRadius)) hold.Right.Radius = gripRadius;
@@ -364,7 +366,7 @@ namespace RealmOfAshes.Game
                 {
                     Active = true,
                     Centre = grip + Vector3.left * (hold.Right.Radius + 0.024f)
-                        + Vector3.down * (hold.Prefab.StartsWith("SM_Wep_Nailgun") ? 0.05f : 0.018f) + Vector3.forward * 0.004f,
+                        + (hold.Prefab.StartsWith("SM_Wep_Nailgun") ? Vector3.forward * 0.05f : Vector3.down * 0.018f + Vector3.forward * 0.004f),
                     Axis = gripAxis.normalized, Back = (Vector3.left + Vector3.back * 0.15f).normalized,
                     Radius = hold.Right.Radius + 0.012f
                 };
@@ -398,7 +400,7 @@ namespace RealmOfAshes.Game
             }
             // Дальность от рукояти по стволу: винтовке — 0.30–0.36 м, обрезу и трубе — ближе.
             // Кисть под цевьём с согнутым локтем, опущенным вниз (не вытянутая рука крылом).
-            float reach = kind == RoaHoldKind.SawedOff ? 0.2f : kind == RoaHoldKind.Launcher ? 0.22f : 0.25f;
+            float reach = kind == RoaHoldKind.SawedOff ? 0.2f : kind == RoaHoldKind.Launcher ? 0.12f : 0.25f;
             float want = grip.z + reach + (SupportShift.TryGetValue(e.prefab, out float shift) ? shift : 0f);
             // Не ближе 9 см к дульному срезу.
             want = Mathf.Min(want, e.max.z - 0.09f);
@@ -592,12 +594,12 @@ namespace RealmOfAshes.Game
         /// </summary>
         public static float ThrowBalance(float phase, out Vector3 point)
         {
-            point = new Vector3(-0.3f, 1.3f, 0.4f);
-            // Рука-противовес впереди на замахе и уходит вниз к бедру к выпуску.
+            // Рука-противовес впереди на замахе, к выпуску тянется назад на уровне груди.
+            point = Vector3.Lerp(new Vector3(-0.3f, 1.3f, 0.4f), new Vector3(-0.32f, 1.15f, 0.02f), Smooth((phase - 0.4f) / 0.2f));
             if (phase < 0f) return 0f;
             if (phase < 0.28f) return Smooth(phase / 0.28f);
-            if (phase < 0.4f) return 1f;
-            return 1f - Smooth((phase - 0.4f) / 0.18f);
+            if (phase < 0.7f) return 1f;
+            return 1f - Smooth((phase - 0.7f) / 0.25f);
         }
 
         // «Верх» у стоек удара — направление движения лезвия по дуге: так соседние
@@ -612,9 +614,11 @@ namespace RealmOfAshes.Game
             // Наклон древка на контакте — чтобы боёк пришёл на уровень пояса (~0.95 м)
             // при любой длине: у лома и лопаты меньше, у короткого топора больше.
             float reachToHead = Mathf.Max(0.2f, hold.Length - 0.045f - hold.Spacing) * 0.85f;
-            float pitch = Mathf.Asin(Mathf.Clamp((1.08f - 0.95f) / reachToHead, 0.2f, 0.55f));
+            // Не меньше ~17°: наклон должен читаться с игровой камеры.
+            float pitch = Mathf.Asin(Mathf.Clamp((1.08f - 0.95f) / reachToHead, 0.3f, 0.55f));
             Vector3 chopDir = new Vector3(0f, -Mathf.Sin(pitch), Mathf.Cos(pitch));
-            RoaHoldPose chopStrike = P(new Vector3(0.04f, 1.08f, 0.5f), chopDir, new Vector3(0f, -chopDir.z, chopDir.y));
+            // Руки на контакте сходятся у торца (верхняя соскальзывает) перед животом, не на вытянутых руках.
+            RoaHoldPose chopStrike = P(new Vector3(0.04f, 1.08f, 0.36f), chopDir, new Vector3(0f, -chopDir.z, chopDir.y));
             switch (kind)
             {
                 case RoaHoldKind.Sword:
@@ -627,15 +631,16 @@ namespace RealmOfAshes.Game
                     // Бита на правом плече; замах — назад за плечо; удар — горизонтально,
                     // бита поперёк корпуса, дальше влево-вперёд.
                     ready = P(new Vector3(0.14f, 1.2f, 0.16f), new Vector3(0.22f, 0.72f, -0.66f), Vector3.forward);
-                    windup = P(new Vector3(0.22f, 1.36f, -0.04f), new Vector3(0.32f, 0.7f, -0.64f), Vector3.forward);
+                    windup = P(new Vector3(0.22f, 1.36f, -0.04f), new Vector3(0.35f, 0.45f, -0.82f), Vector3.forward);
                     // Контакт: бита поперёк линии удара, руки у пупка, рукоять ведёт.
                     strike = P(new Vector3(0.06f, 1.08f, 0.34f), new Vector3(-0.72f, 0.05f, 0.69f), Vector3.forward);
                     break;
                 case RoaHoldKind.OneHand:
                     // Опущено у бедра, боёк вперёд; удар наискось сверху справа.
-                    ready = P(new Vector3(0.25f, 0.9f, 0.14f), new Vector3(0.05f, -0.15f, 0.99f), Vector3.down);
+                    // Опущено у бедра остриём вниз-вперёд на 40°; удар наискось, контакт на уровне пояса.
+                    ready = P(new Vector3(0.25f, 0.9f, 0.14f), new Vector3(0.05f, -0.64f, 0.77f), new Vector3(0f, -0.77f, -0.64f));
                     windup = P(new Vector3(0.3f, 1.58f, -0.04f), new Vector3(-0.1f, 0.6f, -0.8f), new Vector3(0f, 0.8f, 0.6f));
-                    strike = P(new Vector3(0.06f, 1.1f, 0.5f), new Vector3(-0.3f, -0.5f, 0.81f), new Vector3(-0.1f, -0.84f, -0.53f));
+                    strike = P(new Vector3(0.06f, 1.16f, 0.48f), new Vector3(-0.3f, -0.22f, 0.93f), new Vector3(-0.07f, -0.97f, -0.23f));
                     break;
                 case RoaHoldKind.Knife:
                     // Нож у пояса остриём вперёд, лезвие вниз; удар — укол вперёд на всю руку.
@@ -646,7 +651,7 @@ namespace RealmOfAshes.Game
                 case RoaHoldKind.Spear:
                     ready = P(new Vector3(0.22f, 1.02f, 0.1f), new Vector3(0.06f, 0.22f, 0.97f), Vector3.up);
                     windup = P(new Vector3(0.26f, 1.08f, -0.12f), new Vector3(0.03f, 0.2f, 0.98f), Vector3.up);
-                    strike = P(new Vector3(0.1f, 1.2f, 0.36f), new Vector3(-0.06f, 0.1f, 0.99f), Vector3.up);
+                    strike = P(new Vector3(0.1f, 1.2f, 0.3f), new Vector3(-0.06f, 0.1f, 0.99f), Vector3.up);
                     break;
                 case RoaHoldKind.Tonfa:
                     // Кулак у бедра, ручка вертикально, древко вдоль предплечья к локтю;
@@ -654,7 +659,8 @@ namespace RealmOfAshes.Game
                     // Рука висит: ручка вперёд, древко вверх вдоль предплечья к локтю.
                     ready = P(new Vector3(0.24f, 0.96f, 0.1f), new Vector3(0f, 0.12f, 0.99f), new Vector3(0f, 0.99f, -0.12f));
                     // Замах: предплечье поперёк груди, древко прикрывает его к правому локтю.
-                    windup = P(new Vector3(0.02f, 1.28f, 0.24f), new Vector3(0f, 1f, 0.05f), new Vector3(0.88f, 0f, -0.46f));
+                    // Замах: кулак отведён к бедру, древко вдоль предплечья назад к локтю.
+                    windup = P(new Vector3(0.25f, 1.0f, 0.0f), new Vector3(0f, 0.3f, 0.95f), new Vector3(0f, 0.36f, -0.93f));
                     strike = P(new Vector3(0.08f, 1.3f, 0.52f), new Vector3(0f, 0.95f, 0.3f), new Vector3(0f, 0.05f, -1f));
                     break;
                 case RoaHoldKind.PowerTool:
@@ -664,12 +670,12 @@ namespace RealmOfAshes.Game
                         // Кусторез: головка у земли, удар — взмах в сторону справа налево.
                         ready = P(new Vector3(0.18f, 0.98f, 0.24f), new Vector3(0.05f, -0.32f, 0.95f), Vector3.up);
                         windup = P(new Vector3(0.2f, 0.98f, 0.2f), new Vector3(0.6f, -0.3f, 0.74f), Vector3.up);
-                        strike = P(new Vector3(0.12f, 0.98f, 0.26f), new Vector3(-0.6f, -0.3f, 0.74f), Vector3.up);
+                        strike = P(new Vector3(0.14f, 0.98f, 0.26f), new Vector3(-0.38f, -0.3f, 0.88f), Vector3.up);
                     }
                     else
                     {
                         // Бензопила: полотно вперёд и чуть наружу; замах — назад и вверх, удар — вперёд-вниз.
-                        ready = P(new Vector3(0.18f, 1.06f, 0.24f), new Vector3(0.42f, -0.08f, 0.9f), Vector3.up);
+                        ready = P(new Vector3(0.21f, 1.06f, 0.24f), new Vector3(0.42f, -0.08f, 0.9f), Vector3.up);
                         windup = P(new Vector3(0.22f, 1.12f, 0.02f), new Vector3(0.05f, 0.35f, 0.94f), Vector3.up);
                         strike = P(new Vector3(0.12f, 1.02f, 0.46f), new Vector3(0.05f, -0.32f, 0.95f), Vector3.up);
                     }
@@ -683,7 +689,8 @@ namespace RealmOfAshes.Game
                     break;
                 default:
                     // Двуручное древко: наискось вперёд, боёк впереди справа на уровне груди, лезвие вперёд.
-                    ready = P(new Vector3(0.12f, 1.04f, 0.3f), new Vector3(0.42f, 0.55f, 0.72f), Vector3.forward);
+                    ready = P(new Vector3(0.12f, 1.04f, 0.3f + Mathf.Max(0f, hold.Spacing - 0.3f) * 0.7f),
+                        new Vector3(0.42f, 0.55f, 0.72f), Vector3.forward);
                     windup = chopWindup;
                     strike = chopStrike;
                     break;
@@ -704,7 +711,7 @@ namespace RealmOfAshes.Game
         public static float TopHandSlide(RoaHold hold, float phase)
         {
             if (hold.Kind != RoaHoldKind.TwoHand || hold.Spacing < 0.25f || phase < 0f) return 0f;
-            float close = hold.Spacing - 0.11f;
+            float close = hold.Spacing - 0.08f;
             if (phase < 0.34f) return 0.06f * Smooth(phase / 0.34f);
             if (phase < RoaMeleeGrip.StrikeContactPhase)
                 return Mathf.Lerp(0.06f, -close, Smooth((phase - 0.34f) / (RoaMeleeGrip.StrikeContactPhase - 0.34f)));

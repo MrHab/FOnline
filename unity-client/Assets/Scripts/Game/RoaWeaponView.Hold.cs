@@ -157,7 +157,10 @@ namespace RealmOfAshes.Game
         /// <summary>Поставить предмет так, чтобы его опорная точка и оси пришли в позу стойки.</summary>
         private void PlaceHold(RoaHoldPose pose, Quaternion yaw, Vector3 travel)
         {
-            PlaceInFrame(_weapon, _visualRoot, _hold, pose, yaw, travel);
+            // Верхняя рука скользит по древку, и предмет ставится по ней: стойка
+            // задаёт место кисти, а не точку на древке.
+            Vector3 slide = _hold.Right.Axis * RoaHoldStance.TopHandSlide(_hold, SwingPhase());
+            PlaceInFrame(_weapon, _visualRoot, _hold, pose, yaw, travel, slide);
         }
 
         /// <summary>Поставить любой предмет (и оружие второй руки) в позу относительно груди этого персонажа.</summary>
@@ -167,7 +170,8 @@ namespace RealmOfAshes.Game
             PlaceInFrame(holder, visual, hold, pose, ChestYaw(), ChestTravel());
         }
 
-        private void PlaceInFrame(Transform holder, Transform visual, RoaHold hold, RoaHoldPose pose, Quaternion yaw, Vector3 travel)
+        private void PlaceInFrame(Transform holder, Transform visual, RoaHold hold, RoaHoldPose pose, Quaternion yaw, Vector3 travel,
+            Vector3 anchorShift = default)
         {
             Vector3 point = FramePoint(pose.Point, yaw, travel);
             Vector3 forward = FrameDirection(pose.Forward, yaw);
@@ -179,7 +183,7 @@ namespace RealmOfAshes.Game
             Quaternion turn = Quaternion.LookRotation(forward, up)
                 * Quaternion.Inverse(Quaternion.LookRotation(currentForward, currentUp));
             holder.rotation = turn * holder.rotation;
-            holder.position += point - visual.TransformPoint(hold.Anchor);
+            holder.position += point - visual.TransformPoint(hold.Anchor + anchorShift);
         }
 
         /// <summary>Держит ли основная рука пистолет парой (вторая рука ставит свой зеркально).</summary>
@@ -255,6 +259,12 @@ namespace RealmOfAshes.Game
             RoaHandSpec rightSpec = _hold.Right;
             rightSpec.Centre += rightSpec.Axis * RoaHoldStance.TopHandSlide(_hold, SwingPhase());
             RoaHandTarget right = Target(rightSpec, RoaHoldStance.FingersFor(_hold, true, _raise, RecoilWeight > 0.02f));
+            if (_hold.Kind == RoaHoldKind.LongGun)
+            {
+                // Приклад в плече: правый локоть вниз и назад, не выше ~50° от вертикали.
+                right.Elbow = FrameDirection(new Vector3(0.2f, -1f, -0.25f), ChestYaw());
+                right.HasElbow = true;
+            }
             if (_hold.Kind == RoaHoldKind.HipGun)
             {
                 // Задняя рукоять у бедра: локоть вниз и назад, прижат к корпусу.
@@ -313,6 +323,12 @@ namespace RealmOfAshes.Game
                         Fingers = RoaFingerPose.Relaxed
                     };
                 }
+            }
+            if (left.Active && _hold.Kind == RoaHoldKind.Launcher)
+            {
+                // Левая под трубой: локоть вниз, предплечье не закрывает лицо.
+                left.Elbow = FrameDirection(new Vector3(0.1f, -1f, 0.15f), ChestYaw());
+                left.HasElbow = true;
             }
             HoldLeft = left;
         }

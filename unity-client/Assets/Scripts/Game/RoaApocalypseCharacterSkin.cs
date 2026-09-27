@@ -383,8 +383,8 @@ namespace RealmOfAshes.Game
                 Transform handle = weapon != null ? weapon.MedicalHandle : null;
                 if (medical != null && handle != null)
                 {
-                    // Тяжёлый кейс гасит мах руки: плечо на 70% ближе к отвесу.
-                    CalmArm(_rightGrip, 0.7f);
+                    // Тяжёлый кейс: рука почти не машет и чуть отведена, кейс не бьёт по бедру.
+                    CalmArm(_rightGrip, 0.9f, transform.right * 0.12f);
                     // Ручка — в сгибе пальцев: на 2.8 см дальше центра ладони к пальцам.
                     _rightGrip.HeldFrame(0.004f, out Vector3 centre, out Vector3 axis, out _, 0.028f);
                     Vector3 across = Vector3.ProjectOnPlane(axis, Vector3.up);
@@ -531,14 +531,14 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>Приблизить плечо к отвесу (гасит мах руки при ходьбе на долю amount).</summary>
-        private static void CalmArm(RoaHandGrip grip, float amount)
+        private static void CalmArm(RoaHandGrip grip, float amount, Vector3 outward = default)
         {
             if (grip == null || !grip.Ready) return;
             Transform elbow = grip.Hand.parent;
             Transform shoulder = elbow != null ? elbow.parent : null;
             if (shoulder == null) return;
             Vector3 upper = elbow.position - shoulder.position;
-            Vector3 calmer = Vector3.Slerp(upper.normalized, Vector3.down, amount);
+            Vector3 calmer = Vector3.Slerp(upper.normalized, (Vector3.down + outward).normalized, amount);
             shoulder.rotation = Quaternion.FromToRotation(upper, calmer) * shoulder.rotation;
         }
 

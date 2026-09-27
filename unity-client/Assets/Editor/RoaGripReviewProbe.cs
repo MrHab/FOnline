@@ -308,7 +308,18 @@ namespace RealmOfAshes.EditorTools
             Grab(sheet, 5, row, rig, left + lBack * 0.32f + up, left, 40f, 0.2f);
             Grab(sheet, 6, row, rig, left + (lSide - lBack * 0.4f).normalized * 0.32f + up, left, 40f, 0.2f);
             metrics.Append("    {\"state\": \"").Append(label).Append("\", \"hand_r\": ").Append(V(rig, right))
-                .Append(", \"hand_l\": ").Append(V(rig, left)).Append(", \"hold\": ").Append(HoldState(rig)).Append("},\n");
+                .Append(", \"hand_l\": ").Append(V(rig, left)).Append(", \"hold\": ").Append(HoldState(rig))
+                .Append(", \"elbow_r\": ").Append(ElbowDrop(rig.HandR)).Append(", \"elbow_l\": ").Append(ElbowDrop(rig.HandL)).Append("},\n");
+        }
+
+        // Локоть: насколько ниже плеча (м) и угол плеча от вертикали (0° — рука вниз, 90° — горизонтально).
+        private static string ElbowDrop(Transform hand)
+        {
+            Transform elbow = hand != null ? hand.parent : null;
+            Transform shoulder = elbow != null ? elbow.parent : null;
+            if (shoulder == null) return "null";
+            float angle = Vector3.Angle(elbow.position - shoulder.position, Vector3.down);
+            return "{\"drop\": " + F(shoulder.position.y - elbow.position.y) + ", \"abduct\": " + F(angle) + "}";
         }
 
         private static string HoldState(Rig rig)

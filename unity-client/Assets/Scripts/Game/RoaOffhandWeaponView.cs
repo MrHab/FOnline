@@ -259,7 +259,7 @@ namespace RealmOfAshes.Game
                     Axis = _visualRoot.TransformDirection(grip.Axis),
                     Back = -_visualRoot.TransformDirection(grip.Back),
                     Radius = grip.Radius,
-                    Fingers = primary.Raise > 0.5f ? RoaFingerPose.Trigger : RoaFingerPose.TriggerOff
+                    Fingers = primary.RecoilWeight > 0.02f ? RoaFingerPose.Trigger : RoaFingerPose.TriggerOff
                 };
                 ArmSolved = true;
                 return;

@@ -229,7 +229,7 @@ namespace RealmOfAshes.Game
         {
             RoaHandSpec rightSpec = _hold.Right;
             rightSpec.Centre += rightSpec.Axis * RoaHoldStance.TopHandSlide(_hold, SwingPhase());
-            RoaHandTarget right = Target(rightSpec, RoaHoldStance.FingersFor(_hold, true, _raise));
+            RoaHandTarget right = Target(rightSpec, RoaHoldStance.FingersFor(_hold, true, _raise, RecoilWeight > 0.02f));
             if (_hold.Kind == RoaHoldKind.Launcher)
             {
                 // Рукоять трубы у самого плеча: локоть вниз и назад, а не крылом в сторону.

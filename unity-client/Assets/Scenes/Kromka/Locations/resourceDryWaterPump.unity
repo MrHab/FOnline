@@ -4753,7 +4753,6 @@ MonoBehaviour:
   _serverArchetypeId: waterTank
   _role: scenery
   _gameplayTags:
-  - resource
   - water
   _serverAuthoritative: 1
   _blocksMovement: 0

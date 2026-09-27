@@ -719,7 +719,13 @@ namespace RealmOfAshes.Game
 
         // --- Фасад контекстного меню предмета (RoaItemContextMenu, web showItemContextMenu 03d:229) ---
 
-        public bool IsRepairable(string itemOrRuntimeId) { return RepairableItems.Contains(BaseId(itemOrRuntimeId)); }
+        /// <summary>Ремонтируется всё, что изнашивается: вариант тира — как его исходник.</summary>
+        public bool IsRepairable(string itemOrRuntimeId)
+        {
+            string baseId = BaseId(itemOrRuntimeId);
+            return RepairableItems.Contains(RoaItemData.TierGroup(baseId))
+                || (RoaItemData.Contains(baseId) && baseId != "fists" && RoaItemData.ConditionMode(baseId) != "none");
+        }
         public bool IsSalvageable(string itemOrRuntimeId) { return SalvageableItems.Contains(BaseId(itemOrRuntimeId)); }
         /// <summary>
         /// Огнестрел определяется наличием типа патронов в каталоге: у ножа, кулаков

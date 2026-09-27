@@ -942,6 +942,9 @@ namespace RealmOfAshes.Game
 
         public int LoadedEquipmentSlotCount { get { return _equipment?.LoadedSlotCount ?? 0; } }
 
+        /// <summary>Настоящий id надетой вещи слота (с тиром), для цвета тира на модели.</summary>
+        public string EquippedItemId(string slot) => _equipment?.EquippedItemId(slot) ?? string.Empty;
+
         public bool HasLoadedEquipment(string slot, string itemId)
         {
             return _equipment != null && _equipment.HasLoadedItem(slot, itemId);

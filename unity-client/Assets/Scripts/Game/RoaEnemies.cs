@@ -1543,8 +1543,9 @@ namespace RealmOfAshes.Game
                 holder.transform.localPosition =
                     -holder.transform.InverseTransformPoint(grip.position);
 
-            RoaApocalypseVisuals.AttachStatic(holder.transform,
-                RoaApocalypseModels.Weapon(modelId), 180f);
+            // На оружии врага метка тира: по ней видно, насколько он опасен.
+            RoaApocalypseModels.MarkItem(RoaApocalypseVisuals.AttachStatic(holder.transform,
+                RoaApocalypseModels.Weapon(modelId), 180f), modelId);
 
             enemy.WeaponHolder = holder;
         }

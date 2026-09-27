@@ -295,8 +295,8 @@ function serializeEcologyState(state) {
 
 // --- логова ---------------------------------------------------------------------------------
 
-function pickSpecies(config, mode, region, roll) {
-  const weights = config.species.map(row => row.habitat[mode] * (row.regions[region] ?? 1));
+function pickSpecies(config, mode, region, roll, allowed = () => true) {
+  const weights = config.species.map(row => (allowed(row) ? row.habitat[mode] * (row.regions[region] ?? 1) : 0));
   const total = weights.reduce((sum, weight) => sum + weight, 0);
   if (!(total > 0)) return null;
   let left = roll * total;
@@ -312,8 +312,10 @@ function pickSpecies(config, mode, region, roll) {
  * место логова (логово зоны мира, `slot` — его номер в зоне): оно ставится
  * всегда; без `id` клетка становится логовом с вероятностью density цвета.
  * Расстановка детерминирована по ревизии: тот же мир даёт те же логова.
+ * options.speciesAllowed(species, cell) отсекает виды, чуждые клетке (тир зоны).
  */
-function buildLairs(config, candidates = [], mapRevision = '') {
+function buildLairs(config, candidates = [], mapRevision = '', options = {}) {
+  const speciesAllowed = typeof options.speciesAllowed === 'function' ? options.speciesAllowed : () => true;
   const lairs = [];
   for (const cell of Array.isArray(candidates) ? candidates : []) {
     const mode = LIVING_MODES.includes(cell?.mode) ? cell.mode : '';
@@ -324,7 +326,11 @@ function buildLairs(config, candidates = [], mapRevision = '') {
       const density = config.lairs.density[mode] || 0;
       if (!(density > 0) || hash01(`${mapRevision}:lair:${key}`) >= density) continue;
     }
-    const species = pickSpecies(config, mode, safeId(cell.region, 48), hash01(`${mapRevision}:species:${cell.id ? id : key}`));
+    // Сперва виды тира клетки; если таких в этой среде нет, логово не пропадает —
+    // встаёт вид среды, а силу ему даёт тир зоны при появлении.
+    const roll = hash01(`${mapRevision}:species:${cell.id ? id : key}`);
+    const species = pickSpecies(config, mode, safeId(cell.region, 48), roll, row => speciesAllowed(row, cell))
+      || pickSpecies(config, mode, safeId(cell.region, 48), roll);
     if (!species) continue;
     lairs.push({
       id, speciesId: species.id, sx: cell.sx, sy: cell.sy, mode, region: safeId(cell.region, 48),
@@ -411,6 +417,8 @@ function directionBetweenCells(from, to) {
 function canEnter(species, ctx, sx, sy, from = null) {
   const mode = typeof ctx.modeAt === 'function' ? ctx.modeAt(sx, sy) : '';
   if (!LIVING_MODES.includes(mode) || !(species.habitat[mode] > 0)) return false;
+  // Тир зоны: вид не уходит в клетки, где он не живёт (ctx.speciesAllowedAt).
+  if (typeof ctx.speciesAllowedAt === 'function' && ctx.speciesAllowedAt(species, sx, sy) !== true) return false;
   return !from || typeof ctx.canStep !== 'function' || ctx.canStep(from.sx, from.sy, sx, sy) === true;
 }
 

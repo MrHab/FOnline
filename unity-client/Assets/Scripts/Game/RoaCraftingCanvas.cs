@@ -25,6 +25,7 @@ namespace RealmOfAshes.Game
         private static readonly Color Accent = new Color(1f, 0.82f, 0.42f, 1f);
         private static readonly Color CardBg = new Color(0.13f, 0.12f, 0.09f, 0.9f);
         private static readonly Color ActionBg = new Color(0.16f, 0.28f, 0.12f, 0.95f);
+        private static readonly Color TierSelectedBg = new Color(0.42f, 0.36f, 0.12f, 0.98f);
         private static readonly Color ActionOffBg = new Color(0.12f, 0.12f, 0.10f, 0.9f);
         private static readonly Color FieldBg = new Color(0f, 0f, 0f, 0.45f);
 
@@ -36,6 +37,12 @@ namespace RealmOfAshes.Game
         private sealed class RecipeCard
         {
             public RoaCraftRecipe Recipe;
+            /// <summary>Тиры одного изделия по возрастанию; у рецепта без тиров — он один.</summary>
+            public List<RoaCraftRecipe> Variants;
+            public int Selected;
+            public Text Head;
+            public Text Skill;
+            public Button[] TierButtons;
             public Text Cost;
             public Text Focus;
             public Text Missing;
@@ -361,25 +368,43 @@ namespace RealmOfAshes.Game
             _cards.Clear();
             _builtStation = station;
 
+            // Все тиры изделия — одна карточка с переключателем T1–T5, как у станка в Albion.
+            var groups = new List<List<RoaCraftRecipe>>();
+            var byKey = new Dictionary<string, List<RoaCraftRecipe>>();
             foreach (RoaCraftRecipe recipe in RoaCraftingData.Recipes)
             {
                 if (recipe.Station != station) continue;
-                RectTransform rect = Card("Recipe:" + recipe.Id, _list);
-                var card = new RecipeCard { Recipe = recipe };
+                if (!byKey.TryGetValue(recipe.GroupKey, out List<RoaCraftRecipe> variants))
+                {
+                    variants = new List<RoaCraftRecipe>();
+                    byKey[recipe.GroupKey] = variants;
+                    groups.Add(variants);
+                }
+                variants.Add(recipe);
+            }
 
-                Text head = Body("Head", rect, Ink);
-                head.supportRichText = true;
-                head.text = "<b>" + recipe.Name + "</b>  → " + RoaItemData.Name(recipe.OutputId) + " x" + recipe.OutputQty;
+            foreach (List<RoaCraftRecipe> variants in groups)
+            {
+                variants.Sort((a, b) => a.Tier.CompareTo(b.Tier));
+                RoaCraftRecipe recipe = variants[0];
+                RectTransform rect = Card("Recipe:" + recipe.GroupKey, _list);
+                var card = new RecipeCard { Recipe = recipe, Variants = variants, Selected = BestUnlocked(variants) };
+                card.Recipe = variants[card.Selected];
+
+                card.Head = Body("Head", rect, Ink);
+                card.Head.supportRichText = true;
+                if (variants.Count > 1) card.TierButtons = TierRow(rect, card);
+                card.Skill = Body("Skill", rect, InkDim);
                 card.Cost = Body("Cost", rect, InkDim);
                 card.Focus = Body("Focus", rect, InkDim);
 
                 card.Craft = TextButton("Craft", rect, "Создать", 13, out card.CraftLabel);
                 card.Craft.gameObject.AddComponent<LayoutElement>().preferredHeight = 30f;
                 card.CraftLabel.fontStyle = FontStyle.Bold;
-                RoaCraftRecipe captured = recipe;
+                RecipeCard capturedCard = card;
                 card.Craft.onClick.AddListener(() =>
                 {
-                    Interaction.CraftRecipe(captured);
+                    Interaction.CraftRecipe(capturedCard.Recipe);
                     _refreshAt = 0f;
                 });
 
@@ -391,11 +416,60 @@ namespace RealmOfAshes.Game
             _empty.transform.SetAsLastSibling();
         }
 
+        /// <summary>Старший тир, который профессия уже открыла (иначе первый).</summary>
+        private int BestUnlocked(List<RoaCraftRecipe> variants)
+        {
+            int best = 0;
+            for (int i = 0; i < variants.Count; i++)
+                if (Interaction != null && Interaction.ProfessionAllows(variants[i])) best = i;
+            return best;
+        }
+
+        /// <summary>Ряд кнопок тиров T1–T5 над составом рецепта.</summary>
+        private Button[] TierRow(RectTransform parent, RecipeCard card)
+        {
+            RectTransform row = Child("Tiers", parent);
+            row.gameObject.AddComponent<LayoutElement>().preferredHeight = 26f;
+            var layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 4f;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = true;
+            var buttons = new Button[card.Variants.Count];
+            for (int i = 0; i < card.Variants.Count; i++)
+            {
+                int index = i;
+                buttons[i] = TextButton("Tier" + card.Variants[i].Tier, row, "T" + card.Variants[i].Tier, 12, out Text _);
+                buttons[i].onClick.AddListener(() =>
+                {
+                    card.Selected = index;
+                    card.Recipe = card.Variants[index];
+                    _refreshAt = 0f;
+                });
+            }
+            return buttons;
+        }
+
         private void RefreshRecipe(RecipeCard card, JObject plot, JObject account)
         {
             RoaCraftRecipe recipe = card.Recipe;
             bool available = Interaction.CanCraft(recipe);
             bool pending = Interaction.CraftPending;
+
+            card.Head.text = "<b>" + recipe.Name + "</b>  → " + RoaItemData.Name(recipe.OutputId) + " x" + recipe.OutputQty;
+            if (card.TierButtons != null)
+                for (int i = 0; i < card.TierButtons.Length; i++)
+                    card.TierButtons[i].GetComponent<Image>().color = i == card.Selected ? TierSelectedBg : ActionBg;
+            bool skilled = Interaction.ProfessionAllows(recipe);
+            card.Skill.gameObject.SetActive(!string.IsNullOrEmpty(recipe.Profession));
+            if (!string.IsNullOrEmpty(recipe.Profession))
+            {
+                card.Skill.text = "Навык «" + Interaction.ProfessionName(recipe.Profession) + "»: "
+                    + Interaction.ProfessionLevel(recipe.Profession)
+                    + (recipe.Level > 0 ? " / нужно " + recipe.Level : string.Empty);
+                card.Skill.color = skilled ? InkDim : Accent;
+            }
 
             card.Cost.text = "Материалы: " + RoaInteraction.CraftCost(recipe) + " · комиссия: " + RoaPlural.Marks(recipe.Fee)
                 + (recipe.WorkSeconds > 0 ? " · работа: " + recipe.WorkSeconds + " с" : string.Empty);
@@ -411,6 +485,7 @@ namespace RealmOfAshes.Game
 
             card.CraftLabel.text = pending ? "Станок занят…" : "Создать";
             SetEnabled(card.Craft, available && !pending);
+            card.Missing.text = skilled ? "Не хватает материалов или марок." : "Тир закрыт: подними навык профессии.";
             card.Missing.gameObject.SetActive(!available);
         }
 

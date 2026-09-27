@@ -5939,7 +5939,6 @@ MonoBehaviour:
   _serverArchetypeId: scrapHeap
   _role: scenery
   _gameplayTags:
-  - resource
   - scrap
   _serverAuthoritative: 1
   _blocksMovement: 0

@@ -1760,7 +1760,6 @@ MonoBehaviour:
   _serverArchetypeId: workshopBench
   _role: scenery
   _gameplayTags:
-  - resource
   - electronics
   _serverAuthoritative: 1
   _blocksMovement: 0
@@ -4553,7 +4552,6 @@ MonoBehaviour:
   _serverArchetypeId: scrapHeap
   _role: scenery
   _gameplayTags:
-  - resource
   - scrap
   _serverAuthoritative: 1
   _blocksMovement: 0
@@ -6159,7 +6157,6 @@ MonoBehaviour:
   _serverArchetypeId: armoryRack
   _role: scenery
   _gameplayTags:
-  - resource
   - ammoParts
   - weapon-parts
   _serverAuthoritative: 1

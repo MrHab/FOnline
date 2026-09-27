@@ -31,6 +31,11 @@ const zoneWalk = require('./lib/zone-walk');
 const { world } = zoneWalk;
 const placeInZone = (role, locationId, point) => zoneWalk.placeInZone(h, accounts, role, locationId, point);
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+// Зона, как её берёт сервер: закреплённый файл, а без него — конструктор.
+const zoneDefinition = id => {
+  const frozen = path.join(root, 'data', 'zones', 'authored', `${id}.json`);
+  return fs.existsSync(frozen) ? JSON.parse(fs.readFileSync(frozen, 'utf8')) : buildZone(zoneRecipe(graph, id), catalog);
+};
 
 // --- пауза ворот и щит прибытия: те же функции, что в server.js ---------------------------
 {
@@ -66,13 +71,13 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // Ключи занимают свой сектор целиком: за домашнюю берём соседнюю с ними зону.
 const home = graph.zones.find(zone => zone.id === zoneOfPlace(graph, 'settlement').edges.north.to);
-const homeDef = buildZone(zoneRecipe(graph, home.id), catalog);
+const homeDef = zoneDefinition(home.id);
 const northGate = homeDef.transitions.find(row => row.id === 'gate_north');
 // Зона для сна: сосед Ключей с открытым тайником.
 const quiet = ['east', 'west', 'south'].map(dir => home.edges[dir]?.to).filter(Boolean)
   // Город конструктор не собирает: его сектор — авторская сцена.
   .filter(id => !graph.zones.find(zone => zone.id === id)?.city)
-  .map(id => buildZone(zoneRecipe(graph, id), catalog))
+  .map(zoneDefinition)
   .find(def => def.containers.some(row => !row.locked));
 assert(quiet, 'a neighbour of the home zone has an unlocked cache');
 const cache = quiet.containers.find(row => !row.locked);

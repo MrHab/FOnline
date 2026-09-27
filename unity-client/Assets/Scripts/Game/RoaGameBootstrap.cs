@@ -618,6 +618,7 @@ namespace RealmOfAshes.Game
                         + (string.IsNullOrEmpty(catalogError) ? "нет данных" : catalogError));
                     yield break;
                 }
+                RoaTierData.Apply(response["tiers"] as JObject);
                 JObject fieldRecipes = response["fieldRecipes"] as JObject;
                 if (!RoaCraftingData.ApplyCatalog(fieldRecipes, out catalogError))
                 {
@@ -1744,6 +1745,7 @@ namespace RealmOfAshes.Game
             if (Minimap != null)
             {
                 Minimap.SetLocation(location, ack.WorldState?["map"] as JArray);
+                Minimap.LocationTier = ack.WorldState?["tier"]?.ToObject<int?>() ?? 0;
                 RefreshEdgeExitAvailability();
             }
             if (Fog != null) Fog.Build(location, ack.WorldState?["map"] as JArray);

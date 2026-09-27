@@ -2021,13 +2021,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "food",
         "zone-kit"
       ],
-      "resourceType": "food",
-      "hp": 6,
-      "maxHp": 6,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -2061,13 +2057,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "food",
         "zone-kit"
       ],
-      "resourceType": "food",
-      "hp": 6,
-      "maxHp": 6,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -2101,13 +2093,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "food",
         "zone-kit"
       ],
-      "resourceType": "food",
-      "hp": 6,
-      "maxHp": 6,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -5287,13 +5275,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "food",
         "zone-kit"
       ],
-      "resourceType": "food",
-      "hp": 6,
-      "maxHp": 6,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -5327,13 +5311,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "food",
         "zone-kit"
       ],
-      "resourceType": "food",
-      "hp": 6,
-      "maxHp": 6,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -5367,13 +5347,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "food",
         "zone-kit"
       ],
-      "resourceType": "food",
-      "hp": 6,
-      "maxHp": 6,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -7150,13 +7126,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "scrap",
         "zone-kit"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -19273,13 +19245,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "scrap",
         "zone-kit"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -19313,13 +19281,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "scrap",
         "zone-kit"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -19353,13 +19317,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "scrap",
         "zone-kit"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -19393,13 +19353,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "scrap",
         "zone-kit"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
@@ -29232,13 +29188,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "food",
         "zone-kit"
       ],
-      "resourceType": "food",
-      "hp": 6,
-      "maxHp": 6,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },

@@ -4952,7 +4952,6 @@ MonoBehaviour:
   _serverArchetypeId: waterTank
   _role: scenery
   _gameplayTags:
-  - resource
   - water
   _serverAuthoritative: 1
   _blocksMovement: 0
@@ -8544,7 +8543,6 @@ MonoBehaviour:
   _serverArchetypeId: gardenPatch
   _role: scenery
   _gameplayTags:
-  - resource
   - food
   _serverAuthoritative: 1
   _blocksMovement: 0
@@ -10397,7 +10395,6 @@ MonoBehaviour:
   _serverArchetypeId: gardenPatch
   _role: scenery
   _gameplayTags:
-  - resource
   - medicine
   _serverAuthoritative: 1
   _blocksMovement: 0

@@ -83,8 +83,10 @@ async function main() {
   const apocalypseIds = new Set(apocalypseWeapons.map(row => row.itemId));
   for (const item of items) {
     if (item.id === 'fists') continue;
-    assert(existingIds.has(item.id) || vehicleIds.has(item.id) || apocalypseIds.has(item.id)
-      || manifest.files.some(r => r.id === item.id && !r.presentationOnly), `${item.id}: missing ground lookup`);
+    // Авторский visualId: предмет показывается моделью другого предмета.
+    const visual = item.visualId || item.id;
+    assert(existingIds.has(visual) || vehicleIds.has(visual) || apocalypseIds.has(visual)
+      || manifest.files.some(r => r.id === visual && !r.presentationOnly), `${item.id}: missing ground lookup`);
   }
   assert(ground.indexOf('RoaItemModelCatalog.Contains(itemId)') < ground.indexOf('if (LibraryItems.Contains(itemId))'), 'New medkit overrides old library');
   for (const type of artifacts) assert(client.includes(`case "${type.id}": return "${type.itemId}"`));

@@ -27,16 +27,30 @@ namespace RealmOfAshes.Game
             public readonly string[] CompatibleSlots;
             /// <summary>Непустой тип патронов отличает огнестрел от ножа и инструмента.</summary>
             public readonly string AmmoType;
+            /// <summary>Группа тировых вариантов (smgT4 → smg); пусто у предметов без тиров.</summary>
+            public readonly string TierGroup;
+            /// <summary>Чья модель и иконка у предмета: вариант тира выглядит как исходник.</summary>
+            public readonly string VisualId;
+            /// <summary>Семейство материала (metal, wood, fiber, hide, oil) и raw/refined.</summary>
+            public readonly string Family;
+            public readonly string MaterialKind;
 
             public Definition(string id, string name, float weight, int basePrice = 0,
                               int stackLimit = 0, string category = "", string slot = "",
                               string conditionMode = "none", string[] compatibleSlots = null,
-                              string ammoType = "", string description = "", int tier = 0)
+                              string ammoType = "", string description = "", int tier = 0,
+                              string tierGroup = "", string visualId = "", string family = "",
+                              string materialKind = "")
             {
                 CompatibleSlots = compatibleSlots ?? EmptySlots;
                 AmmoType = ammoType ?? string.Empty;
+                TierGroup = tierGroup ?? string.Empty;
+                VisualId = string.IsNullOrEmpty(visualId) ? id : visualId;
+                Family = family ?? string.Empty;
+                MaterialKind = materialKind ?? string.Empty;
                 Id = id;
-                Name = name;
+                // У тировых предметов имя несёт тир: пять «Шорохов» различимы в сумке и на торгах.
+                Name = !string.IsNullOrEmpty(TierGroup) && tier > 0 ? name + " [T" + tier + "]" : name;
                 Description = description;
                 Tier = tier;
                 Weight = weight;
@@ -76,6 +90,41 @@ namespace RealmOfAshes.Game
         {
             return ById.TryGetValue(RoaInventory.BaseId(itemOrRuntimeId), out Definition definition)
                 ? definition.Tier : 0;
+        }
+
+        /// <summary>
+        /// Id облика: модель, иконка и боевая оснастка варианта тира берутся у
+        /// исходного предмета (smgT5 → smg, oreT4 → ore). Без каталога — сам id.
+        /// </summary>
+        public static string VisualId(string itemOrRuntimeId)
+        {
+            string id = RoaInventory.BaseId(itemOrRuntimeId);
+            return !string.IsNullOrEmpty(id) && ById.TryGetValue(id, out Definition definition)
+                ? definition.VisualId : id;
+        }
+
+        /// <summary>Id картинки: своя item_(id), если напечена, иначе облик-заместитель.</summary>
+        public static string IconId(string itemOrRuntimeId)
+        {
+            string exact = RoaInventory.BaseId(itemOrRuntimeId);
+            if (string.IsNullOrEmpty(exact)) return exact;
+            return UnityEngine.Resources.Load<UnityEngine.Texture2D>("RealmUi/items/item_" + exact) != null
+                ? exact : VisualId(exact);
+        }
+
+        /// <summary>Предмет с тиром: экипировка T1–T5 или материал семейства.</summary>
+        public static bool IsTiered(string itemOrRuntimeId)
+        {
+            return ById.TryGetValue(RoaInventory.BaseId(itemOrRuntimeId) ?? string.Empty, out Definition definition)
+                && !string.IsNullOrEmpty(definition.TierGroup) && definition.Tier > 0;
+        }
+
+        /// <summary>Группа тировых вариантов предмета; у предмета без тиров — сам id.</summary>
+        public static string TierGroup(string itemOrRuntimeId)
+        {
+            string id = RoaInventory.BaseId(itemOrRuntimeId);
+            return ById.TryGetValue(id ?? string.Empty, out Definition definition) && !string.IsNullOrEmpty(definition.TierGroup)
+                ? definition.TierGroup : id;
         }
 
         public static bool Contains(string itemOrRuntimeId)
@@ -168,6 +217,10 @@ namespace RealmOfAshes.Game
                 string ammoType = row?["ammoType"]?.ToString() ?? string.Empty;
                 string description = row?["description"]?.ToString() ?? string.Empty;
                 int tier = row?["tier"]?.ToObject<int?>() ?? 0;
+                string tierGroup = row?["tierGroup"]?.ToString() ?? string.Empty;
+                string visualId = row?["visualId"]?.ToString() ?? string.Empty;
+                string family = row?["family"]?.ToString() ?? string.Empty;
+                string materialKind = row?["materialKind"]?.ToString() ?? string.Empty;
                 if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name)
                     || weight < 0f || basePrice < 0 || stackLimit < 0
                     || string.IsNullOrEmpty(category) || string.IsNullOrEmpty(conditionMode)
@@ -178,7 +231,8 @@ namespace RealmOfAshes.Game
                     return false;
                 }
                 next[id] = new Definition(id, name, weight, basePrice, stackLimit,
-                    category, slot, conditionMode, compatibleSlots, ammoType, description, tier);
+                    category, slot, conditionMode, compatibleSlots, ammoType, description, tier,
+                    tierGroup, visualId, family, materialKind);
             }
             if (!next.ContainsKey("fists") || !next.ContainsKey("silver")
                 || !next.ContainsKey("artifactDetectorMk1") || !next.ContainsKey("artifactBelt2"))
@@ -275,6 +329,8 @@ namespace RealmOfAshes.Game
             Add(result, "pickaxe", "Лопата «Пласт»", 3f);
             Add(result, "axe", "Топор «Пролом»", 2.5f);
             Add(result, "handPump", "Ключ «Поток»", 2.7f);
+            Add(result, "sickle", "Серп «Жнец»", 1.4f);
+            Add(result, "skinningKnife", "Нож свежевальщика «Шкурник»", 0.6f);
             Add(result, "repairKit", "Ремкомплект", 1.5f);
             Add(result, "artifactDetectorMk1", "Детектор МК-1", 0.8f);
             Add(result, "artifactDetectorMk2", "Детектор МК-2", 0.9f);

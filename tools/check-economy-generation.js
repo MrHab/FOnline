@@ -195,7 +195,6 @@ requireText('world caravan minimum published speed', functionBody(wastelandSim, 
 requireText('server resource site room identity', functionBody(server, 'getOrCreateRoom'), 'worldSiteIdFromRoomId(id, loc)');
 requireText('server resource site output nodes', functionBody(server, 'ensureWastelandSiteResourceNodes'), 'wastelandSiteResourceRows(site)');
 requireText('server resource site output nodes', functionBody(server, 'ensureWastelandSiteResourceNodes'), 'siteOutputResource: true');
-requireText('server camel-case resource aliases', server, "ammoparts: 'ammoParts'");
 
 rejectText('world artificial time cap', functionBody(wastelandSim, 'tick'), 'cappedHours');
 

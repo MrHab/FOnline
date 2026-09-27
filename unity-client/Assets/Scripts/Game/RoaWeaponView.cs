@@ -552,6 +552,7 @@ namespace RealmOfAshes.Game
                 _weapon, RoaApocalypseModels.Weapon(weaponId), 180f);
             if (visual != null)
             {
+                RoaApocalypseModels.MarkItem(visual, weaponId);
                 RoaWeaponVisualGrip.Result handholds = RoaWeaponVisualGrip.Configure(
                     visual, _weapon, _socketGrip, rigId, _melee == null,
                     _melee == null || _melee.TwoHanded);

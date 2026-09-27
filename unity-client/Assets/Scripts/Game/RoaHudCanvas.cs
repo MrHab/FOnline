@@ -255,6 +255,8 @@ namespace RealmOfAshes.Game
         private RectTransform _mapFrame;
         private RectTransform _mapRotor;
         private Text _mapTitle;
+        private GameObject _tierChip;
+        private Text _tierChipText;
         private Text _cellText;
         private RectTransform _markerLayer;
         private Image _playerArrow;
@@ -542,6 +544,7 @@ namespace RealmOfAshes.Game
             }
             _mapTitle = Label("Title", panel, new Vector2(10f, -7f), new Vector2(170f, 22f), 12,
                               TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
+            _mapTitle.supportRichText = true; // значок тира локации цветом тира
             if (mapDevice != null) _mapTitle.enabled = false;
             RectTransform frame = Rect("Map", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
                                        new Vector2(0f, 1f), new Vector2(31f, -50f), new Vector2(MinimapPixels, MinimapPixels));
@@ -561,6 +564,16 @@ namespace RealmOfAshes.Game
                                 new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             BuildGrid(map);
             BuildCompass(frame);
+            // Тир локации — чип в углу экрана миникарты: заголовок под рамкой устройства скрыт.
+            RectTransform chip = Rect("Tier", frame, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                                      new Vector2(0f, 1f), new Vector2(3f, -3f), new Vector2(24f, 15f));
+            Image chipBack = chip.gameObject.AddComponent<Image>();
+            chipBack.color = new Color(0.03f, 0.04f, 0.03f, 0.82f);
+            chipBack.raycastTarget = false;
+            _tierChipText = Label("Text", chip, Vector2.zero, new Vector2(24f, 15f), 11,
+                                  TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
+            _tierChip = chip.gameObject;
+            _tierChip.SetActive(false);
             _markerLayer.SetAsLastSibling();
             for (int i = 0; i < _markers.Length; i++)
             {
@@ -1471,6 +1484,7 @@ namespace RealmOfAshes.Game
                 _mapImage.color = new Color(0.07f, 0.35f, 0.09f, 1f);
                 _mapTitle.text = "\u041a\u0410\u0420\u0422\u0410: \u0417\u0410\u0413\u0420\u0423\u0417\u041a";
                 _cellText.text = string.Empty;
+                _tierChip.SetActive(false);
                 for (int i = 0; i < _markers.Length; i++) _markers[i].gameObject.SetActive(false);
                 _playerArrow.gameObject.SetActive(false);
                 return;
@@ -1483,9 +1497,15 @@ namespace RealmOfAshes.Game
             // Вне клетки сервер шлёт dangerCell: null — это JValue, а не C#-null: «?.» его
             // пропускает, и индексатор по нему бросал исключение каждый кадр.
             string cellTitle = (_hud?.Socket?.Session?.Self?["dangerCell"] as Newtonsoft.Json.Linq.JObject)?["title"]?.ToString();
-            _mapTitle.text = !string.IsNullOrEmpty(cellTitle) ? cellTitle
-                : (string.IsNullOrEmpty(_minimap.LocationName) ? "\u041a\u0430\u0440\u0442\u0430" : _minimap.LocationName);
+            _mapTitle.text = _minimap.TitleWithTier(!string.IsNullOrEmpty(cellTitle) ? cellTitle
+                : (string.IsNullOrEmpty(_minimap.LocationName) ? "\u041a\u0430\u0440\u0442\u0430" : _minimap.LocationName));
             _cellText.text = _minimap.CellLabel;
+            _tierChip.SetActive(_minimap.LocationTier > 0);
+            if (_minimap.LocationTier > 0)
+            {
+                _tierChipText.text = "T" + _minimap.LocationTier;
+                _tierChipText.color = RoaTierData.TierColor(_minimap.LocationTier);
+            }
             Vector2 focus = _minimap.HasPlayer ? _minimap.PlayerMapNormalized : new Vector2(0.5f, 0.5f);
             float zoom = ApplyMinimapZoom(focus);
             Vector3 pinScale = Vector3.one / zoom;
@@ -1501,6 +1521,9 @@ namespace RealmOfAshes.Game
                 image.rectTransform.anchoredPosition = new Vector2(p.x * MinimapPixels, p.y * MinimapPixels);
                 image.rectTransform.localScale = pinScale;
                 ApplyMarkerStyle(image, marker.Kind);
+                // Узел добычи — цветом своего тира.
+                if (marker.Kind == RoaMinimap.MarkerKind.Resource && marker.Tier > 0)
+                    image.color = RoaTierData.TierColor(marker.Tier);
             }
             for (int i = count; i < _markers.Length; i++) _markers[i].gameObject.SetActive(false);
             Vector2 player = _minimap.PlayerMapNormalized;

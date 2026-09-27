@@ -18,6 +18,14 @@ namespace RealmOfAshes.Game
         public Dictionary<string, int> Cost;
         public int SilverFee;
         public int WorkSeconds;
+        /// <summary>Тир рецепта (0 — без тира), группа его вариантов, профессия и уровень доступа.</summary>
+        public int Tier;
+        public string RecipeGroup = string.Empty;
+        public string Profession = string.Empty;
+        public int Level;
+
+        /// <summary>Ключ карточки: все тиры одного изделия — одна карточка.</summary>
+        public string GroupKey { get { return string.IsNullOrEmpty(RecipeGroup) ? Id : RecipeGroup; } }
 
         /// <summary>
         /// Комиссия заказа: на участке столицы её назначает арендатор
@@ -109,104 +117,54 @@ namespace RealmOfAshes.Game
             Recipe("medicinecraft", "Медикаменты", "medicine", 3, "chem_station", "chemicals", 2, "water", 1),
             Recipe("reagentcraft", "Химикаты", "chemicals", 3, "chem_station", "oil", 2, "water", 1, "scrap", 1),
             Recipe("repairkitcraft", "Ремкомплект", "repairKit", 1, "repair_bench", "ore", 2, "wood", 2),
-            Recipe("knifecraft", "Нож «Тихий»", "knife", 1, "weapon_bench", "ore", 2, "wood", 1),
-            Recipe("pistolcraft", "Пистолет «Искра»", "pistol", 1, "weapon_bench", "weaponParts", 1, "scrap", 4, "ammoParts", 2),
-            Recipe("revolvercraft", "Револьвер «Шериф»", "revolver", 1, "weapon_bench", "ore", 4, "scrap", 4, "wood", 2),
-            Recipe("sawedoffcraft", "Дробовик «Коротыш»", "sawedOffShotgun", 1, "weapon_bench", "scrap", 5, "wood", 3),
-            Recipe("smgcraft", "ПП «Шорох»", "smg", 1, "weapon_bench", "scrap", 8, "weaponParts", 3, "wood", 2),
-            Recipe("riflecraft", "Винтовка «След»", "rifle", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("assaultcraft", "Автомат «Рубеж»", "assaultRifle", 1, "weapon_bench", "ore", 6, "wood", 3),
-            Recipe("machineguncraft", "Пулемёт «Гром»", "machineGun", 1, "weapon_bench", "ore", 10, "wood", 4),
-            Recipe("lasercraft", "Гибрид «Разряд»", "laserPistol", 1, "energy_bench", "ore", 5, "wood", 2),
-            Recipe("flamercraft", "Огнемёт «Жар»", "flamethrower", 1, "weapon_bench", "ore", 9, "wood", 3, "oil", 2),
-            Recipe("plasmacraft", "Гибрид «Заря»", "plasmaRifle", 1, "energy_bench", "ore", 10, "wood", 2, "silver", 10),
-            Recipe("shotguncraft", "Дробовик «Град»", "shotgun", 1, "weapon_bench", "ore", 7, "wood", 4),
-            Recipe("rocketcrafter", "Ракетомёт «Пепел»", "rocketLauncher", 1, "weapon_bench", "ore", 14, "wood", 4, "silver", 14),
-            Recipe("leathercraft", "Куртка «Пыль»", "leather", 1, "repair_bench", "scrap", 5, "chemicals", 1),
-            Recipe("metalarmorcraft", "Панцирь «Лом»", "metalArmor", 1, "repair_bench", "scrap", 12, "ore", 4),
-            Recipe("ballisticvestcraft", "Жилет «Застава»", "ballisticVest", 1, "repair_bench", "scrap", 10, "ammoParts", 5, "chemicals", 2),
-            Recipe("combatarmorcraft", "Комплект «Штурм»", "combatArmor", 1, "repair_bench", "scrap", 18, "electronics", 6, "chemicals", 4),
-            Recipe("hazmatsuitcraft", "Костюм «Фильтр»", "hazmatSuit", 1, "chem_station", "chemicals", 10, "scrap", 6),
-            Recipe("heavyarmorcraft", "Панцирь «Бастион»", "heavyArmor", 1, "repair_bench", "scrap", 26, "ore", 10, "electronics", 6),
-            Recipe("energysuitcraft", "Костюм «Изолятор»", "energySuit", 1, "energy_bench", "electronics", 16, "chemicals", 8, "scrap", 10),
-            Recipe("prewarhelmetcraft", "Шлем «Реликт»", "preWarHelmet", 1, "energy_bench", "scrap", 6, "electronics", 3),
-            Recipe("weldedhelmetcraft", "Шлем «Сварщик»", "weldedHelmet", 1, "tool_bench", "scrap", 4),
-            Recipe("helmetcraft", "Шлем «Караул»", "helmet", 1, "repair_bench", "scrap", 4),
-            Recipe("tacticalhelmetcraft", "Шлем «Дозор»", "tacticalHelmet", 1, "repair_bench", "scrap", 6, "electronics", 2),
-            Recipe("assaulthelmetcraft", "Шлем «Штурм»", "assaultHelmet", 1, "repair_bench", "scrap", 8, "electronics", 3),
-            Recipe("bootscraft", "Ботинки «Тропа»", "boots", 1, "tool_bench", "scrap", 3, "chemicals", 1),
-            Recipe("scoutbootscraft", "Ботинки «След»", "scoutBoots", 1, "tool_bench", "scrap", 4, "chemicals", 2),
-            Recipe("assaultbootscraft", "Ботинки «Натиск»", "assaultBoots", 1, "tool_bench", "scrap", 5, "wood", 1),
-            Recipe("reinforcedbootscraft", "Ботинки «Крепь»", "reinforcedBoots", 1, "repair_bench", "scrap", 6, "ore", 2),
-            Recipe("backpackcraft", "Рюкзак «Странник»", "backpack", 1, "tool_bench", "scrap", 5, "chemicals", 1),
-            Recipe("pickaxecraft", "Лопата «Пласт»", "pickaxe", 1, "tool_bench", "ore", 2, "wood", 2),
-            Recipe("axecraft", "Топор «Пролом»", "axe", 1, "tool_bench", "ore", 1, "wood", 3),
-            Recipe("handpumpcraft", "Ключ «Поток»", "handPump", 1, "tool_bench", "ore", 3, "wood", 1, "scrap", 2),
             Recipe("weaponpartscraft", "Оружейные детали", "weaponParts", 2, "weapon_bench", "ore", 6, "scrap", 5),
-            Recipe("electronicscraft", "Электроника", "electronics", 2, "energy_bench", "scrap", 3, "chemicals", 1),
-            Recipe("polygonAssaultRifle02craft", "Штурмовая винтовка 02", "polygonAssaultRifle02", 1, "weapon_bench", "ore", 6, "wood", 3),
-            Recipe("polygonAssaultRifle03craft", "Штурмовая винтовка 03", "polygonAssaultRifle03", 1, "weapon_bench", "ore", 6, "wood", 3),
-            Recipe("polygonHuntingRifleClean01craft", "Охотничья винтовка (чистое) 01", "polygonHuntingRifleClean01", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("polygonHybrid03craft", "Гибридное оружие 03", "polygonHybrid03", 1, "weapon_bench", "ore", 10, "wood", 2, "silver", 10),
-            Recipe("polygonMachineGun02craft", "Пулемёт 02", "polygonMachineGun02", 1, "weapon_bench", "ore", 10, "wood", 4),
-            Recipe("polygonMinigun01craft", "Миниган 01", "polygonMinigun01", 1, "weapon_bench", "ore", 10, "wood", 4),
-            Recipe("polygonMinigunClean01craft", "Миниган (чистое) 01", "polygonMinigunClean01", 1, "weapon_bench", "ore", 10, "wood", 4),
-            Recipe("polygonNailgun01craft", "Гвоздомёт 01", "polygonNailgun01", 1, "weapon_bench", "scrap", 8, "weaponParts", 3, "wood", 2),
-            Recipe("polygonNailgunClean01craft", "Гвоздомёт (чистое) 01", "polygonNailgunClean01", 1, "weapon_bench", "scrap", 8, "weaponParts", 3, "wood", 2),
-            Recipe("polygonRevolver02craft", "Револьвер 02", "polygonRevolver02", 1, "weapon_bench", "ore", 4, "scrap", 4, "wood", 2),
-            Recipe("polygonRifle01craft", "Винтовка 01", "polygonRifle01", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("polygonRifle02craft", "Винтовка 02", "polygonRifle02", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("polygonRifle03craft", "Винтовка 03", "polygonRifle03", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("polygonSniperRifle01craft", "Снайперская винтовка 01", "polygonSniperRifle01", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("polygonSniperRifle02craft", "Снайперская винтовка 02", "polygonSniperRifle02", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("polygonSniperRiflePneumatic01craft", "Пневматическая снайперская винтовка 01", "polygonSniperRiflePneumatic01", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("polygonSpearGun01craft", "Гарпунное ружьё 01", "polygonSpearGun01", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("polygonSubMGun02craft", "Пистолет-пулемёт 02", "polygonSubMGun02", 1, "weapon_bench", "scrap", 8, "weaponParts", 3, "wood", 2),
-            Recipe("polygonSubMGun03craft", "Пистолет-пулемёт 03", "polygonSubMGun03", 1, "weapon_bench", "scrap", 8, "weaponParts", 3, "wood", 2),
-            Recipe("polygonSubMGunClean03craft", "Пистолет-пулемёт (чистое) 03", "polygonSubMGunClean03", 1, "weapon_bench", "scrap", 8, "weaponParts", 3, "wood", 2),
-            Recipe("polygonBatMetal01craft", "Металлическая бита 01", "polygonBatMetal01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonBatWood01craft", "Деревянная бита 01", "polygonBatWood01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonBatWood02craft", "Деревянная бита 02", "polygonBatWood02", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonBaton01craft", "Дубинка 01", "polygonBaton01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonBaton02craft", "Дубинка 02", "polygonBaton02", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonButcher01craft", "Мясницкий тесак 01", "polygonButcher01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonCross01craft", "Боевой крест 01", "polygonCross01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonCrowbar01craft", "Лом 01", "polygonCrowbar01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonCrutch01craft", "Костыль 01", "polygonCrutch01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonHammer01craft", "Молот 01", "polygonHammer01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonKatana01craft", "Катана 01", "polygonKatana01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonMeleeGolfClub01craft", "Клюшка 01", "polygonMeleeGolfClub01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonMeleeMachete01craft", "Мачете 01", "polygonMeleeMachete01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonMeleeSpearWood01craft", "Копьё 01", "polygonMeleeSpearWood01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonPipe01craft", "Труба 01", "polygonPipe01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonPlank01craft", "Доска 01", "polygonPlank01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonRebarClub01craft", "Арматурная дубина 01", "polygonRebarClub01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonWoodAxe01craft", "Дровяной топор 01", "polygonWoodAxe01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonWrench01craft", "Ключ 01", "polygonWrench01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonBombGasCan01craft", "Бомба из канистры 01", "polygonBombGasCan01", 1, "weapon_bench", "ore", 14, "wood", 4, "silver", 14),
-            Recipe("polygonBombPropane01craft", "Пропановая бомба 01", "polygonBombPropane01", 1, "weapon_bench", "ore", 14, "wood", 4, "silver", 14),
-            Recipe("polygonChainSaw01craft", "Бензопила 01", "polygonChainSaw01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonCrossBow01craft", "Арбалет 01", "polygonCrossBow01", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("polygonCrossBowClean01craft", "Арбалет (чистое) 01", "polygonCrossBowClean01", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("polygonFlareGun01craft", "Сигнальный пистолет 01", "polygonFlareGun01", 1, "weapon_bench", "weaponParts", 1, "scrap", 4, "ammoParts", 2),
-            Recipe("polygonFlashbang01craft", "Светошумовая граната 01", "polygonFlashbang01", 1, "weapon_bench", "ore", 14, "wood", 4, "silver", 14),
-            Recipe("polygonGrenade01craft", "Граната 01", "polygonGrenade01", 1, "weapon_bench", "ore", 14, "wood", 4, "silver", 14),
-            Recipe("polygonMolotov01craft", "Коктейль Молотова 01", "polygonMolotov01", 1, "weapon_bench", "ore", 14, "wood", 4, "silver", 14),
-            Recipe("polygonNailBomb01craft", "Бомба с гвоздями 01", "polygonNailBomb01", 1, "weapon_bench", "ore", 14, "wood", 4, "silver", 14),
-            Recipe("polygonPipeBomb01craft", "Трубная бомба 01", "polygonPipeBomb01", 1, "weapon_bench", "ore", 14, "wood", 4, "silver", 14),
-            Recipe("polygonSignShield01craft", "Щит 01", "polygonSignShield01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonTrimmer01craft", "Триммер 01", "polygonTrimmer01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonTrimmerClean01craft", "Триммер (чистое) 01", "polygonTrimmerClean01", 1, "weapon_bench", "ore", 1, "wood", 3),
-            Recipe("polygonAAGun01craft", "Зенитная установка 01", "polygonAAGun01", 1, "weapon_bench", "ore", 10, "wood", 4),
-            Recipe("polygonVehAA01craft", "Транспортная зенитная установка 01", "polygonVehAA01", 1, "weapon_bench", "ore", 10, "wood", 4),
-            Recipe("polygonVehHarpoon01craft", "Транспортный гарпун 01", "polygonVehHarpoon01", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("polygonVehMachineGun01craft", "Транспортный пулемёт 01", "polygonVehMachineGun01", 1, "weapon_bench", "ore", 10, "wood", 4),
-            Recipe("polygonVehMiniGun01craft", "Транспортный миниган 01", "polygonVehMiniGun01", 1, "weapon_bench", "ore", 10, "wood", 4),
-            Recipe("polygonVehRocketLauncher01craft", "Транспортная ракетная установка 01", "polygonVehRocketLauncher01", 1, "weapon_bench", "ore", 14, "wood", 4, "silver", 14),
-            Recipe("polygonVehSawLauncher01craft", "Транспортная пильная установка 01", "polygonVehSawLauncher01", 1, "weapon_bench", "ore", 14, "wood", 4, "silver", 14)
+            Recipe("electronicscraft", "Электроника", "electronics", 2, "energy_bench", "scrap", 3, "chemicals", 1)
         };
 
         public static IReadOnlyList<RoaCraftRecipe> Recipes { get { return _recipes; } }
+
+        /// <summary>Уровень профессии из состояния игрока (self.professions); 0, если её нет.</summary>
+        public static int ProfessionLevel(JObject self, string professionId)
+        {
+            if (self?["professions"] is JArray rows)
+                foreach (JToken token in rows)
+                    if (token is JObject row && row["id"]?.ToString() == professionId)
+                        return row["level"]?.ToObject<int?>() ?? 0;
+            return 0;
+        }
+
+        public static bool ProfessionAllows(JObject self, RoaCraftRecipe recipe)
+        {
+            return recipe == null || string.IsNullOrEmpty(recipe.Profession)
+                || ProfessionLevel(self, recipe.Profession) >= recipe.Level;
+        }
+
+        /// <summary>
+        /// По рецепту на изделие: старший тир, открытый профессией игрока (или
+        /// младший, если закрыты все). Для списков, где пять тиров — лишний шум.
+        /// </summary>
+        public static List<RoaCraftRecipe> GroupRepresentatives(JObject self)
+        {
+            var order = new List<string>();
+            var best = new Dictionary<string, RoaCraftRecipe>();
+            foreach (RoaCraftRecipe recipe in _recipes)
+            {
+                string key = recipe.GroupKey;
+                if (!best.TryGetValue(key, out RoaCraftRecipe current))
+                {
+                    order.Add(key);
+                    best[key] = recipe;
+                    continue;
+                }
+                bool open = ProfessionAllows(self, recipe);
+                bool currentOpen = ProfessionAllows(self, current);
+                if ((open && (!currentOpen || recipe.Tier > current.Tier)) || (!open && !currentOpen && recipe.Tier < current.Tier))
+                    best[key] = recipe;
+            }
+            var result = new List<RoaCraftRecipe>(order.Count);
+            foreach (string key in order) result.Add(best[key]);
+            return result;
+        }
 
         /// <summary>Atomically replaces the baked fallback recipes with server-authored rows.</summary>
         public static bool ApplyCatalog(JObject catalog, out string error)
@@ -262,7 +220,11 @@ namespace RealmOfAshes.Game
                     Station = station,
                     Cost = cost,
                     SilverFee = System.Math.Max(0, row?["silverFee"]?.ToObject<int?>() ?? 0),
-                    WorkSeconds = System.Math.Max(1, row?["workSeconds"]?.ToObject<int?>() ?? 1)
+                    WorkSeconds = System.Math.Max(1, row?["workSeconds"]?.ToObject<int?>() ?? 1),
+                    Tier = System.Math.Max(0, row?["tier"]?.ToObject<int?>() ?? 0),
+                    RecipeGroup = row?["recipeGroup"]?.ToString() ?? string.Empty,
+                    Profession = row?["profession"]?.ToString() ?? string.Empty,
+                    Level = System.Math.Max(0, row?["level"]?.ToObject<int?>() ?? 0)
                 });
             }
             _recipes = next;

@@ -425,9 +425,7 @@
         1
       ],
       "solid": false,
-      "vision": false,
-      "resource": "food",
-      "hp": 6
+      "vision": false
     },
     "highway_sign": {
       "name": "Дорожный указатель",
@@ -660,9 +658,7 @@
         1
       ],
       "solid": false,
-      "vision": false,
-      "resource": "scrap",
-      "hp": 5
+      "vision": false
     },
     "scrap_wall_segment": {
       "name": "Стена из лома",
@@ -871,9 +867,7 @@
         1.25
       ],
       "solid": false,
-      "vision": true,
-      "resource": "water",
-      "hp": 7
+      "vision": true
     },
     "workshop_bench": {
       "name": "Верстак",

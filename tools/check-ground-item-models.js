@@ -171,8 +171,11 @@ const covered = new Set([
   ...unityLibraryAliases.keys(), ...unityCatalogIds, ...unityVehicleModels.keys(),
   ...apocalypseWeapons.map(row => row.itemId)
 ]);
+// Предмет с авторским visualId лежит на земле моделью другого предмета
+// (серп — мачете, нож свежевальщика — нож): клиент ищет модель по visualId.
+const borrowed = new Set(kromkaItems.filter(item => item.visualId && covered.has(item.visualId)).map(item => item.id));
 assert.deepStrictEqual(
-  [...new Set(authoredIds)].filter(id => !covered.has(id)),
+  [...new Set(authoredIds)].filter(id => !covered.has(id) && !borrowed.has(id)),
   [],
   'Для части игровых предметов нет физической модели или осознанного исключения'
 );

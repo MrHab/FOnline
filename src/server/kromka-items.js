@@ -67,13 +67,21 @@ function normalizeItemCatalog(raw = {}) {
       hands: Math.max(0, Math.min(2, Math.floor(Number(input?.hands || 0)))),
       harvestTool: safeId(input?.harvestTool),
       modificationSlots: uniqueSafeIds(input?.modificationSlots),
-      acquisition
+      acquisition,
+      // Тиры (src/server/kromka-tiers.js): группа вариантов, исходный предмет
+      // варианта, семейство материала и облик, по которому клиент ищет модель.
+      tierGroup: safeId(input?.tierGroup),
+      variantOf: safeId(input?.variantOf),
+      family: safeId(input?.family),
+      materialKind: safeId(input?.materialKind),
+      visualId: safeId(input?.visualId)
     }));
     ids.add(id);
   }
   if (!items.length) throw new Error('Kromka item catalog is empty');
   for (const item of items) {
     if (item.ammoType && !ids.has(item.ammoType)) throw new Error(`Kromka item ${item.id} references unknown ammo ${item.ammoType}`);
+    if (item.variantOf && !ids.has(item.variantOf)) throw new Error(`Kromka item ${item.id} is a variant of unknown ${item.variantOf}`);
   }
   return Object.freeze({
     schema: String(raw?.schema || 'kromka.items.v1'),
@@ -138,7 +146,12 @@ function normalizeFieldRecipeCatalog(raw = {}, itemCatalog = {}) {
       inputs: Object.freeze(inputs),
       silverFee: Math.max(0, Math.floor(Number(input?.silverFee || 0))),
       workSeconds: Math.max(1, Math.floor(Number(input?.workSeconds || 1))),
-      output: Object.freeze({ id: outputId, qty: outputQty })
+      output: Object.freeze({ id: outputId, qty: outputQty }),
+      // Тир рецепта, группа его вариантов, профессия и уровень доступа.
+      tier: Math.max(0, Math.min(5, Math.floor(Number(input?.tier || 0)))),
+      recipeGroup: safeId(input?.recipeGroup),
+      profession: safeId(input?.profession),
+      level: Math.max(0, Math.floor(Number(input?.level || 0)))
     }));
     ids.add(id);
   }

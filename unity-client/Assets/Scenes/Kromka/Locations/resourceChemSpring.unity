@@ -4170,7 +4170,6 @@ MonoBehaviour:
   _serverArchetypeId: waterTank
   _role: scenery
   _gameplayTags:
-  - resource
   - chemicals
   _serverAuthoritative: 1
   _blocksMovement: 0
@@ -4278,7 +4277,6 @@ MonoBehaviour:
   _serverArchetypeId: scrapHeap
   _role: scenery
   _gameplayTags:
-  - resource
   - scrap
   _serverAuthoritative: 1
   _blocksMovement: 0

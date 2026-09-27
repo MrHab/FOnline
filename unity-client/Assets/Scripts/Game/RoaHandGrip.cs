@@ -155,13 +155,13 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>Где сейчас рукоять в этой кисти: центр, ось от мизинца к указательному, тыл.</summary>
-        public void HeldFrame(float radius, out Vector3 centre, out Vector3 axis, out Vector3 back)
+        public void HeldFrame(float radius, out Vector3 centre, out Vector3 axis, out Vector3 back, float intoFingers = 0f)
         {
             Quaternion rotation = _hand.rotation;
             axis = rotation * _lateralLocal;
             Vector3 palm = rotation * _palmLocal;
             back = -palm;
-            centre = _hand.position + rotation * _fingerLocal * _palmReach + palm * (radius + PalmThickness);
+            centre = _hand.position + rotation * _fingerLocal * (_palmReach + intoFingers) + palm * (radius + PalmThickness);
         }
 
         /// <summary>Центр ладони текущей кисти (для замера промаха).</summary>
@@ -199,9 +199,10 @@ namespace RealmOfAshes.Game
                     Thumb(28f, 12f, 10f);
                     break;
                 case RoaFingerPose.Relaxed:
-                    Curl(_index, 12f, 18f, 10f);
-                    Curl(_fingers, 20f, 26f, 16f);
-                    Thumb(18f, 8f, 6f);
+                    // Свободная рука — мягкий полукулак, а не растопыренная ладонь.
+                    Curl(_index, 32f, 42f, 28f);
+                    Curl(_fingers, 42f, 52f, 36f);
+                    Thumb(30f, 14f, 10f);
                     break;
                 case RoaFingerPose.Support:
                     Curl(_index, wrap * 0.9f, wrap, wrap * 0.7f);

@@ -319,7 +319,9 @@ namespace RealmOfAshes.EditorTools
             Transform shoulder = elbow != null ? elbow.parent : null;
             if (shoulder == null) return "null";
             float angle = Vector3.Angle(elbow.position - shoulder.position, Vector3.down);
-            return "{\"drop\": " + F(shoulder.position.y - elbow.position.y) + ", \"abduct\": " + F(angle) + "}";
+            float extension = Vector3.Distance(shoulder.position, hand.position)
+                / (Vector3.Distance(shoulder.position, elbow.position) + Vector3.Distance(elbow.position, hand.position));
+            return "{\"drop\": " + F(shoulder.position.y - elbow.position.y) + ", \"abduct\": " + F(angle) + ", \"extension\": " + F(extension) + "}";
         }
 
         private static string HoldState(Rig rig)

@@ -375,8 +375,8 @@ namespace RealmOfAshes.Game
                 Transform handle = weapon != null ? weapon.MedicalHandle : null;
                 if (medical != null && handle != null)
                 {
-                    // Ручка — в сгибе пальцев, на 1.5 см глубже центра ладони.
-                    _rightGrip.HeldFrame(-0.015f, out Vector3 centre, out Vector3 axis, out _);
+                    // Ручка — в сгибе пальцев: на 2.8 см дальше центра ладони к пальцам.
+                    _rightGrip.HeldFrame(0.004f, out Vector3 centre, out Vector3 axis, out _, 0.028f);
                     Vector3 across = Vector3.ProjectOnPlane(axis, Vector3.up);
                     if (across.sqrMagnitude < 1e-4f) across = transform.forward;
                     CaseAxes(medical, handle, out Vector3 upLocal, out Vector3 widthLocal);
@@ -483,7 +483,9 @@ namespace RealmOfAshes.Game
             Transform shoulder = elbow != null ? elbow.parent : null;
             // Локти вниз, а не в стороны: правый — вниз и чуть наружу, левый — под цевьё.
             Vector3 bend = target.HasElbow ? target.Elbow
-                : transform.right * (left ? 0.15f : 0.32f) + Vector3.down - transform.forward * 0.12f;
+                // Левый локоть под цевьём — внутрь, к оружию; правый — вниз и чуть наружу.
+                : transform.right * (left ? (target.Fingers == RoaFingerPose.Cradle ? 0.45f : 0.15f) : 0.32f)
+                    + Vector3.down - transform.forward * 0.12f;
             if (shoulder == null || !TwoBone(shoulder, elbow, grip.Hand, wrist, rotation, bend))
                 arm.Solve(wrist, rotation, (shoulder != null ? shoulder.position : transform.position) + bend);
             grip.ApplyFingers(target.Fingers, target.Radius);

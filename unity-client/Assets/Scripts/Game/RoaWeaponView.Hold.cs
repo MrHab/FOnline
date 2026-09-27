@@ -67,7 +67,9 @@ namespace RealmOfAshes.Game
         private void CaptureChestRest()
         {
             _chestRestKnown = false;
+            _shoulderRestKnown = false;
             _chest = Bone(_bones, "spine_03");
+            _shoulder = Bone(_bones, "upperarm_r");
             if (_chest == null || _frame == null) return;
             foreach (SkinnedMeshRenderer skin in _frame.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
@@ -76,15 +78,38 @@ namespace RealmOfAshes.Game
                 Matrix4x4[] bind = skin.sharedMesh.bindposes;
                 for (int i = 0; i < bones.Length && i < bind.Length; i++)
                 {
-                    if (bones[i] != _chest) continue;
                     Matrix4x4 rest = skin.transform.localToWorldMatrix * bind[i].inverse;
-                    _chestRestRotation = Quaternion.Inverse(_frame.rotation) * rest.rotation;
-                    _chestRestPosition = _frame.InverseTransformPoint(rest.GetColumn(3));
-                    _chestRestKnown = true;
-                    return;
+                    if (bones[i] == _chest && !_chestRestKnown)
+                    {
+                        _chestRestRotation = Quaternion.Inverse(_frame.rotation) * rest.rotation;
+                        _chestRestPosition = _frame.InverseTransformPoint(rest.GetColumn(3));
+                        _chestRestKnown = true;
+                    }
+                    if (bones[i] == _shoulder && _shoulder != null && !_shoulderRestKnown)
+                    {
+                        _shoulderRestPosition = _frame.InverseTransformPoint(rest.GetColumn(3));
+                        _shoulderRestKnown = true;
+                    }
                 }
+                if (_chestRestKnown) return;
             }
         }
+
+        private Transform _shoulder;
+        private Vector3 _shoulderRestPosition;
+        private bool _shoulderRestKnown;
+
+        /// <summary>
+        /// Сдвиг правого плеча от покоя: приклад и труба лежат в плече, поэтому
+        /// огнестрел идёт за наклоном корпуса (стойка клипа клонит плечи вперёд и вниз).
+        /// </summary>
+        private Vector3 ShoulderTravel()
+        {
+            if (!_shoulderRestKnown || _shoulder == null || _frame == null) return ChestTravel();
+            return _frame.InverseTransformPoint(_shoulder.position) - _shoulderRestPosition;
+        }
+
+        private Vector3 StanceTravel() => _hold != null && _hold.Firearm ? ShoulderTravel() : ChestTravel();
 
         /// <summary>
         /// Поворот стойки вокруг вертикали: только доворот корпуса к цели. Скрутка
@@ -230,6 +255,12 @@ namespace RealmOfAshes.Game
             RoaHandSpec rightSpec = _hold.Right;
             rightSpec.Centre += rightSpec.Axis * RoaHoldStance.TopHandSlide(_hold, SwingPhase());
             RoaHandTarget right = Target(rightSpec, RoaHoldStance.FingersFor(_hold, true, _raise, RecoilWeight > 0.02f));
+            if (_hold.Kind == RoaHoldKind.HipGun)
+            {
+                // Задняя рукоять у бедра: локоть вниз и назад, прижат к корпусу.
+                right.Elbow = FrameDirection(new Vector3(0.05f, -1f, -0.35f), ChestYaw());
+                right.HasElbow = true;
+            }
             if (_hold.Kind == RoaHoldKind.Launcher)
             {
                 // Рукоять трубы у самого плеча: локоть вниз и назад, а не крылом в сторону.
@@ -314,7 +345,7 @@ namespace RealmOfAshes.Game
             HoldHeadRoll = pose.HeadRoll;
 
             Quaternion yaw = ChestYaw();
-            Vector3 travel = ChestTravel();
+            Vector3 travel = StanceTravel();
             PlaceHold(pose, yaw, travel);
 
             if (firearm)
@@ -329,7 +360,7 @@ namespace RealmOfAshes.Game
                         if (Mathf.Abs(applied) >= 0.0005f)
                         {
                             TorsoResidual = applied;
-                            PlaceHold(pose, ChestYaw(), ChestTravel());
+                            PlaceHold(pose, ChestYaw(), StanceTravel());
                             ConvergeToAim(aimPoint);
                         }
                     }

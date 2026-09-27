@@ -972,8 +972,9 @@ namespace RealmOfAshes.Game
             if (side.sqrMagnitude < 1e-6f) return;
             bool longGun = !_shortGun;
             // Толчок заметен с игровой камеры: ствол подбрасывает на 10–14°, отводит на 4–6 см.
-            float pitch = (longGun ? 10f : 14f) * weight;
-            float back = (longGun ? 0.06f : 0.04f) * weight;
+            float scale = _hold != null ? _hold.RecoilScale : 1f;
+            float pitch = (longGun ? 10f : 14f) * weight * scale;
+            float back = (longGun ? 0.06f : 0.04f) * weight * Mathf.Max(scale, 0.35f);
             Quaternion climb = Quaternion.AngleAxis(-pitch, side.normalized);
             Vector3 push = -barrel * back;
             Vector3 handOffset = _hand.position - grip;

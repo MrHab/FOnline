@@ -209,5 +209,48 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "AE9B8CE96AB89C4C3503543C79F71FDE4E1FC8C22110EBE9DD888F32D86F38E6"
+  "sha256": "8C4AA5C293CADD4C5C12198222CDA6FEE1EB021113A33B65754CB27E9216DC7F",
+  "animations": [
+    "run",
+    "turn",
+    "walk",
+    "walk_back",
+    "run_back",
+    "crouch_walk",
+    "crouch_walk_back",
+    "idle",
+    "attack",
+    "hurt",
+    "death",
+    "crouch_idle",
+    "hit_head",
+    "punch_cross",
+    "pistol_idle",
+    "pistol_shoot",
+    "pistol_reload",
+    "sword_idle",
+    "sword_attack",
+    "pickup",
+    "kneel_work"
+  ],
+  "ualImport": {
+    "source": "Quaternius Universal Animation Library (CC0)",
+    "clips": [
+      "idle",
+      "attack",
+      "hurt",
+      "death",
+      "crouch_idle",
+      "hit_head",
+      "punch_cross",
+      "pistol_idle",
+      "pistol_shoot",
+      "pistol_reload",
+      "sword_idle",
+      "sword_attack",
+      "pickup",
+      "kneel_work"
+    ],
+    "heightScale": 1.0349
+  }
 }

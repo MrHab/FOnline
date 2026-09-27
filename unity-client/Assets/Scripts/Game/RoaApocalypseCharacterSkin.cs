@@ -3,7 +3,13 @@ using UnityEngine;
 
 namespace RealmOfAshes.Game
 {
-    /// <summary>Copies the existing animated pose onto a PolygonApocalypse skeleton.</summary>
+    /// <summary>
+    /// Copies the existing animated pose onto a PolygonApocalypse skeleton.
+    /// Each mapped bone keeps a constant offset from its source bone, measured in
+    /// the bind poses of both skins and aligned along the bone: the visible body
+    /// follows direction and twist of every limb, neck, feet and fingers. The pelvis
+    /// also carries the source's travel (bob, crouch, fall) scaled by leg length.
+    /// </summary>
     [ExecuteAlways]
     [DefaultExecutionOrder(1000)]
     public sealed class RoaApocalypseCharacterSkin : MonoBehaviour
@@ -16,18 +22,36 @@ namespace RealmOfAshes.Game
             public Quaternion SourceRest;
             public Transform SourceChild;
             public Transform TargetChild;
+            /// <summary>Target rotation = source rotation * Offset (both in character space).</summary>
+            public Quaternion Offset;
+            public bool Pelvis;
+            public Vector3 SourceRestPosition;
+            public Vector3 TargetRestPosition;
         }
+
+        private float _legScale = 1f;
+
+        /// <summary>Diagnostics for probes: whether the last pose held a weapon and how far the right hand missed.</summary>
+        public bool Armed { get; private set; }
+        public float HandReachError { get; private set; } = -1f;
+        public bool ArmsReady => _rightArm != null && _rightArm.Ready && _leftArm != null && _leftArm.Ready;
 
         private readonly List<BonePair> _bones = new List<BonePair>();
         private RoaIkChain _leftArm;
         private RoaIkChain _rightArm;
+        private RoaIkChain _leftLeg;
+        private RoaIkChain _rightLeg;
+        private Transform _leftBall;
+        private Transform _rightBall;
+        // Rest heights above the floor (character space) of the visible ankle and ball.
+        private float _ankleRestHeight = -1f;
+        private float _ballRestHeight = -1f;
         private Transform _sourceLeftHand;
         private Transform _sourceRightHand;
         private Transform _visibleLeftHand;
         private Transform _visibleRightHand;
         private GameObject _visual;
         private Transform _rigRoot;
-        private Vector3 _rigRootRestLocalPosition;
         private Vector3 _visualRestLocalPosition;
         private GameObject _basePrefab;
         private GameObject _activePrefab;
@@ -99,14 +123,13 @@ namespace RealmOfAshes.Game
             }
             _activePrefab = prefab;
             _rigRoot = rigRoot;
-            _rigRootRestLocalPosition = rigRoot.localPosition;
             var source = new Dictionary<string, Transform>();
             var originalRenderers = new List<Renderer>();
             var sourceRenderers = new List<Renderer>();
             Renderer bodyRenderer = null;
             foreach (Transform bone in rigRoot.GetComponentsInChildren<Transform>(true))
             {
-                string key = BoneKey(bone.name);
+                string key = RetargetKey(bone, false);
                 if (!source.ContainsKey(key)) source.Add(key, bone);
             }
             foreach (Renderer renderer in rigRoot.GetComponentsInChildren<Renderer>(true))
@@ -153,7 +176,7 @@ namespace RealmOfAshes.Game
                 child.gameObject.layer = gameObject.layer;
             foreach (Transform target in _visual.GetComponentsInChildren<Transform>(true))
             {
-                if (!source.TryGetValue(BoneKey(target.name), out Transform old)) continue;
+                if (!source.TryGetValue(RetargetKey(target, true), out Transform old)) continue;
                 _bones.Add(new BonePair
                 {
                     Source = old,
@@ -171,7 +194,12 @@ namespace RealmOfAshes.Game
                     if (candidate.Source == parent.Source || candidate.Target == parent.Target
                         || !candidate.Source.IsChildOf(parent.Source)
                         || !candidate.Target.IsChildOf(parent.Target)) continue;
-                    int depth = Depth(candidate.Target) - Depth(parent.Target);
+                    // Along the body: the spine over a leg, the neck over a
+                    // clavicle, the middle finger over the others.
+                    string childKey = RetargetKey(candidate.Target, true);
+                    bool axial = childKey.StartsWith("spine") || childKey.StartsWith("neck")
+                        || childKey.StartsWith("middle_01") || childKey == "head";
+                    int depth = (Depth(candidate.Target) - Depth(parent.Target)) * 2 + (axial ? 0 : 1);
                     if (depth >= bestDepth) continue;
                     bestDepth = depth;
                     parent.SourceChild = candidate.Source;
@@ -180,11 +208,15 @@ namespace RealmOfAshes.Game
                 _bones[i] = parent;
             }
             _bones.Sort((a, b) => Depth(a.Target).CompareTo(Depth(b.Target)));
-            _sourceLeftHand = source.TryGetValue("handl", out Transform sourceLeft) ? sourceLeft : null;
-            _sourceRightHand = source.TryGetValue("handr", out Transform sourceRight) ? sourceRight : null;
+            _sourceLeftHand = source.TryGetValue("hand_l", out Transform sourceLeft) ? sourceLeft : null;
+            _sourceRightHand = source.TryGetValue("hand_r", out Transform sourceRight) ? sourceRight : null;
             _visibleLeftHand = FindVisualBone("Hand_L");
             _visibleRightHand = FindVisualBone("Hand_R");
             _leftArm = VisualArm("L");
+            _leftLeg = VisualLeg("L");
+            _rightLeg = VisualLeg("R");
+            _leftBall = FindVisualBone("Ball_L");
+            _rightBall = FindVisualBone("Ball_R");
             _rightArm = VisualArm("R");
             if (_bones.Count >= 10)
             {
@@ -199,6 +231,7 @@ namespace RealmOfAshes.Game
                     _visual.transform.position += offset;
                 }
                 _visualRestLocalPosition = _visual.transform.localPosition;
+                ComputeOffsets(bodyRenderer as SkinnedMeshRenderer);
                 foreach (Renderer renderer in originalRenderers) renderer.enabled = false;
                 RefreshNativeHair();
                 return true;
@@ -272,10 +305,8 @@ namespace RealmOfAshes.Game
         public void SyncPose()
         {
             if (_visual == null) return;
-            if (_rigRoot != null && _rigRoot.parent != null)
-                _visual.transform.position = transform.TransformPoint(_visualRestLocalPosition)
-                    + _rigRoot.parent.TransformVector(
-                        _rigRoot.localPosition - _rigRootRestLocalPosition);
+            // The pelvis carries the rig's travel (knee flex, crouch, fall) itself.
+            _visual.transform.position = transform.TransformPoint(_visualRestLocalPosition);
             if (_basePrefab != null && Vector3.Distance(_visual.transform.lossyScale,
                     _basePrefab.transform.localScale) > 0.0001f)
                 RoaApocalypseVisuals.SetNativeWorldScale(_visual.transform, _basePrefab.transform.localScale);
@@ -283,34 +314,165 @@ namespace RealmOfAshes.Game
             RefreshAccessories();
             UpdateIdentityMesh();
             RefreshNativeHair();
-            foreach (BonePair pair in _bones)
-                if (pair.Source != null && pair.Target != null)
-                    pair.Target.localRotation = pair.TargetRest;
+            Quaternion character = transform.rotation;
+            Quaternion toCharacter = Quaternion.Inverse(character);
             foreach (BonePair pair in _bones)
             {
                 if (pair.Source == null || pair.Target == null) continue;
-                string key = BoneKey(pair.Target.name);
-                if (key == "root") continue;
-                if (key == "pelvis" || key.StartsWith("spine") || key.StartsWith("neck"))
+                pair.Target.rotation = character * (toCharacter * pair.Source.rotation * pair.Offset);
+                if (pair.Pelvis)
                 {
-                    // The gameplay rig adds crouch and aim to these bones after
-                    // sampling its clip. Carry that delta onto the visible rig.
-                    pair.Target.localRotation = pair.TargetRest
-                        * Quaternion.Inverse(pair.SourceRest) * pair.Source.localRotation;
-                    continue;
+                    Vector3 travel = transform.InverseTransformPoint(pair.Source.position) - pair.SourceRestPosition;
+                    pair.Target.position = transform.TransformPoint(pair.TargetRestPosition + travel * _legScale);
                 }
-                if (pair.SourceChild == null || pair.TargetChild == null) continue;
-                Vector3 current = pair.TargetChild.position - pair.Target.position;
-                Vector3 desired = pair.SourceChild.position - pair.Source.position;
-                if (current.sqrMagnitude < 0.0001f || desired.sqrMagnitude < 0.0001f) continue;
-                pair.Target.rotation = Quaternion.FromToRotation(current, desired) * pair.Target.rotation;
             }
-            // The two skeletons have different limb proportions. Direction-only
-            // retargeting leaves visible palms away from the weapon sockets.
-            if (_rightArm != null && _rightArm.Ready && _sourceRightHand != null)
-                _rightArm.Solve(_sourceRightHand.position, null);
-            if (_leftArm != null && _leftArm.Ready && _sourceLeftHand != null)
-                _leftArm.Solve(_sourceLeftHand.position, null);
+            // The rig drops its root to bend the knees (idle, walk, crouch); the
+            // feet come back onto the floor here, and a toe never cuts into it.
+            PlantFoot(_leftLeg, _leftBall);
+            PlantFoot(_rightLeg, _rightBall);
+            // Limb proportions differ: a held weapon hangs on the source hands, so
+            // the visible hands reach them, keeping the retargeted wrist and elbow.
+            bool armed = _view != null && (!string.IsNullOrEmpty(_view.WeaponId) || _view.OffhandWeaponReady);
+            Armed = armed;
+            if (!armed) return;
+            ReachHand(_rightArm, _sourceRightHand, _visibleRightHand);
+            ReachHand(_leftArm, _sourceLeftHand, _visibleLeftHand);
+            HandReachError = _sourceRightHand != null && _visibleRightHand != null
+                ? Vector3.Distance(_sourceRightHand.position, _visibleRightHand.position) : -1f;
+        }
+
+        private RoaIkChain VisualLeg(string side)
+        {
+            return new RoaIkChain(new[]
+            {
+                FindVisualBone("UpperLeg_" + side), FindVisualBone("LowerLeg_" + side), FindVisualBone("Ankle_" + side)
+            }, 12, 0.003f);
+        }
+
+        private void PlantFoot(RoaIkChain leg, Transform ball)
+        {
+            if (leg == null || !leg.Ready || _ankleRestHeight < 0f) return;
+            Transform ankle = leg.End;
+            Transform knee = ankle.parent;
+            float floor = transform.position.y;
+            float lowest = floor + _ankleRestHeight;
+            if (ankle.position.y < lowest - 0.002f)
+            {
+                Quaternion footRotation = ankle.rotation;
+                Vector3 target = new Vector3(ankle.position.x, lowest, ankle.position.z);
+                // The knee bends forward, over the toes.
+                Vector3 pole = knee.position + transform.forward * 0.5f;
+                leg.Solve(target, footRotation, pole);
+            }
+            if (ball == null || _ballRestHeight < 0f) return;
+            float ballFloor = floor + _ballRestHeight * 0.6f;
+            Vector3 toe = ball.position - ankle.position;
+            if (ball.position.y >= ballFloor || toe.sqrMagnitude < 1e-4f) return;
+            Vector3 axis = Vector3.Cross(toe, Vector3.up);
+            if (axis.sqrMagnitude < 1e-6f) return;
+            float lift = Mathf.Asin(Mathf.Clamp((ballFloor - ball.position.y) / toe.magnitude, 0f, 1f)) * Mathf.Rad2Deg;
+            ankle.rotation = Quaternion.AngleAxis(lift, axis.normalized) * ankle.rotation;
+        }
+
+        private static void ReachHand(RoaIkChain arm, Transform sourceHand, Transform visibleHand)
+        {
+            if (arm == null || !arm.Ready || sourceHand == null || visibleHand == null) return;
+            Transform elbow = visibleHand.parent;
+            Quaternion wrist = visibleHand.rotation;
+            arm.Solve(sourceHand.position, wrist, elbow != null ? elbow.position + (elbow.position - visibleHand.position) * 0.25f : (Vector3?)null);
+        }
+
+        /// <summary>
+        /// Bind-pose offsets: rests of both skeletons come from their skins (so the
+        /// pose the rig happens to hold at load time does not leak in), each target
+        /// rest is turned to lie along its source bone, and the difference is kept.
+        /// </summary>
+        private void ComputeOffsets(SkinnedMeshRenderer sourceSkin)
+        {
+            Dictionary<Transform, Matrix4x4> sourceRest = RestPose(sourceSkin);
+            Dictionary<Transform, Matrix4x4> targetRest = RestPose(_bodyRenderer);
+            Matrix4x4 toCharacter = transform.worldToLocalMatrix;
+            Matrix4x4 Rest(Dictionary<Transform, Matrix4x4> rest, Transform bone) =>
+                toCharacter * (rest.TryGetValue(bone, out Matrix4x4 world) ? world : bone.localToWorldMatrix);
+            var align = new Dictionary<Transform, Quaternion>();
+            for (int i = 0; i < _bones.Count; i++)
+            {
+                BonePair pair = _bones[i];
+                Matrix4x4 source = Rest(sourceRest, pair.Source);
+                Matrix4x4 target = Rest(targetRest, pair.Target);
+                Quaternion turn = Quaternion.identity;
+                if (pair.SourceChild != null && pair.TargetChild != null)
+                {
+                    Vector3 sourceDir = Rest(sourceRest, pair.SourceChild).GetPosition() - source.GetPosition();
+                    Vector3 targetDir = Rest(targetRest, pair.TargetChild).GetPosition() - target.GetPosition();
+                    if (sourceDir.sqrMagnitude > 1e-6f && targetDir.sqrMagnitude > 1e-6f)
+                        turn = Quaternion.FromToRotation(targetDir, sourceDir);
+                }
+                else
+                {
+                    // An end bone (hand, head, toe) keeps its parent's alignment.
+                    for (Transform up = pair.Target.parent; up != null; up = up.parent)
+                        if (align.TryGetValue(up, out Quaternion inherited)) { turn = inherited; break; }
+                }
+                align[pair.Target] = turn;
+                pair.Offset = Quaternion.Inverse(source.rotation) * turn * target.rotation;
+                pair.Pelvis = RetargetKey(pair.Target, true) == "pelvis";
+                pair.SourceRestPosition = source.GetPosition();
+                pair.TargetRestPosition = target.GetPosition();
+                string key = RetargetKey(pair.Target, true);
+                if (key == "foot_l" || key == "foot_r")
+                    _ankleRestHeight = Mathf.Max(0.02f, pair.TargetRestPosition.y);
+                if (key == "ball_l" || key == "ball_r")
+                    _ballRestHeight = Mathf.Max(0.005f, pair.TargetRestPosition.y);
+                if (pair.Pelvis && pair.SourceRestPosition.y > 0.2f)
+                    _legScale = Mathf.Clamp(pair.TargetRestPosition.y / pair.SourceRestPosition.y, 0.6f, 1.6f);
+                _bones[i] = pair;
+            }
+        }
+
+        private static Dictionary<Transform, Matrix4x4> RestPose(SkinnedMeshRenderer skin)
+        {
+            var rest = new Dictionary<Transform, Matrix4x4>();
+            if (skin == null || skin.sharedMesh == null) return rest;
+            Transform[] bones = skin.bones;
+            Matrix4x4[] bindposes = skin.sharedMesh.bindposes;
+            for (int i = 0; i < bones.Length && i < bindposes.Length; i++)
+                if (bones[i] != null && !rest.ContainsKey(bones[i]))
+                    rest[bones[i]] = skin.transform.localToWorldMatrix * bindposes[i].inverse;
+            return rest;
+        }
+
+        /// <summary>
+        /// One name per joint for both skeletons, in the old rig's words: Synty's
+        /// Hips/Shoulder/Elbow/UpperLeg/Ankle/Toes and side-less finger chains
+        /// (IndexFinger, Finger = middle, Thumb under Hand_L or Hand_R).
+        /// </summary>
+        private static string RetargetKey(Transform bone, bool pack)
+        {
+            string name = (bone != null ? bone.name : string.Empty).ToLowerInvariant();
+            if (!pack) return name;
+            string side = name.EndsWith("_l") ? "l" : name.EndsWith("_r") ? "r" : string.Empty;
+            string stem = side.Length > 0 ? name.Substring(0, name.Length - 2) : name;
+            switch (stem)
+            {
+                case "hips": return "pelvis";
+                case "neck": return "neck_01";
+                case "shoulder": return "upperarm_" + side;
+                case "elbow": return "lowerarm_" + side;
+                case "upperleg": return "thigh_" + side;
+                case "lowerleg": return "calf_" + side;
+                case "ankle": return "foot_" + side;
+                case "toes": return "ball_leaf_" + side;
+            }
+            string finger = stem.StartsWith("indexfinger_") ? "index" : stem.StartsWith("finger_") ? "middle"
+                : stem.StartsWith("thumb_") ? "thumb" : string.Empty;
+            if (finger.Length == 0) return name;
+            string hand = string.Empty;
+            for (Transform up = bone.parent; up != null && hand.Length == 0; up = up.parent)
+                hand = up.name == "Hand_L" ? "l" : up.name == "Hand_R" ? "r" : string.Empty;
+            if (hand.Length == 0) return name;
+            string index = stem.Substring(stem.LastIndexOf('_') + 1);
+            return finger + "_" + index + (index == "04" ? "_leaf_" : "_") + hand;
         }
 
         private void RefreshArmor()
@@ -580,16 +742,6 @@ namespace RealmOfAshes.Game
             int count = 0;
             for (Transform item = value; item != null; item = item.parent) count++;
             return count;
-        }
-
-        private static string BoneKey(string name)
-        {
-            string key = (name ?? string.Empty).ToLowerInvariant()
-                .Replace("_", string.Empty).Replace(" ", string.Empty);
-            key = key.Replace("upperleg", "thigh").Replace("lowerleg", "calf")
-                .Replace("hips", "pelvis").Replace("shoulder", "upperarm")
-                .Replace("elbow", "lowerarm");
-            return key;
         }
     }
 }

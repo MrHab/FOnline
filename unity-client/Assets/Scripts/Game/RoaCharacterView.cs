@@ -1396,8 +1396,11 @@ namespace RealmOfAshes.Game
 
             _crouching = crouching;
 
+            // Клип приседа на месте уже сидит: процедурные просадка и наклон — только
+            // для приседа в движении (и для тела без такого клипа).
+            bool poseCrouch = crouching && clip != "crouch_idle";
             _pose.Step(locomoting, Turning, clip, lowerBodyYaw,
-                sideAmount, forwardAmount, _turnAmount, crouching, false, dt,
+                sideAmount, forwardAmount, _turnAmount, poseCrouch, false, dt,
                 contactWeight, contactForward, contactSide);
         }
 
@@ -1791,9 +1794,9 @@ namespace RealmOfAshes.Game
             {
                 if (Turning && _clips.Contains("turn")) return "turn";
 
-                // Присед на месте — это idle плюс поза приседа, а не clip ходьбы:
-                // 04b:783 выбирает клип только когда locomoting. Иначе персонаж
-                // марширует на месте, сидя на корточках.
+                // Присед на месте — свой клип (UAL Crouch_Idle_Loop): колени, корпус и
+                // руки в нём настоящие. Без клипа — idle плюс процедурная поза приседа.
+                if (crouching && _clips.Contains("crouch_idle")) return "crouch_idle";
                 return "idle";
             }
 

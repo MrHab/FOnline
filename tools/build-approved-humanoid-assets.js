@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const NPC_REVIEW_SHA256 = 'AE9B8CE96AB89C4C3503543C79F71FDE4E1FC8C22110EBE9DD888F32D86F38E6';
+const NPC_REVIEW_SHA256 = '8C4AA5C293CADD4C5C12198222CDA6FEE1EB021113A33B65754CB27E9216DC7F';
 const RIFLE_REVIEW_SHA256 = '322D14E2D07059AB4458C65CB0E6B7019B8F030F3386B05016908E41E6591FC6';
 const BOOTS_FIT_REPORT_SHA256 = '6CA7122CB054A5F585CD190AFB1643F26B44C55DE4A4AF17303356DDA8CF9853';
 const GRIP_RUNTIME_SHA256 = '7B96493E5D26DCF12D10B03526036DCD529A74C26FD031BFE8DCBBA986FD4FE8';
@@ -383,7 +383,8 @@ function verifyNpcReview() {
   const directory = fromRoot('docs', 'art', 'reviews', 'unified-humanoid-npc-v6', 'base');
   const glb = path.join(directory, 'npc_humanoid_base_unified_v6.glb');
   const reportFile = path.join(directory, 'npc_humanoid_base_unified_v6-report.json');
-  const approvalFile = path.join(directory, 'CRITIC_APPROVAL_V6.md');
+  // v7: клипы UAL (tools/import-ual-clips.js); одобрение v6 осталось рядом для истории.
+  const approvalFile = path.join(directory, 'CRITIC_APPROVAL_V7.md');
   [glb, reportFile, approvalFile].forEach(file => assertFile('humanoid NPC review asset', file));
   const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
   const approval = fs.readFileSync(approvalFile, 'utf8');

@@ -62,7 +62,7 @@ namespace RealmOfAshes.Game
 
         /// <summary>Момент максимального импульса и полная длина отдачи огнестрела.</summary>
         public const float RecoilPeakSeconds = 0.045f;
-        public const float RecoilDurationSeconds = 0.20f;
+        public const float RecoilDurationSeconds = 0.30f;
 
         private static readonly Collider[] ProbeHits = new Collider[8];
         private static readonly RaycastHit[] ProbeCastHits = new RaycastHit[16];
@@ -70,6 +70,8 @@ namespace RealmOfAshes.Game
         private float _obstructedBlend;
         private float _contactBumpStartedAt = -100f;
         private float _recoilStartedAt = -100f;
+        // Пистолет и револьвер: толчок выстрела короче и резче, чем у двуручного.
+        private bool _shortGun;
         private float _recoilSide = 1f;
 
         /// <summary>Насколько ствол поднят из-за препятствия, 0..1. Для диагностики.</summary>
@@ -168,9 +170,10 @@ namespace RealmOfAshes.Game
         private static readonly string[] TorsoBones = { "spine_01", "spine_02", "spine_03" };
         private static readonly Vector3[] RecoilOffsets =
         {
-            new Vector3(-0.010f, 0.002f, 0.003f),
-            new Vector3(-0.020f, 0.003f, 0.004f),
-            new Vector3(-0.014f, 0.002f, 0.002f)
+            // Толчок уходит в корпус: плечи откидываются назад, а не только кисти.
+            new Vector3(-0.022f, 0.004f, 0.006f),
+            new Vector3(-0.042f, 0.006f, 0.008f),
+            new Vector3(-0.034f, 0.004f, 0.004f)
         };
 
         private static readonly Dictionary<string, GltfImport> WeaponCache = new Dictionary<string, GltfImport>();
@@ -464,6 +467,7 @@ namespace RealmOfAshes.Game
             if (request != _loadRequest || !RoaWeaponGrip.Ready) return;
 
             string rigId = RoaApocalypseModels.WeaponRig(weaponId);
+            _shortGun = rigId.Contains("istol") || rigId.Contains("revolver") || rigId.Contains("sawedOff");
             string url = baseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + rigId + ".glb";
             GltfImport import = await LoadCached(rigId, url);
             if (request != _loadRequest) return;
@@ -908,6 +912,33 @@ namespace RealmOfAshes.Game
             }
         }
 
+        /// <summary>
+        /// Толчок выстрела поверх уже наведённого ствола: оружие подбрасывает
+        /// дулом вверх вокруг рукояти и отводит к плечу, правая кисть идёт с ним
+        /// (видимая рука тянется к ней), а левая затем снова садится на цевьё.
+        /// Двуручному оружию толчок крупнее, пистолету — резче и меньше.
+        /// </summary>
+        private void ApplyWeaponKick()
+        {
+            float weight = RecoilWeight;
+            if (weight <= 0.001f || _weapon == null || _socketGrip == null || _hand == null) return;
+            Vector3 grip = _socketGrip.position;
+            Vector3 barrel = _socketMuzzle != null ? (_socketMuzzle.position - grip) : _weapon.forward;
+            if (barrel.sqrMagnitude < 1e-6f) return;
+            barrel.Normalize();
+            Vector3 side = Vector3.Cross(Vector3.up, barrel);
+            if (side.sqrMagnitude < 1e-6f) return;
+            bool longGun = !_shortGun;
+            float pitch = (longGun ? 8f : 11f) * weight;
+            float back = (longGun ? 0.045f : 0.03f) * weight;
+            Quaternion climb = Quaternion.AngleAxis(-pitch, side.normalized);
+            Vector3 push = -barrel * back;
+            Vector3 handOffset = _hand.position - grip;
+            _hand.SetPositionAndRotation(grip + push + climb * handOffset, climb * _hand.rotation);
+            Vector3 weaponOffset = _weapon.position - grip;
+            _weapon.SetPositionAndRotation(grip + push + climb * weaponOffset, climb * _weapon.rotation);
+        }
+
         private void ApplyFirearmRecoil()
         {
             float weight = RecoilWeight;
@@ -932,6 +963,7 @@ namespace RealmOfAshes.Game
         private void Finish()
         {
             ApplyReadyRaise();
+            ApplyWeaponKick();
             if (DualWield) SupportHandSolved = false;
             else SolveSupportHand();
         }

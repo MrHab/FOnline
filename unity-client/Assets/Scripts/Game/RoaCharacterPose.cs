@@ -43,6 +43,7 @@ namespace RealmOfAshes.Game
         private const float KneeFlexIdle = 0.04f;
         private const float KneeFlexMove = 0.055f;
         private const float KneeFlexCrouch = 0.26f;
+        private const float KneeFlexCrouchMove = 0.06f;
 
         private Transform _pelvis;
         private Transform _spine01;
@@ -136,9 +137,13 @@ namespace RealmOfAshes.Game
             float frameDt = Mathf.Clamp(dt, 0.001f, 0.08f);
             float contactTarget = dead ? 0f : Mathf.Clamp01(contactPressure);
 
+            // A crouch walk plays a clip that is crouched already: the root only
+            // settles a little lower, the knees of the idle crouch come from the
+            // root drop plus the visible body's foot planting.
             float kneeFlexTarget = dead
                 ? 0f
-                : (crouching ? KneeFlexCrouch : (locomoting ? KneeFlexMove : KneeFlexIdle))
+                : (crouching ? (locomoting ? KneeFlexCrouchMove : KneeFlexCrouch)
+                    : (locomoting ? KneeFlexMove : KneeFlexIdle))
                     + contactTarget * 0.022f;
             KneeFlex = Blend(KneeFlex, kneeFlexTarget, 7f, frameDt);
 

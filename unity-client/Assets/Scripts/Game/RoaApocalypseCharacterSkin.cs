@@ -34,11 +34,20 @@ namespace RealmOfAshes.Game
         /// <summary>Diagnostics for probes: whether the last pose held a weapon and how far the right hand missed.</summary>
         public bool Armed { get; private set; }
         public float HandReachError { get; private set; } = -1f;
+        /// <summary>Промах видимой кисти мимо точки хвата на модели, м (−1 — точки нет).</summary>
+        public float HoldMissPrimary { get; private set; } = -1f;
+        public float HoldMissSupport { get; private set; } = -1f;
+        /// <summary>Класс удержания предмета в руках (для проб и обзора).</summary>
+        public string HoldArchetype { get; private set; } = string.Empty;
         public bool ArmsReady => _rightArm != null && _rightArm.Ready && _leftArm != null && _leftArm.Ready;
 
         private readonly List<BonePair> _bones = new List<BonePair>();
         private RoaIkChain _leftArm;
         private RoaIkChain _rightArm;
+        private RoaHandGrip _leftGrip;
+        private RoaHandGrip _rightGrip;
+        private Transform _visibleHead;
+        private Transform _visibleNeck;
         private RoaIkChain _leftLeg;
         private RoaIkChain _rightLeg;
         private Transform _leftBall;
@@ -232,6 +241,11 @@ namespace RealmOfAshes.Game
                 }
                 _visualRestLocalPosition = _visual.transform.localPosition;
                 ComputeOffsets(bodyRenderer as SkinnedMeshRenderer);
+                Dictionary<Transform, Matrix4x4> handRest = RestPose(_bodyRenderer);
+                _rightGrip = VisualGrip(_visibleRightHand, false, handRest);
+                _leftGrip = VisualGrip(_visibleLeftHand, true, handRest);
+                _visibleHead = FindVisualBone("Head");
+                _visibleNeck = FindVisualBone("Neck");
                 foreach (Renderer renderer in originalRenderers) renderer.enabled = false;
                 RefreshNativeHair();
                 return true;
@@ -334,11 +348,95 @@ namespace RealmOfAshes.Game
             // the visible hands reach them, keeping the retargeted wrist and elbow.
             bool armed = _view != null && (!string.IsNullOrEmpty(_view.WeaponId) || _view.OffhandWeaponReady);
             Armed = armed;
+            HoldMissPrimary = -1f;
+            HoldMissSupport = -1f;
+            HoldArchetype = string.Empty;
             if (!armed) return;
+            RoaWeaponView weapon = _view.HeldWeapon;
+            if (weapon != null && weapon.HoldActive && (weapon.HoldRight.Active || weapon.HoldLeft.Active))
+            {
+                // Кисти — на места рук самой модели, пальцы обхватывают рукоять;
+                // свободная рука остаётся за клипом.
+                HoldArchetype = weapon.HoldKind;
+                HoldMissPrimary = Hold(_rightArm, _rightGrip, weapon.HoldRight, false);
+                RoaHandTarget left = weapon.HoldLeft;
+                RoaOffhandWeaponView offhand = _view.HeldOffhand;
+                if (!left.Active && offhand != null && offhand.HoldLeft.Active) left = offhand.HoldLeft;
+                HoldMissSupport = Hold(_leftArm, _leftGrip, left, true);
+                TiltHead(weapon.HoldHeadPitch, weapon.HoldHeadRoll);
+                HandReachError = HoldMissPrimary;
+                return;
+            }
+            if (_view.WeaponId == "medkit" && _rightGrip != null)
+            {
+                // Кейс висит в кулаке за ручку: ручка поперёк ладони, корпус отвесно вниз.
+                _rightGrip.ApplyFingers(RoaFingerPose.Wrap, 0.012f);
+                Transform medical = weapon != null ? weapon.MedicalCase : null;
+                Transform handle = weapon != null ? weapon.MedicalHandle : null;
+                if (medical != null && handle != null)
+                {
+                    _rightGrip.HeldFrame(0.012f, out Vector3 centre, out Vector3 axis, out _);
+                    Vector3 across = Vector3.ProjectOnPlane(axis, Vector3.up);
+                    if (across.sqrMagnitude < 1e-4f) across = transform.forward;
+                    CaseAxes(medical, handle, out Vector3 upLocal, out Vector3 widthLocal);
+                    // Ось «вверх» кейса (к ручке) — отвесно, ширина кейса — вдоль ручки в ладони.
+                    Quaternion want = Quaternion.LookRotation(Vector3.Cross(across.normalized, Vector3.up), Vector3.up);
+                    Quaternion have = Quaternion.LookRotation(Vector3.Cross(widthLocal, upLocal), upLocal);
+                    medical.rotation = want * Quaternion.Inverse(have);
+                    medical.position += centre - medical.TransformPoint(_caseGrip);
+                }
+                return;
+            }
             ReachHand(_rightArm, _sourceRightHand, _visibleRightHand);
             ReachHand(_leftArm, _sourceLeftHand, _visibleLeftHand);
             HandReachError = _sourceRightHand != null && _visibleRightHand != null
                 ? Vector3.Distance(_sourceRightHand.position, _visibleRightHand.position) : -1f;
+        }
+
+        private Transform _caseRoot;
+        private Vector3 _caseUp = Vector3.up;
+        private Vector3 _caseWidth = Vector3.right;
+        private Vector3 _caseGrip;
+
+        /// <summary>
+        /// Оси кейса в его собственной системе: «вверх» — от центра к ручке, ширина —
+        /// самая длинная из двух других осей. Импорт модели может повернуть корень,
+        /// поэтому оси снимаются с геометрии.
+        /// </summary>
+        private void CaseAxes(Transform root, Transform handle, out Vector3 up, out Vector3 width)
+        {
+            if (_caseRoot != root)
+            {
+                _caseRoot = root;
+                // Оси сняты с модели кейса аптечки (item_medkit): ручка на торце самой
+                // длинной оси, со стороны −ось; ширина — бо́льшая из двух других осей.
+                var bounds = new Bounds();
+                bool any = false;
+                foreach (MeshFilter filter in root.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (filter.sharedMesh == null) continue;
+                    Bounds b = filter.sharedMesh.bounds;
+                    Matrix4x4 toRoot = root.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+                    for (int i = 0; i < 8; i++)
+                    {
+                        Vector3 corner = toRoot.MultiplyPoint3x4(b.center + Vector3.Scale(b.extents,
+                            new Vector3((i & 1) == 0 ? -1f : 1f, (i & 2) == 0 ? -1f : 1f, (i & 4) == 0 ? -1f : 1f)));
+                        if (!any) { bounds = new Bounds(corner, Vector3.zero); any = true; }
+                        else bounds.Encapsulate(corner);
+                    }
+                }
+                Vector3 size = bounds.size;
+                int upAxis = size.x >= size.y && size.x >= size.z ? 0 : (size.y >= size.z ? 1 : 2);
+                int a = (upAxis + 1) % 3, c = (upAxis + 2) % 3;
+                _caseUp = Vector3.zero;
+                _caseUp[upAxis] = -1f;
+                _caseWidth = Vector3.zero;
+                _caseWidth[size[a] >= size[c] ? a : c] = 1f;
+                // Хват — середина торца с ручкой.
+                _caseGrip = bounds.center + _caseUp * (size[upAxis] * 0.5f);
+            }
+            up = _caseUp;
+            width = _caseWidth;
         }
 
         private RoaIkChain VisualLeg(string side)
@@ -372,6 +470,47 @@ namespace RealmOfAshes.Game
             if (axis.sqrMagnitude < 1e-6f) return;
             float lift = Mathf.Asin(Mathf.Clamp((ballFloor - ball.position.y) / toe.magnitude, 0f, 1f)) * Mathf.Rad2Deg;
             ankle.rotation = Quaternion.AngleAxis(lift, axis.normalized) * ankle.rotation;
+        }
+
+        /// <summary>Положить видимую кисть на рукоять; вернуть промах ладони, м (−1 — цели нет).</summary>
+        private float Hold(RoaIkChain arm, RoaHandGrip grip, RoaHandTarget target, bool left)
+        {
+            if (!target.Active || arm == null || !arm.Ready || grip == null || !grip.Ready) return -1f;
+            Quaternion rotation = grip.RotationFor(target.Axis, target.Back);
+            Vector3 wrist = grip.WristFor(target, rotation);
+            Transform elbow = grip.Hand.parent;
+            Transform shoulder = elbow != null ? elbow.parent : null;
+            Vector3 origin = shoulder != null ? shoulder.position : transform.position + Vector3.up * 1.39f;
+            // Локти вниз, а не в стороны: правый — на 30–40° ниже горизонта, левый — под цевьё.
+            Vector3 pole = origin + transform.right * (left ? 0.02f : 0.14f) + Vector3.down * 0.6f - transform.forward * 0.12f;
+            arm.Solve(wrist, rotation, pole);
+            grip.ApplyFingers(target.Fingers, target.Radius);
+            return Vector3.Distance(grip.PalmCentre(target.Radius), target.Centre);
+        }
+
+        /// <summary>Голова к прицелу: наклон вниз к прикладу и к плечу. Поровну на шею и голову.</summary>
+        private void TiltHead(float pitch, float roll)
+        {
+            if (Mathf.Abs(pitch) < 0.01f && Mathf.Abs(roll) < 0.01f) return;
+            Quaternion tilt = Quaternion.AngleAxis(pitch * 0.5f, transform.right)
+                * Quaternion.AngleAxis(roll * 0.5f, -transform.forward);
+            if (_visibleNeck != null) _visibleNeck.rotation = tilt * _visibleNeck.rotation;
+            if (_visibleHead != null) _visibleHead.rotation = tilt * _visibleHead.rotation;
+        }
+
+        private RoaHandGrip VisualGrip(Transform hand, bool left, Dictionary<Transform, Matrix4x4> bind)
+        {
+            if (hand == null) return null;
+            Transform Child(string name)
+            {
+                foreach (Transform node in hand.GetComponentsInChildren<Transform>(true))
+                    // У правой кисти пака имена с суффиксом: «Thumb_01 1».
+                    if (node != hand && (node.name == name || node.name.StartsWith(name + " "))) return node;
+                return null;
+            }
+            Transform[] Chain(string name) => new[] { Child(name + "_01"), Child(name + "_02"), Child(name + "_03") };
+            var grip = new RoaHandGrip(hand, left, bind, Chain("IndexFinger"), Chain("Finger"), Chain("Thumb"));
+            return grip.Ready ? grip : null;
         }
 
         private static void ReachHand(RoaIkChain arm, Transform sourceHand, Transform visibleHand)

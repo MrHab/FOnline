@@ -44,6 +44,10 @@ namespace RealmOfAshes.Game
         private float _reloadDuration = DefaultReloadSeconds;
 
         public string WeaponId { get; private set; }
+        private RoaHold _hold;
+        private Transform _visualRoot;
+        /// <summary>Куда положить видимую левую кисть (пистолет парой), иначе неактивно.</summary>
+        public RoaHandTarget HoldLeft { get; private set; }
         public bool Ready { get; private set; }
         public bool ArmSolved { get; private set; }
         public float ObstructedBlend { get { return _obstructedBlend; } }
@@ -209,8 +213,14 @@ namespace RealmOfAshes.Game
                 Bone("clavicle_l"), Bone("upperarm_l"), Bone("lowerarm_l"), _leftHand
             }, 12, 0.001f);
 
-            RoaApocalypseModels.MarkItem(
-                RoaApocalypseVisuals.AttachStatic(_weapon, RoaApocalypseModels.Weapon(weaponId), 180f), weaponId);
+            GameObject prefab = RoaApocalypseModels.Weapon(weaponId);
+            GameObject visual = RoaApocalypseVisuals.AttachStatic(_weapon, prefab, 180f);
+            RoaApocalypseModels.MarkItem(visual, weaponId);
+            if (visual != null && prefab != null && IsSupported(weaponId))
+            {
+                _hold = RoaHoldStance.Build(prefab.name, rigId, RoaHoldAnchors.Find(prefab.name), true);
+                _visualRoot = visual.transform;
+            }
             WeaponId = weaponId;
             Ready = _leftArm.Ready;
             Mount();
@@ -228,10 +238,32 @@ namespace RealmOfAshes.Game
             Mount();
         }
 
-        public void Apply(Vector3 aimPoint, bool hasAim)
+        public void Apply(Vector3 aimPoint, bool hasAim, RoaWeaponView primary = null)
         {
+            HoldLeft = default;
             if (WeaponId == "medkit") return;
             if (!Ready || Stowed || _weapon == null || _characterRoot == null) return;
+
+            if (_hold != null && _visualRoot != null && primary != null && primary.DualHold)
+            {
+                // Пара пистолетов: второй ствол — зеркально первому, левая кисть на рукояти.
+                primary.PlaceInFrame(_weapon, _visualRoot, _hold, RoaHoldStance.SampleDual(primary.Raise, true));
+                UpdateObstruction();
+                if (hasAim) ConvergeToAim(aimPoint);
+                ApplyReadyRaise();
+                RoaHandSpec grip = _hold.Right;
+                HoldLeft = new RoaHandTarget
+                {
+                    Active = grip.Active,
+                    Centre = _visualRoot.TransformPoint(grip.Centre),
+                    Axis = _visualRoot.TransformDirection(grip.Axis),
+                    Back = -_visualRoot.TransformDirection(grip.Back),
+                    Radius = grip.Radius,
+                    Fingers = primary.Raise > 0.5f ? RoaFingerPose.Trigger : RoaFingerPose.TriggerOff
+                };
+                ArmSolved = true;
+                return;
+            }
 
             if (RoaApocalypseModels.WeaponRig(WeaponId) == "knife")
             {
@@ -381,6 +413,9 @@ namespace RealmOfAshes.Game
             _rightHand = null;
             _characterRoot = null;
             _owner = null;
+            _hold = null;
+            _visualRoot = null;
+            HoldLeft = default;
             WeaponId = string.Empty;
             _loadingId = string.Empty;
             Ready = false;

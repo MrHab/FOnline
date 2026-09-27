@@ -17,7 +17,7 @@ namespace RealmOfAshes.Game
     /// забирает корпус (±1.2 рад на три позвонка), после чего оружие ставится
     /// заново — рука уехала вместе с корпусом, и остаток уже укладывается.
     /// </summary>
-    public sealed class RoaWeaponView
+    public sealed partial class RoaWeaponView
     {
         /// <summary>Смещение сокета хвата от узла крепления. APPROVED_ASSAULT_PRIMARY_SOCKET, 04d:84.</summary>
         internal static readonly Vector3 PrimarySocketOffset = new Vector3(0.03f, -0.02f, 0.025f);
@@ -133,10 +133,19 @@ namespace RealmOfAshes.Game
         /// </summary>
         public void ApplyHeld()
         {
+            HoldRight = default;
+            HoldLeft = default;
             if (!Ready || Stowed || _hand == null || _socketGrip == null || _weapon == null) return;
             if (WeaponId == "medkit") return;
             PrimaryHandSolved = false;
             SupportHandSolved = false;
+            if (HoldActive)
+            {
+                // Руки ведёт клип: предмет лежит в правой кисти, пальцы на рукояти.
+                PlaceHoldInHand();
+                HoldRight = Target(_hold.Right.Active ? _hold.Right : _hold.Left, RoaFingerPose.Wrap);
+                return;
+            }
             Mount();
         }
 
@@ -153,6 +162,7 @@ namespace RealmOfAshes.Game
         public void PlayAttack(float meleeSwingSeconds)
         {
             if (!Ready) return;
+            NoteHoldAttack();
             if (_melee != null)
             {
                 StartSwing(meleeSwingSeconds);
@@ -403,6 +413,12 @@ namespace RealmOfAshes.Game
             _primaryArm = null;
             _melee = null;
             _swingStartedAt = -1f;
+            _hold = null;
+            _visualRoot = null;
+            HoldRight = default;
+            HoldLeft = default;
+            _throwStartedAt = -1f;
+            _lastAttackAt = -100f;
             DualWield = false;
             PrimaryHandSolved = false;
         }
@@ -577,6 +593,7 @@ namespace RealmOfAshes.Game
                 if (handholds.Muzzle != null) _socketMuzzle = handholds.Muzzle;
                 if (handholds.Reload != null) _reloadNode = handholds.Reload;
             }
+            BindHold(weaponId, rigId, visual);
             WeaponId = weaponId;
             Ready = true;
             if (Stowed) holder.SetActive(false);
@@ -631,8 +648,11 @@ namespace RealmOfAshes.Game
         /// <summary>Дешёвый дальний LOD: оружие следует за кистью без IK и physics-проб.</summary>
         public void ApplyReduced()
         {
+            HoldRight = default;
+            HoldLeft = default;
             if (!Ready || Stowed || _weapon == null || _hand == null) return;
             if (WeaponId == "medkit") return;
+            if (HoldActive) { PlaceHoldInHand(); return; }
             Mount();
         }
 
@@ -649,6 +669,15 @@ namespace RealmOfAshes.Game
 
             TorsoResidual = 0f;
             WeaponConverge = 0f;
+            HoldRight = default;
+            HoldLeft = default;
+
+            // Хват по модели: стойка класса, кисти на местах рук самой модели.
+            if (HoldActive)
+            {
+                ApplyHold(aimPoint, hasAim);
+                return;
+            }
 
             // Ближний бой идёт своим путём: у него три стойки, оружие
             // размещается ДО руки, а из общего хвата берутся только пальцы —

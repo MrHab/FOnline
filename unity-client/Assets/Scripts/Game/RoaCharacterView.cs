@@ -401,6 +401,9 @@ namespace RealmOfAshes.Game
         /// <summary>Оружие подключено и смонтировано.</summary>
         public bool WeaponReady { get { return _weapon != null && _weapon.Ready; } }
         public bool OffhandWeaponReady { get { return _offhandWeapon != null && _offhandWeapon.Ready; } }
+        /// <summary>Основное оружие в руках (видимое тело берёт с него места кистей).</summary>
+        public RoaWeaponView HeldWeapon { get { return _weapon; } }
+        public RoaOffhandWeaponView HeldOffhand { get { return _offhandWeapon; } }
         public string OffhandWeaponId { get { return _offhandWeapon != null ? _offhandWeapon.WeaponId : string.Empty; } }
 
         /// <summary>Максимальная глубина упора стволов, 0..1.</summary>
@@ -1539,7 +1542,7 @@ namespace RealmOfAshes.Game
                 if (ActionActive) _weapon.ApplyHeld();
                 else _weapon.Apply(_aimPoint, _hasAim);
             }
-            if (_offhandWeapon != null) _offhandWeapon.Apply(_aimPoint, _hasAim);
+            if (_offhandWeapon != null) _offhandWeapon.Apply(_aimPoint, _hasAim, _weapon);
 
             // Травма — самый верхний визуальный слой. Перелом руки намеренно
             // ослабляет идеальный IK-хват, а перелом ноги остаётся видим поверх

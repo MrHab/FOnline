@@ -178,6 +178,8 @@ namespace RealmOfAshes.Game
         }
 
         public static IReadOnlyList<WeaponEntry> WeaponEntries => Instance?.weapons;
+        /// <summary>Строки оружия этого ассета (редакторские инструменты, без Instance).</summary>
+        public IReadOnlyList<WeaponEntry> EditorWeapons => weapons;
         public static IReadOnlyList<ArmorEntry> ArmorEntries => Instance?.armor;
 
         public static FootwearEntry Footwear(string itemId)

@@ -51,6 +51,7 @@ namespace RealmOfAshes.Game
             public Quaternion RestLocal;
             public Vector3 CurlAxisLocal;
             public Vector3 OppositionAxisLocal;
+            public Vector3 SpreadAxisLocal;
         }
 
         private readonly Transform _hand;
@@ -98,21 +99,23 @@ namespace RealmOfAshes.Game
             _palmReach = (knuckles - wrist).magnitude * 0.72f;
             Vector3 curl = Vector3.Cross(finger, palm);
             Vector3 opposition = Vector3.Cross(lateral, palm);
-            Build(_index, index, bind, curl, opposition);
-            Build(_fingers, fingers, bind, curl, opposition);
+            // Отвод пальца в сторону указательного (к оси рукояти): палец ложится над скобой.
+            Vector3 spread = Vector3.Cross(finger, lateral);
+            Build(_index, index, bind, curl, opposition, spread);
+            Build(_fingers, fingers, bind, curl, opposition, spread);
             if (thumb != null && thumb.Length > 0 && bind.ContainsKey(thumb[0]))
             {
                 Vector3 thumbDir = thumb.Length > 1 && bind.ContainsKey(thumb[1])
                     ? ((Vector3)bind[thumb[1]].GetColumn(3) - (Vector3)bind[thumb[0]].GetColumn(3)).normalized : finger;
                 // Большой палец гнётся к ладони поперёк своего направления.
                 Vector3 thumbCurl = Vector3.Cross(thumbDir, palm);
-                Build(_thumb, thumb, bind, thumbCurl, opposition);
+                Build(_thumb, thumb, bind, thumbCurl, opposition, opposition);
             }
             Ready = true;
         }
 
         private static void Build(List<Joint> output, Transform[] chain, IReadOnlyDictionary<Transform, Matrix4x4> bind,
-            Vector3 curlWorld, Vector3 oppositionWorld)
+            Vector3 curlWorld, Vector3 oppositionWorld, Vector3 spreadWorld)
         {
             foreach (Transform bone in chain)
             {
@@ -123,7 +126,8 @@ namespace RealmOfAshes.Game
                     Bone = bone,
                     RestLocal = Quaternion.Inverse(bind[bone.parent].rotation) * rot,
                     CurlAxisLocal = (Quaternion.Inverse(rot) * curlWorld).normalized,
-                    OppositionAxisLocal = (Quaternion.Inverse(rot) * oppositionWorld).normalized
+                    OppositionAxisLocal = (Quaternion.Inverse(rot) * oppositionWorld).normalized,
+                    SpreadAxisLocal = (Quaternion.Inverse(rot) * spreadWorld).normalized
                 });
             }
         }
@@ -182,7 +186,9 @@ namespace RealmOfAshes.Game
                     Thumb(58f, 22f, 18f);
                     break;
                 case RoaFingerPose.TriggerOff:
-                    Curl(_index, 4f, 6f, 4f);
+                    // Палец вне спуска: прямой, вдоль рамки над скобой.
+                    Curl(_index, 2f, 4f, 3f);
+                    Spread(_index, 14f);
                     Curl(_fingers, wrap * 1.05f, wrap * 1.1f, wrap * 0.8f);
                     Thumb(58f, 22f, 18f);
                     break;
@@ -218,6 +224,13 @@ namespace RealmOfAshes.Game
                 Joint joint = chain[i];
                 joint.Bone.localRotation = joint.RestLocal * Quaternion.AngleAxis(angle, joint.CurlAxisLocal);
             }
+        }
+
+        private static void Spread(List<Joint> chain, float angle)
+        {
+            if (chain.Count == 0) return;
+            Joint joint = chain[0];
+            joint.Bone.localRotation = joint.Bone.localRotation * Quaternion.AngleAxis(angle, joint.SpreadAxisLocal);
         }
 
         private void Thumb(float opposition, float flexA, float flexB)

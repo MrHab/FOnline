@@ -227,7 +227,9 @@ namespace RealmOfAshes.Game
         /// <summary>Места кистей на уже поставленном предмете, с перезарядкой левой руки.</summary>
         private void PublishHands(bool leftFree)
         {
-            HoldRight = Target(_hold.Right, RoaHoldStance.FingersFor(_hold, true, _raise));
+            RoaHandSpec rightSpec = _hold.Right;
+            rightSpec.Centre += rightSpec.Axis * RoaHoldStance.TopHandSlide(_hold, SwingPhase());
+            HoldRight = Target(rightSpec, RoaHoldStance.FingersFor(_hold, true, _raise));
             RoaHandTarget left = leftFree ? default : Target(_hold.Left, RoaHoldStance.FingersFor(_hold, false, _raise));
             float phase = ReloadPhase();
             if (left.Active && phase >= 0f && _hold.Firearm)
@@ -242,6 +244,21 @@ namespace RealmOfAshes.Game
                 left.Axis = Vector3.Slerp(left.Axis, _visualRoot.TransformDirection(Vector3.down), t).normalized;
                 left.Back = Vector3.Slerp(left.Back, _visualRoot.TransformDirection(Vector3.left), t).normalized;
                 if (t > 0.5f) left.Fingers = RoaFingerPose.Wrap;
+            }
+            if (!left.Active && !leftFree && (_hold.Kind == RoaHoldKind.OneHand || _hold.Kind == RoaHoldKind.Knife
+                || _hold.Kind == RoaHoldKind.Tonfa) && SwingPhase() >= 0f)
+            {
+                // Удар одной рукой: свободная рука приподнята для равновесия.
+                float swing = SwingPhase();
+                float weight = Mathf.Sin(Mathf.Clamp01(swing) * Mathf.PI);
+                if (weight > 0.02f)
+                    left = new RoaHandTarget
+                    {
+                        Active = true,
+                        Centre = FramePoint(Vector3.Lerp(new Vector3(-0.22f, 0.92f, 0.08f), new Vector3(-0.24f, 1.12f, 0.24f), weight), ChestYaw(), ChestTravel()),
+                        Axis = _frame.forward, Back = -_frame.right, Radius = 0.03f,
+                        Fingers = RoaFingerPose.Relaxed
+                    };
             }
             if (!left.Active && !leftFree && _hold.Kind == RoaHoldKind.Throwable)
             {

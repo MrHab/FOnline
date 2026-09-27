@@ -375,7 +375,7 @@ namespace RealmOfAshes.Game
                 Transform handle = weapon != null ? weapon.MedicalHandle : null;
                 if (medical != null && handle != null)
                 {
-                    _rightGrip.HeldFrame(0.012f, out Vector3 centre, out Vector3 axis, out _);
+                    _rightGrip.HeldFrame(0.0f, out Vector3 centre, out Vector3 axis, out _);
                     Vector3 across = Vector3.ProjectOnPlane(axis, Vector3.up);
                     if (across.sqrMagnitude < 1e-4f) across = transform.forward;
                     CaseAxes(medical, handle, out Vector3 upLocal, out Vector3 widthLocal);
@@ -480,12 +480,40 @@ namespace RealmOfAshes.Game
             Vector3 wrist = grip.WristFor(target, rotation);
             Transform elbow = grip.Hand.parent;
             Transform shoulder = elbow != null ? elbow.parent : null;
-            Vector3 origin = shoulder != null ? shoulder.position : transform.position + Vector3.up * 1.39f;
-            // Локти вниз, а не в стороны: правый — на 30–40° ниже горизонта, левый — под цевьё.
-            Vector3 pole = origin + transform.right * (left ? 0.02f : 0.14f) + Vector3.down * 0.6f - transform.forward * 0.12f;
-            arm.Solve(wrist, rotation, pole);
+            // Локти вниз, а не в стороны: правый — вниз и чуть наружу, левый — под цевьё.
+            Vector3 bend = transform.right * (left ? 0.15f : 0.32f) + Vector3.down - transform.forward * 0.12f;
+            if (shoulder == null || !TwoBone(shoulder, elbow, grip.Hand, wrist, rotation, bend))
+                arm.Solve(wrist, rotation, (shoulder != null ? shoulder.position : transform.position) + bend);
             grip.ApplyFingers(target.Fingers, target.Radius);
             return Vector3.Distance(grip.PalmCentre(target.Radius), target.Centre);
+        }
+
+        /// <summary>
+        /// Аналитический IK плеча и локтя: локоть лежит в плоскости, заданной
+        /// направлением bend, — локти не «разводятся крыльями», как у итеративного
+        /// решателя. Недостижимую цель рука берёт выпрямленной.
+        /// </summary>
+        private static bool TwoBone(Transform shoulder, Transform elbow, Transform hand, Vector3 target,
+            Quaternion handRotation, Vector3 bend)
+        {
+            Vector3 s = shoulder.position;
+            float upper = Vector3.Distance(s, elbow.position);
+            float lower = Vector3.Distance(elbow.position, hand.position);
+            if (upper < 1e-4f || lower < 1e-4f) return false;
+            Vector3 toTarget = target - s;
+            float distance = Mathf.Clamp(toTarget.magnitude, Mathf.Abs(upper - lower) + 1e-3f, upper + lower - 1e-4f);
+            Vector3 direction = toTarget.normalized;
+            float along = (upper * upper + distance * distance - lower * lower) / (2f * distance);
+            float height = Mathf.Sqrt(Mathf.Max(0f, upper * upper - along * along));
+            Vector3 side = Vector3.ProjectOnPlane(bend, direction);
+            if (side.sqrMagnitude < 1e-6f) side = Vector3.ProjectOnPlane(Vector3.down, direction);
+            if (side.sqrMagnitude < 1e-6f) side = Vector3.ProjectOnPlane(Vector3.forward, direction);
+            Vector3 elbowTarget = s + direction * along + side.normalized * height;
+            shoulder.rotation = Quaternion.FromToRotation(elbow.position - s, elbowTarget - s) * shoulder.rotation;
+            Vector3 reach = s + direction * distance;
+            elbow.rotation = Quaternion.FromToRotation(hand.position - elbow.position, reach - elbow.position) * elbow.rotation;
+            hand.rotation = handRotation;
+            return true;
         }
 
         /// <summary>Голова к прицелу: наклон вниз к прикладу и к плечу. Поровну на шею и голову.</summary>

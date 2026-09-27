@@ -303,10 +303,10 @@ namespace RealmOfAshes.EditorTools
             Vector3 lBack = lt.Active ? lt.Back : Vector3.left;
             Vector3 rSide = rt.Active ? -Vector3.Cross(rt.Axis, rt.Back).normalized : Vector3.forward;
             Vector3 lSide = lt.Active ? Vector3.Cross(lt.Axis, lt.Back).normalized : Vector3.forward;
-            Grab(sheet, 3, row, rig, right + rBack * 0.32f + up, right, 40f);
-            Grab(sheet, 4, row, rig, right + (rSide - rBack * 0.4f).normalized * 0.32f + up, right, 40f);
-            Grab(sheet, 5, row, rig, left + lBack * 0.32f + up, left, 40f);
-            Grab(sheet, 6, row, rig, left + (lSide - lBack * 0.4f).normalized * 0.32f + up, left, 40f);
+            Grab(sheet, 3, row, rig, right + rBack * 0.32f + up, right, 40f, 0.2f);
+            Grab(sheet, 4, row, rig, right + (rSide - rBack * 0.4f).normalized * 0.32f + up, right, 40f, 0.2f);
+            Grab(sheet, 5, row, rig, left + lBack * 0.32f + up, left, 40f, 0.2f);
+            Grab(sheet, 6, row, rig, left + (lSide - lBack * 0.4f).normalized * 0.32f + up, left, 40f, 0.2f);
             metrics.Append("    {\"state\": \"").Append(label).Append("\", \"hand_r\": ").Append(V(rig, right))
                 .Append(", \"hand_l\": ").Append(V(rig, left)).Append(", \"hold\": ").Append(HoldState(rig)).Append("},\n");
         }
@@ -330,12 +330,14 @@ namespace RealmOfAshes.EditorTools
         private static string F(float value) =>
             value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
 
-        private static void Grab(Texture2D sheet, int column, int row, Rig rig, Vector3 eye, Vector3 target, float fov)
+        private static void Grab(Texture2D sheet, int column, int row, Rig rig, Vector3 eye, Vector3 target, float fov, float near = 0.02f)
         {
             Transform camera = rig.Camera.transform;
             camera.position = eye;
             camera.LookAt(target);
             rig.Camera.fieldOfView = fov;
+            // Крупный план: всё ближе 12 см перед кистью (плащ, корпус) отсекается.
+            rig.Camera.nearClipPlane = near;
             if (!rig.Preview.RenderNow()) throw new InvalidOperationException("render failed");
             RenderTexture previous = RenderTexture.active;
             RenderTexture.active = rig.Preview.Texture;

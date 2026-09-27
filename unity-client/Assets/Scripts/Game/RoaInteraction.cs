@@ -2322,6 +2322,7 @@ namespace RealmOfAshes.Game
 
             _harvestPending = true;
             Show("Добыча ресурса…", 2f);
+            PlayGatherAction(resource["type"]?.ToString());
             Socket.EmitWithAck("harvestResource", new Dictionary<string, object>
             {
                 ["id"] = id,
@@ -2349,6 +2350,23 @@ namespace RealmOfAshes.Game
                         + (profession["leveledUp"]?.ToObject<bool>() == true ? " — уровень " + profession["level"] + "!" : string.Empty)
                         : string.Empty));
             });
+        }
+
+        /// <summary>
+        /// Персонаж добывает сразу, не дожидаясь ответа сервера: рубит дерево и
+        /// бьёт жилу с размаха, срезает волокно у земли, возится у качалки.
+        /// </summary>
+        private void PlayGatherAction(string type)
+        {
+            RoaCharacterView view = Player != null ? Player.View : null;
+            if (view == null) return;
+            switch (type)
+            {
+                case "wood":
+                case "ore": view.PlayAction("chop", 1.0f); break;
+                case "fiber": view.PlayAction("harvest", 1.5f, 1.3f); break;
+                default: view.PlayAction("kneel_work", 1.6f); break;
+            }
         }
 
         private void OpenCrafting(JObject station)
@@ -2497,6 +2515,8 @@ namespace RealmOfAshes.Game
 
                 if (ack?["ok"]?.ToObject<bool>() != true)
                     Show(ack?["error"]?.ToString() ?? "Контейнер недоступен.");
+                else
+                    Player?.View?.PlayAction("chest_open", 1.0f);
             });
         }
 

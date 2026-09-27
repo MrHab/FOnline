@@ -916,6 +916,7 @@ namespace RealmOfAshes.Game
                 if (ack?["self"] is JObject self) Socket.ApplyAuthoritativeSelf(self);
                 if (ack?["enemy"] is JObject healedNpc) Enemies?.ApplyPublicEnemy(healedNpc);
                 bool ok = ack?["ok"]?.Value<bool?>() == true;
+                if (ok) Player?.View?.PlayAction("pickup", 1.0f);
                 AddLog(ok ? "Раненому восстановлено " + ack["healed"] + " HP."
                     : ack?["error"]?.ToString() ?? "Не удалось применить аптечку.");
             });

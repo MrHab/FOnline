@@ -179,6 +179,14 @@ namespace RealmOfAshes.Game
         /// </summary>
         private float _attackUntil;
         private float _hurtUntil;
+        // Какой клип играет удар без оружия и реакция: джеб и кросс чередуются,
+        // сильное попадание — удар в голову вместо короткого кивка.
+        private string _attackClip = "attack";
+        private string _reactionClip = "hurt";
+        private bool _alternateAttack;
+        // Действие на месте (добыча, еда, ящик): клип до этого времени, пока стоим.
+        private string _actionClip = string.Empty;
+        private float _actionUntil;
         private string _activityPresentation = string.Empty;
         private float _activityPhaseOffset;
         private float _activityPresentationWeight;
@@ -189,6 +197,7 @@ namespace RealmOfAshes.Game
 
         /// <summary>Длительность вспышки удара по умолчанию, с.</summary>
         private const float AttackSeconds = 0.45f;
+        private const int HeavyHitDamage = 25;
         private const float DeathImpactMemorySeconds = 0.9f;
 
         // Утверждённый humanoid death-клип уже содержит потерю равновесия,
@@ -607,14 +616,43 @@ namespace RealmOfAshes.Game
             if (!Ready || !_clips.Contains("attack")) return;
 
             _attackUntil = Time.time + AttackSeconds;
+            _actionUntil = 0f;
+            // Джеб и кросс чередуются: серия ударов не выглядит одним повтором.
+            _attackClip = _alternateAttack && _clips.Contains("punch_cross") ? "punch_cross" : "attack";
+            _alternateAttack = !_alternateAttack;
 
             // Перезапуск с нуля: очередь выстрелов должна давать удар на каждый,
             // а не один растянутый.
-            _currentClip = "attack";
+            _currentClip = _attackClip;
             _animation[_currentClip].wrapMode = WrapMode.Once;
             _animation[_currentClip].time = 0f;
             _animation[_currentClip].speed = 1f;
-            _animation.CrossFade("attack", 0.08f);
+            _animation.CrossFade(_attackClip, 0.08f);
+        }
+
+        /// <summary>Идёт ли действие на месте (добыча, еда, ящик).</summary>
+        public bool ActionActive { get { return Time.time < _actionUntil && !string.IsNullOrEmpty(_actionClip); } }
+
+        /// <summary>
+        /// Действие на месте полнотелым клипом: добыча, еда и аптечка, открытие
+        /// ящика. Длится <paramref name="seconds"/> или до первого шага; клип
+        /// короче — повторяется. Нет клипа или персонаж мёртв/в движении — false.
+        /// </summary>
+        public bool PlayAction(string clip, float seconds, float speed = 1f)
+        {
+            if (_dead || !Ready || _animation == null || _locomoting || _riding
+                || string.IsNullOrEmpty(clip) || !_clips.Contains(clip)) return false;
+            AnimationState state = _animation[clip];
+            _actionClip = clip;
+            _actionUntil = Time.time + Mathf.Max(0.2f, seconds);
+            _attackUntil = 0f;
+            state.wrapMode = seconds * speed > state.length + 0.05f ? WrapMode.Loop : WrapMode.ClampForever;
+            state.time = 0f;
+            state.speed = Mathf.Max(0.1f, speed);
+            _currentClip = clip;
+            // На колено и с колена — дольше: иначе поза прыгает.
+            _animation.CrossFade(clip, clip == "kneel_work" ? 0.3f : 0.18f);
+            return true;
         }
 
         public void PlayHit()
@@ -645,12 +683,17 @@ namespace RealmOfAshes.Game
                 _hurtUntil = 0f;
                 return;
             }
-            _hurtUntil = Time.time + 0.36f;
-            _currentClip = "hurt";
+            _actionUntil = 0f;
+            // Сильный удар (крит или от 25 урона) запрокидывает голову, лёгкий — вздрагивание.
+            bool heavy = (critical || damage >= HeavyHitDamage) && _clips.Contains("hit_head");
+            _reactionClip = heavy ? "hit_head" : "hurt";
+            // Тяжёлое — медленнее (0.8×): с камеры сверху читается сильнее лёгкого.
+            _hurtUntil = Time.time + (heavy ? 0.72f : 0.36f);
+            _currentClip = _reactionClip;
             _animation[_currentClip].wrapMode = WrapMode.Once;
             _animation[_currentClip].time = 0f;
-            _animation[_currentClip].speed = 1f;
-            _animation.CrossFade("hurt", 0.06f);
+            _animation[_currentClip].speed = heavy ? 0.8f : 1f;
+            _animation.CrossFade(_reactionClip, 0.06f);
         }
 
         /// <summary>
@@ -742,6 +785,7 @@ namespace RealmOfAshes.Game
                 _turnHold = 0f;
                 _attackUntil = 0f;
                 _hurtUntil = 0f;
+                _actionUntil = 0f;
                 _activityPresentation = string.Empty;
                 _activityPresentationWeight = 0f;
                 if (_weapon != null) _weapon.CancelAttackPose();
@@ -1379,7 +1423,13 @@ namespace RealmOfAshes.Game
             bool attacking = Time.time < _attackUntil;
             CombatPresentationPhase phase = ResolveCombatPresentationPhase(
                 false, hurt, attacking, locomoting);
-            if (phase == CombatPresentationPhase.Idle
+            // Шаг прерывает действие на месте (добычу, еду, ящик).
+            if (locomoting || crouching) _actionUntil = 0f;
+            if (phase == CombatPresentationPhase.Idle && ActionActive)
+            {
+                clip = _actionClip;
+            }
+            else if (phase == CombatPresentationPhase.Idle
                 || phase == CombatPresentationPhase.Locomotion)
             {
                 Play(clip);
@@ -1387,11 +1437,11 @@ namespace RealmOfAshes.Game
             }
             else if (phase == CombatPresentationPhase.Reaction)
             {
-                clip = "hurt";
+                clip = _reactionClip;
             }
             else
             {
-                clip = "attack";
+                clip = _attackClip;
             }
 
             _crouching = crouching;
@@ -1483,7 +1533,12 @@ namespace RealmOfAshes.Game
 
             // Хват и оружие поверх позы: кисть считается от таза и позвоночника,
             // которые направленная поза уже развернула.
-            if (_weapon != null) _weapon.Apply(_aimPoint, _hasAim);
+            // Во время действия руки ведёт клип: оружие просто держится в кисти.
+            if (_weapon != null)
+            {
+                if (ActionActive) _weapon.ApplyHeld();
+                else _weapon.Apply(_aimPoint, _hasAim);
+            }
             if (_offhandWeapon != null) _offhandWeapon.Apply(_aimPoint, _hasAim);
 
             // Травма — самый верхний визуальный слой. Перелом руки намеренно

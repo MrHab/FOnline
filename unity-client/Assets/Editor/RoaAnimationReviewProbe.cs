@@ -151,7 +151,8 @@ namespace RealmOfAshes.EditorTools
             foreach (string clip in new[]
             {
                 "idle", "attack", "hurt", "crouch_idle", "hit_head", "punch_cross", "pistol_idle", "pistol_shoot",
-                "pistol_reload", "sword_idle", "sword_attack", "pickup", "kneel_work"
+                "pistol_reload", "sword_idle", "sword_attack", "pickup", "kneel_work",
+                "chop", "harvest", "consume", "chest_open"
             })
                 rows.Add(new State { Name = "clip_" + clip, Clip = clip });
             // Смерть — последней: после неё тело не встаёт.
@@ -201,7 +202,7 @@ namespace RealmOfAshes.EditorTools
                             SetPhase(rig, state.Clip, phase);
                         }
                         await Hold(0.12f);
-                        Shoot(sheet, f, oldRig, newRig, metrics, state.Name + " phase " + phase.ToString("F2"));
+                        Shoot(sheet, f, oldRig, newRig, metrics, state.Name + " phase " + phase.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
                     }
                     Time.timeScale = 1f;
                 }
@@ -218,27 +219,32 @@ namespace RealmOfAshes.EditorTools
                         SetPhase(oldRig, clipOld, phase);
                         SetPhase(newRig, clipNew, phase);
                         await Drive(new[] { oldRig, newRig }, state, f == 0 ? 0.25f : 0.1f);
-                        Shoot(sheet, f, oldRig, newRig, metrics, state.Name + " " + clipNew + " phase " + phase.ToString("F2"));
+                        Shoot(sheet, f, oldRig, newRig, metrics, state.Name + " " + clipNew + " phase " + phase.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
                     }
                     Time.timeScale = 1f;
                 }
                 else
                 {
+                    // Игровое время — ровно 1/30 с на кадр: съёмка листа (ReadPixels)
+                    // не съедает долю клипа, кадры листа ложатся на свои моменты.
+                    Time.captureDeltaTime = 1f / 30f;
                     foreach (Rig rig in new[] { oldRig, newRig }) state.Action(rig.View);
                     float start = Time.time;
                     for (int f = 0; f < Frames; f++)
                     {
                         float at = state.Seconds * f / (Frames - 1);
                         while (Time.time - start < at) await Drive(new[] { oldRig, newRig }, state, 0f);
-                        Shoot(sheet, f, oldRig, newRig, metrics, state.Name + " t " + (Time.time - start).ToString("F2"));
+                        Shoot(sheet, f, oldRig, newRig, metrics, state.Name + " t " + (Time.time - start).ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
                     }
+                    Time.captureDeltaTime = 0f;
                     await Drive(new[] { oldRig, newRig }, state, 0.8f);
                 }
                 }
                 sheet.Apply();
                 File.WriteAllBytes(Path.Combine(OutDir, (s + 1).ToString("00") + "_" + state.Name + ".png"), sheet.EncodeToPNG());
                 UnityEngine.Object.Destroy(sheet);
-                report.Append("  \"").Append(state.Name).Append("\": [\n").Append(metrics).Append("  ],\n");
+                if (metrics.Length >= 2) metrics.Length -= 2; // висячая запятая последнего кадра
+                report.Append("  \"").Append(state.Name).Append("\": [\n").Append(metrics).Append("\n  ],\n");
             }
             report.Append("  \"rows\": \"old-side, new-side, old-3/4, new-3/4; floor y = 0\"\n}\n");
             File.WriteAllText(Path.Combine(OutDir, "report.json"), report.ToString());

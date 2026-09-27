@@ -209,7 +209,7 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "8C4AA5C293CADD4C5C12198222CDA6FEE1EB021113A33B65754CB27E9216DC7F",
+  "sha256": "E686E3A4CE952B3F3B7F01A6D74A27F5151573F060E2904D0857828B5FA05EC4",
   "animations": [
     "run",
     "turn",
@@ -231,7 +231,11 @@
     "sword_idle",
     "sword_attack",
     "pickup",
-    "kneel_work"
+    "kneel_work",
+    "chop",
+    "harvest",
+    "consume",
+    "chest_open"
   ],
   "ualImport": {
     "source": "Quaternius Universal Animation Library (CC0)",
@@ -249,7 +253,11 @@
       "sword_idle",
       "sword_attack",
       "pickup",
-      "kneel_work"
+      "kneel_work",
+      "chop",
+      "harvest",
+      "consume",
+      "chest_open"
     ],
     "heightScale": 1.0349
   }

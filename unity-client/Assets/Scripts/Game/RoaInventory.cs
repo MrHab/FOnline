@@ -498,6 +498,8 @@ namespace RealmOfAshes.Game
                     return;
                 }
 
+                // Съел, выпил или перевязался — видно по персонажу.
+                RoaGameBootstrap.Active?.LocalView?.PlayAction("consume", 1.2f);
                 int healed = ack["healed"]?.ToObject<int>() ?? 0;
                 string cured = ack["curedInjury"]?.ToString();
                 _status = (ack["hydrated"]?.ToObject<float>() ?? 0f) > 0f

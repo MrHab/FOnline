@@ -127,6 +127,19 @@ namespace RealmOfAshes.Game
         /// Проиграть атаку оружия без замены клипа ног: ближний бой запускает
         /// существующий замах, огнестрел — короткую процедурную отдачу корпуса.
         /// </summary>
+        /// <summary>
+        /// Оружие просто в кисти: руки ведёт клип действия (рубка, еда, ящик),
+        /// стойка, прицел и IK рук не применяются.
+        /// </summary>
+        public void ApplyHeld()
+        {
+            if (!Ready || Stowed || _hand == null || _socketGrip == null || _weapon == null) return;
+            if (WeaponId == "medkit") return;
+            PrimaryHandSolved = false;
+            SupportHandSolved = false;
+            Mount();
+        }
+
         public void PlayAttack()
         {
             PlayAttack(0f);

@@ -10,7 +10,7 @@
 // костей, иначе смена клипа оставила бы кость в чужой позе).
 //
 // Использование:
-//   node tools/import-ual-clips.js <UAL1_Standard.glb>
+//   node tools/import-ual-clips.js <UAL1_Standard.glb> <UAL2_Standard.glb>
 // Исходник — версия без root motion (Unreal-Godot/UAL1_Standard.glb). Перезаписывает
 // ревью-GLB и SHA в его отчёте; одобрение критика и SHA в
 // tools/build-approved-humanoid-assets.js обновляются осознанно, после ревью.
@@ -41,8 +41,16 @@ const CLIPS = {
   sword_idle: { source: 'Sword_Idle' },
   sword_attack: { source: 'Sword_Attack' },
   pickup: { source: 'PickUp_Table' },
-  kneel_work: { source: 'Fixing_Kneeling' }
+  kneel_work: { source: 'Fixing_Kneeling' },
+  // UAL2: добыча, еда и аптечка, ящик. Hit_Knockback (падение без подъёма) и
+  // Melee_Hook (заканчивается выпадом) критик отклонил.
+  chop: { source: 'TreeChopping_Loop', pack: 2 },
+  harvest: { source: 'Farm_Harvest', pack: 2 },
+  consume: { source: 'Consume', pack: 2 },
+  chest_open: { source: 'Chest_Open', pack: 2 }
 };
+
+const RETIRED = ['hit_knockback', 'melee_hook'];
 
 function parseGlb(file) {
   const buf = fs.readFileSync(file);
@@ -51,6 +59,65 @@ function parseGlb(file) {
   const binAt = 20 + jsonLen;
   const binLen = buf.readUInt32LE(binAt);
   return { json, bin: Buffer.from(buf.slice(binAt + 8, binAt + 8 + binLen)) };
+}
+
+// Замена клипа оставляет его прежние кадры в буфере: перед записью в файле
+// остаются только accessor и bufferView, на которые кто-то ссылается, иначе
+// каждый прогон импорта раздувал бы GLB.
+function compactGlb(json, bin) {
+  const usedAccessors = new Set();
+  for (const mesh of json.meshes || []) {
+    for (const primitive of mesh.primitives) {
+      Object.values(primitive.attributes).forEach(index => usedAccessors.add(index));
+      if (primitive.indices !== undefined) usedAccessors.add(primitive.indices);
+      for (const target of primitive.targets || []) Object.values(target).forEach(index => usedAccessors.add(index));
+    }
+  }
+  for (const skin of json.skins || []) if (skin.inverseBindMatrices !== undefined) usedAccessors.add(skin.inverseBindMatrices);
+  for (const animation of json.animations || []) {
+    for (const sampler of animation.samplers) { usedAccessors.add(sampler.input); usedAccessors.add(sampler.output); }
+  }
+  const accessorMap = new Map();
+  const accessors = [];
+  json.accessors.forEach((accessor, index) => {
+    if (!usedAccessors.has(index)) return;
+    accessorMap.set(index, accessors.length);
+    accessors.push(accessor);
+  });
+  const usedViews = new Set(accessors.map(accessor => accessor.bufferView));
+  for (const image of json.images || []) if (image.bufferView !== undefined) usedViews.add(image.bufferView);
+  const viewMap = new Map();
+  const views = [];
+  const parts = [];
+  let offset = 0;
+  json.bufferViews.forEach((view, index) => {
+    if (!usedViews.has(index)) return;
+    const pad = (4 - (offset % 4)) % 4;
+    if (pad) { parts.push(Buffer.alloc(pad, 0)); offset += pad; }
+    parts.push(bin.slice(view.byteOffset || 0, (view.byteOffset || 0) + view.byteLength));
+    viewMap.set(index, views.length);
+    views.push({ ...view, byteOffset: offset });
+    offset += view.byteLength;
+  });
+  const remap = index => accessorMap.get(index);
+  for (const mesh of json.meshes || []) {
+    for (const primitive of mesh.primitives) {
+      for (const key of Object.keys(primitive.attributes)) primitive.attributes[key] = remap(primitive.attributes[key]);
+      if (primitive.indices !== undefined) primitive.indices = remap(primitive.indices);
+      for (const target of primitive.targets || []) for (const key of Object.keys(target)) target[key] = remap(target[key]);
+    }
+  }
+  for (const skin of json.skins || []) if (skin.inverseBindMatrices !== undefined) skin.inverseBindMatrices = remap(skin.inverseBindMatrices);
+  for (const animation of json.animations || []) {
+    for (const sampler of animation.samplers) { sampler.input = remap(sampler.input); sampler.output = remap(sampler.output); }
+  }
+  accessors.forEach(accessor => { accessor.bufferView = viewMap.get(accessor.bufferView); });
+  for (const image of json.images || []) if (image.bufferView !== undefined) image.bufferView = viewMap.get(image.bufferView);
+  json.accessors = accessors;
+  json.bufferViews = views;
+  const compact = Buffer.concat(parts);
+  json.buffers[0].byteLength = compact.length;
+  return compact;
 }
 
 function writeGlb(file, json, bin) {
@@ -102,9 +169,11 @@ const qinv = q => { const n = q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q
 const qnorm = q => { const n = Math.hypot(...q) || 1; return q.map(v => v / n); };
 
 function main() {
-  const source = process.argv[2];
-  if (!source || !fs.existsSync(source)) throw new Error('usage: node tools/import-ual-clips.js <UAL1_Standard.glb>');
-  const ual = parseGlb(source);
+  const sources = [process.argv[2], process.argv[3]];
+  if (sources.some(file => !file || !fs.existsSync(file)))
+    throw new Error('usage: node tools/import-ual-clips.js <UAL1_Standard.glb> <UAL2_Standard.glb>');
+  const packs = { 1: parseGlb(sources[0]), 2: parseGlb(sources[1]) };
+  const ual = packs[1];
   const ours = parseGlb(GLB_FILE);
 
   // Кости нашего скелета — узлы, которые двигает прежний клип idle.
@@ -136,20 +205,25 @@ function main() {
     return ours.json.accessors.length - 1;
   };
 
+  // Отклонённые критиком клипы удаляются и из уже импортированного файла.
+  ours.json.animations = ours.json.animations.filter(item => !RETIRED.includes(item.name));
   const imported = [];
   for (const [name, row] of Object.entries(CLIPS)) {
     const ualName = row.source;
     const timeScale = row.timeScale || 1;
-    const clip = ual.json.animations.find(item => item.name === ualName);
+    // Обе библиотеки — один скелет UAL: покой берётся из первой, кадры — из своей.
+    const pack = packs[row.pack || 1];
+    const clip = pack.json.animations.find(item => item.name === ualName);
+    const packByName = new Map(pack.json.nodes.map((node, index) => [String(node.name).toLowerCase(), index]));
     if (!clip) throw new Error(`UAL clip ${ualName} is missing`);
     ours.json.animations = ours.json.animations.filter(item => item.name !== name);
     const byTarget = new Map();
     for (const channel of clip.channels) {
-      const node = ual.json.nodes[channel.target.node];
+      const node = pack.json.nodes[channel.target.node];
       byTarget.set(String(node.name).toLowerCase() + ':' + channel.target.path, clip.samplers[channel.sampler]);
     }
     let end = 0;
-    for (const sampler of clip.samplers) end = Math.max(end, ...readAccessor(ual, sampler.input).map(key => key[0] * timeScale));
+    for (const sampler of clip.samplers) end = Math.max(end, ...readAccessor(pack, sampler.input).map(key => key[0] * timeScale));
     const constantTimes = addData([[0], [end]], 'SCALAR', true);
     const animation = { name, channels: [], samplers: [] };
     const put = (node, pathName, input, output, interpolation) => {
@@ -160,15 +234,15 @@ function main() {
       const ourNode = ours.json.nodes[node];
       const key = String(ourNode.name).toLowerCase();
       const ourRest = rest(ourNode);
-      const ualIndex = ualByName.get(key);
-      const ualRest = ualIndex != null ? rest(ual.json.nodes[ualIndex]) : null;
+      const ualIndex = packByName.get(key);
+      const ualRest = ualIndex != null ? rest(pack.json.nodes[ualIndex]) : null;
 
       const rotation = ualRest ? byTarget.get(key + ':rotation') : null;
       if (rotation) {
-        const times = readAccessor(ual, rotation.input).map(key => [key[0] * timeScale]);
+        const times = readAccessor(pack, rotation.input).map(key => [key[0] * timeScale]);
         const correction = qmul(ourRest.r, qinv(ualRest.r));
         let previous = null;
-        const values = readAccessor(ual, rotation.output).map(q => {
+        const values = readAccessor(pack, rotation.output).map(q => {
           let out = qnorm(qmul(correction, q));
           // Соседние ключи — в одном полушарии, иначе интерполяция крутит кость вспять.
           if (previous && out.reduce((sum, v, i) => sum + v * previous[i], 0) < 0) out = out.map(v => -v);
@@ -182,8 +256,8 @@ function main() {
 
       const translation = key === 'pelvis' && ualRest ? byTarget.get(key + ':translation') : null;
       if (translation) {
-        const times = readAccessor(ual, translation.input).map(key => [key[0] * timeScale]);
-        const values = readAccessor(ual, translation.output)
+        const times = readAccessor(pack, translation.input).map(key => [key[0] * timeScale]);
+        const values = readAccessor(pack, translation.output)
           .map(t => t.map((v, i) => ourRest.t[i] + (v - ualRest.t[i]) * heightScale));
         put(node, 'translation', addData(times, 'SCALAR', true), addData(values, 'VEC3'), 'LINEAR');
       } else {
@@ -195,8 +269,7 @@ function main() {
     imported.push(`${name} (${ualName}, ${end.toFixed(2)} s)`);
   }
 
-  const bin = Buffer.concat(chunks);
-  ours.json.buffers[0].byteLength = bin.length;
+  const bin = compactGlb(ours.json, Buffer.concat(chunks));
   writeGlb(GLB_FILE, ours.json, bin);
   const sha = crypto.createHash('sha256').update(fs.readFileSync(GLB_FILE)).digest('hex').toUpperCase();
   const report = JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));

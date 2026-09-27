@@ -91,8 +91,8 @@ assert.strictEqual(npcGlb.json.skins[0].joints?.length, 65);
 assert.deepStrictEqual(
   (npcGlb.json.animations || []).map(animation => animation.name).sort(),
   [
-    'attack', 'crouch_idle', 'crouch_walk', 'crouch_walk_back', 'death', 'hit_head', 'hurt', 'idle',
-    'kneel_work', 'pickup', 'pistol_idle', 'pistol_reload', 'pistol_shoot', 'punch_cross',
+    'attack', 'chest_open', 'chop', 'consume', 'crouch_idle', 'crouch_walk', 'crouch_walk_back', 'death',
+    'harvest', 'hit_head', 'hurt', 'idle', 'kneel_work', 'pickup', 'pistol_idle', 'pistol_reload', 'pistol_shoot', 'punch_cross',
     'run', 'run_back', 'sword_attack', 'sword_idle', 'turn', 'walk', 'walk_back'
   ]
 );

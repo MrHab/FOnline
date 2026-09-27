@@ -54,8 +54,13 @@ bind-позах обоих скинов и выровненный вдоль к�
 клипов игрока и человекоподобных НПС (`characters/npc/npc_humanoid_animations.glb`)
 собирает `tools/build-approved-humanoid-assets.js` из одобренного критиком ревью;
 `idle`, `attack` (джеб), `hurt`, `death` и `crouch_idle` в ней — мокап Quaternius
-Universal Animation Library (CC0), перенесённый `tools/import-ual-clips.js`
-разностью с позой покоя по каждой кости. Проверять анимации удобно пробой
+Universal Animation Library 1 и 2 (CC0), перенесённый `tools/import-ual-clips.js`
+разностью с позой покоя по каждой кости. Удар без оружия чередует джеб и
+`punch_cross`, сильное попадание (крит или от 25 урона) играет `hit_head`.
+Действия на месте — `RoaCharacterView.PlayAction(clip, seconds)`, их прерывает
+шаг: добыча дерева и руды — `chop`, волокна — `harvest`, остального —
+`kneel_work`; лечение и еда — `consume`, аптечка другому — `pickup`, открытый
+контейнер — `chest_open`. Оружие при этом просто остаётся в кисти. Проверять анимации удобно пробой
 «Realm of Ashes/Animation/Review character animations»
 (`RoaAnimationReviewProbe`): листы кадров каждого состояния, прежнее тело против
 нового, с высотой стоп и кистей в `report.json`.

@@ -26,6 +26,9 @@ namespace RealmOfAshes.Game
         private const float AuthHeartbeatFailureRetrySeconds = 60f;
 
         public static RoaGameBootstrap Active { get; private set; }
+
+        /// <summary>Видимый персонаж локального игрока (для клипов действий из интерфейса).</summary>
+        public RoaCharacterView LocalView { get { return _controller != null ? _controller.View : null; } }
         public static bool BlocksWorldHud
         {
             get

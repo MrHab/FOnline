@@ -324,10 +324,10 @@ namespace RealmOfAshes.Game
                     };
                 }
             }
-            if (left.Active && _hold.Kind == RoaHoldKind.Launcher)
+            if (left.Active && (_hold.Kind == RoaHoldKind.Launcher || _hold.Kind == RoaHoldKind.PowerTool))
             {
-                // Левая под трубой: локоть вниз, предплечье не закрывает лицо.
-                left.Elbow = FrameDirection(new Vector3(0.1f, -1f, 0.15f), ChestYaw());
+                // Левая под трубой или на передней дуге: локоть вниз, не крылом в сторону.
+                left.Elbow = FrameDirection(new Vector3(0.1f, -1f, 0.1f), ChestYaw());
                 left.HasElbow = true;
             }
             HoldLeft = left;

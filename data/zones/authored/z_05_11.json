@@ -30540,7 +30540,7 @@
     "n": 159,
     "region": "ore_arc",
     "mode": "pvp",
-    "difficulty": 2,
+    "difficulty": 3,
     "gates": [
       {
         "dir": "east",

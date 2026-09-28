@@ -88,7 +88,7 @@
       "tz": 4,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pve"
     },
     {
       "id": "gate_south",
@@ -29160,7 +29160,7 @@
     "n": 92,
     "region": "tract_isthmus",
     "mode": "pve",
-    "difficulty": 1,
+    "difficulty": 2,
     "gates": [
       {
         "dir": "east",

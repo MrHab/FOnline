@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pve",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -29638,7 +29638,7 @@
     "row": 8,
     "n": 111,
     "region": "ore_arc",
-    "mode": "pvp",
+    "mode": "pve",
     "difficulty": 2,
     "gates": [
       {

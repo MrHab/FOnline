@@ -73,7 +73,7 @@
       "tz": 61,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp",
+      "targetMode": "pvpFullDrop",
       "road": true
     },
     {
@@ -28950,7 +28950,7 @@
     "n": 144,
     "region": "ore_arc",
     "mode": "pvp",
-    "difficulty": 2,
+    "difficulty": 3,
     "gates": [
       {
         "dir": "east",

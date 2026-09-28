@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pvp",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -73,7 +73,7 @@
       "tz": 70,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pvp"
     },
     {
       "id": "gate_north",
@@ -101,7 +101,7 @@
       "tz": 155,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pvp"
     },
     {
       "id": "gate_west",
@@ -115,7 +115,7 @@
       "tz": 81,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pvp"
     }
   ],
   "worldZones": [],
@@ -29524,8 +29524,8 @@
     "row": 8,
     "n": 119,
     "region": "glasslands",
-    "mode": "pvpFullDrop",
-    "difficulty": 4,
+    "mode": "pvp",
+    "difficulty": 3,
     "gates": [
       {
         "dir": "east",

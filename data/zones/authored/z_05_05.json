@@ -87,7 +87,7 @@
       "tz": 4,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pvp"
     },
     {
       "id": "gate_south",
@@ -30795,7 +30795,7 @@
     "n": 60,
     "region": "zero_basin",
     "mode": "pvpFullDrop",
-    "difficulty": 3,
+    "difficulty": 4,
     "gates": [
       {
         "dir": "east",

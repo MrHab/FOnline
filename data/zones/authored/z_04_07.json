@@ -29598,7 +29598,7 @@
     "n": 93,
     "region": "tract_isthmus",
     "mode": "pve",
-    "difficulty": 1,
+    "difficulty": 2,
     "gates": [
       {
         "dir": "east",

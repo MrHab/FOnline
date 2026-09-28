@@ -73,7 +73,7 @@
       "tz": 68,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pve"
     },
     {
       "id": "gate_north",
@@ -87,7 +87,7 @@
       "tz": 4,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pvpFullDrop"
     },
     {
       "id": "gate_south",
@@ -30489,7 +30489,7 @@
     "n": 161,
     "region": "northern_sluices",
     "mode": "pvp",
-    "difficulty": 2,
+    "difficulty": 3,
     "gates": [
       {
         "dir": "east",

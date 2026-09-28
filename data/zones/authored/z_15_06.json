@@ -73,7 +73,7 @@
       "tz": 53,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pvp"
     },
     {
       "id": "gate_north",
@@ -115,7 +115,7 @@
       "tz": 111,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pvpFullDrop"
     }
   ],
   "worldZones": [],

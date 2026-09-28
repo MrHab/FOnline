@@ -119,7 +119,7 @@
       "tz": 41,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pve"
     },
     {
       "id": "place_antHive",

@@ -29655,7 +29655,7 @@
     "n": 170,
     "region": "glasslands",
     "mode": "pve",
-    "difficulty": 4,
+    "difficulty": 1,
     "gates": [
       {
         "dir": "north",

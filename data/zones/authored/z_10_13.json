@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pve",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -102,7 +102,7 @@
       "tz": 155,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop",
+      "targetMode": "pve",
       "road": true
     },
     {
@@ -30116,7 +30116,7 @@
     "row": 13,
     "n": 191,
     "region": "northern_sluices",
-    "mode": "pvp",
+    "mode": "pve",
     "difficulty": 2,
     "gates": [
       {

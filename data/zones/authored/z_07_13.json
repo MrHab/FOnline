@@ -97,7 +97,7 @@
       "tz": 119,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pve"
     }
   ],
   "worldZones": [],
@@ -31341,7 +31341,7 @@
     "n": 188,
     "region": "northern_sluices",
     "mode": "pve",
-    "difficulty": 2,
+    "difficulty": 1,
     "gates": [
       {
         "dir": "east",

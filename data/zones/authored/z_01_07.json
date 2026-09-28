@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pve",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -84,7 +84,7 @@
       "tz": 4,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pve"
     },
     {
       "id": "gate_south",
@@ -98,7 +98,7 @@
       "tz": 155,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pve"
     }
   ],
   "worldZones": [],
@@ -30652,7 +30652,7 @@
     "row": 7,
     "n": 90,
     "region": "tract_isthmus",
-    "mode": "pvp",
+    "mode": "pve",
     "difficulty": 1,
     "gates": [
       {

@@ -73,7 +73,7 @@
       "tz": 64,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pvpFullDrop"
     },
     {
       "id": "gate_north",
@@ -30144,7 +30144,7 @@
     "n": 77,
     "region": "tract_isthmus",
     "mode": "pvp",
-    "difficulty": 1,
+    "difficulty": 3,
     "gates": [
       {
         "dir": "east",

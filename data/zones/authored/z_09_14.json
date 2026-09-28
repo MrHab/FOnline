@@ -69,7 +69,7 @@
       "tz": 93,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pve"
     },
     {
       "id": "gate_north",
@@ -30300,7 +30300,7 @@
     "n": 196,
     "region": "silent_ring",
     "mode": "pve",
-    "difficulty": 5,
+    "difficulty": 1,
     "gates": [
       {
         "dir": "east",

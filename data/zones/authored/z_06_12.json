@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pve",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -105,7 +105,7 @@
       "tz": 155,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pve"
     },
     {
       "id": "gate_west",
@@ -30382,7 +30382,7 @@
     "row": 12,
     "n": 175,
     "region": "northern_sluices",
-    "mode": "pvp",
+    "mode": "pve",
     "difficulty": 2,
     "gates": [
       {

@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pvpFullDrop",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -77,7 +77,7 @@
       "tz": 116,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pvpFullDrop"
     },
     {
       "id": "gate_north",
@@ -91,7 +91,7 @@
       "tz": 4,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpBlack",
+      "targetMode": "pvpFullDrop",
       "road": true
     },
     {
@@ -121,7 +121,7 @@
       "tz": 114,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp",
+      "targetMode": "pvpFullDrop",
       "road": true
     }
   ],
@@ -29058,8 +29058,8 @@
     "row": 9,
     "n": 132,
     "region": "middle_vein",
-    "mode": "pvp",
-    "difficulty": 1,
+    "mode": "pvpFullDrop",
+    "difficulty": 4,
     "gates": [
       {
         "dir": "east",

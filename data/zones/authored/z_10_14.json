@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pve",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -65,7 +65,7 @@
       "tz": 4,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp",
+      "targetMode": "pve",
       "road": true
     },
     {
@@ -29439,8 +29439,8 @@
     "row": 14,
     "n": 197,
     "region": "silent_ring",
-    "mode": "pvpFullDrop",
-    "difficulty": 5,
+    "mode": "pve",
+    "difficulty": 1,
     "gates": [
       {
         "dir": "north",

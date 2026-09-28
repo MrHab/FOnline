@@ -11,7 +11,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { assignGroundsByWedges } = require('../src/server/zone-grounds');
+const { assignGroundsByWedges, computeBelts } = require('../src/server/zone-grounds');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'data', 'kromka', 'grounds.json');
@@ -26,6 +26,9 @@ const GROUNDS = [
   { id: 'league', name: 'Угодья Перекрёстка', cityLocationId: 'caravanCamp', col: 7, row: 2, families: ['hide', 'oil', 'wood'], refine: 'ore' }
 ];
 
+// Стартовые деревни у каждого города (раздел 4.4): их зоны — синие первого тира.
+const VILLAGES = ['z_06_13', 'z_01_08', 'z_16_11', 'z_16_03', 'z_06_01'];
+
 // Жилы основного ресурса, тиры 1–5 (раздел 4.5).
 const HOTSPOTS = {
   wood: [['z_07_13', 'Лесосека у Пенной чаши'], ['z_08_12', 'Плотинный лес'], ['z_07_11', 'Сплавной затор'], ['z_11_11', 'Горелая просека'], ['z_10_08', 'Пепельный кедровник']],
@@ -38,6 +41,11 @@ const HOTSPOTS = {
 function build() {
   const graph = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
   const zones = assignGroundsByWedges(graph.zones, CENTER, GROUNDS);
+  const beltRows = computeBelts({
+    zones: graph.zones.map(zone => ({ id: zone.id, col: zone.col, row: zone.row })),
+    center: CENTER, cities: GROUNDS, villages: VILLAGES
+  });
+  const belts = Object.fromEntries(Object.keys(beltRows).sort().map(id => [id, beltRows[id]]));
   const sortedZones = Object.fromEntries(Object.keys(zones).sort().map(id => [id, zones[id]]));
   const hotspots = {};
   for (const [family, rows] of Object.entries(HOTSPOTS)) {
@@ -45,7 +53,7 @@ function build() {
   }
   return {
     schema: 'kromka.grounds.v1',
-    note: 'Угодья — биомы Кромки, как в Albion (библия, 4.5). Файл собирает tools/build-zone-grounds.js: не править руками. Зона принадлежит угодьям города по клину от Ключей; у угодий три семейства (основное, второе, третье — доли узлов 50/30/20), двух нет; refine — ремесло города: семейство, которого в его угодьях нет. Жила удваивает основной ресурс своих угодий.',
+    note: 'Угодья — биомы Кромки, как в Albion (библия, 4.5). Файл собирает tools/build-zone-grounds.js: не править руками. Зона принадлежит угодьям города по клину от Ключей; у угодий три семейства (основное, второе, третье — доли узлов 50/30/20), двух нет; refine — ремесло города: семейство, которого в его угодьях нет. Жила удваивает основной ресурс своих угодий. belts — пояса опасности по Albion (4.4): режим и тир каждой зоны, их берёт tools/build-zone-graph.js.',
     center: CENTER.zoneId,
     // Ключи — вольный город в центре, угодий у них нет (ресурсы — поровну).
     centerLocationId: 'settlement',
@@ -55,6 +63,9 @@ function build() {
       families: row.families, refine: row.refine
     }])),
     hotspots: Object.fromEntries(Object.keys(hotspots).sort().map(id => [id, hotspots[id]])),
+    villages: VILLAGES,
+    // Пояса опасности (4.4): цвет (pvpMode) и тир каждой зоны — их берёт граф зон.
+    belts,
     zones: sortedZones
   };
 }

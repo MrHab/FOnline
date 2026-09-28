@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pve",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -79,7 +79,7 @@
       "tz": 155,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pve"
     }
   ],
   "worldZones": [],
@@ -30668,8 +30668,8 @@
     "row": 1,
     "n": 2,
     "region": "zero_basin",
-    "mode": "pvpFullDrop",
-    "difficulty": 5,
+    "mode": "pve",
+    "difficulty": 1,
     "gates": [
       {
         "dir": "east",

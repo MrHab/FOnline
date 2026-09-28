@@ -149,7 +149,97 @@ function cityRefineFamily(config, cityLocationId = '') {
   return id ? config.grounds[id].refine : '';
 }
 
+/**
+ * Пояса опасности — как на Королевском материке Albion (библия, 4.4). По
+ * расстоянию в шагах сетки от Ключей (D), от ближайшего города (d) и от края
+ * мира (E) и по углу от Ключей до ближайшего направления на город зона
+ * получает «опасность»: ближе к центру и дальше от направлений на города —
+ * опаснее. Самые опасные quotas.red зон красные, следующие quotas.yellow —
+ * жёлтые, остальные синие; соседи Ключей всегда красные; синяя зона у красной
+ * становится жёлтой, красная у города — жёлтой. Тир: синие у края и деревни —
+ * 1, прочие синие — 2, жёлтые — 3, красные — 4, красные в двух шагах от Ключей — 5.
+ * Возвращает {zoneId: {mode, tier}}; город и Ключи — мирные, тир 1.
+ */
+function computeBelts({ zones = [], center, cities = [], villages = [], quotas = { red: 46, yellow: 66 } }) {
+  const key = (col, row) => `${col},${row}`;
+  const byCell = new Map(zones.map(zone => [key(zone.col, zone.row), zone]));
+  const N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const bfs = starts => {
+    const dist = new Map();
+    let queue = starts.map(([col, row]) => key(col, row)).filter(cell => byCell.has(cell));
+    for (const cell of queue) dist.set(cell, 0);
+    while (queue.length) {
+      const next = [];
+      for (const cell of queue) {
+        const [col, row] = cell.split(',').map(Number);
+        for (const [dc, dr] of N4) {
+          const other = key(col + dc, row + dr);
+          if (!byCell.has(other) || dist.has(other)) continue;
+          dist.set(other, dist.get(cell) + 1);
+          next.push(other);
+        }
+      }
+      queue = next;
+    }
+    return dist;
+  };
+  const cityCells = cities.map(city => [city.col, city.row]);
+  const dCenter = bfs([[center.col, center.row]]);
+  const dCity = bfs(cityCells);
+  const edgeCells = zones.filter(zone => N4.some(([dc, dr]) => !byCell.has(key(zone.col + dc, zone.row + dr)))).map(zone => [zone.col, zone.row]);
+  const dEdge = bfs(edgeCells);
+  const cityAngles = cities.map(city => Math.atan2(city.row - center.row, city.col - center.col));
+  const colour = new Map();
+  const candidates = [];
+  for (const zone of zones) {
+    const cell = key(zone.col, zone.row);
+    const D = dCenter.get(cell) ?? 99;
+    const d = dCity.get(cell) ?? 99;
+    const E = dEdge.get(cell) ?? 0;
+    if (D === 0) { colour.set(cell, 'M'); continue; }
+    if (d === 0) { colour.set(cell, 'C'); continue; }
+    const r = D / (D + E);
+    const angle = Math.atan2(zone.row - center.row, zone.col - center.col);
+    let gap = Math.min(...cityAngles.map(cityAngle => {
+      const diff = Math.abs(angle - cityAngle) % (2 * Math.PI);
+      return Math.min(diff, 2 * Math.PI - diff);
+    }));
+    gap = Math.min(1, gap / (Math.PI / 5));
+    candidates.push({ cell, danger: (1 - r) + 0.55 * gap * (r > 0.25 ? 1 : 0) - (d === 1 ? 5 : 0) - (d === 2 ? 0.25 : 0) });
+  }
+  candidates.sort((a, b) => b.danger - a.danger);
+  candidates.forEach((row, index) => colour.set(row.cell, index < quotas.red ? 'R' : index < quotas.red + quotas.yellow ? 'Y' : 'B'));
+  for (const zone of zones) {
+    const cell = key(zone.col, zone.row);
+    const D = dCenter.get(cell) ?? 99;
+    if (D > 0 && D <= 1) colour.set(cell, 'R');
+  }
+  for (let pass = 0; pass < 3; pass++) {
+    for (const zone of zones) {
+      const cell = key(zone.col, zone.row);
+      if (colour.get(cell) !== 'B') continue;
+      if (N4.some(([dc, dr]) => ['R', 'M'].includes(colour.get(key(zone.col + dc, zone.row + dr))))) colour.set(cell, 'Y');
+    }
+  }
+  for (const zone of zones) {
+    const cell = key(zone.col, zone.row);
+    if (dCity.get(cell) === 1 && colour.get(cell) === 'R') colour.set(cell, 'Y');
+  }
+  const villageSet = new Set(villages);
+  const MODES = { M: 'peaceful', C: 'peaceful', B: 'pve', Y: 'pvp', R: 'pvpFullDrop' };
+  const out = {};
+  for (const zone of zones) {
+    const cell = key(zone.col, zone.row);
+    const c = colour.get(cell);
+    let tier = c === 'B' ? ((dEdge.get(cell) ?? 0) === 0 ? 1 : 2) : c === 'Y' ? 3 : c === 'R' ? ((dCenter.get(cell) ?? 99) <= 2 ? 5 : 4) : 1;
+    if (villageSet.has(zone.id)) tier = 1;
+    out[zone.id] = { mode: MODES[c], tier };
+  }
+  return out;
+}
+
 module.exports = {
+  computeBelts,
   RANK_SHARES,
   NODE_FAMILIES,
   ALL_FAMILIES,

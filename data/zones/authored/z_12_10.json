@@ -73,7 +73,7 @@
       "tz": 98,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pvp"
     },
     {
       "id": "gate_north",
@@ -116,7 +116,7 @@
       "tz": 62,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp",
+      "targetMode": "pvpFullDrop",
       "road": true
     }
   ],
@@ -30131,7 +30131,7 @@
     "n": 151,
     "region": "glasslands",
     "mode": "pvpFullDrop",
-    "difficulty": 3,
+    "difficulty": 4,
     "gates": [
       {
         "dir": "east",

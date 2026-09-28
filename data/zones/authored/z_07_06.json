@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pvpFullDrop",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -73,7 +73,7 @@
       "tz": 48,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp",
+      "targetMode": "pvpFullDrop",
       "road": true
     },
     {
@@ -102,7 +102,7 @@
       "tz": 155,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp",
+      "targetMode": "pvpFullDrop",
       "road": true
     },
     {
@@ -117,7 +117,7 @@
       "tz": 114,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pvpFullDrop"
     }
   ],
   "worldZones": [],
@@ -29573,8 +29573,8 @@
     "row": 6,
     "n": 79,
     "region": "tract_isthmus",
-    "mode": "pvp",
-    "difficulty": 1,
+    "mode": "pvpFullDrop",
+    "difficulty": 4,
     "gates": [
       {
         "dir": "east",

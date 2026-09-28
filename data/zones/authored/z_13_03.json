@@ -115,7 +115,7 @@
       "tz": 116,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pve"
+      "targetMode": "pvp"
     }
   ],
   "worldZones": [],
@@ -29794,7 +29794,7 @@
     "n": 36,
     "region": "zero_basin",
     "mode": "pve",
-    "difficulty": 5,
+    "difficulty": 2,
     "gates": [
       {
         "dir": "east",

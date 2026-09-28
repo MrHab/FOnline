@@ -32,8 +32,9 @@ const cityZone = graph.zones.find(zone => zone.city);
   assert.deepEqual([state.player.x, state.player.z], [0, 0], 'the character stands at the zone centre');
   assert(!('globalMap' in state), 'the map state is gone');
 }
-// На карте в красной и чёрной — в ближайшую синюю или мирную.
-for (const harsh of [red, black]) {
+// На карте в красной и чёрной — в ближайшую синюю или мирную. Чёрных зон на
+// карте канона нет (библия, 4.4), тогда проверяется одна красная.
+for (const harsh of [red, black].filter(Boolean)) {
   const state = { globalMap: { onWorldMap: true, playerX: centre(harsh).x, playerY: centre(harsh).y } };
   const out = migrateSaveStateToZones(state, graph);
   const landed = graph.zones.find(zone => (zone.city || zone.id) === out.zoneId);

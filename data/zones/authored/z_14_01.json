@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pve",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -31095,8 +31095,8 @@
     "row": 1,
     "n": 11,
     "region": "zero_basin",
-    "mode": "pvpFullDrop",
-    "difficulty": 5,
+    "mode": "pve",
+    "difficulty": 1,
     "gates": [
       {
         "dir": "south",

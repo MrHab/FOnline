@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pve",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -83,7 +83,7 @@
       "tz": 4,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pve"
     },
     {
       "id": "place_resourceIronMine",
@@ -30715,8 +30715,8 @@
     "row": 12,
     "n": 171,
     "region": "ore_arc",
-    "mode": "pvp",
-    "difficulty": 2,
+    "mode": "pve",
+    "difficulty": 1,
     "gates": [
       {
         "dir": "east",

@@ -29746,7 +29746,7 @@
     "n": 52,
     "region": "chalk_lowland",
     "mode": "pve",
-    "difficulty": 3,
+    "difficulty": 2,
     "gates": [
       {
         "dir": "east",

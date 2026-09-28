@@ -30856,7 +30856,7 @@
     "n": 195,
     "region": "silent_ring",
     "mode": "pve",
-    "difficulty": 5,
+    "difficulty": 1,
     "gates": [
       {
         "dir": "east",

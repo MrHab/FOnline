@@ -73,7 +73,7 @@
       "tz": 88,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pve"
     },
     {
       "id": "gate_north",
@@ -30419,7 +30419,7 @@
     "n": 38,
     "region": "chalk_lowland",
     "mode": "pve",
-    "difficulty": 3,
+    "difficulty": 2,
     "gates": [
       {
         "dir": "east",

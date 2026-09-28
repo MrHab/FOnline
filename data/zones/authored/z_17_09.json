@@ -7,7 +7,7 @@
   "kind": "zone",
   "builderVersion": 4,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pve",
   "noRespawn": true,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -69,7 +69,7 @@
       "tz": 4,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pve"
     },
     {
       "id": "gate_west",
@@ -30366,8 +30366,8 @@
     "row": 9,
     "n": 140,
     "region": "glasslands",
-    "mode": "pvpFullDrop",
-    "difficulty": 4,
+    "mode": "pve",
+    "difficulty": 1,
     "gates": [
       {
         "dir": "north",

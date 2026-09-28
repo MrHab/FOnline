@@ -117,7 +117,7 @@
       "tz": 41,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pve"
     }
   ],
   "worldZones": [],
@@ -29558,7 +29558,7 @@
     "n": 112,
     "region": "tract_isthmus",
     "mode": "pvp",
-    "difficulty": 1,
+    "difficulty": 3,
     "gates": [
       {
         "dir": "east",

@@ -87,7 +87,7 @@
       "tz": 4,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pvp"
     },
     {
       "id": "gate_south",
@@ -29847,7 +29847,7 @@
     "n": 138,
     "region": "glasslands",
     "mode": "pve",
-    "difficulty": 4,
+    "difficulty": 2,
     "gates": [
       {
         "dir": "east",

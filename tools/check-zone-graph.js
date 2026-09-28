@@ -81,16 +81,26 @@ for (const capital of graph.capitals) {
   const sector = zoneOfPlace(graph, capital);
   assert.equal(sector.city, capital, `${capital} must hold a sector of its own`);
 }
-// Синие зоны — только кольцо 3×3 вокруг городов фракций, сами столицы живут по своим правилам.
-const capitalZones = graph.capitals.map(id => zoneOfPlace(graph, id));
-const ringOf = zone => Math.min(...capitalZones.map(c => Math.max(Math.abs(c.col - zone.col), Math.abs(c.row - zone.row))));
+// Пояса опасности канона (библия, 4.4) — как Королевский материк Albion: цвет и
+// тир каждой зоны берутся из data/kromka/grounds.json, города мирные.
+const belts = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'grounds.json'), 'utf8')).belts;
 for (const zone of graph.zones) {
-  const ring = ringOf(zone);
-  if (ring === 0) assert(zone.city, `${zone.id} holds a faction city`);
-  else if (ring === 1) assert(['pve', 'pvpBlack'].includes(zone.mode) || zone.city, `${zone.id} next to a faction city is blue`);
-  else assert(!['pve', 'peaceful'].includes(zone.mode) || zone.city, `${zone.id} is ${ring} zones from any faction city and must not be blue or peaceful`);
+  const belt = belts[zone.id];
+  assert(belt, `${zone.id} has a danger belt`);
+  if (zone.city) assert.equal(zone.mode, 'peaceful', `${zone.id}: a city is peaceful`);
+  else assert.deepEqual([zone.mode, zone.difficulty], [belt.mode, belt.tier], `${zone.id} follows its belt`);
 }
-assert.equal(zoneOfPlace(graph, 'coreZone').mode, 'pvpBlack', 'the Core hub stands in a black zone');
+assert(!graph.zones.some(zone => zone.mode === 'pvpBlack'), 'the map holds no black zones, as the Royal Continent');
+const cellOf = new Map(graph.zones.map(zone => [`${zone.col},${zone.row}`, zone]));
+const around = zone => Object.values(SIDES).map(side => cellOf.get(`${zone.col + side.dc},${zone.row + side.dr}`)).filter(Boolean);
+for (const zone of graph.zones) {
+  if (zone.mode === 'pve') assert(!around(zone).some(other => other.mode === 'pvpFullDrop'), `${zone.id}: a blue zone never touches a red one`);
+}
+const keysZone = zoneOfPlace(graph, 'settlement');
+assert(around(keysZone).every(other => other.mode === 'pvpFullDrop' && other.difficulty === 5), 'Keys is ringed by red zones of tier 5');
+for (const capital of graph.capitals.filter(id => id !== 'balanceBunker')) {
+  assert(around(zoneOfPlace(graph, capital)).every(other => other.mode !== 'pvpFullDrop'), `${capital} is not next to a red zone`);
+}
 assert.equal(zoneAtPoint(graph, -50, 9999).id.startsWith('z_'), true, 'a point outside the world snaps to the nearest zone');
 
 // --- рёбра: обе зоны видят общую сторону одинаково, мир связен ---------------------------

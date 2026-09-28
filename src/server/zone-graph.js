@@ -67,7 +67,7 @@ function roadCrossing(points, vertical, line, from, to) {
   return null;
 }
 
-function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, locationNames = {}, locationModes = {}, overrides = {} }) {
+function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, locationNames = {}, locationModes = {}, overrides = {}, belts = {} }) {
   const mapGrid = globalMap.grid;
   const cellKm = Number(mapGrid.cellKm || 10);
   const pointKm = cellKm / Number(mapGrid.cellPoints || 10);
@@ -129,9 +129,16 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
       let mode = dangerModeAt(colourRules, centre, nodesById, region, pointKm);
       if (ring === 0) mode = 'peaceful';
       else if (ring <= BLUE_RING_ZONES && mode !== 'pvpBlack') mode = 'pve';
+      let difficulty = clamp(Math.round(cells.reduce((sum, cell) => sum + Number(cell.difficulty || 1), 0) / Math.max(1, cells.length)), 1, 5);
+      // Пояса канона (Королевский материк Albion) важнее прежних правил цвета.
+      const belt = belts[id];
+      if (belt && belt.mode) {
+        mode = String(belt.mode);
+        difficulty = clamp(Math.round(Number(belt.tier) || difficulty), 1, 5);
+      }
       zones.set(id, {
         id, col, row, n: 0, name: '', title: '', region, mode,
-        difficulty: clamp(Math.round(cells.reduce((sum, cell) => sum + Number(cell.difficulty || 1), 0) / Math.max(1, cells.length)), 1, 5),
+        difficulty,
         ground: majority(cells.map(cell => cell.texture || ''), () => 0) || region,
         seed: hash32(`${globalMap.worldRevision || 'world'}:${id}`),
         edges: {}, roads: [], places, authored: false

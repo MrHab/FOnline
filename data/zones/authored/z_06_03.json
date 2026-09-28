@@ -101,7 +101,7 @@
       "tz": 155,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pvp"
     },
     {
       "id": "gate_west",
@@ -115,7 +115,7 @@
       "tz": 84,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvpFullDrop"
+      "targetMode": "pvp"
     }
   ],
   "worldZones": [],
@@ -29727,7 +29727,7 @@
     "n": 29,
     "region": "zero_basin",
     "mode": "pve",
-    "difficulty": 5,
+    "difficulty": 2,
     "gates": [
       {
         "dir": "east",

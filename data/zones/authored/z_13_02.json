@@ -30410,7 +30410,7 @@
     "n": 22,
     "region": "zero_basin",
     "mode": "pve",
-    "difficulty": 5,
+    "difficulty": 2,
     "gates": [
       {
         "dir": "east",

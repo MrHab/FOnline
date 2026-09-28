@@ -88,7 +88,7 @@
       "tz": 4,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp",
+      "targetMode": "pvpFullDrop",
       "road": true
     },
     {
@@ -103,7 +103,7 @@
       "tz": 155,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp"
+      "targetMode": "pve"
     },
     {
       "id": "gate_west",
@@ -117,7 +117,7 @@
       "tz": 24,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "pvp",
+      "targetMode": "pvpFullDrop",
       "road": true
     }
   ],
@@ -30246,7 +30246,7 @@
     "n": 147,
     "region": "middle_vein",
     "mode": "pvp",
-    "difficulty": 1,
+    "difficulty": 3,
     "gates": [
       {
         "dir": "east",

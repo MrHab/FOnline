@@ -1,49 +1,65 @@
 #if UNITY_EDITOR
 using System;
+using System.IO;
 using RealmOfAshes.World;
 using UnityEditor;
 using UnityEngine;
 
 namespace RealmOfAshes.EditorTools
 {
-    /// <summary>Builds the runtime environment palette from reviewed Mobile Environment Pack assets.</summary>
+    /// <summary>Builds the runtime environment palette from PolygonApocalypse prefabs.</summary>
     public static class RoaEnvironmentPaletteAuthoring
     {
         public const string AssetPath = "Assets/Resources/RealmOfAshes/EnvironmentPalette.asset";
+        private const string Environment = "Assets/Synty/PolygonApocalypse/Prefabs/Environment/";
+
+        [InitializeOnLoadMethod]
+        private static void BuildIfRequested()
+        {
+            string request = Path.Combine(Application.dataPath,
+                "../Library/roa-apocalypse-environment-palette.request");
+            if (!File.Exists(request)) return;
+            EditorApplication.delayCall += () =>
+            {
+                if (!File.Exists(request) || EditorApplication.isPlayingOrWillChangePlaymode) return;
+                File.Delete(request);
+                Build();
+            };
+        }
 
         private static readonly string[] DryScrubs =
         {
-            "Assets/MEP/MEP_Environment/Vegetation/MEP_Grass/MEP_Grass/Prefabs/MEP_Grass_A_02_Dry.prefab",
-            "Assets/MEP/MEP_Environment/Vegetation/MEP_Bushes/MEP_Bush_01/Prefabs/MEP_Bush_01_b_Autumn_N.prefab",
-            "Assets/MEP/MEP_Environment/Vegetation/MEP_Bushes/MEP_Bush_02/Prefabs/MEP_Bush_02_c_Autumn_N.prefab",
-            "Assets/MEP/MEP_Environment/Vegetation/MEP_Bushes/MEP_Bush_04/Prefabs/MEP_Bush_04_a.prefab"
+            Environment + "SM_Env_Bushes_01.prefab",
+            Environment + "SM_Env_Bushes_02.prefab",
+            Environment + "SM_Env_Bushes_03.prefab",
+            Environment + "SM_Env_Bushes_04.prefab"
         };
 
         private static readonly string[] Stones =
         {
-            "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_GroundRocks_01/Prefabs/MEP_GroundRock_01_a.prefab",
-            "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_GroundRocks_01/Prefabs/MEP_GroundRock_01_d.prefab",
-            "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_GroundRocks_01/Prefabs/MEP_GroundRock_01_h.prefab",
-            "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_Stones_01/Prefabs/MEP_Stone_06.prefab",
-            "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_StoneGround/Prefabs/MEP_StoneGround_a_Sand.prefab"
+            Environment + "SM_Env_Rock_01.prefab",
+            Environment + "SM_Env_Rock_02.prefab",
+            Environment + "SM_Env_Rock_03.prefab",
+            Environment + "SM_Env_DirtPile_01.prefab",
+            Environment + "SM_Env_DirtPile_02.prefab"
         };
 
         private static readonly string[] GroundAccents =
         {
-            "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_Cracked_Mud/Prefabs/Cracked_Mud_02.prefab",
-            "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_Cracked_Mud/Prefabs/Cracked_Mud_03.prefab",
-            "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_Cracked_Mud/Prefabs/Cracked_Mud_05.prefab"
+            Environment + "SM_Env_Grass_Tuft_01.prefab",
+            Environment + "SM_Env_Grass_Tuft_02.prefab",
+            Environment + "SM_Env_Grass_Tuft_03.prefab"
         };
 
         private static readonly string[] DistantRidges =
         {
-            "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_Rock_01/Prefabs/MEP_Rock_01_N_a_Sand.prefab",
-            "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_Rock_04/Prefabs/MEP_Rock_04_b_Sand.prefab",
-            "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_02.prefab",
-            "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_06.prefab"
+            Environment + "SM_Env_Dirt_Slope_01.prefab",
+            Environment + "SM_Env_Dirt_Slope_02.prefab",
+            Environment + "SM_Env_Dirt_Slope_Bump_01.prefab",
+            Environment + "SM_Env_Dirt_Slope_Bump_02.prefab"
         };
 
-        [MenuItem("Realm of Ashes/Build Environment Palette 4.4")]
+        [MenuItem("Realm of Ashes/PolygonApocalypse/Rebuild environment palette")]
         public static void Build()
         {
             EnsureFolder("Assets/Resources");
@@ -68,7 +84,7 @@ namespace RealmOfAshes.EditorTools
             AssetDatabase.ImportAsset(AssetPath, ImportAssetOptions.ForceUpdate);
 
             if (!palette.Ready) throw new InvalidOperationException("Environment palette is incomplete after authoring.");
-            Debug.Log("[WORLD READABILITY 4.4] MEP palette saved: scrub=" + palette.DryScrubCount
+            Debug.Log("[POLYGON APOCALYPSE] Environment palette saved: scrub=" + palette.DryScrubCount
                 + ", stones=" + palette.StoneCount + ", accents=" + palette.GroundAccentCount
                 + ", ridges=" + palette.DistantRidgeCount);
         }

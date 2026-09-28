@@ -118,10 +118,12 @@ namespace RealmOfAshes.Game
                     Roll = 0.12f,
                     SupportRotation = V(0.06f, 0.02f, 0.12f),
                     Idle = new Stance { Primary = V(-0.22f, 1.18f, 0.22f), Direction = V(0.95f, 0.29f, 0.08f) },
-                    Windup = new Stance { Primary = V(-0.31f, 1.47f, 0.05f), Direction = V(0.76f, 0.64f, -0.08f) },
-                    Strike = new Stance { Primary = V(-0.22f, 1.04f, 0.53f), Direction = V(0.98f, 0.14f, 0.03f) },
-                    SpineWindup = V(0.10f, -0.24f, -0.10f),
-                    SpineStrike = V(-0.18f, 0.22f, 0.08f)
+                    // Рубящий удар сверху: рукоять над правым плечом, головка вверх и
+                    // назад — затем вперёд и вниз, до пояса, с наклоном корпуса.
+                    Windup = new Stance { Primary = V(-0.26f, 1.64f, -0.02f), Direction = V(0.32f, 0.80f, -0.50f) },
+                    Strike = new Stance { Primary = V(-0.10f, 1.00f, 0.56f), Direction = V(0.14f, -0.30f, 0.94f) },
+                    SpineWindup = V(0.16f, -0.34f, -0.12f),
+                    SpineStrike = V(-0.30f, 0.30f, 0.10f)
                 }
             },
             {
@@ -132,10 +134,11 @@ namespace RealmOfAshes.Game
                     Roll = 0.24f,
                     SupportRotation = V(0.06f, 0.02f, 0.12f),
                     Idle = new Stance { Primary = V(-0.21f, 1.18f, 0.23f), Direction = V(0.95f, 0.29f, 0.08f) },
-                    Windup = new Stance { Primary = V(-0.30f, 1.46f, 0.06f), Direction = V(0.76f, 0.64f, -0.08f) },
-                    Strike = new Stance { Primary = V(-0.21f, 1.05f, 0.52f), Direction = V(0.98f, 0.14f, 0.03f) },
-                    SpineWindup = V(0.09f, -0.22f, -0.09f),
-                    SpineStrike = V(-0.16f, 0.20f, 0.07f)
+                    // Рубящий удар сверху, как у кирки.
+                    Windup = new Stance { Primary = V(-0.26f, 1.64f, -0.02f), Direction = V(0.32f, 0.80f, -0.50f) },
+                    Strike = new Stance { Primary = V(-0.10f, 1.00f, 0.56f), Direction = V(0.14f, -0.30f, 0.94f) },
+                    SpineWindup = V(0.16f, -0.34f, -0.12f),
+                    SpineStrike = V(-0.30f, 0.30f, 0.10f)
                 }
             },
             {
@@ -162,7 +165,8 @@ namespace RealmOfAshes.Game
         public static Profile Get(string weaponId)
         {
             Profile profile;
-            return Profiles.TryGetValue(weaponId ?? string.Empty, out profile) ? profile : null;
+            string rigId = RoaApocalypseModels.WeaponRig(weaponId);
+            return Profiles.TryGetValue(rigId ?? string.Empty, out profile) ? profile : null;
         }
 
         /// <summary>

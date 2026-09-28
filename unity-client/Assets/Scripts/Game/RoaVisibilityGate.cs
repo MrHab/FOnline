@@ -17,6 +17,7 @@ namespace RealmOfAshes.Game
     public sealed class RoaVisibilityGate : MonoBehaviour
     {
         private readonly List<Renderer> _renderers = new List<Renderer>();
+        private Dictionary<Renderer, bool> _intendedEnabled = new Dictionary<Renderer, bool>();
         private bool _visible = true;
         private int _knownHierarchyCount = -1;
 
@@ -45,6 +46,15 @@ namespace RealmOfAshes.Game
                 _renderers.Clear();
                 GetComponentsInChildren(true, _renderers);
 
+                var next = new Dictionary<Renderer, bool>(_renderers.Count);
+                foreach (Renderer renderer in _renderers)
+                {
+                    if (renderer == null) continue;
+                    next[renderer] = _visible || !_intendedEnabled.TryGetValue(renderer, out bool enabled)
+                        ? renderer.enabled : enabled;
+                }
+                _intendedEnabled = next;
+
                 // Свежие рендереры не знают текущего состояния — применяем принудительно.
                 Write(visible);
                 _visible = visible;
@@ -53,14 +63,24 @@ namespace RealmOfAshes.Game
 
             if (_visible == visible) return;
 
+            if (_visible)
+                foreach (Renderer renderer in _renderers)
+                    if (renderer != null) _intendedEnabled[renderer] = renderer.enabled;
             _visible = visible;
             Write(visible);
         }
 
         private void Write(bool visible)
         {
+            RoaApocalypseCharacterSkin skin = GetComponentInChildren<RoaApocalypseCharacterSkin>(true);
             for (int i = 0; i < _renderers.Count; i++)
-                if (_renderers[i] != null) _renderers[i].enabled = visible;
+            {
+                Renderer renderer = _renderers[i];
+                if (renderer == null) continue;
+                renderer.enabled = visible
+                    && _intendedEnabled.TryGetValue(renderer, out bool intended) && intended
+                    && (skin == null || !skin.HidesOriginalRenderer(renderer));
+            }
         }
     }
 }

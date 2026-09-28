@@ -128,7 +128,7 @@ namespace RealmOfAshes.Game
                 {
                     Vector3 point = ray.GetPoint(distance);
                     point.x = Mathf.Round(point.x);
-                    point.y = 0.5f;
+                    point.y = 0f;
                     point.z = Mathf.Round(point.z);
                     _preview.transform.position = point;
                 }
@@ -148,11 +148,9 @@ namespace RealmOfAshes.Game
             CancelBuild();
             _selectedBuild = (JObject)profile.DeepClone();
             _rotation = 0f;
-            _preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            _preview = CreateBaseObject(profile, true);
+            if (_preview == null) { _status.text = "Модель постройки не найдена."; _selectedBuild = null; return; }
             _preview.name = "BaseBuildPreview:" + profile["id"];
-            Collider collider = _preview.GetComponent<Collider>();
-            if (collider != null) Destroy(collider);
-            ApplyObjectShape(_preview, profile, new Color(0.28f, 0.92f, 0.65f, 0.55f));
             Close();
         }
 
@@ -342,12 +340,12 @@ namespace RealmOfAshes.Game
                 present.Add(id);
                 if (!_worldObjects.TryGetValue(id, out GameObject view))
                 {
-                    view = GameObject.CreatePrimitive(profile["category"]?.ToString() == "generator" ? PrimitiveType.Cylinder : PrimitiveType.Cube);
+                    view = CreateBaseObject(profile, false);
+                    if (view == null) continue;
                     view.name = "PersonalBaseObject:" + id;
                     _worldObjects[id] = view;
-                    ApplyObjectShape(view, profile, CategoryColor(profile["category"]?.ToString()));
                 }
-                view.transform.position = new Vector3(row["x"]?.Value<float>() ?? 0f, view.transform.localScale.y * 0.5f, row["z"]?.Value<float>() ?? 0f);
+                view.transform.position = new Vector3(row["x"]?.Value<float>() ?? 0f, 0f, row["z"]?.Value<float>() ?? 0f);
                 view.transform.rotation = Quaternion.Euler(0f, row["rotation"]?.Value<float>() ?? 0f, 0f);
             }
             foreach (string id in new List<string>(_worldObjects.Keys))
@@ -429,16 +427,28 @@ namespace RealmOfAshes.Game
             catch (Exception error) { Debug.LogWarning("[ROA] Не удалось загрузить модель жителя " + id + ": " + error.Message); }
         }
 
-        private static void ApplyObjectShape(GameObject view, JObject profile, Color color)
+        private static GameObject CreateBaseObject(JObject profile, bool preview)
         {
+            GameObject prefab = RoaApocalypseModels.Environment(profile?["model"]?.ToString());
+            if (prefab == null) return null;
+            var root = new GameObject("BaseObject:" + profile["id"]);
+            GameObject visual = RoaApocalypseVisuals.CreateGrounded(root.transform, prefab);
+            if (visual == null) { Destroy(root); return null; }
             JArray size = profile["size"] as JArray;
-            view.transform.localScale = new Vector3(size?[0]?.Value<float>() ?? 1f, profile["category"]?.ToString() == "structure" ? 2.4f : 1.2f, size?[1]?.Value<float>() ?? 1f);
-            Renderer renderer = view.GetComponent<Renderer>();
-            if (renderer == null) return;
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            var material = new Material(shader) { color = color };
-            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
-            renderer.sharedMaterial = material;
+            if (!preview)
+            {
+                float height = profile["category"]?.ToString() == "structure" ? 2.4f : 1.2f;
+                var collider = root.AddComponent<BoxCollider>();
+                collider.size = new Vector3(size?[0]?.Value<float>() ?? 1f, height, size?[1]?.Value<float>() ?? 1f);
+                collider.center = Vector3.up * (height * 0.5f);
+            }
+            else
+            {
+                var tint = new MaterialPropertyBlock();
+                tint.SetColor("_BaseColor", new Color(0.28f, 0.92f, 0.65f, 0.7f));
+                foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true)) renderer.SetPropertyBlock(tint);
+            }
+            return root;
         }
 
         private void BuildUi()
@@ -578,7 +588,6 @@ namespace RealmOfAshes.Game
             var parts = new List<string>(); foreach (var entry in cost) parts.Add(entry.Key + " " + entry.Value); return string.Join(" · ", parts);
         }
         private static string Signed(int value) { return value > 0 ? "+" + value : value.ToString(); }
-        private static Color CategoryColor(string category) { return category == "station" ? new Color(0.32f, 0.58f, 0.62f) : category == "generator" ? new Color(0.72f, 0.48f, 0.18f) : new Color(0.35f, 0.39f, 0.36f); }
         private static Text Label(Transform parent, string name, int size, TextAnchor align) { var go = new GameObject(name, typeof(RectTransform), typeof(Text)); go.transform.SetParent(parent, false); var text = go.GetComponent<Text>(); text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); text.fontSize = size; text.alignment = align; text.color = new Color(0.72f, 0.92f, 0.68f); return text; }
         private static Button Button(Transform parent, string name, string value, out Text label) { var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button)); go.transform.SetParent(parent, false); go.GetComponent<Image>().color = new Color(0.1f, 0.2f, 0.14f, 0.98f); label = Label(go.transform, "Label", 14, TextAnchor.MiddleCenter); label.text = value; label.rectTransform.anchorMin = Vector2.zero; label.rectTransform.anchorMax = Vector2.one; label.rectTransform.offsetMin = new Vector2(4f, 2f); label.rectTransform.offsetMax = new Vector2(-4f, -2f); return go.GetComponent<Button>(); }
         private static void Anchor(RectTransform rect, Vector2 anchor, Vector2 pos, Vector2 size) { rect.anchorMin = rect.anchorMax = anchor; rect.pivot = anchor; rect.anchoredPosition = pos; rect.sizeDelta = size; }

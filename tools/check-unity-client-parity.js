@@ -5,6 +5,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { readTieredCatalogs } = require('../src/server/kromka-tiers');
 
 // Unity — единственный клиент. Источник правды для сверки — авторитетный сервер
 // (server.js) и авторские данные data/kromka; прежний браузерный клиент удалён.
@@ -159,11 +160,12 @@ assert(hudCanvas.includes('public enum HudFocusMode')
   && hudCanvas.includes('BuildCompactWeaponConsole();')
   && hudCanvas.includes('RefreshHudFocus(worldHud, mobile, focus);')
   && hudCanvas.includes('ClampBottomPanelPosition(')
-  && hudCanvas.includes('Time.unscaledDeltaTime * 6.5f')
+  && hudCanvas.includes('_compactConsolePanel.SetActive(false);')
+  && !hudCanvas.includes('Input.GetKey(KeyCode.LeftAlt)')
   && hudCanvas.includes('AppendOccupiedScreenRect(_compactConsolePanel, output);')
-  && hudProbe.includes('exploration strip obscures the world or overlaps the quickbar')
+  && hudProbe.includes('the HUD must retain one visible arrangement through combat and activity')
   && hudProbe.includes('contextual exploration console is incomplete'),
-  'Unity HUD lost contextual exploration/activity/combat/detail focus or its compact information strip');
+  'Unity HUD lost its fixed Apocalypse arrangement or fallback information strip');
 assert(nameplates.includes('public static bool IsImportantNpc(')
   && nameplates.includes('case "merchant":')
   && nameplates.includes('case "quartermaster":')
@@ -173,10 +175,12 @@ assert(nameplates.includes('public static bool IsImportantNpc(')
   && nameplates.includes('plate.HealthFill.fillAmount = Mathf.Clamp01(ratio)')
   && nameplates.includes('CompactHealthState(entry.Hp, entry.MaxHp)')
   && enemies.includes('RoaActorNameplates.IsImportantNpc(canDialogue,')
-  && enemies.includes('Name = important ?')
+  && enemies.includes('Name = enemy.Snapshot["name"]')
+  && enemies.includes('Tier = RoaActorNameplates.EquipmentTier(')
+  && nameplates.includes('HUD_Apocalypse_WorldSpace_EnemyInfo_01')
   && !enemies.includes('if (enemy.Snapshot["canDialogue"]?.ToObject<bool>() != true) continue;')
   && hudProbe.includes('compact health-bar/name hierarchy is not deterministic'),
-  'Unity actor nameplates lost the role-filtered name and compact health hierarchy');
+  'Unity actor nameplates lost actor names, tiers or compact health hierarchy');
 
 // Unity -> server. Unity normally sends through RoaSocketClient.Emit/EmitWithAck.
 // join/state use the lower transport (EmitAsync) directly. Four UI branches choose
@@ -372,6 +376,11 @@ const unityItemSource = read('unity-client/Assets/Scripts/Game/RoaItemData.cs');
 const unityItems = {};
 for (const match of unityItemSource.matchAll(/Add\(result,\s*"([^"]+)",\s*"([^"]*)",\s*(-?\d+(?:\.\d+)?)f?\);/g))
   unityItems[match[1]] = { name: match[2], weight: Number(match[3]) };
+const apocalypseWeapons = JSON.parse(read('data/kromka/apocalypse-weapons.json')).weapons || [];
+for (const weapon of apocalypseWeapons) {
+  if (weapon.itemId.startsWith('polygon'))
+    unityItems[weapon.itemId] = { name: weapon.name, weight: Number(weapon.weight) };
+}
 assert.deepStrictEqual(Object.keys(unityItems).sort(), Object.keys(authoredItems).sort(),
   'Unity item catalog drifted from data/kromka/items.json');
 const itemNameDrift = [];
@@ -387,8 +396,11 @@ assert.strictEqual(unityItems.silver?.name, 'Марки Тракта', 'silver: 
 
 // Crafting rows are client presentation, but their ids/output/station/cost are
 // part of the server request and therefore need exact parity, in authored order.
-const authoredRecipeCatalog = JSON.parse(read('data/kromka/field-recipes.json'));
-const authoredRecipes = (authoredRecipeCatalog.recipes || []).map(row => ({
+// The baked fallback carries only untiered recipes: tiered rows (every weapon,
+// armour and tool in T1–T5, refining) arrive with the server catalog.
+const tieredCatalogs = readTieredCatalogs(path.join(ROOT, 'data'));
+const allRecipes = tieredCatalogs.recipeCatalog.recipes.map(row => ({ id: row.id, outputId: row.output.id }));
+const authoredRecipes = tieredCatalogs.recipeCatalog.recipes.filter(row => !row.tier).map(row => ({
   id: String(row.id),
   name: String(row.name),
   outputId: String(row.output?.id),
@@ -419,12 +431,12 @@ assert.deepStrictEqual(
   authoredRecipes.map(({ id, name }) => ({ id, name })),
   'Unity crafting names drifted from data/kromka/field-recipes.json');
 
-// Every character-slot item (except the intrinsic fists), all ammo and all aid
-// must be producible by field crafting.
+// Items explicitly obtainable by crafting must have a field recipe. Pack
+// variants enter through trade and loot, so they do not require duplicate recipes.
 const characterEquipmentSlots = new Set(['weapon', 'armor', 'helmet', 'boots', 'backpack']);
-const craftedOutputIds = new Set(authoredRecipes.map(row => row.outputId));
+const craftedOutputIds = new Set(allRecipes.map(row => row.outputId));
 const requiredCraftOutputIds = Object.values(authoredItems)
-  .filter(item => !(item.acquisition || []).includes('intrinsic'))
+  .filter(item => (item.acquisition || []).includes('craft'))
   .filter(item => characterEquipmentSlots.has(item.slot) || ['ammo', 'aid'].includes(item.category))
   .map(item => item.id)
   .sort();
@@ -559,7 +571,7 @@ assert(unityCamera.includes('private const string ZoomPrefsKey = "roa.cameraDist
   && unityCamera.includes('private const string PreviousZoomPrefsKey = "roa.cameraDistance.v3";')
   && unityCamera.includes('private const string LegacyZoomPrefsKey = "roa.cameraDistance.v2";')
   && unityCamera.includes('PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);')
-  && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud ? 0f'),
+  && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud || RoaHudCanvas.PointerOverMinimap'),
   'Unity local camera zoom must persist and ignore wheel input behind open UI');
 // Pip-Boy radio: the client exposes the four Kromka stations, and the
 // selected channel streams real records from the built library

@@ -84,6 +84,9 @@ namespace RealmOfAshes.Game
         public static Task Ensure(string baseUrl)
         {
             if (Ready) return Task.CompletedTask;
+            // A temporary server outage must not leave every weapon permanently
+            // unarmed for the rest of this client session.
+            if (_loading != null && _loading.IsCompleted) _loading = null;
             return _loading ?? (_loading = Load(baseUrl));
         }
 

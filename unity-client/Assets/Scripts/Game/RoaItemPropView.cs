@@ -20,6 +20,14 @@ namespace RealmOfAshes.Game
         {
             int request = ++_request;
             if (_model != null) { _model.SetActive(false); Destroy(_model); _model = null; }
+            GameObject prefab = RoaApocalypseModels.Item(ItemId);
+            if (prefab != null)
+            {
+                _model = RoaApocalypseVisuals.CreateGrounded(transform, prefab);
+                var packGate = GetComponentInParent<RoaVisibilityGate>();
+                if (packGate != null) { packGate.Invalidate(); packGate.SetVisible(packGate.IsVisible); }
+                return;
+            }
             GameObject loaded = await RoaItemModelCatalog.InstantiateInactive(origin, ItemId, transform);
             if (this == null || request != _request || !isActiveAndEnabled)
             {

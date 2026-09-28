@@ -89,6 +89,7 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnLabHallState;
         public event Action<JObject> OnKromkaOnboardingState;
         public event Action<JObject> OnWorldActivityFeedChanged;
+        public event Action<JObject> OnPlayerChatMessage;
 
         /// <summary>Полный снимок серверных контейнеров текущей комнаты.</summary>
         public event Action<JObject> OnWorldContainers;
@@ -554,6 +555,12 @@ namespace RealmOfAshes.Net
             {
                 var payload = First<JObject>(args);
                 if (payload != null) OnWorldActivityFeedChanged?.Invoke(payload);
+            }));
+
+            _connection.On("playerChatMessage", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnPlayerChatMessage?.Invoke(payload);
             }));
 
             _connection.On("worldContainersSnapshot", args => _mainThread.Enqueue(() =>

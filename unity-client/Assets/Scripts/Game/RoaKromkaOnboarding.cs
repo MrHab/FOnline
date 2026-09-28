@@ -5,6 +5,7 @@ using RealmOfAshes.World;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
+using TMPro;
 
 namespace RealmOfAshes.Game
 {
@@ -30,6 +31,8 @@ namespace RealmOfAshes.Game
         private Text _hint;
         private Text _checks;
         private Text _distance;
+        private RectTransform _objectiveMarker;
+        private TextMeshProUGUI _objectiveMarkerDistance;
         private Button _skip;
         private JObject _state;
         private JObject _step;
@@ -110,6 +113,7 @@ namespace RealmOfAshes.Game
             if (!IsActive)
             {
                 if (_beacon != null) _beacon.gameObject.SetActive(false);
+                if (_objectiveMarker != null) _objectiveMarker.gameObject.SetActive(false);
                 return;
             }
             if (_beacon != null)
@@ -129,6 +133,25 @@ namespace RealmOfAshes.Game
                     ? (string.IsNullOrEmpty(npcName) ? "Цель рядом" : "Поговорите: " + npcName)
                     : "До цели: " + Mathf.CeilToInt(DistanceToStep()) + " м";
                 _distance.color = near ? Accent : Muted;
+            }
+            if (_objectiveMarker != null)
+            {
+                Camera camera = _bootstrap?.CameraRig != null
+                    ? _bootstrap.CameraRig.GetComponent<Camera>() : Camera.main;
+                Vector3 screen = camera != null
+                    ? camera.WorldToScreenPoint(StepTarget() + Vector3.up * 2f)
+                    : Vector3.zero;
+                bool onScreen = visible && screen.z > 0f && screen.x >= 0f
+                    && screen.x <= Screen.width && screen.y >= 0f
+                    && screen.y <= Screen.height;
+                _objectiveMarker.gameObject.SetActive(onScreen);
+                if (onScreen)
+                {
+                    _objectiveMarker.anchoredPosition = new Vector2(screen.x, screen.y)
+                        / Mathf.Max(0.01f, _canvas.scaleFactor);
+                    if (_objectiveMarkerDistance != null)
+                        _objectiveMarkerDistance.text = Mathf.CeilToInt(DistanceToStep()) + "м";
+                }
             }
             if (_errorUntil > 0f && Time.realtimeSinceStartup >= _errorUntil)
             {
@@ -321,6 +344,25 @@ namespace RealmOfAshes.Game
             Place(_checks.rectTransform, 16f, -226f, -16f, -184f);
             _distance = Label("Distance", _panel, 12, FontStyle.Bold, Muted);
             Place(_distance.rectTransform, 16f, -248f, -16f, -228f);
+            GameObject markerPrefab = Resources.Load<GameObject>(
+                "ApocalypseHud/HUD_Apocalypse_WorldSpace_Objective_01");
+            if (markerPrefab != null)
+            {
+                GameObject marker = Instantiate(markerPrefab, root.transform, false);
+                RoaApocalypseTmpFonts.Apply(marker);
+                marker.name = "ApocalypseNavigationObjective";
+                _objectiveMarker = (RectTransform)marker.transform;
+                _objectiveMarker.anchorMin = _objectiveMarker.anchorMax = Vector2.zero;
+                _objectiveMarker.pivot = new Vector2(0.5f, 0.5f);
+                _objectiveMarker.localScale = Vector3.one * 0.8f;
+                _objectiveMarkerDistance = _objectiveMarker.Find(
+                    "Distance/Label_ObjectiveDistance")?.GetComponent<TextMeshProUGUI>();
+                foreach (Animator animator in marker.GetComponentsInChildren<Animator>(true))
+                    animator.enabled = false;
+                foreach (Graphic graphic in marker.GetComponentsInChildren<Graphic>(true))
+                    graphic.raycastTarget = false;
+                marker.SetActive(false);
+            }
             _skip = ActionButton("SkipTutorial", _panel, out Text skipLabel, SkipTutorial);
             skipLabel.text = "ПРОПУСТИТЬ";
             var skipRect = (RectTransform)_skip.transform;

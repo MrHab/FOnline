@@ -206,6 +206,7 @@ namespace RealmOfAshes.Game
             _root = panel.gameObject;
             Image background = panel.gameObject.AddComponent<Image>();
             background.color = Panel;
+            RoaApocalypseUiKit.StyleWindow(background, true);
             background.raycastTarget = false;
             Outline outline = panel.gameObject.AddComponent<Outline>();
             outline.effectColor = Border;

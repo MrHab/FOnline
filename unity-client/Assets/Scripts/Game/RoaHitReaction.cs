@@ -4,13 +4,23 @@ namespace RealmOfAshes.Game
 {
     /// <summary>
     /// Короткий направленный импульс поверх текущей анимации. Ноги продолжают
-    /// локомоцию, а позвоночник и голова отклоняются от источника попадания.
-    /// Оружейный IK применяется после этого слоя и сохраняет хват.
+    /// локомоцию (или стойку), таз сносит от источника попадания, позвоночник
+    /// гнётся по всей цепи, а голова отстаёт, не запрокидываясь отдельно.
+    /// Удар — за 0.07 с, 0.1 с в позе удара, возврат — к 0.6 с. Оружейный IK применяется после
+    /// этого слоя и сохраняет хват.
     /// </summary>
     public sealed class RoaHitReaction
     {
-        public const float Duration = 0.42f;
-        public const float ImpactSeconds = 0.06f;
+        public const float Duration = 0.6f;
+        public const float ImpactSeconds = 0.07f;
+        // Удар держится в позе ещё немного, прежде чем тело выпрямляется.
+        public const float HoldSeconds = 0.1f;
+        // Снос таза от источника и просадка колен при полной силе, м.
+        private const float PelvisPush = 0.07f;
+        private const float PelvisDip = 0.03f;
+        // Вздёрнутые плечи и подтянутые локти при полной силе, градусы.
+        private const float ShrugDeg = 12f;
+        private const float ElbowFlexDeg = 30f;
 
         public struct PoseSample
         {
@@ -21,7 +31,11 @@ namespace RealmOfAshes.Game
             public Vector3 Head;
         }
 
+        private Transform _actor;
+        private Transform _pelvis;
         private Transform _spine01;
+        private readonly Transform[] _clavicles = new Transform[2];
+        private readonly Transform[] _forearms = new Transform[2];
         private Transform _spine02;
         private Transform _spine03;
         private Transform _neck;
@@ -43,6 +57,11 @@ namespace RealmOfAshes.Game
             Reset();
             Ready = false;
             if (root == null) return;
+            _pelvis = FindDeep(root, "pelvis");
+            _clavicles[0] = FindDeep(root, "clavicle_l");
+            _clavicles[1] = FindDeep(root, "clavicle_r");
+            _forearms[0] = FindDeep(root, "lowerarm_l");
+            _forearms[1] = FindDeep(root, "lowerarm_r");
             _spine01 = FindDeep(root, "spine_01");
             _spine02 = FindDeep(root, "spine_02");
             _spine03 = FindDeep(root, "spine_03");
@@ -63,6 +82,7 @@ namespace RealmOfAshes.Game
                             int damage, bool critical)
         {
             if (!Ready || actor == null) return;
+            _actor = actor;
             Vector2 direction = Vector2.up;
             if (hasSource)
             {
@@ -95,12 +115,52 @@ namespace RealmOfAshes.Game
             if (!Active) return;
             _elapsed = Mathf.Min(Duration, _elapsed + Mathf.Clamp(dt, 0f, 0.08f));
             if (!Active) return;
-            PoseSample pose = Sample(_localSource, CurrentWeight);
+            float weight = CurrentWeight;
+            PoseSample pose = Sample(_localSource, weight);
+            if (_pelvis != null && _actor != null)
+            {
+                Vector3 away = _actor.TransformDirection(new Vector3(-_localSource.x, 0f, -_localSource.y));
+                _pelvis.position += away * (PelvisPush * weight) + Vector3.down * (PelvisDip * weight);
+            }
+            if (_actor != null) Flinch(weight);
             AddOffset(_spine01, pose.Spine01);
             AddOffset(_spine02, pose.Spine02);
             AddOffset(_spine03, pose.Spine03);
             AddOffset(_neck, pose.Neck);
             AddOffset(_head, pose.Head);
+        }
+
+        /// <summary>
+        /// Рефлекс: плечи вздёргиваются, локти подтягиваются к корпусу. Слой идёт до
+        /// оружейного IK, поэтому хват на оружии остаётся точным.
+        /// </summary>
+        private void Flinch(float weight)
+        {
+            Vector3 up = _actor.up;
+            Vector3 forward = _actor.forward;
+            for (int i = 0; i < 2; i++)
+            {
+                // Сторона удара вздрагивает сильнее: руки не взлетают симметрично.
+                float sideWeight = weight * Mathf.Clamp(1f + (i == 0 ? 0.7f : -0.7f) * -_localSource.x, 0.3f, 1.7f);
+                // Предплечья лишь вздрагивают: сильнее — на стороне удара, но без «рук зомби».
+                float elbowWeight = weight * Mathf.Clamp((i == 0 ? 1f : -1f) * -_localSource.x, 0f, 1f) * 0.5f;
+                Transform clavicle = _clavicles[i];
+                if (clavicle != null && clavicle.childCount > 0)
+                {
+                    Vector3 along = clavicle.GetChild(0).position - clavicle.position;
+                    Vector3 axis = Vector3.Cross(along, up);
+                    if (axis.sqrMagnitude > 1e-6f)
+                        clavicle.rotation = Quaternion.AngleAxis(ShrugDeg * sideWeight, axis.normalized) * clavicle.rotation;
+                }
+                Transform forearm = _forearms[i];
+                if (forearm != null && forearm.childCount > 0)
+                {
+                    Vector3 along = forearm.GetChild(0).position - forearm.position;
+                    Vector3 axis = Vector3.Cross(along, forward);
+                    if (axis.sqrMagnitude > 1e-6f)
+                        forearm.rotation = Quaternion.AngleAxis(ElbowFlexDeg * elbowWeight, axis.normalized) * forearm.rotation;
+                }
+            }
         }
 
         public static float StrengthFor(int damage, bool critical)
@@ -114,7 +174,7 @@ namespace RealmOfAshes.Game
         {
             if (elapsed <= 0f || elapsed >= Duration) return 0f;
             float attack = Smooth01(elapsed / ImpactSeconds);
-            float release = 1f - Smooth01((elapsed - ImpactSeconds) / (Duration - ImpactSeconds));
+            float release = 1f - Smooth01((elapsed - ImpactSeconds - HoldSeconds) / (Duration - ImpactSeconds - HoldSeconds));
             return Mathf.Clamp01(attack * release);
         }
 
@@ -128,11 +188,14 @@ namespace RealmOfAshes.Game
             float roll = -localSource.x;
             return new PoseSample
             {
-                Spine01 = new Vector3(pitch * 0.055f, twist * 0.025f, roll * 0.035f) * w,
-                Spine02 = new Vector3(pitch * 0.070f, twist * 0.040f, roll * 0.050f) * w,
-                Spine03 = new Vector3(pitch * 0.055f, twist * 0.045f, roll * 0.055f) * w,
-                Neck = new Vector3(-pitch * 0.014f, twist * 0.012f, roll * 0.018f) * w,
-                Head = new Vector3(-pitch * 0.032f, -twist * 0.018f, roll * 0.035f) * w
+                // Удар ведёт корпус от поясницы; шея и голова отстают (чуть против
+                // корпуса), лицо не задирается в небо.
+                // Корпус ~20° от удара, шея и голова отстают: голова в мире не больше ~12°.
+                Spine01 = new Vector3(pitch * 0.170f, twist * 0.120f, roll * 0.170f) * w,
+                Spine02 = new Vector3(pitch * 0.130f, twist * 0.150f, roll * 0.180f) * w,
+                Spine03 = new Vector3(pitch * 0.070f, twist * 0.130f, roll * 0.150f) * w,
+                Neck = new Vector3(-pitch * 0.080f, twist * 0.020f, roll * 0.020f) * w,
+                Head = new Vector3(-pitch * 0.070f, -twist * 0.025f, roll * 0.030f) * w
             };
         }
 

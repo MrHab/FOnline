@@ -567,7 +567,12 @@ namespace RealmOfAshes.Game
             if (_camera == null || _root == null) return;
             Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);
             Vector3 target = _root.TransformPoint(_anchor);
-            _camera.transform.SetPositionAndRotation(target - rotation * Vector3.forward * _distance, rotation);
+            // The map presentation can be expanded so full-size pack models fit
+            // between landmarks. Keep zoom expressed in authored map units.
+            float displayScale = Mathf.Max(1f, _root.lossyScale.x);
+            _camera.farClipPlane = 400f * displayScale;
+            _camera.transform.SetPositionAndRotation(
+                target - rotation * Vector3.forward * (_distance * displayScale), rotation);
         }
 
         private void Pick(Vector2 screen)

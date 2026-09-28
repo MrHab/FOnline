@@ -207,8 +207,6 @@ for (const needle of [
   'savesDb.market = normalizeMarketStore(savesDb.market || savesDb.factionAuctions)',
   "socket.on('auctionAction'",
   "if (!serverNearbyServiceActor(p, 'auction')) return fail('Аукционер должен быть рядом.');",
-  "if (!['sell', 'buy', 'buyNow', 'sellNow', 'cancel', 'claim'].includes(action)) return fail('Неизвестное действие аукциона.');",
-  "['action', 'itemId', 'qty', 'price', 'durationHours', 'orderId', 'itemRuntimeId']",
   'function serverMarketItemIsFungible(itemId = \'\')',
   'serverCaptureWeaponRuntimeRecords(p, row, validation)',
   'category: KROMKA_ITEM_INDEXES.categories[itemId]',

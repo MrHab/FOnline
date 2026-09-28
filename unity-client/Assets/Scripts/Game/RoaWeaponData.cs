@@ -80,7 +80,20 @@ namespace RealmOfAshes.Game
         public static Weapon Get(string weaponId)
         {
             Weapon weapon;
-            if (Catalog.TryGetValue(weaponId ?? string.Empty, out weapon)) return weapon;
+            if (Catalog.TryGetValue(weaponId ?? string.Empty, out weapon))
+            {
+                weapon.Name = RoaItemData.Name(weaponId);
+                return weapon;
+            }
+            if (Catalog.TryGetValue(RoaApocalypseModels.WeaponCombatId(weaponId), out weapon))
+                return new Weapon
+                {
+                    Id = weaponId, Name = RoaItemData.Name(weaponId),
+                    DmgMin = RoaApocalypseModels.WeaponCombatId(weaponId) != RoaApocalypseModels.WeaponRig(weaponId) ? 24 : weapon.DmgMin, DmgMax = RoaApocalypseModels.WeaponCombatId(weaponId) != RoaApocalypseModels.WeaponRig(weaponId) ? 38 : weapon.DmgMax,
+                    ApCost = weapon.ApCost, AmmoType = weapon.AmmoType,
+                    Automatic = weapon.Automatic, DualWield = weapon.DualWield,
+                    WeaponSkill = RoaApocalypseModels.WeaponCombatId(weaponId) != RoaApocalypseModels.WeaponRig(weaponId) ? "throwing" : weapon.WeaponSkill
+                };
             return Catalog["fists"];
         }
 

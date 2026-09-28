@@ -79,6 +79,13 @@ unity-client/Assets/MEP.meta
 unity-client/Assets/TerrainSampleAssets/
 unity-client/Assets/TerrainSampleAssets.meta
 
+# Synty Apocalypse HUD is licensed for use in the game, not public source
+# redistribution. Install the purchased pack locally and run the importer.
+unity-client/Assets/Synty/
+unity-client/Assets/Synty.meta
+unity-client/Assets/Resources/ApocalypseHud/
+unity-client/Assets/Resources/ApocalypseHud.meta
+
 # Atomic Realm allows use in games, not redistribution of raw assets.
 # Keep import GUIDs and setup/license documentation, but install sources locally.
 unity-client/Assets/ThirdParty/AtomicRealmPostApocalyptic/**

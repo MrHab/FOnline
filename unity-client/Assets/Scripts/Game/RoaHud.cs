@@ -37,6 +37,7 @@ namespace RealmOfAshes.Game
         private bool _dead;
         private string _name = string.Empty;
         private string _pvpMode = "peaceful";
+        private JObject _injuries = new JObject();
 
         private string _weapon = string.Empty;
         private string _ammoType = string.Empty;
@@ -65,6 +66,16 @@ namespace RealmOfAshes.Game
         public string Name { get { return _name; } }
         public int Hp { get { return _hp; } }
         public int MaxHp { get { return _maxHp; } }
+        public bool HasInjury(string id)
+        {
+            return _injuries[id]?.Value<bool>() == true;
+        }
+
+        private void ApplyInjuries(JObject payload)
+        {
+            if (payload?["injuries"] is JObject injuries)
+                _injuries = (JObject)injuries.DeepClone();
+        }
         public float Ap { get { return _ap; } }
         public float Hydration { get; private set; } = 100f;
         private float _stimUntil, _wetUntil, _stunUntil;
@@ -179,6 +190,7 @@ namespace RealmOfAshes.Game
         {
             if (payload == null) return;
             HandleArtifactRuntime(payload);
+            ApplyInjuries(payload);
 
             // Здоровье приходит уже в join-ответе, но до сих пор не читалось, а
             // снимок комнаты игрока про него самого не содержит никогда (сервер
@@ -235,6 +247,7 @@ namespace RealmOfAshes.Game
 
             string id = payload["id"]?.ToString() ?? payload["targetId"]?.ToString();
             if (!string.IsNullOrEmpty(id) && id != _selfId) return;
+            ApplyInjuries(payload);
 
             JToken hp = payload["hp"];
             if (hp != null) _hp = Mathf.RoundToInt(hp.ToObject<float>());
@@ -247,6 +260,7 @@ namespace RealmOfAshes.Game
             if (payload == null) return;
             string id = payload["targetId"]?.ToString();
             if (!string.IsNullOrEmpty(id) && id != _selfId) return;
+            ApplyInjuries(payload);
             if (payload["hp"] != null) _hp = Mathf.RoundToInt(payload["hp"].ToObject<float>());
             if (payload["maxHp"] != null) _maxHp = Mathf.RoundToInt(payload["maxHp"].ToObject<float>());
         }
@@ -254,6 +268,7 @@ namespace RealmOfAshes.Game
         private void HandleStatusEffect(JObject payload)
         {
             if (payload == null) return;
+            ApplyInjuries(payload);
             if (payload["hp"] != null) _hp = Mathf.RoundToInt(payload["hp"].ToObject<float>());
             if (payload["maxHp"] != null) _maxHp = Mathf.RoundToInt(payload["maxHp"].ToObject<float>());
             if ((payload["damage"]?.ToObject<float>() ?? 0f) > 0f)

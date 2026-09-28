@@ -76,7 +76,11 @@ namespace RealmOfAshes.EditorTools
                 },
                 ["inventory"] = new JArray
                 {
-                    new JObject { ["id"] = "rifle", ["qty"] = 1 },
+                    new JObject { ["id"] = "smg", ["qty"] = 1 },
+                    new JObject { ["id"] = "polygonKatana01", ["qty"] = 1 },
+                    new JObject { ["id"] = "pickaxe", ["qty"] = 1 },
+                    new JObject { ["id"] = "axe", ["qty"] = 1 },
+                    new JObject { ["id"] = "handPump", ["qty"] = 1 },
                     new JObject { ["id"] = "pistol", ["qty"] = 1 },
                     new JObject { ["id"] = "knife", ["qty"] = 1 },
                     new JObject { ["id"] = "combatArmor", ["qty"] = 1 },
@@ -99,7 +103,7 @@ namespace RealmOfAshes.EditorTools
                 },
                 ["equipmentRuntime"] = new JObject
                 {
-                    ["weapon"] = "rifle",
+                    ["weapon"] = "smg",
                     ["offhand"] = "knife",
                     ["armor"] = "combatArmor",
                     ["helmet"] = "tacticalHelmet",
@@ -111,7 +115,7 @@ namespace RealmOfAshes.EditorTools
                 },
                 ["itemConditions"] = new JObject
                 {
-                    ["rifle"] = 72f,
+                    ["smg"] = 72f,
                     ["pistol"] = 99f,
                     ["combatArmor"] = 86.6f,
                     ["tacticalHelmet"] = 94f,

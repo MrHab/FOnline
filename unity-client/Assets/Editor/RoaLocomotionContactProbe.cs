@@ -44,7 +44,7 @@ namespace RealmOfAshes.EditorTools
             float fastToSlow = RoaCharacterView.SyncedLocomotionPhase(
                 "run", "walk", slowToFast);
             float fastToCrouch = RoaCharacterView.SyncedLocomotionPhase(
-                "run", "crouch_walk", 0.37f);
+                "run", "crouch_run", 0.37f);
             float backToFast = RoaCharacterView.SyncedLocomotionPhase(
                 "walk_back", "run_back", 0.25f);
             float wrappedFast = RoaCharacterView.SyncedLocomotionPhase(
@@ -53,7 +53,7 @@ namespace RealmOfAshes.EditorTools
                     && Mathf.Abs(fastToSlow - 0.25f) < 0.001f,
                 "переход walk/run не компенсирует сдвиг фаз или не обратим");
             Require(Mathf.Abs(fastToCrouch - 0.37f) < 0.001f
-                    && Mathf.Abs(backToFast - 1f / 12f) < 0.001f
+                    && Mathf.Abs(backToFast - 0.25f) < 0.001f
                     && Mathf.Abs(wrappedFast - 53f / 60f) < 0.001f,
                 "семейства fast gait или переход через границу цикла рассинхронизированы");
 
@@ -106,7 +106,11 @@ namespace RealmOfAshes.EditorTools
 
             Require(pose.Ready && pose.ContactPressure > 0.9f,
                 "контакт не дошёл до процедурной позы");
-            Require(pose.KneeFlex > 0.03f,
+            var free = new RoaCharacterPose();
+            free.Bind(root.transform);
+            free.Step(false, false, "idle", 0f, 0f, 1f, 0f,
+                false, false, 0.08f, 0f, 1f, 0.5f);
+            Require(pose.KneeFlex > free.KneeFlex + 0.01f,
                 "упор не добавил компрессию ног для foot IK");
             Require(Quaternion.Angle(Quaternion.identity, spine01.localRotation) > 1f,
                 "корпус не отреагировал на направление поверхности");

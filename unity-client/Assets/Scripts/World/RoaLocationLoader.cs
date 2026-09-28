@@ -14,9 +14,8 @@ using Kromka;
 namespace RealmOfAshes.World
 {
     /// <summary>
-    /// Строит сцену локации из авторского JSON и GLB-моделей, которые отдаёт тот же
-    /// Node-сервер. Ни один ассет не конвертируется: Unity читает ровно те файлы,
-    /// что и Three.js-клиент.
+    /// Строит локацию из авторского JSON. Для запасной загрузки GLB сохраняет
+    /// игровые размеры и коллайдеры, а видимую модель заменяет PolygonApocalypse.
     ///
     /// Загружается только статическая геометрия. Живые сущности (NPC, враги) есть
     /// в objects, но их авторитетные позиции приходят в enemySnapshot — если создать
@@ -557,6 +556,9 @@ namespace RealmOfAshes.World
                 Destroy(holder);
                 return null;
             }
+
+            GameObject apocalypse = RoaApocalypseModels.Environment(entry.Model);
+            if (apocalypse != null) RoaApocalypseVisuals.AttachStatic(holder.transform, apocalypse);
 
             return holder;
         }

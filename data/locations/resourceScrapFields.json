@@ -1633,12 +1633,8 @@
       },
       "collision": "none",
       "tags": [
-        "resource",
         "scrap"
       ],
-      "resourceType": "scrap",
-      "hp": 6,
-      "maxHp": 6,
       "vision": {
         "mode": "cover"
       },
@@ -1671,12 +1667,8 @@
       },
       "collision": "none",
       "tags": [
-        "resource",
         "scrap"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
       "vision": {
         "mode": "cover"
       },

@@ -40,9 +40,15 @@ namespace RealmOfAshes.Game
         /// Сам сгиб коленей не рисуется: корень опускается, а foot IK возвращает
         /// стопы на настоящую землю — ноги подгибаются сами.
         /// </summary>
-        private const float KneeFlexIdle = 0.04f;
-        private const float KneeFlexMove = 0.055f;
+        private const float KneeFlexIdle = 0.015f;
+        // Предел скрутки позвоночника и шеи с головой против ног, рад.
+        private const float MaxSpineTwist = 0.6f;
+        private const float MaxHeadTwist = 1.0f;
+        private const float KneeFlexMove = 0.035f;
         private const float KneeFlexCrouch = 0.26f;
+        // Бег пригнувшись (UAL) чуть опускается к высоте приседа (CMU); сильнее нельзя —
+        // IK стоп прижмёт к земле и переносимую ногу, и бег «поедет коньками».
+        private const float KneeFlexCrouchMove = 0.08f;
 
         private Transform _pelvis;
         private Transform _spine01;
@@ -136,9 +142,13 @@ namespace RealmOfAshes.Game
             float frameDt = Mathf.Clamp(dt, 0.001f, 0.08f);
             float contactTarget = dead ? 0f : Mathf.Clamp01(contactPressure);
 
+            // A crouch walk plays a clip that is crouched already: the root only
+            // settles a little lower, the knees of the idle crouch come from the
+            // root drop plus the visible body's foot planting.
             float kneeFlexTarget = dead
                 ? 0f
-                : (crouching ? KneeFlexCrouch : (locomoting ? KneeFlexMove : KneeFlexIdle))
+                : (crouching ? (locomoting ? KneeFlexCrouchMove : KneeFlexCrouch)
+                    : (locomoting ? KneeFlexMove : KneeFlexIdle))
                     + contactTarget * 0.022f;
             KneeFlex = Blend(KneeFlex, kneeFlexTarget, 7f, frameDt);
 
@@ -166,9 +176,11 @@ namespace RealmOfAshes.Game
             // Бег читается по силуэту: корпус подаётся вперёд заметно сильнее шага.
             _runLean = Blend(_runLean, action == "run" ? 0.11f : 0f, 6f, frameDt);
 
-            bool damped = action == "walk" || action == "run" || action == "turn"
-                || action == "walk_back" || action == "run_back"
-                || action == "crouch_walk" || action == "crouch_walk_back";
+            // Качание гасится у клипов UAL; у клипов CMU (присед, боковой шаг) осанка
+            // выставлена при переносе, а тяга к покою снова сгибала бы грудь.
+            // Бег не гасится: наклон корпуса бегуна — часть клипа.
+            bool damped = action == "walk" || action == "turn"
+                || action == "walk_back" || action == "crouch_run_back";
             _swayDampBlend = Blend(_swayDampBlend, damped ? 1f : 0f, 8f, frameDt);
 
             LowerBodyYawDeg = _lowerBodyYaw * Mathf.Rad2Deg * _moveBlend;
@@ -184,9 +196,35 @@ namespace RealmOfAshes.Game
 
             ApplySwayDamping();
             ApplyDirectional();
+            ApplyIdleLife();
 
             if (_crouchBlend > 0.01f) ApplyCrouch(_crouchBlend);
         }
+
+        /// <summary>
+        /// Жизнь в стойке на месте: грудь дышит (~0.25 Гц), таз медленно переносит
+        /// вес с ноги на ногу, голова изредка оглядывается. На ходу слой гаснет.
+        /// </summary>
+        private void ApplyIdleLife()
+        {
+            float still = 1f - _moveBlend;
+            if (still < 0.01f) return;
+            float t = Time.time + _lifeSeed;
+            float breath = Mathf.Sin(t * 1.6f) * 0.024f * still;
+            float shift = Mathf.Sin(t * 1.25f) * 0.05f * still;
+            float look = (Mathf.Sin(t * 0.37f) + Mathf.Sin(t * 0.23f + 1.3f)) * 0.06f * still;
+            AddOffset(_pelvis, 0f, 0f, shift);
+            AddOffset(_spine01, 0f, 0f, -shift * 0.7f);
+            // Вдох приподнимает и чуть разворачивает грудь — видно и сверху.
+            AddOffset(_spine03, -breath, breath * 0.6f, -shift * 0.3f);
+            // Взгляд на стоянке — к горизонту, а не в пол.
+            AddOffset(_neck, breath * 0.6f - 0.05f * still, look * 0.4f, 0f);
+            AddOffset(_head, breath * 0.4f, look * 0.6f, 0f);
+        }
+
+        // Каждый персонаж дышит в своей фазе, толпа не качается в унисон.
+        private readonly float _lifeSeed = (float)(LifeSeeds.NextDouble() * 100.0);
+        private static readonly System.Random LifeSeeds = new System.Random();
 
         /// <summary>
         /// Поза приседа: корпус наклоняется вперёд, а шея и голова отклоняются
@@ -198,12 +236,14 @@ namespace RealmOfAshes.Game
         {
             float b = Mathf.Clamp01(blend);
 
-            AddOffset(_pelvis, 0.06f * b, 0f, 0f);
-            AddOffset(_spine01, 0.14f * b, 0f, 0f);
-            AddOffset(_spine02, 0.12f * b, 0f, 0f);
-            AddOffset(_spine03, 0.08f * b, 0f, 0f);
-            AddOffset(_neck, -0.10f * b, 0f, 0f);
-            AddOffset(_head, -0.14f * b, 0f, 0f);
+            // Клип бега пригнувшись уже наклонён: слой лишь немного добавляет, а грудь
+            // и голова держатся ровно (тактический присед, не сгорбленный бег).
+            AddOffset(_pelvis, 0.03f * b, 0f, 0f);
+            AddOffset(_spine01, 0.03f * b, 0f, 0f);
+            AddOffset(_spine02, -0.04f * b, 0f, 0f);
+            AddOffset(_spine03, -0.06f * b, 0f, 0f);
+            AddOffset(_neck, -0.06f * b, 0f, 0f);
+            AddOffset(_head, -0.08f * b, 0f, 0f);
         }
 
         /// <summary>
@@ -232,8 +272,8 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Контр-поворот цепи позвоночника. Сумма коэффициентов по Y равна 1.0,
-        /// поэтому голова оказывается точно на прицеле, несмотря на доворот таза.
+        /// Контр-поворот цепи позвоночника: пока доворот таза в пределах скрутки
+        /// человека (~97°), голова оказывается точно на прицеле.
         /// </summary>
         private void ApplyDirectional()
         {
@@ -255,21 +295,26 @@ namespace RealmOfAshes.Game
                 backwardLean * -0.025f - contactForward * 0.018f,
                 turn * 0.06f,
                 side * -0.035f - contactSide * 0.014f);
+            // Скрутка корпуса против ног — в пределах человека: позвоночник не больше
+            // ~40°, шея и голова добирают до ~57°. Что сверх этого, остаётся за
+            // руками и прицелом: грудь бегущего боком смотрит между путём и прицелом.
+            float spineTwist = Mathf.Clamp(counterYaw * 0.52f, -MaxSpineTwist, MaxSpineTwist);
+            float headTwist = Mathf.Clamp(counterYaw - spineTwist, -MaxHeadTwist, MaxHeadTwist);
             AddOffset(_spine01,
                 forwardLean * 0.025f - backwardLean * 0.045f + runLean * 0.5f
                     - contactForward * 0.038f,
-                counterYaw * 0.16f - turn * 0.035f,
+                spineTwist * 0.31f - turn * 0.035f,
                 side * -0.018f - contactSide * 0.026f);
             AddOffset(_spine02,
                 runLean * 0.5f - contactForward * 0.022f,
-                counterYaw * 0.18f,
+                spineTwist * 0.345f,
                 side * -0.012f - contactSide * 0.016f);
             AddOffset(_spine03, contactForward * 0.008f,
-                counterYaw * 0.18f, side * 0.012f + contactSide * 0.008f);
+                spineTwist * 0.345f, side * 0.012f + contactSide * 0.008f);
             AddOffset(_neck, contactForward * 0.014f,
-                counterYaw * 0.22f, side * 0.008f + contactSide * 0.010f);
+                headTwist * 0.3f, side * 0.008f + contactSide * 0.010f);
             AddOffset(_head, contactForward * 0.012f,
-                counterYaw * 0.26f, contactSide * 0.012f);
+                headTwist * 0.7f, contactSide * 0.012f);
         }
 
         /// <summary>

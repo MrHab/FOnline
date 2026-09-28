@@ -26,7 +26,7 @@ const DEFAULT_CONFIG = Object.freeze({
   premiumTaxPct: 0.04,
   setupFeePct: 0.025,
   durationChoicesHours: Object.freeze([24, 72, 168, 720]),
-  listingLifetimeHours: 168,
+  listingLifetimeHours: 720,
   maxOrdersPerTrader: 30,
   maxOrders: 1500,
   // Доля бонуса торговли жителей, которая снижает налог: 20% бонуса при доле 1

@@ -126,19 +126,21 @@ namespace RealmOfAshes.Game
             { "plasmaRifle", (14, 0.48f) }, { "shotgun", (6, 0.52f) }, { "rocketLauncher", (1, 1.1f) }
         };
 
-        public static int MagazineSize(string weaponId) { return BaseStats.TryGetValue(weaponId ?? string.Empty, out (int mag, float rate) row) ? row.mag : 0; }
-        public static float FireRate(string weaponId) { return BaseStats.TryGetValue(weaponId ?? string.Empty, out (int mag, float rate) row) ? row.rate : 0f; }
-        public static bool IsTwoHanded(string weaponId) { return TwoHanded.Contains(weaponId ?? string.Empty); }
+        public static int MagazineSize(string weaponId) { return BaseStats.TryGetValue(RoaApocalypseModels.WeaponCombatId(weaponId) ?? string.Empty, out (int mag, float rate) row) ? row.mag : 0; }
+        public static float FireRate(string weaponId) { return BaseStats.TryGetValue(RoaApocalypseModels.WeaponCombatId(weaponId) ?? string.Empty, out (int mag, float rate) row) ? row.rate : 0f; }
+        public static bool IsTwoHanded(string weaponId) { return TwoHanded.Contains(RoaApocalypseModels.WeaponCombatId(weaponId) ?? string.Empty) && RoaApocalypseModels.WeaponRig(weaponId) == RoaApocalypseModels.WeaponCombatId(weaponId); }
 
         public static bool IsFirearm(string weaponId)
         {
-            return !string.IsNullOrEmpty(weaponId) && Firearms.Contains(weaponId);
+            return !string.IsNullOrEmpty(weaponId)
+                && Firearms.Contains(RoaApocalypseModels.WeaponCombatId(weaponId))
+                && RoaApocalypseModels.WeaponRig(weaponId) == RoaApocalypseModels.WeaponCombatId(weaponId);
         }
 
         public static string[] SlotsFor(string weaponId)
         {
             if (!IsFirearm(weaponId)) return Array.Empty<string>();
-            return TwoHanded.Contains(weaponId)
+            return IsTwoHanded(weaponId)
                 ? new[] { "barrel", "scope", "magazine", "forend" }
                 : new[] { "barrel", "scope", "magazine" };
         }
@@ -146,9 +148,10 @@ namespace RealmOfAshes.Game
         public static bool Compatible(Definition definition, string weaponId)
         {
             if (definition == null || !IsFirearm(weaponId)) return false;
-            if (definition.Slot == "forend" && !TwoHanded.Contains(weaponId)) return false;
-            if (definition.WeaponIds != null && !definition.WeaponIds.Contains(weaponId)) return false;
-            if (definition.ExcludeWeaponIds != null && definition.ExcludeWeaponIds.Contains(weaponId)) return false;
+            string rigId = RoaApocalypseModels.WeaponRig(weaponId);
+            if (definition.Slot == "forend" && !IsTwoHanded(weaponId)) return false;
+            if (definition.WeaponIds != null && !definition.WeaponIds.Contains(rigId)) return false;
+            if (definition.ExcludeWeaponIds != null && definition.ExcludeWeaponIds.Contains(rigId)) return false;
             return true;
         }
 

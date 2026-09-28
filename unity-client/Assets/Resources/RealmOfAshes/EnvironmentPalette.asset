@@ -13,22 +13,22 @@ MonoBehaviour:
   m_Name: EnvironmentPalette
   m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaEnvironmentPalette
   _dryScrubs:
-  - {fileID: 4990788508836949561, guid: 2f3bdf848f15b4e43b2b949480020ba1, type: 3}
-  - {fileID: 4589673819247719427, guid: f9f01048e4d3b2c4281c1ccf2817f1ef, type: 3}
-  - {fileID: 7320418402806268557, guid: fbce3f8d3a569a44e9603ae2abee1dc1, type: 3}
-  - {fileID: 7350376942081872559, guid: 3d7a2931b6620d644ac00d38d2aa60c8, type: 3}
+  - {fileID: 1847276635326090, guid: aa979cecccf85264fa104b2ccd479ab4, type: 3}
+  - {fileID: 1646082096404570, guid: 53cc0a19e09835f4fb0adef80edc5bc9, type: 3}
+  - {fileID: 1410177089634338, guid: 22d1bb3c605f0a047a3df61400d33cd6, type: 3}
+  - {fileID: 1536043230066214, guid: 5bdebad866447df48805ee507df9bead, type: 3}
   _stones:
-  - {fileID: 696553180820459941, guid: 052c9e5dcd7aff54f93527d4c1921d29, type: 3}
-  - {fileID: 1793206104326408301, guid: cff05c2d3e015f043b2e97711a52337b, type: 3}
-  - {fileID: 2743307770135660980, guid: 07c36dc52e08477458700d4bd4379cbf, type: 3}
-  - {fileID: 7991506209617150624, guid: 6784e2687794f724da71ed95efa28417, type: 3}
-  - {fileID: 3302944349850796395, guid: b2691dc7ae63a4e43a73e48234662c72, type: 3}
+  - {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
+  - {fileID: 1953317842719524, guid: 8d16041c0d131c94fa77f8401777777f, type: 3}
+  - {fileID: 1287420723893824, guid: f7fd817848832db4db5fbe24c4bdd2c5, type: 3}
+  - {fileID: 1350235754117392, guid: fffa2241c5a8ffc4f9ddf7cb7e671a9f, type: 3}
+  - {fileID: 1914291397940932, guid: 7b36f93e498d3064194f0099054e95a3, type: 3}
   _groundAccents:
-  - {fileID: 242209393546787654, guid: e53562fcb7d19e64fa05e42c2011c397, type: 3}
-  - {fileID: 8041597183142399517, guid: ff107e0c569173d47bae6a71596e0cca, type: 3}
-  - {fileID: 6850534132312162935, guid: ddfd0b99412488b49a1843fc60b103f3, type: 3}
+  - {fileID: 1904356791742696, guid: e85a5f270aefc744d86962e605a57bb3, type: 3}
+  - {fileID: 1154606685033784, guid: 38a679cbf2c60174f878721348dc3381, type: 3}
+  - {fileID: 1406762892669528, guid: efed0d9bfc3a06841bdac6f14c559c13, type: 3}
   _distantRidges:
-  - {fileID: 2790789360301950302, guid: 0e549151ef88ca54e8509221c846280f, type: 3}
-  - {fileID: 7977078785926697256, guid: d472a7638a203bb42ba59a40ed0f8df6, type: 3}
-  - {fileID: 5510554461754921360, guid: 1930010a993c40a44b726e821a6b1ea8, type: 3}
-  - {fileID: 5687732951537202097, guid: 7213e4b85388d0f40954c28cec3171f2, type: 3}
+  - {fileID: 1326450647952676, guid: 19807d48d225bd744b9e8d57b6ec7204, type: 3}
+  - {fileID: 1482176940476434, guid: b019ee734c6d4bb47a4cdbd6b234dcca, type: 3}
+  - {fileID: 1908190072421696, guid: 2e8987c33ff9f624a8b28325cf80f4fa, type: 3}
+  - {fileID: 1738549629278678, guid: 0159fd04ee483184cb5fbaec7383e5c0, type: 3}

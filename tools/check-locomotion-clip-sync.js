@@ -21,14 +21,22 @@ const CHARACTER_FILE = path.join(ROOT, 'public', 'assets', 'models', 'characters
 const UNITY_CHARACTER_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaCharacterView.cs');
 
 // Скорости, на которых рантайм реально играет эти клипы (скорость игрока 4.2,
-// порог бега 3.4, присед 0.62 от базовой). Темп = скорость / натуральная.
+// порог бега 3.4, присед 0.62 от базовой, шаг в приседе — до 1.6, боковой шаг —
+// до 1.0, приставной — до 3.2). Темп = скорость / натуральная. axis — ось хода
+// клипа: z вперёд, x влево (боковой шаг).
 const CLIP_USAGE = {
   walk: { speed: 2.0, direction: 1 },
   run: { speed: 4.2, direction: 1 },
-  walk_back: { speed: 2.0, direction: -1 },
-  run_back: { speed: 4.2, direction: -1 },
-  crouch_walk: { speed: 2.6, direction: 1 },
-  crouch_walk_back: { speed: 2.6, direction: -1 }
+  walk_back: { speed: 1.3, direction: -1 },
+  run_back: { speed: 3.8, direction: -1 },
+  crouch_walk: { speed: 1.2, direction: 1 },
+  crouch_walk_back: { speed: 1.0, direction: -1 },
+  crouch_run: { speed: 3.0, direction: 1 },
+  crouch_run_back: { speed: 2.6, direction: -1 },
+  strafe_left: { speed: 0.8, direction: 1, axis: 'x' },
+  strafe_right: { speed: 0.8, direction: -1, axis: 'x' },
+  strafe_run_left: { speed: 2.0, direction: 1, axis: 'x', flight: true },
+  strafe_run_right: { speed: 2.0, direction: -1, axis: 'x', flight: true }
 };
 const MAX_PIN_ERROR = 0.12;      // допуск пина к замеру
 const MAX_TEMPO = 1.8;           // темп выше — клип выглядит суетливым
@@ -109,15 +117,22 @@ async function main() {
 
     phaseProfiles.set(name, samples.map(sample => sample.l.y - sample.r.y));
 
-    // Травел: перемещение опорной стопы (той, что ниже) назад по Z.
+    // Травел: перемещение опорной стопы (той, что ниже) назад по оси хода.
+    const axis = usage.axis || 'z';
+    // У приставного шага (flight) обе стопы подолгу в воздухе: ход считается
+    // только пока нижняя стопа у земли, и делится на это же время.
+    const floor = Math.min(...samples.map(sample => Math.min(sample.l.y, sample.r.y)));
     let travel = 0;
+    let grounded = 0;
     for (let i = 1; i <= N; i++) {
       const prev = samples[i - 1];
       const cur = samples[i];
       const side = (prev.l.y + cur.l.y) <= (prev.r.y + cur.r.y) ? 'l' : 'r';
-      travel += -(cur[side].z - prev[side].z);
+      if (usage.flight && Math.min(prev[side].y, cur[side].y) > floor + 0.03) continue;
+      travel += -(cur[side][axis] - prev[side][axis]);
+      grounded += clip.duration / N;
     }
-    const measured = travel / clip.duration;
+    const measured = travel / (usage.flight ? grounded : clip.duration);
     const pin = pins[name];
 
     let sweep = 0;
@@ -125,7 +140,7 @@ async function main() {
       let min = Infinity;
       let max = -Infinity;
       for (const sample of samples) {
-        const z = sample[side].z - sample.p.z;
+        const z = sample[side][axis] - sample.p[axis];
         min = Math.min(min, z);
         max = Math.max(max, z);
       }
@@ -168,18 +183,20 @@ async function main() {
   }
 
   const phaseReports = [];
-  for (const [slow, fast] of [
-    ['walk', 'run'],
-    ['walk', 'crouch_walk'],
-    ['walk_back', 'run_back'],
-    ['walk_back', 'crouch_walk_back']
+  // Сдвиг фазы пары — как в рантайме (LocomotionPhaseOffset): быстрые клипы UAL
+  // опережают шаг на 1/6 цикла; укороченный ход назад идёт с шагом назад в фазе.
+  for (const [slow, fast, pairOffset] of [
+    ['walk', 'run', FAST_PHASE_OFFSET],
+    ['walk', 'crouch_run', FAST_PHASE_OFFSET],
+    ['walk_back', 'run_back', 0],
+    ['walk_back', 'crouch_run_back', FAST_PHASE_OFFSET]
   ]) {
     const source = phaseProfiles.get(slow);
     const target = phaseProfiles.get(fast);
     assert(source?.length === target?.length && source.length > 0,
       `${slow}/${fast}: нет профиля высоты стоп`);
     const count = source.length;
-    const offsetSteps = Math.round(FAST_PHASE_OFFSET * count);
+    const offsetSteps = Math.round(pairOffset * count);
     let wrong = 0;
     let corrected = 0;
     let wrongSquare = 0;
@@ -197,11 +214,11 @@ async function main() {
     corrected /= count;
     const wrongRms = Math.sqrt(wrongSquare / count);
     const correctedRms = Math.sqrt(correctedSquare / count);
-    const stanceReliable = fast === 'crouch_walk_back'
+    const stanceReliable = fast === 'crouch_run_back'
       || corrected <= MAX_PHASE_STANCE_MISMATCH;
     assert(
       correctedRms <= MAX_PHASE_HEIGHT_RMS
-        && correctedRms + 0.03 <= wrongRms
+        && (pairOffset === 0 || correctedRms + 0.03 <= wrongRms)
         && stanceReliable,
       `${slow}->${fast}: сдвиг -1/6 не выровнял контактную фазу `
         + `(RMS ${wrongRms.toFixed(3)}→${correctedRms.toFixed(3)} м, `

@@ -851,7 +851,11 @@ namespace RealmOfAshes.Game
                         || !string.IsNullOrEmpty(enemy.Snapshot["traderId"]?.ToString())
                         || ReadBoolean(enemy.Snapshot["personalTrade"]);
 
-                if (!dead && (hostile || (!canDialogue && !hasTrade))) continue;
+                string service = enemy.Snapshot["service"]?.ToString();
+                bool hasServiceMenu = service == "registrar" || service == "artifactLab"
+                    || service == "fastTravel";
+
+                if (!dead && (hostile || (!canDialogue && !hasTrade && !hasServiceMenu))) continue;
 
                 Vector3 delta = enemy.Root.transform.position - origin;
                 delta.y = 0f;
@@ -1295,7 +1299,7 @@ namespace RealmOfAshes.Game
             }
             else
             {
-                _ = LoadModelGuarded(enemy, url);
+                _ = LoadModelGuarded(enemy, url, key);
             }
 
             return enemy;
@@ -1399,11 +1403,11 @@ namespace RealmOfAshes.Game
         /// в такой задаче никто не наблюдает: без этого перехвата сбой выглядит
         /// как «модель просто не появилась», без единой строки в консоли.
         /// </summary>
-        private async Task LoadModelGuarded(Enemy enemy, string url)
+        private async Task LoadModelGuarded(Enemy enemy, string url, string modelKey)
         {
             try
             {
-                await LoadModel(enemy, url);
+                await LoadModel(enemy, url, modelKey);
             }
             catch (MissingReferenceException)
             {
@@ -1416,7 +1420,7 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private async Task LoadModel(Enemy enemy, string url)
+        private async Task LoadModel(Enemy enemy, string url, string modelKey)
         {
             GltfImport import = await LoadCached(url);
 
@@ -1430,22 +1434,32 @@ namespace RealmOfAshes.Game
 
             if (enemy.Root == null) return;
 
-            if (!await import.InstantiateMainSceneAsync(enemy.Root.transform))
+            var model = new GameObject("EnemyModel:" + modelKey);
+            model.transform.SetParent(enemy.Root.transform, false);
+            if (!await import.InstantiateMainSceneAsync(model.transform))
             {
+                Destroy(model);
                 Debug.LogError("[ROA] Экземпляр модели существа не создан: " + url);
                 return;
             }
 
-            if (enemy.Root == null) return;
+            if (enemy.Root == null) { Destroy(model); return; }
 
             // У части существ клипы свои, а часть моделей — статичный меш.
-            enemy.Animation = enemy.Root.GetComponentInChildren<Animation>();
-            if (enemy.Animation == null) return;
-
-            enemy.Animation.wrapMode = WrapMode.Loop;
-            PlayClip(enemy, enemy.Dead ? "death" : "idle");
+            enemy.Animation = model.GetComponentInChildren<Animation>();
+            float pitch;
+            GameObject packPrefab = RoaApocalypseModels.Creature(modelKey, out pitch);
+            if (packPrefab != null)
+                RoaApocalypseVisuals.AttachStatic(model.transform, packPrefab, 0f, pitch);
+            else Debug.LogWarning("[ROA] No PolygonApocalypse creature model for " + modelKey);
+            if (enemy.Animation != null)
+            {
+                enemy.Animation.wrapMode = WrapMode.Loop;
+                PlayClip(enemy, enemy.Dead ? "death" : "idle");
+            }
 
             if (enemy.CarriesWeapon) await RefreshCreatureWeapon(enemy);
+            enemy.Gate?.Invalidate();
         }
 
         // Тип телосложения для брони существа: под её кости подбирается ближайший
@@ -1509,7 +1523,7 @@ namespace RealmOfAshes.Game
             if (hand == null) return;
 
             string url = BaseUrl.TrimEnd('/')
-                + "/assets/models/weapons/weapon_" + modelId + ".glb";
+                + "/assets/models/weapons/weapon_" + RoaApocalypseModels.WeaponRig(modelId) + ".glb";
             GltfImport import = await LoadCached(url);
             if (import == null || enemy.Root == null || enemy.WeaponModelId != modelId) return;
 
@@ -1528,6 +1542,10 @@ namespace RealmOfAshes.Game
             if (grip != null)
                 holder.transform.localPosition =
                     -holder.transform.InverseTransformPoint(grip.position);
+
+            // На оружии врага метка тира: по ней видно, насколько он опасен.
+            RoaApocalypseModels.MarkItem(RoaApocalypseVisuals.AttachStatic(holder.transform,
+                RoaApocalypseModels.Weapon(modelId), 180f), modelId);
 
             enemy.WeaponHolder = holder;
         }
@@ -1946,10 +1964,13 @@ namespace RealmOfAshes.Game
                 bool important = RoaActorNameplates.IsImportantNpc(canDialogue,
                     enemy.Snapshot["role"]?.ToString(), enemy.Snapshot["encounterRole"]?.ToString());
                 bool hostile = ReadBoolean(enemy.Snapshot["hostileToPlayer"], true);
-                rows.Add(new RoaActorNameplates.Entry
+                var plateEntry = new RoaActorNameplates.Entry
                 {
                     Key = "npc:" + pair.Key,
-                    Name = important ? enemy.Snapshot["name"]?.ToString() ?? "Торговец" : string.Empty,
+                    Name = enemy.Snapshot["name"]?.ToString() ?? (important ? "Торговец" : "Враг"),
+                    Tier = RoaActorNameplates.EquipmentTier(
+                        enemy.Snapshot["equipment"] as JObject,
+                        enemy.Snapshot["weapon"]?.ToString()),
                     Faction = NpcCombatFactionLine(
                         enemy.Snapshot["faction"]?.ToString(), hostile,
                         enemy.Snapshot["aiState"]?.ToString(),
@@ -1962,7 +1983,9 @@ namespace RealmOfAshes.Game
                     World = enemy.Root.transform.position + Vector3.up * (2.05f * scale),
                     Hostile = hostile,
                     IsPlayer = false
-                });
+                };
+                if (!hostile) plateEntry.Name = RoaInteraction.DisplayNpcName(enemy.Snapshot);
+                rows.Add(plateEntry);
             }
         }
 

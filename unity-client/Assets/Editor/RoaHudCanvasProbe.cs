@@ -17,22 +17,65 @@ namespace RealmOfAshes.EditorTools
         [MenuItem("Realm of Ashes/Probe/Adaptive HUD")]
         public static void Run()
         {
+            Require(RoaInteraction.DisplayNpcName(JObject.Parse(
+                    "{\"name\":\"Перекрёсток: ополчение у баррикады [Лиги Тракта]\"}")) == "ополчение"
+                && RoaInteraction.DisplayNpcName(JObject.Parse(
+                    "{\"name\":\"Старый Клим\",\"traderQuests\":[\"supplies\"]}")) == "Старый Клим"
+                && RoaInteraction.IsQuestNpc(JObject.Parse(
+                    "{\"kromkaNamedNpcId\":\"story_guide\"}")),
+                "NPC display names or quest dialogue classification changed");
             Require(RoaEnemies.ReadBoolean(JValue.CreateNull(), true)
                     && !RoaEnemies.ReadBoolean(JValue.CreateNull())
                     && RoaEnemies.ReadBoolean(new JValue(true))
                     && !RoaEnemies.ReadBoolean(new JValue(false), true),
                 "explicit JSON null is no longer safe for optional NPC flags");
-            var occupied = new List<Rect>();
-            Require(RoaActorNameplates.TryResolveScreenRect(new Vector2(-20f, -10f), occupied,
-                                                            800, 480, out Rect first),
-                    "first nameplate was not placed");
-            Require(first.xMin >= 6f && first.yMin >= 6f && first.xMax <= 794f && first.yMax <= 474f,
-                    "nameplate escaped the screen safe margin");
-            occupied.Add(first);
-            Require(RoaActorNameplates.TryResolveScreenRect(new Vector2(-20f, -10f), occupied,
-                                                            800, 480, out Rect second),
-                    "overlapping nameplate was not relocated");
-            Require(!first.Overlaps(second), "relocated nameplates still overlap");
+            Rect first = RoaActorNameplates.AnchorScreenRect(new Vector2(320f, 220f));
+            Rect second = RoaActorNameplates.AnchorScreenRect(new Vector2(330f, 220f));
+            Require(first.center.x == 320f && first.yMax == 212f
+                    && second.center.x == 330f && second.yMax == 212f
+                    && first.Overlaps(second),
+                "actor labels no longer stay directly over their own models");
+            string itemsPath = Path.GetFullPath(Path.Combine(Application.dataPath,
+                "..", "..", "data", "kromka", "items.json"));
+            Require(RoaItemData.ApplyCatalog(JObject.Parse(File.ReadAllText(itemsPath)),
+                    out string catalogError),
+                "authored equipment catalog is unavailable: " + catalogError);
+            Require(RoaActorNameplates.EquipmentTier(null) == 1
+                    && RoaActorNameplates.EquipmentTier(new JObject
+                        { ["armor"] = "metalArmor", ["weapon"] = "pistol" }) == 2
+                    && RoaActorNameplates.EquipmentTier(new JObject
+                        { ["armor"] = "combatArmor", ["weapon"] = "pistol" }) == 4
+                    && RoaActorNameplates.RomanTier(4) == "IV",
+                "nameplate tier does not follow equipped items");
+            Require(RoaActorNameplates.BadgeText(new RoaActorNameplates.Entry
+                        { Tier = 4, Level = 99 }) == "IV"
+                    && RoaActorNameplates.BadgeText(new RoaActorNameplates.Entry
+                        { IsPlayer = true, Level = 12, Tier = 4 }) == "12",
+                "NPC tiers or player levels use the wrong nameplate badge");
+            Require(RoaActorNameplates.DisplayActorName("ремонтник", "Враг") == "Ремонтник"
+                    && RoaActorNameplates.DisplayActorName("  the Wanderer", "Игрок") == "The Wanderer"
+                    && RoaActorNameplates.DisplayActorName("", "Игрок") == "Игрок",
+                "actor names must start with a capital letter");
+            GameObject gateRoot = new GameObject("VisibilityGateProbe");
+            try
+            {
+                RoaVisibilityGate gate = gateRoot.AddComponent<RoaVisibilityGate>();
+                MeshRenderer body = new GameObject("VisibleBody").AddComponent<MeshRenderer>();
+                body.transform.SetParent(gateRoot.transform, false);
+                MeshRenderer hiddenPart = new GameObject("HiddenPart").AddComponent<MeshRenderer>();
+                hiddenPart.transform.SetParent(gateRoot.transform, false);
+                hiddenPart.enabled = false;
+                gate.SetVisible(false);
+                MeshRenderer arrivingPart = new GameObject("ArrivingPart").AddComponent<MeshRenderer>();
+                arrivingPart.transform.SetParent(gateRoot.transform, false);
+                gate.SetVisible(false);
+                Require(!body.enabled && !hiddenPart.enabled && !arrivingPart.enabled,
+                    "fog gate exposed a newly loaded body part");
+                gate.SetVisible(true);
+                Require(body.enabled && !hiddenPart.enabled && arrivingPart.enabled,
+                    "fog gate revived a deliberately hidden character part");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(gateRoot); }
             Require(RoaActorNameplates.IsImportantNpc(true, "merchant", string.Empty)
                     && RoaActorNameplates.IsImportantNpc(true, string.Empty, "quartermaster")
                     && !RoaActorNameplates.IsImportantNpc(true, "guard", string.Empty)
@@ -103,40 +146,36 @@ namespace RealmOfAshes.EditorTools
                     && mobileHud.MapScale < desktopHud.MapScale,
                 "mobile identity or minimap panels did not release combat space");
             Require(RoaHudCanvas.ResolveFocusMode(false, false, false)
-                        == RoaHudCanvas.HudFocusMode.Exploration
+                        == RoaHudCanvas.HudFocusMode.Detailed
                     && RoaHudCanvas.ResolveFocusMode(true, false, false)
-                        == RoaHudCanvas.HudFocusMode.Combat
+                        == RoaHudCanvas.HudFocusMode.Detailed
                     && RoaHudCanvas.ResolveFocusMode(false, true, false)
                         == RoaHudCanvas.HudFocusMode.Detailed
                     && RoaHudCanvas.ResolveFocusMode(false, true, false, false)
-                        == RoaHudCanvas.HudFocusMode.Activity
+                        == RoaHudCanvas.HudFocusMode.Detailed
                     && RoaHudCanvas.ResolveFocusMode(true, true, false, false)
-                        == RoaHudCanvas.HudFocusMode.Combat
+                        == RoaHudCanvas.HudFocusMode.Detailed
                     && RoaHudCanvas.ShowsIdentity(RoaHudCanvas.HudFocusMode.Detailed)
-                    && !RoaHudCanvas.ShowsIdentity(RoaHudCanvas.HudFocusMode.Combat)
+                    && RoaHudCanvas.ShowsIdentity(RoaHudCanvas.HudFocusMode.Combat)
                     && RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Combat,
                         false, false, false)
-                    && !RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Activity,
+                    && RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Activity,
                         false, false, false)
-                    && !RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Combat,
+                    && RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Combat,
                         true, false, false)
                     && RoaCombat.IsCombatPresentationActive(6.9f, 7f)
                     && !RoaCombat.IsCombatPresentationActive(7f, 7f),
-                "contextual combat focus no longer has deterministic lifetime or manual detail access");
+                "the HUD must retain one visible arrangement through combat and activity");
             float desktopCompactTop = (RoaHudCanvas.CompactConsolePosition(false).y
                 + 66f * RoaHudCanvas.CompactConsoleScale(false)) / desktopReference.y;
             float mobileCompactTop = (RoaHudCanvas.CompactConsolePosition(true).y
                 + 66f * RoaHudCanvas.CompactConsoleScale(true)) / mobileReference.y;
             Require(desktopCompactTop < 0.10f && mobileCompactTop < 0.11f
                     && RoaHudCanvas.QuickbarFocusPosition(false,
-                        RoaHudCanvas.HudFocusMode.Exploration).y
-                        > RoaHudCanvas.CompactConsolePosition(false).y
-                            + 66f * RoaHudCanvas.CompactConsoleScale(false)
+                        RoaHudCanvas.HudFocusMode.Exploration).y == 14f
                     && RoaHudCanvas.QuickbarFocusPosition(true,
-                        RoaHudCanvas.HudFocusMode.Exploration).y
-                        > RoaHudCanvas.CompactConsolePosition(true).y
-                            + 66f * RoaHudCanvas.CompactConsoleScale(true),
-                "exploration strip obscures the world or overlaps the quickbar");
+                        RoaHudCanvas.HudFocusMode.Combat).y == 75f,
+                "the fixed action bar left its bottom-centre reference position");
             Vector2 recoveredConsole = RoaHudCanvas.ClampBottomPanelPosition(
                 new Vector2(0f, -56f), new Vector2(560f, 66f), 0.94f,
                 new Vector2(1920f, 1080f));
@@ -164,6 +203,88 @@ namespace RealmOfAshes.EditorTools
                         && compactConsole.Find("Weapon") != null
                         && compactConsole.Find("Ammo") != null,
                     "contextual exploration console is incomplete");
+                if (Resources.Load<GameObject>("ApocalypseHud/HUD_Apocalypse_HealthBar_01") != null)
+                {
+                    Transform readyHealth = compactConsole.Find("ApocalypseHudHealthBar/Slider");
+                    Require(readyHealth != null &&
+                        readyHealth.GetComponent<UnityEngine.UI.Slider>() != null &&
+                        !readyHealth.GetComponent<UnityEngine.UI.Slider>().interactable,
+                        "the Synty health bar was not installed as a read-only live HUD element");
+                }
+                if (Resources.Load<GameObject>("ApocalypseHud/HUD_Apocalypse_Minimap_Box_02") != null)
+                {
+                    Transform minimap = hierarchyProbe.transform.Find(
+                        "AdaptiveGameplayHud/SafeArea/Minimap");
+                    Transform readyFrame = minimap != null
+                        ? minimap.Find("ApocalypseMinimapDevice/SPR_Frame") : null;
+                    Require(readyFrame != null &&
+                        !minimap.Find("ApocalypseMinimapDevice/Minimap_Contents/Map_Container/Map").gameObject.activeSelf
+                        && !minimap.Find("ApocalypseMinimapDevice/Minimap_Contents/Map_Icon_Player").gameObject.activeSelf,
+                        "the Synty minimap must show live map data instead of sample markers");
+                }
+                if (Resources.Load<GameObject>("ApocalypseHud/HUD_Apocalypse_HotBar_03") != null)
+                {
+                    Transform quickbar = hierarchyProbe.transform.Find(
+                        "AdaptiveGameplayHud/SafeArea/Quickbar/ApocalypseHotBar");
+                    Transform slots = quickbar != null ? quickbar.Find("ActionBar") : null;
+                    Require(slots != null, "the Apocalypse hotbar is missing");
+                    for (int i = 0; i < RoaQuickbar.SlotCount; i++)
+                    {
+                        Transform slot = slots.Find("Item_" + i.ToString("00"));
+                        UnityEngine.UI.Text number = quickbar.Find("LiveSlotLabel_" + i)
+                            ?.GetComponent<UnityEngine.UI.Text>();
+                        Require(slot != null && slot.GetComponent<UnityEngine.UI.Button>() != null
+                            && number != null && number.enabled
+                            && number.text == (i + 1).ToString(),
+                            "hotbar slot " + i + " has no button or number plate");
+                    }
+                    MethodInfo refreshLamps = typeof(RoaHudCanvas).GetMethod(
+                        "RefreshApocalypseApLamps", BindingFlags.Instance | BindingFlags.NonPublic);
+                    Require(refreshLamps != null, "action-point lamps cannot be updated");
+                    refreshLamps.Invoke(hierarchyCanvas, new object[] { 9, 4.8f });
+                    Transform lamps = quickbar.Find("ActionPointLamps");
+                    Require(lamps != null && lamps.childCount == 9,
+                        "nine maximum action points must produce nine lamps");
+                    for (int i = 0; i < 9; i++)
+                        Require(lamps.GetChild(i).gameObject.activeSelf
+                            && lamps.GetChild(i).Find("Valve_Active").gameObject.activeSelf == (i < 4),
+                            "each lamp must reflect one current action point");
+                    refreshLamps.Invoke(hierarchyCanvas, new object[] { 6, 2f });
+                    for (int i = 0; i < 9; i++)
+                        Require(lamps.GetChild(i).gameObject.activeSelf == (i < 6)
+                            && (!lamps.GetChild(i).gameObject.activeSelf ||
+                                lamps.GetChild(i).Find("Valve_Active").gameObject.activeSelf == (i < 2)),
+                            "lamp count and illumination must follow changed action points");
+                    refreshLamps.Invoke(hierarchyCanvas, new object[] { 26, 13.4f });
+                    Require(lamps.childCount == 26,
+                        "increased maximum action points must add one lamp per point");
+                    for (int i = 0; i < 26; i++)
+                        Require(lamps.GetChild(i).gameObject.activeSelf
+                            && lamps.GetChild(i).Find("Valve_Active").gameObject.activeSelf == (i < 13),
+                            "lamps must show the new current action points after expansion");
+                }
+                else if (Resources.Load<GameObject>("ApocalypseHud/Button_Apocalypse_HotBar_Item_01") != null)
+                {
+                    Transform quickbar = hierarchyProbe.transform.Find(
+                        "AdaptiveGameplayHud/SafeArea/Quickbar");
+                    Require(quickbar != null, "the quickbar is missing");
+                    for (int i = 0; i < RoaQuickbar.SlotCount; i++)
+                    {
+                        Transform slot = quickbar.Find("Slot" + i);
+                        Require(slot != null && slot.GetComponent<UnityEngine.UI.Button>() != null
+                            && slot.Find("Item") != null && slot.Find("Item/Selected") != null,
+                            "quickbar slot " + i + " does not use the Synty button prefab");
+                    }
+                }
+                if (Resources.Load<GameObject>("ApocalypseHud/HUD_Apocalypse_Compass_03") != null)
+                {
+                    Transform compass = hierarchyProbe.transform.Find(
+                        "AdaptiveGameplayHud/SafeArea/ApocalypseCompass");
+                    Require(compass != null && compass.Find("Content/Compass_Content") != null
+                        && compass.Find("Content/Compass_Content/Mask/Icons") != null
+                        && !compass.Find("Content/Compass_Content/Mask/Icons").gameObject.activeSelf,
+                        "the new compass still contains demonstration target markers");
+                }
             }
             finally
             {
@@ -194,6 +315,7 @@ namespace RealmOfAshes.EditorTools
             Require(healthy.Kind == RoaHudCanvas.ConnectionBannerKind.Hidden,
                 "healthy connection leaves a permanent banner on screen");
             CaptureIfRequested();
+            CaptureNameplatesIfRequested();
             Debug.Log("[HUD CLEANUP 4.1] готово: исследование/активность/бой/детали, "
                 + "компактный бой, скрытая личность, приоритетная панель и чёткий Canvas.");
         }
@@ -202,6 +324,9 @@ namespace RealmOfAshes.EditorTools
         {
             string path = Environment.GetEnvironmentVariable("ROA_HUD_CAPTURE");
             if (string.IsNullOrWhiteSpace(path)) return;
+            bool mobileCapture = string.Equals(Environment.GetEnvironmentVariable(
+                "ROA_HUD_CAPTURE_MOBILE"), "1", StringComparison.Ordinal);
+            if (mobileCapture) Screen.SetResolution(896, 414, false);
             GameObject host = null;
             GameObject cameraObject = null;
             RenderTexture target = null;
@@ -220,7 +345,15 @@ namespace RealmOfAshes.EditorTools
                 Set(hud, "_level", 8);
                 Set(hud, "_xp", 630);
                 Set(hud, "_xpNeeded", 1000);
-                Set(hud, "_weapon", "fists");
+                bool weaponCapture = string.Equals(Environment.GetEnvironmentVariable(
+                    "ROA_HUD_CAPTURE_WEAPON"), "1", StringComparison.Ordinal);
+                Set(hud, "_weapon", weaponCapture ? "smg" : "fists");
+                if (weaponCapture)
+                {
+                    Set(hud, "_loaded", 17);
+                    Set(hud, "_magSize", 30);
+                    Set(hud, "_reserveAmmo", 124);
+                }
                 Set(hud, "_armorThreshold", 4);
                 Set(hud, "_condition", 0.72f);
 
@@ -234,12 +367,40 @@ namespace RealmOfAshes.EditorTools
                     Set(socket, "_reconnectAt", Time.realtimeSinceStartup + 4.2f);
                 }
 
+                RoaQuickbar quickbar = host.AddComponent<RoaQuickbar>();
+                Set(quickbar, "_worldActive", true);
+                FieldInfo slots = typeof(RoaQuickbar).GetField("_slots",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Require(slots != null, "HUD capture cannot access quick slots");
+                string[] assigned = (string[])slots.GetValue(quickbar);
+                assigned[0] = "pistol";
+                assigned[1] = "medkit";
+                assigned[2] = "water";
+                RoaMinimap minimap = host.AddComponent<RoaMinimap>();
+                minimap.enabled = false;
+                RoaMobileControls mobile = null;
+                if (mobileCapture)
+                {
+                    mobile = host.AddComponent<RoaMobileControls>();
+                    mobile.enabled = false;
+                    mobile.ForceVisible = true;
+                }
                 RoaHudCanvas canvasOwner = host.AddComponent<RoaHudCanvas>();
-                canvasOwner.Configure(hud, null, null, null, null);
+                canvasOwner.Configure(hud, quickbar, minimap, null, mobile);
                 MethodInfo update = typeof(RoaHudCanvas).GetMethod("Update",
                     BindingFlags.Instance | BindingFlags.NonPublic);
                 Require(update != null, "HUD capture cannot invoke presentation update");
                 update.Invoke(canvasOwner, null);
+                if (string.Equals(Environment.GetEnvironmentVariable(
+                        "ROA_HUD_CAPTURE_DETAILED"), "1", StringComparison.Ordinal))
+                {
+                    Set(canvasOwner, "_focusInitialized", false);
+                    MethodInfo focus = typeof(RoaHudCanvas).GetMethod("RefreshHudFocus",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+                    Require(focus != null, "HUD capture cannot switch to the detailed console");
+                    focus.Invoke(canvasOwner, new object[]
+                        { true, false, RoaHudCanvas.HudFocusMode.Detailed });
+                }
 
                 Canvas canvas = host.GetComponentInChildren<Canvas>(true);
                 Require(canvas != null, "HUD capture canvas was not built");
@@ -253,15 +414,90 @@ namespace RealmOfAshes.EditorTools
                 canvas.renderMode = RenderMode.ScreenSpaceCamera;
                 canvas.worldCamera = camera;
                 canvas.planeDistance = 1f;
+                RectTransform safe = canvas.transform.Find("SafeArea") as RectTransform;
+                Require(safe != null, "HUD capture safe area was not built");
+                safe.anchorMin = Vector2.zero;
+                safe.anchorMax = Vector2.one;
+                safe.offsetMin = Vector2.zero;
+                safe.offsetMax = Vector2.zero;
+                Transform quest = safe.Find("ApocalypseCurrentQuest");
+                if (quest != null)
+                {
+                    quest.gameObject.SetActive(true);
+                    var title = quest.Find("Content/HUD_ChapterHeader/Content/Label_Location")
+                        ?.GetComponent<TMPro.TextMeshProUGUI>();
+                    if (title != null) title.text = "ПУТЬ К ЛАГЕРЮ";
+                    var line = quest.Find("Content/Objective_List/Objective_Item_00/Content/Text/Label_Objective")
+                        ?.GetComponent<TMPro.TextMeshProUGUI>();
+                    if (line != null) line.text = "Найти вход в поселение";
+                }
 
-                target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32)
+                target = new RenderTexture(mobileCapture ? 896 : 1280,
+                    mobileCapture ? 414 : 720, 24, RenderTextureFormat.ARGB32)
                 {
                     name = "HudCanvasCapture",
                     antiAliasing = 4
                 };
                 target.Create();
                 camera.targetTexture = target;
+                foreach (TMPro.TMP_Text label in host.GetComponentsInChildren<TMPro.TMP_Text>(true))
+                    if (label != null && label.enabled) label.ForceMeshUpdate(true, true);
+                foreach (UnityEngine.UI.RectMask2D mask in
+                    host.GetComponentsInChildren<UnityEngine.UI.RectMask2D>(true))
+                    if (mask.name != "Map"
+                        && mask.GetComponentsInChildren<TMPro.TMP_Text>(true).Length > 0)
+                        mask.enabled = false;
                 Canvas.ForceUpdateCanvases();
+                update.Invoke(canvasOwner, null);
+                Canvas.ForceUpdateCanvases();
+                if (weaponCapture)
+                {
+                    RectTransform weapon = safe.Find("ApocalypseEquippedWeapon")
+                        as RectTransform;
+                    RectTransform quick = safe.Find("Quickbar") as RectTransform;
+                    Require(weapon != null && weapon.gameObject.activeSelf && quick != null,
+                        "equipped weapon or quickbar is missing from the HUD");
+                    var name = weapon.Find("Label_GunName")?.GetComponent<TMPro.TMP_Text>();
+                    var ammo = weapon.Find("Label_AmmoCount")?.GetComponent<TMPro.TMP_Text>();
+                    Require(name != null && ammo != null
+                        && name.text == RoaWeaponData.Get("smg").Name
+                        && ammo.text == "17/124", "equipped weapon text is incorrect");
+                    name.ForceMeshUpdate(true, true);
+                    ammo.ForceMeshUpdate(true, true);
+                    Require(name.textInfo.lineCount == 1 && ammo.textInfo.lineCount == 1,
+                        "equipped weapon name or ammo count wrapped onto multiple lines");
+                    Transform bulletList = weapon.Find("Ammo List");
+                    Require(bulletList != null &&
+                        RectTransformUtility.CalculateRelativeRectTransformBounds(
+                            weapon, ammo.transform).min.y >=
+                        RectTransformUtility.CalculateRelativeRectTransformBounds(
+                            weapon, bulletList).max.y,
+                        "equipped weapon ammo count overlaps the bullet indicator");
+                    Bounds weaponBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(
+                        safe, weapon);
+                    Bounds quickBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(
+                        safe, quick);
+                    Require(Mathf.Abs(weaponBounds.min.y - quickBounds.min.y) < 24f,
+                        "equipped weapon is not aligned with the quick slots");
+                    Require(weaponBounds.max.x <= safe.rect.xMax - 8f
+                        && weaponBounds.min.x >= quickBounds.max.x - 80f,
+                        "equipped weapon is clipped or overlaps the quick slots");
+                }
+                Transform captureBar = safe.Find("Quickbar/ApocalypseHotBar");
+                if (captureBar != null)
+                {
+                    for (int i = 0; i < RoaQuickbar.SlotCount; i++)
+                    {
+                        UnityEngine.UI.Text number = captureBar.Find("LiveSlotLabel_" + i)
+                            ?.GetComponent<UnityEngine.UI.Text>();
+                        Require(number != null && number.cachedTextGenerator.vertexCount > 0,
+                            "hotbar slot number " + (i + 1) + " is not rendered");
+                    }
+                }
+                Debug.Log("[ROA PROBE] Capture layout: canvas "
+                    + ((RectTransform)canvas.transform).rect + ", safe " + safe.rect
+                    + ", quick " + safe.Find("Quickbar")?.gameObject.activeSelf
+                    + ", graphic count " + host.GetComponentsInChildren<UnityEngine.UI.Graphic>(false).Length);
                 if (GraphicsSettings.currentRenderPipeline != null)
                 {
                     var request = new RenderPipeline.StandardRequest { destination = target };
@@ -285,6 +521,105 @@ namespace RealmOfAshes.EditorTools
                     target.Release();
                     UnityEngine.Object.DestroyImmediate(target);
                 }
+                if (cameraObject != null) UnityEngine.Object.DestroyImmediate(cameraObject);
+                if (host != null) UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
+        private static void CaptureNameplatesIfRequested()
+        {
+            string path = Environment.GetEnvironmentVariable("ROA_NAMEPLATE_CAPTURE");
+            if (string.IsNullOrWhiteSpace(path)) return;
+            bool mobile = string.Equals(Environment.GetEnvironmentVariable(
+                "ROA_NAMEPLATE_CAPTURE_MOBILE"), "1", StringComparison.Ordinal);
+            Screen.SetResolution(mobile ? 896 : 1280, mobile ? 414 : 720, false);
+            GameObject host = null;
+            GameObject cameraObject = null;
+            RenderTexture target = null;
+            Texture2D readback = null;
+            RenderTexture previous = RenderTexture.active;
+            try
+            {
+                host = new GameObject("NameplateCapture");
+                RoaActorNameplates owner = host.AddComponent<RoaActorNameplates>();
+                owner.enabled = false;
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(RoaActorNameplates).GetMethod("EnsureCanvas", flags).Invoke(owner, null);
+                MethodInfo acquire = typeof(RoaActorNameplates).GetMethod("AcquirePlate", flags);
+                Canvas canvas = host.GetComponentInChildren<Canvas>(true);
+                RectTransform canvasRect = (RectTransform)canvas.transform;
+                Require(acquire != null && canvas != null, "nameplate capture cannot build its canvas");
+                for (int i = 0; i < 2; i++)
+                {
+                    object plate = acquire.Invoke(owner, new object[] { i });
+                    Type type = plate.GetType();
+                    GameObject root = (GameObject)type.GetField("Root").GetValue(plate);
+                    RectTransform rect = (RectTransform)type.GetField("Rect").GetValue(plate);
+                    GameObject info = (GameObject)type.GetField("ApocalypseInfo").GetValue(plate);
+                    var enemyName = (TMPro.TextMeshProUGUI)type.GetField(
+                        "ApocalypseEnemyName").GetValue(plate);
+                    var allyName = (TMPro.TextMeshProUGUI)type.GetField(
+                        "ApocalypseAllyName").GetValue(plate);
+                    var level = (TMPro.TextMeshProUGUI)type.GetField(
+                        "ApocalypseLevel").GetValue(plate);
+                    var health = (UnityEngine.UI.Slider)type.GetField(
+                        "ApocalypseHealth").GetValue(plate);
+                    Require(info != null && enemyName != null && allyName != null
+                        && level != null && health != null,
+                        "the Apocalypse name, tier or health prefab is incomplete");
+                    root.SetActive(true);
+                    rect.sizeDelta = new Vector2(190f, 88f);
+                    rect.anchoredPosition = new Vector2(
+                        canvasRect.rect.width * (i == 0 ? 0.35f : 0.65f),
+                        canvasRect.rect.height * 0.48f);
+                    info.SetActive(true);
+                    enemyName.gameObject.SetActive(i == 0);
+                    enemyName.text = RoaActorNameplates.DisplayActorName("ремонтник", "Враг");
+                    allyName.transform.parent.gameObject.SetActive(i == 1);
+                    allyName.text = RoaActorNameplates.DisplayActorName("игрок", "Игрок");
+                    level.text = i == 0
+                        ? RoaActorNameplates.BadgeText(new RoaActorNameplates.Entry { Tier = 4 })
+                        : RoaActorNameplates.BadgeText(new RoaActorNameplates.Entry
+                            { IsPlayer = true, Level = 12 });
+                    health.minValue = 0f;
+                    health.maxValue = 1f;
+                    health.value = i == 0 ? 0.72f : 0.9f;
+                    enemyName.ForceMeshUpdate(true, true);
+                    allyName.ForceMeshUpdate(true, true);
+                    level.ForceMeshUpdate(true, true);
+                }
+
+                cameraObject = new GameObject("NameplateCaptureCamera");
+                Camera camera = cameraObject.AddComponent<Camera>();
+                camera.enabled = false;
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = new Color(0.96f, 0.76f, 0.54f, 1f);
+                canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                canvas.worldCamera = camera;
+                canvas.planeDistance = 1f;
+                target = new RenderTexture(mobile ? 896 : 1280,
+                    mobile ? 414 : 720, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+                target.Create();
+                camera.targetTexture = target;
+                Canvas.ForceUpdateCanvases();
+                if (GraphicsSettings.currentRenderPipeline != null)
+                {
+                    var request = new RenderPipeline.StandardRequest { destination = target };
+                    RenderPipeline.SubmitRenderRequest(camera, request);
+                }
+                else camera.Render();
+                RenderTexture.active = target;
+                readback = new Texture2D(target.width, target.height, TextureFormat.RGBA32, false);
+                readback.ReadPixels(new Rect(0f, 0f, target.width, target.height), 0, 0);
+                readback.Apply(false, false);
+                File.WriteAllBytes(path, readback.EncodeToPNG());
+                Debug.Log("[ROA PROBE] Nameplate capture: " + path);
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                if (readback != null) UnityEngine.Object.DestroyImmediate(readback);
+                if (target != null) { target.Release(); UnityEngine.Object.DestroyImmediate(target); }
                 if (cameraObject != null) UnityEngine.Object.DestroyImmediate(cameraObject);
                 if (host != null) UnityEngine.Object.DestroyImmediate(host);
             }

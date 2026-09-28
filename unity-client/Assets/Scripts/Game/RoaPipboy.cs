@@ -676,6 +676,8 @@ namespace RealmOfAshes.Game
                 }
                 if (ack["target"] is JObject targetState)
                     RemotePlayers?.ApplyPublicPlayer(targetState.ToObject<PublicPlayer>());
+                // Протягивает аптечку раненому.
+                Player?.View?.PlayAction("pickup", 1.35f);
                 string cured = ack["curedInjury"]?.ToString();
                 int healed = Int(ack["healed"]);
                 _status = !string.IsNullOrEmpty(cured)

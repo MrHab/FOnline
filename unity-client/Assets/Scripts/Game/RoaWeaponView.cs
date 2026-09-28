@@ -17,10 +17,10 @@ namespace RealmOfAshes.Game
     /// забирает корпус (±1.2 рад на три позвонка), после чего оружие ставится
     /// заново — рука уехала вместе с корпусом, и остаток уже укладывается.
     /// </summary>
-    public sealed class RoaWeaponView
+    public sealed partial class RoaWeaponView
     {
         /// <summary>Смещение сокета хвата от узла крепления. APPROVED_ASSAULT_PRIMARY_SOCKET, 04d:84.</summary>
-        private static readonly Vector3 PrimarySocketOffset = new Vector3(0.03f, -0.02f, 0.025f);
+        internal static readonly Vector3 PrimarySocketOffset = new Vector3(0.03f, -0.02f, 0.025f);
 
         /// <summary>Предел выкручивания оружия в кисти, рад. 04d:1228.</summary>
         private const float WeaponAimLimit = 0.35f;
@@ -62,7 +62,7 @@ namespace RealmOfAshes.Game
 
         /// <summary>Момент максимального импульса и полная длина отдачи огнестрела.</summary>
         public const float RecoilPeakSeconds = 0.045f;
-        public const float RecoilDurationSeconds = 0.20f;
+        public const float RecoilDurationSeconds = 0.30f;
 
         private static readonly Collider[] ProbeHits = new Collider[8];
         private static readonly RaycastHit[] ProbeCastHits = new RaycastHit[16];
@@ -70,6 +70,8 @@ namespace RealmOfAshes.Game
         private float _obstructedBlend;
         private float _contactBumpStartedAt = -100f;
         private float _recoilStartedAt = -100f;
+        // Пистолет и револьвер: толчок выстрела короче и резче, чем у двуручного.
+        private bool _shortGun;
         private float _recoilSide = 1f;
 
         /// <summary>Насколько ствол поднят из-за препятствия, 0..1. Для диагностики.</summary>
@@ -125,6 +127,28 @@ namespace RealmOfAshes.Game
         /// Проиграть атаку оружия без замены клипа ног: ближний бой запускает
         /// существующий замах, огнестрел — короткую процедурную отдачу корпуса.
         /// </summary>
+        /// <summary>
+        /// Оружие просто в кисти: руки ведёт клип действия (рубка, еда, ящик),
+        /// стойка, прицел и IK рук не применяются.
+        /// </summary>
+        public void ApplyHeld()
+        {
+            HoldRight = default;
+            HoldLeft = default;
+            if (!Ready || Stowed || _hand == null || _socketGrip == null || _weapon == null) return;
+            if (WeaponId == "medkit") return;
+            PrimaryHandSolved = false;
+            SupportHandSolved = false;
+            if (HoldActive)
+            {
+                // Руки ведёт клип: предмет лежит в правой кисти, пальцы на рукояти.
+                PlaceHoldInHand();
+                HoldRight = Target(_hold.Right.Active ? _hold.Right : _hold.Left, RoaFingerPose.Wrap);
+                return;
+            }
+            Mount();
+        }
+
         public void PlayAttack()
         {
             PlayAttack(0f);
@@ -138,6 +162,7 @@ namespace RealmOfAshes.Game
         public void PlayAttack(float meleeSwingSeconds)
         {
             if (!Ready) return;
+            NoteHoldAttack();
             if (_melee != null)
             {
                 StartSwing(meleeSwingSeconds);
@@ -145,7 +170,10 @@ namespace RealmOfAshes.Game
             }
 
             _recoilSide = -_recoilSide;
-            _recoilStartedAt = Time.time;
+            // Выстрел из опущенного оружия: толчок — когда приклад дошёл до плеча
+            // (сначала вскинуть, потом стрелять), иначе он теряется в подъёме.
+            float raiseLeft = _hold != null && _hold.Firearm ? (1f - _raise) * RaiseUpSeconds : 0f;
+            _recoilStartedAt = Time.time + raiseLeft;
         }
 
         /// <summary>
@@ -168,13 +196,21 @@ namespace RealmOfAshes.Game
         private static readonly string[] TorsoBones = { "spine_01", "spine_02", "spine_03" };
         private static readonly Vector3[] RecoilOffsets =
         {
-            new Vector3(-0.010f, 0.002f, 0.003f),
-            new Vector3(-0.020f, 0.003f, 0.004f),
-            new Vector3(-0.014f, 0.002f, 0.002f)
+            // Толчок уходит в корпус: плечи откидываются назад, а не только кисти.
+            new Vector3(-0.022f, 0.004f, 0.006f),
+            new Vector3(-0.042f, 0.006f, 0.008f),
+            new Vector3(-0.034f, 0.004f, 0.004f)
         };
 
         private static readonly Dictionary<string, GltfImport> WeaponCache = new Dictionary<string, GltfImport>();
         private static int _weaponCacheSession;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetModelCache()
+        {
+            _weaponCacheSession++;
+            RoaModelImportLifetime.Clear(WeaponCache);
+        }
 
         /// <summary>
         /// Огнестрел: всё это держится одним и тем же хватом
@@ -190,7 +226,8 @@ namespace RealmOfAshes.Game
 
         public static bool IsFirearm(string weaponId)
         {
-            return !string.IsNullOrEmpty(weaponId) && Firearms.Contains(weaponId);
+            return !string.IsNullOrEmpty(weaponId)
+                && Firearms.Contains(RoaApocalypseModels.WeaponRig(weaponId));
         }
 
         /// <summary>
@@ -309,11 +346,13 @@ namespace RealmOfAshes.Game
         private Transform _owner;
 
         private Transform _socketGripLeft;
+        private Transform _visualSupportGrip;
         private RoaIkChain _supportArm;
         private RoaIkChain _primaryArm;
 
         private RoaMeleeGrip.Profile _melee;
         private readonly Transform[] _spine = new Transform[RoaMeleeGrip.SpineBones.Length];
+        private Transform _hips;
         private float _swingStartedAt = -1f;
 
         /// <summary>Оружие ближнего боя в руках.</summary>
@@ -373,10 +412,17 @@ namespace RealmOfAshes.Game
             _reloadProfile = null;
             _reloadNode = null;
             _socketGripLeft = null;
+            _visualSupportGrip = null;
             _supportArm = null;
             _primaryArm = null;
             _melee = null;
             _swingStartedAt = -1f;
+            _hold = null;
+            _visualRoot = null;
+            HoldRight = default;
+            HoldLeft = default;
+            _throwStartedAt = -1f;
+            _lastAttackAt = -100f;
             DualWield = false;
             PrimaryHandSolved = false;
         }
@@ -406,7 +452,9 @@ namespace RealmOfAshes.Game
             // aim/recoil IK. Unknown-item fallback used to leave it invisible.
             if (weaponId == "medkit" && bones != null && bones.TryGetValue("hand_r", out _hand) && _hand != null)
             {
-                Transform medicalHand = _hand;
+                RoaApocalypseCharacterSkin skin = characterRoot.GetComponentInParent<RoaApocalypseCharacterSkin>();
+                Transform medicalHand = skin != null ? skin.VisibleHand(false) : null;
+                if (medicalHand == null) medicalHand = _hand;
                 GameObject medical = await RoaItemModelCatalog.InstantiateInactive(baseUrl, weaponId, medicalHand);
                 if (request != _loadRequest || characterRoot == null || medical == null
                     || !RoaItemModelCatalog.MountMedicalCase(medical, medicalHand))
@@ -451,8 +499,10 @@ namespace RealmOfAshes.Game
             await RoaWeaponGrip.Ensure(baseUrl);
             if (request != _loadRequest || !RoaWeaponGrip.Ready) return;
 
-            string url = baseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + weaponId + ".glb";
-            GltfImport import = await LoadCached(weaponId, url);
+            string rigId = RoaApocalypseModels.WeaponRig(weaponId);
+            _shortGun = rigId.Contains("istol") || rigId.Contains("revolver") || rigId.Contains("sawedOff");
+            string url = baseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + rigId + ".glb";
+            GltfImport import = await LoadCached(rigId, url);
             if (request != _loadRequest) return;
             if (import == null)
             {
@@ -465,6 +515,7 @@ namespace RealmOfAshes.Game
 
             var holder = new GameObject("Weapon:" + weaponId);
             holder.transform.SetParent(characterRoot, false);
+            holder.layer = characterRoot.gameObject.layer;
 
             if (!await import.InstantiateMainSceneAsync(holder.transform))
             {
@@ -484,7 +535,7 @@ namespace RealmOfAshes.Game
             _socketGripLeft = FindDeep(_weapon, "socket_grip_l");
 
             // Узел перезарядки: первый найденный из профиля.
-            ReloadProfiles.TryGetValue(weaponId, out _reloadProfile);
+            ReloadProfiles.TryGetValue(rigId, out _reloadProfile);
             _reloadNode = null;
             if (_reloadProfile != null)
             {
@@ -517,6 +568,7 @@ namespace RealmOfAshes.Game
 
             for (int i = 0; i < RoaMeleeGrip.SpineBones.Length; i++)
                 _spine[i] = Bone(bones, RoaMeleeGrip.SpineBones[i]);
+            _hips = Bone(bones, "pelvis");
 
             // Дуло есть только у огнестрела: у ножа и топора ствола не существует,
             // и требовать socket_muzzle от них — ошибка.
@@ -534,6 +586,19 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            GameObject visual = RoaApocalypseVisuals.AttachStatic(
+                _weapon, RoaApocalypseModels.Weapon(weaponId), 180f);
+            if (visual != null)
+            {
+                RoaApocalypseModels.MarkItem(visual, weaponId);
+                RoaWeaponVisualGrip.Result handholds = RoaWeaponVisualGrip.Configure(
+                    visual, _weapon, _socketGrip, rigId, _melee == null,
+                    _melee == null || _melee.TwoHanded);
+                _visualSupportGrip = handholds.Support;
+                if (handholds.Muzzle != null) _socketMuzzle = handholds.Muzzle;
+                if (handholds.Reload != null) _reloadNode = handholds.Reload;
+            }
+            BindHold(weaponId, rigId, visual);
             WeaponId = weaponId;
             Ready = true;
             if (Stowed) holder.SetActive(false);
@@ -588,8 +653,11 @@ namespace RealmOfAshes.Game
         /// <summary>Дешёвый дальний LOD: оружие следует за кистью без IK и physics-проб.</summary>
         public void ApplyReduced()
         {
+            HoldRight = default;
+            HoldLeft = default;
             if (!Ready || Stowed || _weapon == null || _hand == null) return;
             if (WeaponId == "medkit") return;
+            if (HoldActive) { PlaceHoldInHand(); return; }
             Mount();
         }
 
@@ -606,6 +674,15 @@ namespace RealmOfAshes.Game
 
             TorsoResidual = 0f;
             WeaponConverge = 0f;
+            HoldRight = default;
+            HoldLeft = default;
+
+            // Хват по модели: стойка класса, кисти на местах рук самой модели.
+            if (HoldActive)
+            {
+                ApplyHold(aimPoint, hasAim);
+                return;
+            }
 
             // Ближний бой идёт своим путём: у него три стойки, оружие
             // размещается ДО руки, а из общего хвата берутся только пальцы —
@@ -624,12 +701,21 @@ namespace RealmOfAshes.Game
             // и хвата, а последующий IK снова точно посадит левую руку на цевьё.
             ApplyFirearmRecoil();
 
+            // The generic approved rifle clip lifts the weapon to eye height.
+            // Use the player's edited wrist position as the common firearm
+            // stance, then let each visible weapon supply its own handholds.
+            if (_primaryArm != null && _primaryArm.Ready && _weapon.parent != null)
+                PrimaryHandSolved = _primaryArm.Solve(
+                    _weapon.parent.TransformPoint(RoaWeaponGripPose.RightWristLocal),
+                    null, ArmPole(false));
+
             // У пары пистолетов каждая рука держит свой ствол. На перезарядке
             // правая кисть уходит вниз и к центру через ту же IK-цепь.
             ApplyDualReloadPrimaryPose();
 
             // 2. Оружие в кисть.
             Mount();
+            LevelFirearm();
 
             // 3. Упор впереди — ствол уходит вверх, а доворот к курсору гасится:
             // иначе оружие «летает», пытаясь навестись сквозь препятствие.
@@ -838,8 +924,10 @@ namespace RealmOfAshes.Game
 
             if (_supportArm != null && _supportArm.Ready)
             {
-                Matrix4x4 socketLocal = _weapon.worldToLocalMatrix * _socketGripLeft.localToWorldMatrix;
-                Vector3 position = (Vector3)socketLocal.GetColumn(3) + RoaWeaponGrip.SupportHandOffset;
+                Matrix4x4 socketLocal = _weapon.worldToLocalMatrix
+                    * (_visualSupportGrip != null ? _visualSupportGrip : _socketGripLeft).localToWorldMatrix;
+                Vector3 position = (Vector3)socketLocal.GetColumn(3)
+                    + (_visualSupportGrip != null ? Vector3.zero : RoaWeaponGrip.SupportHandOffset);
 
                 Quaternion rot = RoaWeaponGrip.SupportHandRotation * Quaternion.Euler(
                     _melee.SupportRotation.x * Mathf.Rad2Deg,
@@ -871,6 +959,37 @@ namespace RealmOfAshes.Game
             }
         }
 
+        /// <summary>
+        /// Толчок выстрела поверх уже наведённого ствола: оружие подбрасывает
+        /// дулом вверх вокруг рукояти и отводит к плечу, правая кисть идёт с ним
+        /// (видимая рука тянется к ней), а левая затем снова садится на цевьё.
+        /// Двуручному оружию толчок крупнее, пистолету — резче и меньше.
+        /// </summary>
+        private void ApplyWeaponKick()
+        {
+            float weight = RecoilWeight;
+            if (weight <= 0.001f || _weapon == null || _socketGrip == null || _hand == null) return;
+            Vector3 grip = _socketGrip.position;
+            Vector3 barrel = _socketMuzzle != null ? (_socketMuzzle.position - grip) : _weapon.forward;
+            if (barrel.sqrMagnitude < 1e-6f) return;
+            barrel.Normalize();
+            Vector3 side = Vector3.Cross(Vector3.up, barrel);
+            if (side.sqrMagnitude < 1e-6f) return;
+            bool longGun = !_shortGun;
+            // Толчок заметен с игровой камеры, но не театрален: ствол подбрасывает на
+            // 8° (пистолет — кисть на 12°), назад в плечо на 5 см (пистолет — локти на 4 см),
+            // и за 0.3 с оружие возвращается.
+            float scale = _hold != null ? _hold.RecoilScale : 1f;
+            float pitch = (longGun ? 8f : 12f) * weight * scale;
+            float back = (longGun ? 0.05f : 0.04f) * weight * Mathf.Max(scale, 0.35f);
+            Quaternion climb = Quaternion.AngleAxis(-pitch, side.normalized);
+            Vector3 push = -barrel * back;
+            Vector3 handOffset = _hand.position - grip;
+            _hand.SetPositionAndRotation(grip + push + climb * handOffset, climb * _hand.rotation);
+            Vector3 weaponOffset = _weapon.position - grip;
+            _weapon.SetPositionAndRotation(grip + push + climb * weaponOffset, climb * _weapon.rotation);
+        }
+
         private void ApplyFirearmRecoil()
         {
             float weight = RecoilWeight;
@@ -895,14 +1014,15 @@ namespace RealmOfAshes.Game
         private void Finish()
         {
             ApplyReadyRaise();
+            ApplyWeaponKick();
             if (DualWield) SupportHandSolved = false;
             else SolveSupportHand();
         }
 
         private void ApplyDualReloadPrimaryPose()
         {
-            PrimaryHandSolved = false;
             if (!DualWield || _primaryArm == null || !_primaryArm.Ready || _weapon == null) return;
+            PrimaryHandSolved = false;
 
             float phase = ReloadPhase();
             if (phase < 0f) return;
@@ -931,11 +1051,14 @@ namespace RealmOfAshes.Game
         {
             SupportHandSolved = false;
 
-            if (_supportArm == null || !_supportArm.Ready || _socketGripLeft == null) return;
+            if (_supportArm == null || !_supportArm.Ready
+                || (_visualSupportGrip == null && _socketGripLeft == null)) return;
 
             // Поза сокета цевья внутри оружия.
-            Matrix4x4 socketLocal = _weapon.worldToLocalMatrix * _socketGripLeft.localToWorldMatrix;
-            Vector3 gripPosition = (Vector3)socketLocal.GetColumn(3) + RoaWeaponGrip.SupportHandOffset;
+            Matrix4x4 socketLocal = _weapon.worldToLocalMatrix
+                * (_visualSupportGrip != null ? _visualSupportGrip : _socketGripLeft).localToWorldMatrix;
+            Vector3 gripPosition = (Vector3)socketLocal.GetColumn(3)
+                + (_visualSupportGrip != null ? Vector3.zero : RoaWeaponGrip.SupportHandOffset);
             Quaternion gripRotation = RoaWeaponGrip.SupportHandRotation;
 
             Vector3 localPosition = gripPosition;
@@ -1015,6 +1138,21 @@ namespace RealmOfAshes.Game
             Matrix4x4 weaponWorld = targetWorld * socketLocalRigid.inverse;
 
             _weapon.SetPositionAndRotation(weaponWorld.GetColumn(3), weaponWorld.rotation);
+        }
+
+        /// <summary>Level the visible barrel by rotating the wrist, keeping the trigger in the palm.</summary>
+        private void LevelFirearm()
+        {
+            if (_socketMuzzle == null || _socketGrip == null || _hand == null) return;
+            Vector3 barrel = _socketMuzzle.position - _socketGrip.position;
+            Vector3 horizontal = Vector3.ProjectOnPlane(barrel, Vector3.up);
+            if (barrel.sqrMagnitude < 0.0025f || horizontal.sqrMagnitude < 0.0025f) return;
+            Quaternion correction = Quaternion.FromToRotation(barrel.normalized, horizontal.normalized);
+            float degrees = Quaternion.Angle(Quaternion.identity, correction);
+            if (degrees > 55f)
+                correction = Quaternion.Slerp(Quaternion.identity, correction, 55f / degrees);
+            _hand.rotation = correction * _hand.rotation;
+            Mount();
         }
 
         /// <summary>

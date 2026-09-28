@@ -498,6 +498,8 @@ namespace RealmOfAshes.Game
                     return;
                 }
 
+                // Съел, выпил или перевязался — видно по персонажу.
+                RoaGameBootstrap.Active?.LocalView?.PlayAction("consume", 1.2f);
                 int healed = ack["healed"]?.ToObject<int>() ?? 0;
                 string cured = ack["curedInjury"]?.ToString();
                 _status = (ack["hydrated"]?.ToObject<float>() ?? 0f) > 0f
@@ -719,7 +721,13 @@ namespace RealmOfAshes.Game
 
         // --- Фасад контекстного меню предмета (RoaItemContextMenu, web showItemContextMenu 03d:229) ---
 
-        public bool IsRepairable(string itemOrRuntimeId) { return RepairableItems.Contains(BaseId(itemOrRuntimeId)); }
+        /// <summary>Ремонтируется всё, что изнашивается: вариант тира — как его исходник.</summary>
+        public bool IsRepairable(string itemOrRuntimeId)
+        {
+            string baseId = BaseId(itemOrRuntimeId);
+            return RepairableItems.Contains(RoaItemData.TierGroup(baseId))
+                || (RoaItemData.Contains(baseId) && baseId != "fists" && RoaItemData.ConditionMode(baseId) != "none");
+        }
         public bool IsSalvageable(string itemOrRuntimeId) { return SalvageableItems.Contains(BaseId(itemOrRuntimeId)); }
         /// <summary>
         /// Огнестрел определяется наличием типа патронов в каталоге: у ножа, кулаков

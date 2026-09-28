@@ -486,11 +486,11 @@ namespace RealmOfAshes.World
             if (shader == null) return source;
             var material = new Material(shader)
             {
-                name = "RuntimeMEP_" + source.name,
+                name = "RuntimeApocalypse_" + source.name,
                 enableInstancing = true
             };
 
-            Texture albedo = TextureProperty(source, "_BaseMap", "_MainTex");
+            Texture albedo = TextureProperty(source, "_Albedo_Map", "_BaseMap", "_MainTex");
             Color tint = ColorProperty(source, "_BaseColor", "_Color", Color.white);
             bool alphaClip = source.IsKeywordEnabled("_ALPHATEST_ON")
                 || string.Equals(source.GetTag("RenderType", false, string.Empty),
@@ -499,11 +499,11 @@ namespace RealmOfAshes.World
                 tint = Color.Lerp(tint, new Color(0.76f, 0.66f, 0.43f, tint.a), 0.30f);
             SetTexture(material, "_BaseMap", albedo);
             SetTexture(material, "_MainTex", albedo);
-            CopyTextureTransform(source, material, "_BaseMap", "_MainTex");
+            CopyTextureTransform(source, material, "_BaseMap", "_Albedo_Map", "_BaseMap", "_MainTex");
             SetColor(material, "_BaseColor", tint);
             SetColor(material, "_Color", tint);
 
-            Texture normal = TextureProperty(source, "_BumpMap");
+            Texture normal = TextureProperty(source, "_Normal_Map", "_BumpMap");
             if (normal != null)
             {
                 SetTexture(material, "_BumpMap", normal);
@@ -525,7 +525,8 @@ namespace RealmOfAshes.World
             if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", 0f);
 
             ConfigureOpaqueSurface(material, alphaClip,
-                FloatProperty(source, "_Cutoff", 0.5f));
+                FloatProperty(source, "_Alpha_Clip_Threshold",
+                    FloatProperty(source, "_Cutoff", 0.5f)));
             _authoredMaterialRemap[source] = material;
             return material;
         }

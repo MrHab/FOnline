@@ -109,11 +109,13 @@ namespace RealmOfAshes.Game
             panel.sizeDelta = new Vector2(PanelWidth + 32f, MapHeight + 92f);
             var back = panel.gameObject.AddComponent<Image>();
             back.color = PanelBg;
+            RoaApocalypseUiKit.StyleWindow(back, true);
             var outline = panel.gameObject.AddComponent<Outline>();
             outline.effectColor = PanelBorder;
             outline.effectDistance = new Vector2(1.5f, -1.5f);
 
             _title = Label("Title", panel, 20, TextAnchor.MiddleLeft, Accent, FontStyle.Bold);
+            _title.supportRichText = true; // значок тира локации цветом тира
             _title.rectTransform.anchorMin = new Vector2(0f, 1f);
             _title.rectTransform.anchorMax = new Vector2(1f, 1f);
             _title.rectTransform.pivot = new Vector2(0.5f, 1f);
@@ -197,7 +199,7 @@ namespace RealmOfAshes.Game
         {
             if (Minimap == null) return;
 
-            _title.text = string.IsNullOrEmpty(Minimap.LocationName) ? "Карта" : Minimap.LocationName;
+            _title.text = Minimap.TitleWithTier(string.IsNullOrEmpty(Minimap.LocationName) ? "Карта" : Minimap.LocationName);
 
             if (!Minimap.IsReady)
             {
@@ -225,6 +227,9 @@ namespace RealmOfAshes.Game
                 shown++;
                 image.rectTransform.anchoredPosition = new Vector2(p.x * MapWidth, p.y * MapHeight);
                 Style(image, marker.Kind);
+                // Узел добычи — цветом своего тира.
+                if (marker.Kind == RoaMinimap.MarkerKind.Resource && marker.Tier > 0)
+                    image.color = RoaTierData.TierColor(marker.Tier);
             }
 
             Vector2 player = Minimap.PlayerMapNormalized;

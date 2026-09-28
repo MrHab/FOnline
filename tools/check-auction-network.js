@@ -14,6 +14,7 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
 const zoneWalk = require('./lib/zone-walk');
+const itemCatalog = require('../data/kromka/items.json');
 const accounts = {};
 
 const qty = (self, id) => (self.inventory || []).filter(row => row.id === id).reduce((sum, row) => sum + row.qty, 0);
@@ -51,6 +52,7 @@ const servicePosition = (locationId, service) => {
   sellerState.territoryFaction = noFaction();
   sellerState.inventory.silver = 3000;
   sellerState.inventory.ammo9 = 60;
+  sellerState.inventory.scrap = 10;
   sellerState.inventory.leather = 1;
   sellerState.player = {
     ...(sellerState.player || {}),
@@ -141,8 +143,18 @@ const servicePosition = (locationId, service) => {
   assert.equal(opened.auction.shelf.silver, 9, 'марки общей полки переехали');
   assert.deepEqual(opened.auction.shelf.items.map(row => [row.itemId, row.qty]), [['ammo9', 5]],
     'выставленные патроны вернулись на полку');
+  const availableItemIds = new Set(opened.auction.items.map(row => row.itemId));
+  const newEquipment = itemCatalog.items.filter(row => row.id.startsWith('polygon')
+    || row.category === 'armor' || row.category === 'tools');
+  assert(newEquipment.length > 0, 'каталог нового снаряжения не пуст');
+  for (const item of newEquipment) {
+    assert(availableItemIds.has(item.id), `${item.id}: новый предмет отсутствует в каталоге аукциона`);
+  }
 
   // --- ордер столицы виден только в ней -----------------------------------
+  const wornSale = await market('trade', { action: 'sell', itemId: 'leather', qty: 1, price: 100, requestId: 'worn-sale' }, false);
+  assert(/отремонтируйте/.test(wornSale.error));
+  assert.equal(qty(wornSale.self, 'leather'), 1, 'Rejected worn equipment stays with its owner.');
   const listed = await market('trade', { action: 'sell', itemId: 'ammo9', qty: 20, price: 10, durationHours: 720, requestId: 'sell-1' });
   assert.equal(listed.restingQty, 20);
   assert.equal(listed.setupFee, 5, 'сбор 2,5% от 200');
@@ -178,11 +190,105 @@ const servicePosition = (locationId, service) => {
   assert.equal(claimed.claimedSilver, 193);
   assert.equal(qty(claimed.self, 'ammo9'), 45, 'возвращённые патроны общей книги забраны');
 
+  // Editing reserves and receipts is authoritative and idempotent over Socket.IO.
+  const history = await market('trade', { action: 'state', itemId: 'ammo9' });
+  assert.equal(history.auction.history[0].qty, 20);
+  assert.equal(history.auction.history[0].average, 10);
+  assert(history.auction.historySeries.some(row => row.qty === 20 && row.average === 10),
+    'The item card receives chart points from completed local trades.');
+  assert(history.auction.items.some(row => row.sellQty === 0 && row.buyQty === 0), 'Unlisted catalogue items can be selected.');
+  assert(history.auction.activity.some(row => row.kind === 'sold'));
+  assert.equal((await market('target', { action: 'state', itemId: 'ammo9' })).auction.history[0].qty, 0);
+  const rest = await market('trade', { action: 'sell', itemId: 'ammo9', qty: 10, price: 20, requestId: 'edit-list' });
+  await market('harvest', { action: 'update', orderId: rest.orderId, qty: 5, price: 10, requestId: 'edit-other' }, false);
+  await market('trade', { action: 'update', orderId: rest.orderId, qty: 11, price: 10, requestId: 'edit-extra' }, false);
+  const editRequest = { action: 'update', orderId: rest.orderId, qty: 6, price: 15, expectedPrice: 20, expectedQty: 10, requestId: 'edit-own' };
+  const edit = await market('trade', editRequest);
+  assert.equal(edit.setupFee, 2);
+  assert.equal(qty(edit.self, 'silver'), qty(rest.self, 'silver') - 2);
+  assert.equal(edit.auction.orders.find(row => row.id === rest.orderId).qty, 6);
+  assert.equal(edit.auction.shelf.items.reduce((sum, row) => sum + row.qty, 0), 4);
+  const replay = await market('trade', editRequest);
+  assert.equal(qty(replay.self, 'silver'), qty(edit.self, 'silver'));
+  assert.deepEqual(replay.auction.activity, edit.auction.activity, 'Replayed requests produce no duplicate receipt.');
+  const stale = await market('harvest', { action: 'buyNow', orderId: rest.orderId, qty: 1, expectedPrice: 20, requestId: 'stale-price' }, false);
+  assert(/изменилась/.test(stale.error), 'A confirmation at an old price must not execute at the edited price.');
+  const legacyQuote = await market('harvest', { action: 'buyNow', orderId: rest.orderId, qty: 1, requestId: 'legacy-price' }, false);
+  assert(/Обновите игру/.test(legacyQuote.error), 'Old clients cannot silently accept a new price after an edit.');
+  const demand = await market('harvest', { action: 'buy', itemId: 'ammo9', qty: 4, price: 10, requestId: 'edit-demand' });
+  const fill = await market('harvest', { action: 'update', orderId: demand.orderId, qty: 4, price: 20, requestId: 'edit-cross' });
+  assert.equal(fill.restingQty, 0);
+  assert.equal(fill.balanceDelta, 40 - 60 - 2);
+  assert.equal(fill.auction.shelf.items.reduce((sum, row) => sum + row.qty, 0), 4);
+  await market('trade', { action: 'cancel', orderId: rest.orderId, requestId: 'edit-cleanup' });
+
+  const shelfOffer = await market('trade', { action: 'sell', itemId: 'ammo9', qty: 2, price: 25, requestId: 'shelf-offer' });
+  const buyerBeforeShelf = qty(demand.self, 'ammo9');
+  const shelfBuy = await market('harvest', { action: 'buyNow', orderId: shelfOffer.orderId,
+    qty: 2, deliverToInventory: false, requestId: 'shelf-buy' });
+  assert.equal(shelfBuy.shelved, 2, 'The chosen delivery destination is returned in the receipt.');
+  assert.equal(qty(shelfBuy.self, 'ammo9'), buyerBeforeShelf, 'Buying to the shelf does not add weight to the backpack.');
+  assert(shelfBuy.auction.shelf.items.some(row => row.itemId === 'ammo9' && row.qty === 2 && row.reason === 'bought'));
+
+  // Several real Socket.IO trades at distinct prices must collapse into the
+  // current hourly chart point by quantity-weighted price, including a trade
+  // initiated from each side of the book.
+  const variedTrades = [];
+  for (const [price, amount] of [[14, 3], [22, 2]]) {
+    const offer = await market('trade', { action: 'sell', itemId: 'ammo9', qty: amount,
+      price, requestId: `chart-sell-${price}` });
+    const purchase = await market('harvest', { action: 'buyNow', orderId: offer.orderId,
+      qty: amount, expectedPrice: price, requestId: `chart-buy-${price}` });
+    assert.equal(purchase.cost, price * amount);
+    variedTrades.push({ direction: 'buyNow', price, qty: amount, cost: purchase.cost });
+  }
+  const buyOffer = await market('trade', { action: 'buy', itemId: 'ammo9', qty: 4,
+    price: 9, requestId: 'chart-buy-order' });
+  assert.equal(buyOffer.restingQty, 4);
+  const sale = await market('harvest', { action: 'sellNow', orderId: buyOffer.orderId,
+    qty: 4, expectedPrice: 9, requestId: 'chart-sell-now' });
+  assert.equal(sale.price, 9);
+  variedTrades.push({ direction: 'sellNow', price: 9, qty: 4, proceeds: sale.proceeds });
+  const scrapOffer = await market('trade', { action: 'sell', itemId: 'scrap', qty: 4,
+    price: 7, requestId: 'chart-scrap-sell' });
+  await market('harvest', { action: 'buyNow', orderId: scrapOffer.orderId,
+    qty: 2, expectedPrice: 7, requestId: 'chart-scrap-buy' });
+  const scrapCross = await market('harvest', { action: 'buy', itemId: 'scrap', qty: 2,
+    price: 8, requestId: 'chart-scrap-cross' });
+  assert.equal(scrapCross.boughtQty, 2);
+  const scrapChart = (await market('harvest', { action: 'state', itemId: 'scrap' })).auction;
+  assert.equal(scrapChart.history[0].qty, 4);
+  assert.equal(scrapChart.history[0].average, 7);
+  const chartState = (await market('harvest', { action: 'state', itemId: 'ammo9' })).auction;
+  assert.equal(chartState.history[0].qty, 35);
+  assert.equal(chartState.history[0].average, 12.34,
+    'The visible chart price is weighted by the quantity at all executed prices.');
+  assert.deepEqual(chartState.historySeries.map(row => [row.qty, row.average]), [[35, 12.34]],
+    'Trades within one hour produce one live chart point, not four misleading bars.');
+  if (process.env.ROA_MARKET_CAPTURE) {
+    const capturePath = path.resolve(process.env.ROA_MARKET_CAPTURE);
+    fs.mkdirSync(path.dirname(capturePath), { recursive: true });
+    fs.writeFileSync(capturePath, JSON.stringify({
+      market: chartState.marketName, itemId: 'ammo9', trades: [
+        { direction: 'buyNow', price: 10, qty: 5 },
+        { direction: 'buyOrderCross', price: 10, qty: 15 },
+        { direction: 'buyOrderCross', price: 15, qty: 4 },
+        { direction: 'buyNow', price: 25, qty: 2 },
+        ...variedTrades
+      ], history: chartState.history, historySeries: chartState.historySeries,
+      otherItem: { itemId: 'scrap', history: scrapChart.history, historySeries: scrapChart.historySeries }
+    }, null, 2));
+  }
+
   // --- торгуют только торговцы-люди -----------------------------------------
   const scrapActors = accounts.target.join.worldState?.enemies || [];
-  const merchant = scrapActors.find(row => row.role === 'merchant' && row.hostileToPlayer === false);
+  const merchant = scrapActors.find(row => row.role === 'merchant' && row.tradeOpen === true);
+  const questMerchant = scrapActors.find(row => row.role === 'merchant'
+    && Array.isArray(row.traderQuests) && row.traderQuests.length > 0);
   const auctioneer = scrapActors.find(row => row.service === 'auction');
   assert(merchant?.tradeOpen === true, 'торговец столицы торгует: ' + JSON.stringify(merchant && { name: merchant.name, tradeOpen: merchant.tradeOpen }));
+  assert(questMerchant && questMerchant.canDialogue === true && questMerchant.tradeOpen === false,
+    'квестовый торговец ведёт только диалог и не открывает рынок');
   assert(auctioneer && auctioneer.tradeOpen === false, 'аукционер «Покажи товары» не предлагает');
   // Облик и взгляд авторского НПС — из его строки: их задают в сцене Unity, и
   // клиент получает ровно их, а не выводит облик из id актёра, который новый

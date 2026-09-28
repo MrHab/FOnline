@@ -17537,13 +17537,9 @@
       },
       "role": "scenery",
       "tags": [
-        "resource",
         "water",
         "zone-kit"
       ],
-      "resourceType": "water",
-      "hp": 7,
-      "maxHp": 7,
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },

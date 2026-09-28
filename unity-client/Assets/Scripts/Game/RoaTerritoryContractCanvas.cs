@@ -202,7 +202,9 @@ namespace RealmOfAshes.Game
 
             RectTransform panel = Child("Panel", modal);
             Place(panel, 0.5f, 0.5f, 0.5f, 0.5f, new Vector2(-270f, -190f), new Vector2(270f, 190f));
-            panel.gameObject.AddComponent<Image>().color = new Color(0.07f, 0.09f, 0.08f, 0.98f);
+            Image panelImage = panel.gameObject.AddComponent<Image>();
+            panelImage.color = new Color(0.07f, 0.09f, 0.08f, 0.98f);
+            RoaApocalypseUiKit.StyleWindow(panelImage, true);
             var outline = panel.gameObject.AddComponent<Outline>();
             outline.effectColor = new Color(0.937f, 0.816f, 0.471f, 0.92f);
             outline.effectDistance = new Vector2(2f, -2f);

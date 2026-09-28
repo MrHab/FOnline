@@ -784,6 +784,7 @@ namespace RealmOfAshes.Game
                     Name = string.IsNullOrEmpty(remote.Player.Name) ? "Игрок" : remote.Player.Name,
                     Hp = remote.Player.Hp,
                     MaxHp = Mathf.Max(1, remote.Player.MaxHp),
+                    Level = remote.Player.Level,
                     World = remote.Root.transform.position + Vector3.up * 2.05f,
                     Hostile = true,
                     IsPlayer = true

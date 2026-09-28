@@ -59,12 +59,30 @@ namespace RealmOfAshes.Game
 
         private static readonly Dictionary<string, Weapon> Weapons = BuildWeapons();
 
+        private static bool TryWeapon(string id, out Weapon weapon)
+        {
+            if (!Weapons.TryGetValue(RoaApocalypseModels.WeaponCombatId(id), out weapon))
+                return false;
+            if (RoaApocalypseModels.WeaponCombatId(id) == RoaApocalypseModels.WeaponRig(id))
+                return true;
+            weapon = weapon.Copy();
+            weapon.Id = id;
+            weapon.Skill = "throwing";
+            weapon.Strength = 2;
+            weapon.Min = 24;
+            weapon.Max = 38;
+            weapon.Range = 12f;
+            weapon.Automatic = false;
+            weapon.Dual = false;
+            return true;
+        }
+
         public static float EffectiveRange(JObject self, JObject combat, string requestedMode)
         {
             string weaponId = BaseId(combat?["weapon"]?.ToString()
                 ?? self?["equipment"]?["weapon"]?.ToString() ?? "fists");
             Weapon source;
-            if (!Weapons.TryGetValue(weaponId, out source)) source = Weapons["fists"];
+            if (!TryWeapon(weaponId, out source)) source = Weapons["fists"];
             Weapon weapon = ApplyModifications(source.Copy(), combat?["weaponMods"] as JObject);
             string mode = ResolveMode(weapon, requestedMode, self);
             return weapon.Range * (mode == "dual" ? 0.85f : 1f);
@@ -75,7 +93,7 @@ namespace RealmOfAshes.Game
             string weaponId = BaseId(combat?["weapon"]?.ToString()
                 ?? self?["equipment"]?["weapon"]?.ToString() ?? "fists");
             Weapon source;
-            if (!Weapons.TryGetValue(weaponId, out source)) source = Weapons["fists"];
+            if (!TryWeapon(weaponId, out source)) source = Weapons["fists"];
             Weapon weapon = ApplyModifications(source.Copy(), combat?["weaponMods"] as JObject);
             string mode = ResolveMode(weapon, requestedMode, self);
             return ModeApCost(weapon, mode, self) + (Injury(self, "brokenArm") ? 1 : 0);
@@ -90,7 +108,7 @@ namespace RealmOfAshes.Game
             string weaponId = BaseId(combat?["weapon"]?.ToString()
                 ?? self["equipment"]?["weapon"]?.ToString() ?? "fists");
             Weapon source;
-            if (!Weapons.TryGetValue(weaponId, out source)) source = Weapons["fists"];
+            if (!TryWeapon(weaponId, out source)) source = Weapons["fists"];
             Weapon weapon = ApplyModifications(source.Copy(), combat?["weaponMods"] as JObject);
             string mode = ResolveMode(weapon, requestedMode, self);
             float modeHit = mode == "aimed" ? 0.24f : mode == "dual" ? -0.15f : 0f;
@@ -261,7 +279,7 @@ namespace RealmOfAshes.Game
             {
                 string offhandId = BaseId(self?["equipment"]?["offhand"]?.ToString());
                 Weapon offhand;
-                int otherAp = Weapons.TryGetValue(offhandId, out offhand) ? offhand.Ap : weapon.Ap;
+                int otherAp = TryWeapon(offhandId, out offhand) ? offhand.Ap : weapon.Ap;
                 return Mathf.Max(1, Mathf.CeilToInt((weapon.Ap + otherAp) * 0.75f));
             }
             return weapon.Ap;
@@ -275,7 +293,7 @@ namespace RealmOfAshes.Game
             {
                 string offhand = BaseId(self?["equipment"]?["offhand"]?.ToString());
                 Weapon other;
-                if (Weapons.TryGetValue(offhand, out other) && other.Dual) return "dual";
+                if (TryWeapon(offhand, out other) && other.Dual) return "dual";
             }
             return requested == "aimed" ? "aimed" : "single";
         }

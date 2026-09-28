@@ -122,13 +122,9 @@ namespace RealmOfAshes.Game
                     }
                     foreach (Collider collider in model.GetComponentsInChildren<Collider>(true))
                         collider.enabled = false;
-                    var renderers = model.GetComponentsInChildren<Renderer>(true);
-                    if (renderers.Length > 0)
-                    {
-                        Bounds bounds = renderers[0].bounds;
-                        foreach (Renderer renderer in renderers) bounds.Encapsulate(renderer.bounds);
-                        if (bounds.size.y > 0.1f) model.transform.localScale *= 1.85f / bounds.size.y;
-                    }
+                    float creaturePitch;
+                    RoaApocalypseVisuals.AttachStatic(model.transform,
+                        RoaApocalypseModels.Creature("brahmin", out creaturePitch), 0f, creaturePitch);
                     AddPacks(root.transform);
                     _brahmins.Add(root.transform);
                 }
@@ -374,6 +370,7 @@ namespace RealmOfAshes.Game
                 pack.transform.localPosition = new Vector3(side * 0.5f,1.12f,-0.25f);
                 pack.transform.localScale = new Vector3(0.42f,0.55f,0.8f);
                 pack.GetComponent<Renderer>().sharedMaterial = canvas;
+                RoaApocalypseVisuals.AttachStatic(pack.transform, RoaApocalypseModels.Item("backpack"));
                 if (Application.isPlaying) Destroy(pack.GetComponent<Collider>());
                 else DestroyImmediate(pack.GetComponent<Collider>());
             }

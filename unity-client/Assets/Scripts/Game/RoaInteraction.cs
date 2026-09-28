@@ -74,7 +74,7 @@ namespace RealmOfAshes.Game
         public float ContainerRange = 3.1f;
 
         private enum TargetKind { None, LabNode, Actor, Container, Storage, Resource, CraftingStation, JobBoard, QuestObject, Transition, PlotBoard }
-        private enum PanelKind { None, Npc, Trade, Storage, Corpse, Container, Crafting, JobBoard }
+        private enum PanelKind { None, Npc, Service, Trade, Storage, Corpse, Container, Crafting, JobBoard }
         private enum QuantityKind { None, TradeBuy, TradeSell, StorageDeposit, StorageWithdraw, Loot }
 
         private sealed class ContainerView
@@ -182,7 +182,29 @@ namespace RealmOfAshes.Game
         public bool CraftPending { get { return _craftPending; } }
         public bool PlotPending { get { return _plotPending; } }
 
-        public bool CanCraft(RoaCraftRecipe recipe) { return HasCraftIngredients(recipe); }
+        public bool CanCraft(RoaCraftRecipe recipe) { return HasCraftIngredients(recipe) && ProfessionAllows(recipe); }
+
+        /// <summary>Тир рецепта открыт уровнем профессии (решает сервер, клиент не шлёт заведомый отказ).</summary>
+        public bool ProfessionAllows(RoaCraftRecipe recipe) { return RoaCraftingData.ProfessionAllows(_self, recipe); }
+
+        /// <summary>Уровень профессии из авторитетного состояния игрока (self.professions).</summary>
+        public int ProfessionLevel(string professionId) { return RoaCraftingData.ProfessionLevel(_self, professionId); }
+
+        public string ProfessionName(string professionId)
+        {
+            JObject row = ProfessionRow(professionId);
+            return row?["name"]?.ToString() ?? professionId;
+        }
+
+        /// <summary>Профессии игрока: добыча, переработка и ремёсла с уровнем и открытым тиром.</summary>
+        public JArray Professions { get { return _self?["professions"] as JArray ?? new JArray(); } }
+
+        private JObject ProfessionRow(string professionId)
+        {
+            foreach (JToken token in Professions)
+                if (token is JObject row && row["id"]?.ToString() == professionId) return row;
+            return null;
+        }
         public static string CraftCost(RoaCraftRecipe recipe) { return recipe == null ? string.Empty : CraftCostText(recipe); }
         public void CraftRecipe(RoaCraftRecipe recipe) { Craft(recipe); }
         public void CraftingClose() { ClosePanel(true); }
@@ -243,8 +265,7 @@ namespace RealmOfAshes.Game
         public void TradeBack()
         {
             ClearTradeQueue();
-            if (_panel == PanelKind.Trade) _panel = PanelKind.Npc;
-            else ClosePanel(true);
+            ClosePanel(true);
         }
 
         public void TradeClose()
@@ -271,7 +292,8 @@ namespace RealmOfAshes.Game
             get
             {
                 if (_candidateKind == TargetKind.None || _candidate == null) return string.Empty;
-                string name = _candidate["name"]?.ToString() ?? "Объект";
+                string name = _candidateKind == TargetKind.Actor
+                    ? DisplayNpcName(_candidate) : (_candidate["name"]?.ToString() ?? "Объект");
                 string action;
                 if (_candidateKind == TargetKind.Resource) action = "добыть";
                 else if (_candidateKind == TargetKind.CraftingStation) action = "открыть станок";
@@ -281,7 +303,10 @@ namespace RealmOfAshes.Game
                 else if (_candidateKind == TargetKind.Transition) action = "перейти";
                 else if (_candidateKind == TargetKind.Storage) action = "открыть хранилище";
                 else if (_candidateKind == TargetKind.Container) action = "открыть";
-                else action = _candidate["dead"]?.ToObject<bool>() == true ? "обыскать" : "поговорить";
+                else if (_candidate["dead"]?.ToObject<bool>() == true) action = "обыскать";
+                else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) action = "поговорить";
+                else if (NpcHasTrade(_candidate)) action = "торговать";
+                else action = "услуги";
                 return InteractKey + " — " + action + ": " + name;
             }
         }
@@ -298,6 +323,7 @@ namespace RealmOfAshes.Game
         public bool DialogueCanvasDriven { get; set; }
 
         public bool NpcOpen { get { return _panel == PanelKind.Npc; } }
+        public bool ServiceOpen { get { return _panel == PanelKind.Service; } }
         public bool JobBoardOpen { get { return _panel == PanelKind.JobBoard; } }
         public string DialogueTitle { get { return PanelTitle(); } }
         public string DialogueStatus { get { return Time.unscaledTime <= _statusUntil ? _status : string.Empty; } }
@@ -333,7 +359,7 @@ namespace RealmOfAshes.Game
         /// <summary>traderProfileId() web (07b:154): профиль по полю, затем по id, затем по локации.</summary>
         private string TraderProfileId()
         {
-            if (_active == null || !NpcHasTrade(_active)) return string.Empty;
+            if (_active == null || (!NpcHasTrade(_active) && !IsQuestNpc(_active))) return string.Empty;
             string direct = (_active["dialogueProfile"]?.ToString() ?? _active["traderProfile"]?.ToString() ?? string.Empty).ToLowerInvariant();
             if (direct == "klim" || direct == "scrap" || direct == "relay") return direct;
             string actorId = (_active["traderId"]?.ToString() ?? _active["id"]?.ToString() ?? string.Empty).ToLowerInvariant();
@@ -400,7 +426,7 @@ namespace RealmOfAshes.Game
             }
         }
 
-        public bool NpcHasTradeOption { get { return _active != null && NpcHasTrade(_active); } }
+        public bool NpcHasTradeOption { get { return _active != null && !IsQuestNpc(_active) && NpcHasTrade(_active); } }
         /// <summary>Сервис NPC постоянной базы: medic, registrar, auction, artifactLab, trade.</summary>
         public string NpcService { get { return _active?["service"]?.ToString() ?? string.Empty; } }
         public string NpcTerritoryFactionId { get { return _active?["territoryFactionId"]?.ToString() ?? string.Empty; } }
@@ -1730,7 +1756,9 @@ namespace RealmOfAshes.Game
             }
 
             view.Data = (JObject)row.DeepClone();
-            view.Data["name"] = ResourceLabel(row["type"]?.ToString());
+            // Тир узла — тир зоны: «Руда T3» сразу говорит, какой нужен инструмент.
+            int resourceTier = row["tier"]?.ToObject<int?>() ?? 0;
+            view.Data["name"] = ResourceLabel(row["type"]?.ToString()) + (resourceTier > 0 ? " T" + resourceTier : string.Empty);
             view.Position = RoaCoords.TileToWorld(tx, tz, _mapWidth, _mapDepth);
             bool available = row["hp"]?.ToObject<float>() > 0f;
 
@@ -1739,6 +1767,8 @@ namespace RealmOfAshes.Game
             {
                 if (view.Marker != null) Destroy(view.Marker);
                 view.Marker = null;
+                if (Loader != null && Loader.TryGetObjectRoot(id, out GameObject nodeRoot))
+                    ApplyTierNodeVisual(nodeRoot, row["type"]?.ToString(), row["tier"]?.ToObject<int?>() ?? 0);
                 Loader?.SetObjectVisible(id, available);
             }
             else if (_locationReady)
@@ -1749,28 +1779,61 @@ namespace RealmOfAshes.Game
             }
         }
 
+        private const string TierNodeChild = "TierResourceVisual";
+
+        /// <summary>
+        /// Точка добычи выглядит по тиру зоны: вместо модели набора зон (и её
+        /// замены из пака) ставится префаб PolygonApocalypse этого тира в родном
+        /// размере. Повторный вызов ничего не пересоздаёт и снова гасит остальное.
+        /// </summary>
+        private static void ApplyTierNodeVisual(GameObject root, string type, int tier)
+        {
+            if (root == null || tier < 1) return;
+            Transform existing = root.transform.Find(TierNodeChild);
+            if (existing == null)
+            {
+                GameObject prefab = RoaApocalypseModels.TierNode(type, tier);
+                if (prefab == null) return;
+                GameObject visual = Instantiate(prefab, root.transform, false);
+                visual.name = TierNodeChild;
+                Vector3 parentScale = root.transform.lossyScale;
+                Vector3 native = prefab.transform.localScale;
+                visual.transform.localScale = new Vector3(
+                    native.x / Mathf.Max(0.0001f, Mathf.Abs(parentScale.x)),
+                    native.y / Mathf.Max(0.0001f, Mathf.Abs(parentScale.y)),
+                    native.z / Mathf.Max(0.0001f, Mathf.Abs(parentScale.z)));
+                foreach (Transform node in visual.GetComponentsInChildren<Transform>(true))
+                    node.gameObject.layer = root.layer;
+                foreach (Collider collider in visual.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+                RoaApocalypseModels.MarkTierNode(visual, tier);
+                existing = visual.transform;
+            }
+            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+                if (!renderer.transform.IsChildOf(existing)) renderer.enabled = false;
+        }
+
         private void RefreshResourceViews()
         {
             foreach (ResourceView view in _resources.Values)
                 if (view.Data != null) UpsertResource(view.Data);
         }
 
+        /// <summary>
+        /// Узел без объекта локации (город, дополненный узел, встреча в пути): своя
+        /// модель, а поверх — префаб тира с искрами, как у авторских узлов.
+        /// </summary>
         private GameObject CreateResourceMarker(string id, JObject row)
         {
-            var root = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            var root = new GameObject("Resource:" + id);
             root.name = "Resource:" + id;
             root.transform.SetParent(transform, false);
-            root.transform.localScale = new Vector3(0.42f, 0.32f, 0.42f);
-            Destroy(root.GetComponent<Collider>());
-
-            Renderer renderer = root.GetComponent<Renderer>();
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            if (renderer != null && shader != null)
-            {
-                var material = new Material(shader);
-                material.color = ResourceColor(row?["type"]?.ToString());
-                renderer.sharedMaterial = material;
-            }
+            string type = row?["type"]?.ToString();
+            string modelKey = type == "ore" ? "ore_outcrop"
+                : type == "wood" ? "tutorialWood"
+                : type == "oil" ? "rust_barrel_v1"
+                : "garden_patch";
+            RoaApocalypseVisuals.CreateGrounded(root.transform, RoaApocalypseModels.Environment(modelKey));
+            ApplyTierNodeVisual(root, type, row?["tier"]?.ToObject<int?>() ?? 0);
             return root;
         }
 
@@ -1819,29 +1882,7 @@ namespace RealmOfAshes.Game
 
         private static GameObject CreateContainerPlaceholder(Transform parent, JObject row)
         {
-            if ((row["defId"]?.ToString() ?? string.Empty) == "yard_supply"
-                || (row["name"]?.ToString() ?? string.Empty).Contains("снаряжения Глеба"))
-                return RoaTutorialProps.Build("crate", parent);
-            var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            marker.name = "UnityContainerMarker";
-            marker.transform.SetParent(parent, false);
-            marker.transform.localPosition = new Vector3(0f, 0.38f, 0f);
-            marker.transform.localScale = new Vector3(0.9f, 0.76f, 0.72f);
-            Destroy(marker.GetComponent<Collider>());
-
-            Renderer renderer = marker.GetComponent<Renderer>();
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            if (renderer != null && shader != null)
-            {
-                var material = new Material(shader);
-                bool locked = row["locked"]?.ToObject<bool>() == true
-                    || row["terminalLocked"]?.ToObject<bool>() == true;
-                material.color = locked
-                    ? new Color(0.42f, 0.28f, 0.18f)
-                    : new Color(0.38f, 0.42f, 0.32f);
-                renderer.sharedMaterial = material;
-            }
-            return marker;
+            return RoaTutorialProps.Build("crate", parent);
         }
 
         // Плата арендатора и сама аренда меняются без участия игрока: снимок
@@ -1984,7 +2025,8 @@ namespace RealmOfAshes.Game
             {
                 if (view == null || view.Data == null || view.Data["hp"]?.ToObject<float>() <= 0f) continue;
                 if (Fog != null && !Fog.IsVisible(view.Position)) continue;
-                markers.Add(new RoaMinimap.Marker(RoaMinimap.MarkerKind.Resource, view.Position));
+                markers.Add(new RoaMinimap.Marker(RoaMinimap.MarkerKind.Resource, view.Position,
+                    view.Data["tier"]?.ToObject<int?>() ?? 0));
             }
         }
 
@@ -2167,7 +2209,15 @@ namespace RealmOfAshes.Game
 
             if (_candidateKind != TargetKind.Actor) return;
             if (_candidate["dead"]?.ToObject<bool>() == true) InspectCorpse(_candidate);
-            else OpenNpc(_candidate);
+            else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) OpenNpc(_candidate);
+            else if (NpcHasTrade(_candidate))
+            {
+                _active = (JObject)_candidate.DeepClone();
+                _market = null;
+                ClearTradeQueue();
+                RequestTrade();
+            }
+            else if (HasServiceMenu(_candidate)) OpenService(_candidate);
         }
 
         /// <summary>
@@ -2272,6 +2322,7 @@ namespace RealmOfAshes.Game
 
             _harvestPending = true;
             Show("Добыча ресурса…", 2f);
+            PlayGatherAction(resource["type"]?.ToString());
             Socket.EmitWithAck("harvestResource", new Dictionary<string, object>
             {
                 ["id"] = id,
@@ -2291,9 +2342,31 @@ namespace RealmOfAshes.Game
                 }
 
                 JObject item = ack["item"] as JObject;
-                Show("Получено: " + (item?["id"]?.ToString() ?? "ресурс")
-                    + " x" + (item?["qty"]?.ToObject<int>() ?? 1));
+                JObject profession = ack["profession"] as JObject;
+                string itemId = item?["id"]?.ToString() ?? string.Empty;
+                Show("Получено: " + (string.IsNullOrEmpty(itemId) ? "ресурс" : RoaItemData.Name(itemId))
+                    + " x" + (item?["qty"]?.ToObject<int>() ?? 1)
+                    + (profession != null ? " · " + profession["name"] + " +" + profession["gained"]
+                        + (profession["leveledUp"]?.ToObject<bool>() == true ? " — уровень " + profession["level"] + "!" : string.Empty)
+                        : string.Empty));
             });
+        }
+
+        /// <summary>
+        /// Персонаж добывает сразу, не дожидаясь ответа сервера: рубит дерево и
+        /// бьёт жилу с размаха, срезает волокно у земли, возится у качалки.
+        /// </summary>
+        private void PlayGatherAction(string type)
+        {
+            RoaCharacterView view = Player != null ? Player.View : null;
+            if (view == null) return;
+            switch (type)
+            {
+                case "wood":
+                case "ore": view.PlayAction("chop", 1.0f); break;
+                case "fiber": view.PlayAction("harvest", 1.5f, 1.3f); break;
+                default: view.PlayAction("kneel_work", 1.6f); break;
+            }
         }
 
         private void OpenCrafting(JObject station)
@@ -2370,6 +2443,13 @@ namespace RealmOfAshes.Game
             FocusNpc(true);
         }
 
+        private void OpenService(JObject actor)
+        {
+            _active = (JObject)actor.DeepClone();
+            _panel = PanelKind.Service;
+            _scroll = Vector2.zero;
+        }
+
         private void FocusNpc(bool active)
         {
             string id = _active?["id"]?.ToString();
@@ -2435,6 +2515,8 @@ namespace RealmOfAshes.Game
 
                 if (ack?["ok"]?.ToObject<bool>() != true)
                     Show(ack?["error"]?.ToString() ?? "Контейнер недоступен.");
+                else
+                    Player?.View?.PlayAction("chest_open", 1.0f);
             });
         }
 
@@ -2484,6 +2566,7 @@ namespace RealmOfAshes.Game
 
         private void RequestTrade()
         {
+            if (_active == null || IsQuestNpc(_active)) return;
             string id = _active?["id"]?.ToString();
             if (string.IsNullOrEmpty(id)) return;
             Show("Получаем ассортимент…", 2f);
@@ -3259,6 +3342,45 @@ namespace RealmOfAshes.Game
                 || (actor["traderStock"] as JArray)?.Count > 0;
         }
 
+        public static bool IsQuestNpc(JObject actor)
+        {
+            return actor != null && (
+                !string.IsNullOrEmpty(actor["kromkaNamedNpcId"]?.ToString())
+                || !string.IsNullOrEmpty(actor["kromkaOnboardingNpcId"]?.ToString())
+                || (actor["kromkaQuestIds"] as JArray)?.Count > 0
+                || (actor["traderQuests"] as JArray)?.Count > 0);
+        }
+
+        private static bool HasDialogueService(JObject actor)
+        {
+            string service = actor?["service"]?.ToString();
+            return service == "auction" || service == "medic" || service == "repair";
+        }
+
+        private static bool HasServiceMenu(JObject actor)
+        {
+            string service = actor?["service"]?.ToString();
+            return service == "registrar" || service == "artifactLab" || service == "fastTravel";
+        }
+
+        public static string DisplayNpcName(JObject actor)
+        {
+            string name = actor?["name"]?.ToString() ?? "НПС";
+            if (IsQuestNpc(actor) || HasDialogueService(actor)) return name;
+            int colon = name.IndexOf(':');
+            if (colon >= 0 && colon + 1 < name.Length) name = name.Substring(colon + 1).Trim();
+            int bracket = name.IndexOf('[');
+            if (bracket > 0) name = name.Substring(0, bracket).Trim();
+            int qualifier = name.IndexOf(" у ", StringComparison.OrdinalIgnoreCase);
+            if (qualifier > 0) name = name.Substring(0, qualifier).Trim();
+            if (name.Length > 28)
+            {
+                int cut = name.LastIndexOf(' ', 28);
+                name = name.Substring(0, cut > 12 ? cut : 28).TrimEnd() + "…";
+            }
+            return name;
+        }
+
         private static TargetKind StaticTargetKind(LocationObject entry)
         {
             string model = (entry.Model ?? string.Empty).ToLowerInvariant();
@@ -3377,27 +3499,10 @@ namespace RealmOfAshes.Game
         {
             if (type == "ore") return "Руда";
             if (type == "wood") return "Древесина";
-            if (type == "scrap") return "Металлолом";
-            if (type == "water") return "Вода";
             if (type == "oil") return "Нефть";
-            if (type == "chemicals") return "Химикаты";
-            if (type == "medicine") return "Лекарственные растения";
-            if (type == "food") return "Пищевые растения";
-            if (type == "electronics") return "Электроника";
-            if (type == "ammoParts") return "Детали боеприпасов";
-            if (type == "weaponParts") return "Оружейные детали";
+            if (type == "fiber") return "Волокно";
             if (type == "blue") return "Синь";
             return "Ресурс";
-        }
-
-        private static Color ResourceColor(string type)
-        {
-            if (type == "wood" || type == "food" || type == "medicine") return new Color(0.35f, 0.55f, 0.24f);
-            if (type == "water") return new Color(0.20f, 0.48f, 0.68f);
-            if (type == "oil") return new Color(0.16f, 0.14f, 0.12f);
-            if (type == "chemicals") return new Color(0.45f, 0.72f, 0.30f);
-            if (type == "electronics") return new Color(0.25f, 0.65f, 0.62f);
-            return new Color(0.56f, 0.48f, 0.34f);
         }
 
         private JObject WorldSite(string siteId)

@@ -44,6 +44,14 @@ function functionSlice(source, marker, nextMarker = '\n  function ') {
 }
 
 function socketEventSlice(source, eventName) {
+  if (eventName === 'enemyHit' || eventName === 'playerHit') {
+    const handler = eventName === 'enemyHit' ? 'handleEnemyHit' : 'handlePlayerHit';
+    const start = source.indexOf(`  ${handler} = (`);
+    if (start < 0) fail(`Missing socket handler: ${eventName}`);
+    const end = source.indexOf('\n  };', start);
+    if (end < 0) fail(`Unclosed socket handler: ${eventName}`);
+    return source.slice(start, end + 5);
+  }
   const marker = `socket.on('${eventName}'`;
   const start = source.indexOf(marker);
   if (start < 0) fail(`Missing socket event: ${eventName}`);

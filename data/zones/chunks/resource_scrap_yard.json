@@ -1,7 +1,7 @@
 {
   "schema": "kromka.zoneChunk.v1",
   "id": "resource_scrap_yard",
-  "kind": "resource",
+  "kind": "poi",
   "name": "Свалка лома",
   "biomes": [
     "*"

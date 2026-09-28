@@ -41,6 +41,8 @@ namespace RealmOfAshes.Game
         private readonly List<GameObject> _rows = new List<GameObject>();
         private float _refreshAt;
         private bool _boardMode;
+        private bool _serviceMode;
+        private RectTransform _scrollArea;
         // Сервисы постоянной базы: снимок с сервера запрашивается один раз на
         // открытый диалог и обновляется после каждого действия.
         private string _serviceStateKey = string.Empty;
@@ -50,7 +52,7 @@ namespace RealmOfAshes.Game
 
         private void Update()
         {
-            bool open = Interaction != null && (Interaction.NpcOpen || Interaction.JobBoardOpen);
+            bool open = Interaction != null && (Interaction.NpcOpen || Interaction.ServiceOpen || Interaction.JobBoardOpen);
 
             // Аукционер ведёт собственный экран торгов: разговор с ним сразу
             // открывает аукцион, поэтому вариантов диалога у него нет.
@@ -68,10 +70,16 @@ namespace RealmOfAshes.Game
 
             EnsureBuilt();
             bool board = Interaction.JobBoardOpen;
-            if (!_root.activeSelf || board != _boardMode)
+            bool service = Interaction.ServiceOpen;
+            if (!_root.activeSelf || board != _boardMode || service != _serviceMode)
             {
                 _boardMode = board;
-                _panel.sizeDelta = board ? new Vector2(820f, 680f) : new Vector2(680f, 560f);
+                _serviceMode = service;
+                _panel.sizeDelta = board ? new Vector2(820f, 680f)
+                    : service ? new Vector2(560f, 460f) : new Vector2(680f, 560f);
+                _line.gameObject.SetActive(!service);
+                Place(_scrollArea, 0f, 0f, 1f, 1f, new Vector2(14f, 34f),
+                    new Vector2(-14f, service ? -54f : -156f));
                 _root.SetActive(true);
                 _refreshAt = 0f;
             }
@@ -114,6 +122,7 @@ namespace RealmOfAshes.Game
             _panel.sizeDelta = new Vector2(680f, 560f);
             var back = _panel.gameObject.AddComponent<Image>();
             back.color = PanelBg;
+            RoaApocalypseUiKit.StyleWindow(back, true);
             var outline = _panel.gameObject.AddComponent<Outline>();
             outline.effectColor = PanelBorder;
             outline.effectDistance = new Vector2(1.5f, -1.5f);
@@ -137,14 +146,14 @@ namespace RealmOfAshes.Game
             _line.verticalOverflow = VerticalWrapMode.Truncate;
 
             // Варианты — как #npc-dialogue-options.
-            RectTransform scrollArea = Child("Scroll", _panel);
-            Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(14f, 34f), new Vector2(-14f, -156f));
-            var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
+            _scrollArea = Child("Scroll", _panel);
+            Place(_scrollArea, 0f, 0f, 1f, 1f, new Vector2(14f, 34f), new Vector2(-14f, -156f));
+            var scroll = _scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
             RoaUiScroll.Configure(scroll);
-            scrollArea.gameObject.AddComponent<RectMask2D>();
+            _scrollArea.gameObject.AddComponent<RectMask2D>();
 
-            _list = Child("List", scrollArea);
+            _list = Child("List", _scrollArea);
             _list.anchorMin = new Vector2(0f, 1f);
             _list.anchorMax = new Vector2(1f, 1f);
             _list.pivot = new Vector2(0f, 1f);
@@ -168,13 +177,14 @@ namespace RealmOfAshes.Game
 
         private void Refresh()
         {
-            _title.text = Interaction.DialogueTitle;
+            _title.text = _serviceMode ? "Услуги: " + Interaction.DialogueTitle : Interaction.DialogueTitle;
             _status.text = Interaction.DialogueStatus;
 
             foreach (GameObject row in _rows) Destroy(row);
             _rows.Clear();
 
             if (_boardMode) RefreshBoard();
+            else if (_serviceMode) RefreshService();
             else RefreshNpc();
 
             // Ширина рядов известна только после пересчёта LayoutGroup; без
@@ -256,6 +266,12 @@ namespace RealmOfAshes.Game
             }
 
             AddOption("Уйти", () => Interaction.DialogueClose(), true);
+        }
+
+        private void RefreshService()
+        {
+            AddServiceOptions();
+            AddOption("Закрыть", () => Interaction.DialogueClose(), true);
         }
 
         private void RefreshBoard()

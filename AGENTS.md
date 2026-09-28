@@ -28,6 +28,9 @@
 - Preserve unique global-map location IDs and their authored location definitions.
 - Keep authored JSON deterministic; do not introduce generated runtime state into `data/`.
 - Do not edit generated GLB models or collider catalogs by hand when a generator exists in `tools/`.
+- Keep imported item, equipment, weapon, character and environment models at their
+  authored size. Do not stretch or uniformly resize them to fit a slot, collider
+  or replaced model; choose a fitting asset or adjust placement and collision instead.
 - Preserve unrelated user changes in a dirty worktree.
 - Never commit secrets, production credentials, accounts, saves, logs, backups or VPS data.
 

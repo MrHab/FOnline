@@ -17,6 +17,7 @@ const zoneWalk = require('./lib/zone-walk');
 const { zoneOfPlace, zoneRecipe } = require('../src/server/zone-graph');
 const { loadZoneCatalog } = require('../src/server/zone-chunks');
 const { buildZone } = require('../src/server/zone-builder');
+const { readTieredCatalogs, enemyTierScale } = require('../src/server/kromka-tiers');
 const accounts = {};
 // Зона Сердцевины и её портал — ворота территории.
 const zoneGraph = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'zone-graph.json'), 'utf8'));
@@ -265,20 +266,31 @@ const getJson = route => new Promise((resolve, reject) => {
   const lairFactions = new Set(lairEnemies.map(row => String(row.faction || '')));
   assert(lairFactions.size === 1,
     'The lair must not fight itself in front of the player: ' + JSON.stringify([...lairFactions]));
-  // Карточка обещает ровно то, что обитатели логова несут на самом деле. Раньше
-  // она читала таблицы добычи, которые в мире не разыгрываются, и сулила химикаты
-  // и электронику там, где с пыльника падает один трофей.
+  // Карточка обещает ровно то, что обитатели логова несут на самом деле, и
+  // сырьё узлов логова. Раньше она читала таблицы добычи, которые в мире не
+  // разыгрываются, и сулила химикаты и электронику там, где с пыльника падает трофей.
   const promised = (hive.rewardPreview || []).map(row => row.id);
   const carried = new Set(lairEnemies.flatMap(row => (row.inventory || []).map(item => item.id)));
   assert(carried.size > 0, 'The inhabitants of the lair carry their drop: ' + JSON.stringify(lairEnemies.map(r => r.inventory)).slice(0, 200));
-  assert.deepEqual([...promised].sort(), [...carried].sort(),
-    'The hive card must promise what its inhabitants drop, no more and no less: ' + JSON.stringify({ promised, carried: [...carried] }));
+  const hiveNodes = new Set((accounts.cadence.join.worldState.resources || []).map(row => row.type));
+  const tierConfig = readTieredCatalogs(path.join(__dirname, '..', 'data')).config;
+  const hiveRaw = new Set(tierConfig.families.filter(family => hiveNodes.has(family.resourceType))
+    .flatMap(family => family.raw.ids));
+  assert([...carried].every(id => promised.includes(id)),
+    'The hive card promises every drop of its inhabitants: ' + JSON.stringify({ promised, carried: [...carried] }));
+  assert(promised.every(id => carried.has(id) || hiveRaw.has(id)),
+    'The hive card promises nothing but the drop and the raw of its nodes: ' + JSON.stringify({ promised, nodes: [...hiveNodes] }));
   assert.equal(hive.rewardPreview[0].name, 'Трофей', 'The reward reaches the card under its inventory name.');
   // Депо держат люди: с них падают марки и останки снаряжения (само снаряжение
-  // с трупа не падает), а в логове стоят узлы деталей патронов, электроники и лома.
+  // с трупа не падает), а узлы в депо дают сырьё тира его зоны.
   const depot = areaRows.find(row => row.locationId === 'oldDepot');
-  assert.deepEqual(depot.rewardPreview.map(row => row.id), ['silver', 'weaponParts', 'scrap', 'ammoParts'],
-    'The depot card names marks, gear remains and the lair nodes: ' + JSON.stringify(depot.rewardPreview));
+  const depotTier = zoneOfPlace(zoneGraph, 'oldDepot').difficulty;
+  const depotRaw = new Set(tierConfig.families.map(family => family.raw.ids[depotTier - 1]));
+  const depotIds = depot.rewardPreview.map(row => row.id);
+  assert.deepEqual(depotIds.slice(0, 2), ['silver', 'weaponParts'],
+    'The depot card names marks and gear remains first: ' + JSON.stringify(depot.rewardPreview));
+  assert(depotIds.some(id => depotRaw.has(id)) && depotIds.slice(2).every(id => id === 'scrap' || depotRaw.has(id)),
+    `The depot card names the T${depotTier} raw of its nodes: ` + JSON.stringify(depot.rewardPreview));
   const gearIds = new Set(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'items.json'))).items
     .filter(row => ['weapons', 'armor', 'tools', 'artifacts'].includes(row.category)).map(row => row.id));
   for (const area of areaRows) {
@@ -358,7 +370,11 @@ const getJson = route => new Promise((resolve, reject) => {
   // виды, но откормленные, и сервер выдаёт им авторские характеристики.
   const labEnemies = accounts.modification.join.worldState.enemies || [];
   const byName = name => labEnemies.filter(row => String(row.name || '') === name);
-  assert(byName('Слухач').every(row => row.maxHp === 54), 'The outer guards keep the ordinary stats of their kind: '
+  // Обычный слухач лаборатории — слухач её тира (Сердцевина — тир 5, data/kromka/tiers.json).
+  const tiered = readTieredCatalogs(path.join(__dirname, '..', 'data')).config;
+  const listenerHp = Math.round(54 * enemyTierScale(tiered, 'listener', tiered.locationTiers.coreLabCircuit).hp);
+  assert(byName('Слухач').length && byName('Слухач').every(row => row.maxHp === listenerHp),
+    `The outer guards keep the ordinary stats of their kind at the lab tier (${listenerHp}): `
     + JSON.stringify(byName('Слухач').map(row => row.maxHp)));
   assert(byName('Складень').some(row => row.maxHp === 252), 'The inner guard is fed up on health: '
     + JSON.stringify(byName('Складень').map(row => row.maxHp)));

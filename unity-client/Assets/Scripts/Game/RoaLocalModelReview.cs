@@ -17,12 +17,12 @@ namespace RealmOfAshes.Game
         private static readonly string[] Boots={"none","boots","scoutBoots","reinforcedBoots","assaultBoots"};
         private static readonly string[] Helmets={"none","helmet","tacticalHelmet","assaultHelmet","preWarHelmet","weldedHelmet"};
         private static readonly string[] Weapons={"pistol","rifle","assaultRifle","machineGun","laserPistol","flamethrower","plasmaRifle","shotgun","rocketLauncher","revolver","sawedOffShotgun","smg","knife","pickaxe","axe","handPump","medkit"};
-        private static readonly string[] Offhands={"none","pistol","revolver","sawedOffShotgun","laserPistol","knife","medkit"};
+        private static readonly string[] Offhands={"none","pistol","revolver","sawedOffShotgun","laserPistol","polygonRevolver02","polygonFlareGun01","knife","medkit"};
         private static readonly string[] Items={"medkit","blue","artifactDetectorMk1","artifactDetectorMk2","artifactDetectorMk3","artifactBelt2","artifactBelt3","artifactBelt4","artifactContainer","artifactSpring","artifactVein","artifactNode","artifactDrop","artifactBloodkin","artifactShell","artifactWarmer","artifactSieve","artifactThunderer","artifactHusher","artifactAnchor","artifactDew","artifactMemory","artifactUnknown"};
         private string _origin, _status="Загрузка…";
-        private int _body=4, _armor=7, _boots=4, _helmet=2, _tier=2, _weapon, _offhand, _item, _request;
+        private int _body=0, _armor=7, _boots=4, _helmet=2, _tier=2, _weapon, _offhand, _item, _request;
         private float _angle;
-        private bool _itemMode, _dead;
+        private bool _itemMode, _dead, _crouching;
         private RoaCharacterPreview _preview;
         private RoaCharacterView _character;
         private Camera _camera;
@@ -132,6 +132,12 @@ namespace RealmOfAshes.Game
             if(_preview!=null) _preview.RenderNow();
         }
 
+        private void Update()
+        {
+            if (_character != null && !_itemMode && !_dead)
+                _character.UpdateLocomotion(Vector3.zero, _angle, false, _crouching);
+        }
+
         private void OnGUI()
         {
             GUI.depth=-10000;
@@ -143,6 +149,8 @@ namespace RealmOfAshes.Game
             var label=new GUIStyle(GUI.skin.label) {font=RoaUiFont.Default,fontSize=20,wordWrap=true};
             var button=new GUIStyle(GUI.skin.button) {font=RoaUiFont.Default,fontSize=18};
             GUI.Label(new Rect(20,10,1240,40),"ЛОКАЛЬНАЯ ПРИМЕРКА • без аккаунта и сохранений",label);
+            if(GUI.Button(new Rect(840,10,300,39),_crouching?"Присед: да":"Присед: нет",button))
+                _crouching=!_crouching;
             if(_preview!=null && _preview.Texture!=null) GUI.DrawTexture(new Rect(365,65,885,600),_preview.Texture,ScaleMode.ScaleToFit,false);
             int row=0;
             bool Button(string text) => GUI.Button(new Rect(20,65+row++*45,325,39),text,button);

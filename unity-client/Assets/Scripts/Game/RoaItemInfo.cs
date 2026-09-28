@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace RealmOfAshes.Game
 {
@@ -84,7 +87,60 @@ namespace RealmOfAshes.Game
         public static Row Get(string itemOrRuntimeId)
         {
             string id = RoaArmorData.BaseId(itemOrRuntimeId ?? string.Empty);
-            return Rows.TryGetValue(id, out Row row) ? row : null;
+            string group = RoaItemData.TierGroup(id);
+            if (!string.IsNullOrEmpty(group) && group != id) return TierVariant(id, group);
+            string description = RoaItemData.Description(id);
+            if (Rows.TryGetValue(id, out Row row))
+                return string.IsNullOrEmpty(description) ? row
+                    : new Row(row.Type, description, row.Stat, row.Hands, row.HasAmmo, row.Usable);
+            if (!Rows.TryGetValue(RoaApocalypseModels.WeaponCombatId(id), out row)) return null;
+            if (!id.StartsWith("polygon", StringComparison.Ordinal)) return row;
+            var entries = RoaApocalypseModels.WeaponEntries;
+            if (entries == null) return row;
+            foreach (RoaApocalypseModels.WeaponEntry entry in entries)
+            {
+                if (entry.itemId != id) continue;
+                string weight = entry.weight.ToString("0.##", CultureInfo.GetCultureInfo("ru-RU"));
+                if (RoaApocalypseModels.WeaponRig(id) != RoaApocalypseModels.WeaponCombatId(id))
+                    return new Row("Оружие", "Бросковое взрывное оружие.",
+                        "Урон 24-38 · тип взрывной · одноручное · дальность 12 · навык: Метание · Вес "
+                        + weight + " кг", 1, true, false);
+                string stat = Regex.Replace(row.Stat, @"Вес [0-9,.]+ кг", "Вес " + weight + " кг");
+                if (id.StartsWith("polygonVeh", StringComparison.Ordinal)
+                    || id.StartsWith("polygonAAGun", StringComparison.Ordinal))
+                    stat = Regex.Replace(stat, @"треб\. Сила [0-9]+", "треб. Сила 8");
+                return new Row(row.Type, string.IsNullOrEmpty(description) ? entry.displayName : description,
+                    stat, row.Hands, row.HasAmmo, false);
+            }
+            return row;
+        }
+
+        /// <summary>
+        /// Вариант тира: строка исходного предмета, где урон, доля защиты и пороги
+        /// пересчитаны по силе тира, плюс строка о самом тире.
+        /// </summary>
+        private static Row TierVariant(string id, string group)
+        {
+            Row source = Get(group);
+            if (source == null) return null;
+            int tier = RoaItemData.Tier(id);
+            float ratio = RoaTierData.PowerRatio(RoaItemData.Tier(group), tier);
+            string stat = Regex.Replace(source.Stat, @"Урон (\d+)-(\d+)", match =>
+                "Урон " + Scale(match.Groups[1].Value, ratio) + "-" + Scale(match.Groups[2].Value, ratio));
+            stat = Regex.Replace(stat, @"(\d+)% / порог (\d+)", match =>
+                System.Math.Min(60, Scale(match.Groups[1].Value, ratio)) + "% / порог " + Scale(match.Groups[2].Value, ratio));
+            RoaTierData.Tier row = RoaTierData.Get(tier);
+            string tierLine = "Тир " + tier + (row != null
+                ? " · прочность ×" + row.Durability.ToString("0.##", CultureInfo.GetCultureInfo("ru-RU"))
+                : string.Empty);
+            string description = RoaItemData.Description(id);
+            return new Row(source.Type, string.IsNullOrEmpty(description) ? source.Desc : description,
+                tierLine + " · " + stat, source.Hands, source.HasAmmo, source.Usable);
+        }
+
+        private static int Scale(string value, float ratio)
+        {
+            return int.TryParse(value, out int number) ? (int)System.Math.Round(number * ratio) : 0;
         }
 
         public static string Desc(string id) { Row row = Get(id); return row != null ? row.Desc : string.Empty; }

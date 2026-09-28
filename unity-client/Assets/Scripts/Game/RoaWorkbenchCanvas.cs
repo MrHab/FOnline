@@ -95,6 +95,7 @@ namespace RealmOfAshes.Game
             shell.sizeDelta = new Vector2(1180f, 760f);
             var shellImage = shell.gameObject.AddComponent<Image>();
             shellImage.color = ShellBg;
+            RoaApocalypseUiKit.StyleWindow(shellImage, true);
             var shellOutline = shell.gameObject.AddComponent<Outline>();
             shellOutline.effectColor = ShellBorder;
             shellOutline.effectDistance = new Vector2(1f, -1f);

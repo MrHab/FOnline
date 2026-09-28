@@ -113,12 +113,8 @@
       },
       "collision": "none",
       "tags": [
-        "resource",
         "food"
       ],
-      "resourceType": "food",
-      "hp": 6,
-      "maxHp": 6,
       "vision": {
         "blocks": false
       },
@@ -151,12 +147,8 @@
       },
       "collision": "none",
       "tags": [
-        "resource",
         "medicine"
       ],
-      "resourceType": "medicine",
-      "hp": 5,
-      "maxHp": 5,
       "vision": {
         "blocks": false
       },
@@ -223,12 +215,8 @@
       },
       "collision": "none",
       "tags": [
-        "resource",
         "water"
       ],
-      "resourceType": "water",
-      "hp": 7,
-      "maxHp": 7,
       "vision": {
         "mode": "cover"
       },

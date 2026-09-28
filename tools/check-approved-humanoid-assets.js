@@ -91,8 +91,10 @@ assert.strictEqual(npcGlb.json.skins[0].joints?.length, 65);
 assert.deepStrictEqual(
   (npcGlb.json.animations || []).map(animation => animation.name).sort(),
   [
-    'attack', 'crouch_walk', 'crouch_walk_back', 'death', 'hurt', 'idle',
-    'run', 'run_back', 'turn', 'walk', 'walk_back'
+    'attack', 'chest_open', 'chop', 'consume', 'crouch_idle', 'crouch_run', 'crouch_run_back', 'crouch_walk',
+    'crouch_walk_back', 'death', 'harvest', 'hit_head', 'hurt', 'idle', 'kneel_work', 'pickup', 'pistol_idle',
+    'pistol_reload', 'pistol_shoot', 'punch_cross', 'run', 'run_back', 'strafe_left', 'strafe_right',
+    'strafe_run_left', 'strafe_run_right', 'turn', 'walk', 'walk_back'
   ]
 );
 const npcDeath = (npcGlb.json.animations || []).find(animation => animation.name === 'death');

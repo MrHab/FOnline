@@ -44,6 +44,10 @@ namespace RealmOfAshes.Game
         private float _reloadDuration = DefaultReloadSeconds;
 
         public string WeaponId { get; private set; }
+        private RoaHold _hold;
+        private Transform _visualRoot;
+        /// <summary>Куда положить видимую левую кисть (пистолет парой), иначе неактивно.</summary>
+        public RoaHandTarget HoldLeft { get; private set; }
         public bool Ready { get; private set; }
         public bool ArmSolved { get; private set; }
         public float ObstructedBlend { get { return _obstructedBlend; } }
@@ -60,14 +64,16 @@ namespace RealmOfAshes.Game
 
         public static bool IsSupported(string weaponId)
         {
-            return !string.IsNullOrEmpty(weaponId) && Supported.Contains(weaponId);
+            return !string.IsNullOrEmpty(weaponId)
+                && Supported.Contains(RoaApocalypseModels.WeaponRig(weaponId));
         }
 
         /// <summary>Physical items allowed in the authoritative offhand slot.
         /// IsSupported remains firearm-only so a knife/case never selects dual-gun IK.</summary>
         public static bool CanRender(string itemId)
         {
-            return IsSupported(itemId) || itemId == "knife" || itemId == "medkit";
+            return IsSupported(itemId) || RoaApocalypseModels.WeaponRig(itemId) == "knife"
+                || itemId == "medkit";
         }
 
         public bool TryGetMuzzle(out Vector3 worldPosition)
@@ -141,7 +147,9 @@ namespace RealmOfAshes.Game
 
             if (weaponId == "medkit")
             {
-                Transform medicalHand = _leftHand;
+                RoaApocalypseCharacterSkin skin = characterRoot.GetComponentInParent<RoaApocalypseCharacterSkin>();
+                Transform medicalHand = skin != null ? skin.VisibleHand(true) : null;
+                if (medicalHand == null) medicalHand = _leftHand;
                 GameObject medical = await RoaItemModelCatalog.InstantiateInactive(baseUrl, weaponId, medicalHand);
                 if (request != _loadRequest || characterRoot == null || medical == null
                     || !RoaItemModelCatalog.MountMedicalCase(medical, medicalHand))
@@ -162,8 +170,9 @@ namespace RealmOfAshes.Game
             await RoaWeaponGrip.Ensure(baseUrl);
             if (request != _loadRequest || !RoaWeaponGrip.Ready) return;
 
-            string url = baseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + weaponId + ".glb";
-            GltfImport import = await RoaWeaponView.LoadCached(weaponId, url);
+            string rigId = RoaApocalypseModels.WeaponRig(weaponId);
+            string url = baseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + rigId + ".glb";
+            GltfImport import = await RoaWeaponView.LoadCached(rigId, url);
             if (request != _loadRequest) return;
             if (import == null)
             {
@@ -175,6 +184,7 @@ namespace RealmOfAshes.Game
             var holder = new GameObject("OffhandWeapon:" + weaponId);
             holder.SetActive(false);
             holder.transform.SetParent(characterRoot, false);
+            holder.layer = characterRoot.gameObject.layer;
             if (!await import.InstantiateMainSceneAsync(holder.transform))
             {
                 Object.Destroy(holder);
@@ -189,7 +199,7 @@ namespace RealmOfAshes.Game
             _weapon = holder.transform;
             _socketGrip = FindDeep(_weapon, "socket_grip_r");
             _socketMuzzle = FindDeep(_weapon, "socket_muzzle");
-            if (_socketGrip == null || (weaponId != "knife" && _socketMuzzle == null))
+            if (_socketGrip == null || (rigId != "knife" && _socketMuzzle == null))
             {
                 Debug.LogError("[ROA] У оружия второй руки " + weaponId + " нет сокетов хвата или дула.");
                 WeaponId = weaponId;
@@ -203,6 +213,14 @@ namespace RealmOfAshes.Game
                 Bone("clavicle_l"), Bone("upperarm_l"), Bone("lowerarm_l"), _leftHand
             }, 12, 0.001f);
 
+            GameObject prefab = RoaApocalypseModels.Weapon(weaponId);
+            GameObject visual = RoaApocalypseVisuals.AttachStatic(_weapon, prefab, 180f);
+            RoaApocalypseModels.MarkItem(visual, weaponId);
+            if (visual != null && prefab != null && IsSupported(weaponId))
+            {
+                _hold = RoaHoldStance.Build(prefab.name, rigId, RoaHoldAnchors.Find(prefab.name), true);
+                _visualRoot = visual.transform;
+            }
             WeaponId = weaponId;
             Ready = _leftArm.Ready;
             Mount();
@@ -220,12 +238,34 @@ namespace RealmOfAshes.Game
             Mount();
         }
 
-        public void Apply(Vector3 aimPoint, bool hasAim)
+        public void Apply(Vector3 aimPoint, bool hasAim, RoaWeaponView primary = null)
         {
+            HoldLeft = default;
             if (WeaponId == "medkit") return;
             if (!Ready || Stowed || _weapon == null || _characterRoot == null) return;
 
-            if (WeaponId == "knife")
+            if (_hold != null && _visualRoot != null && primary != null && primary.DualHold)
+            {
+                // Пара пистолетов: второй ствол — зеркально первому, левая кисть на рукояти.
+                primary.PlaceInFrame(_weapon, _visualRoot, _hold, RoaHoldStance.SampleDual(primary.Raise, true));
+                UpdateObstruction();
+                if (hasAim) ConvergeToAim(aimPoint);
+                ApplyReadyRaise();
+                RoaHandSpec grip = _hold.Right;
+                HoldLeft = new RoaHandTarget
+                {
+                    Active = grip.Active,
+                    Centre = _visualRoot.TransformPoint(grip.Centre),
+                    Axis = _visualRoot.TransformDirection(grip.Axis),
+                    Back = -_visualRoot.TransformDirection(grip.Back),
+                    Radius = grip.Radius,
+                    Fingers = primary.RecoilWeight > 0.02f ? RoaFingerPose.Trigger : RoaFingerPose.TriggerOff
+                };
+                ArmSolved = true;
+                return;
+            }
+
+            if (RoaApocalypseModels.WeaponRig(WeaponId) == "knife")
             {
                 // A passive offhand blade follows the animated left wrist.
                 // Do not mirror the right firearm arm or invent a muzzle.
@@ -373,6 +413,9 @@ namespace RealmOfAshes.Game
             _rightHand = null;
             _characterRoot = null;
             _owner = null;
+            _hold = null;
+            _visualRoot = null;
+            HoldLeft = default;
             WeaponId = string.Empty;
             _loadingId = string.Empty;
             Ready = false;

@@ -26,6 +26,9 @@ namespace RealmOfAshes.Game
         private const float AuthHeartbeatFailureRetrySeconds = 60f;
 
         public static RoaGameBootstrap Active { get; private set; }
+
+        /// <summary>Видимый персонаж локального игрока (для клипов действий из интерфейса).</summary>
+        public RoaCharacterView LocalView { get { return _controller != null ? _controller.View : null; } }
         public static bool BlocksWorldHud
         {
             get
@@ -454,11 +457,19 @@ namespace RealmOfAshes.Game
             dialogue.Interaction = Interaction;
             if (Interaction != null) Interaction.DialogueCanvasDriven = true;
 
+            var subtitles = GetComponent<RoaSubtitlesCanvas>();
+            if (subtitles == null) subtitles = gameObject.AddComponent<RoaSubtitlesCanvas>();
+            subtitles.Configure(this, Interaction);
+
             // Меню, графика, обучение и панель редактирования HUD в web-виде.
             var system = GetComponent<RoaSystemCanvas>();
             if (system == null) system = gameObject.AddComponent<RoaSystemCanvas>();
             system.Bootstrap = this;
             SystemCanvasDriven = true;
+
+            var chat = GetComponent<RoaChatCanvas>();
+            if (chat == null) chat = gameObject.AddComponent<RoaChatCanvas>();
+            chat.Configure(this, Socket);
 
             // Экран загрузки локации в web-виде (#location-loading-screen).
             var loadingCanvas = GetComponent<RoaLoadingCanvas>();
@@ -610,6 +621,7 @@ namespace RealmOfAshes.Game
                         + (string.IsNullOrEmpty(catalogError) ? "нет данных" : catalogError));
                     yield break;
                 }
+                RoaTierData.Apply(response["tiers"] as JObject);
                 JObject fieldRecipes = response["fieldRecipes"] as JObject;
                 if (!RoaCraftingData.ApplyCatalog(fieldRecipes, out catalogError))
                 {
@@ -1736,6 +1748,7 @@ namespace RealmOfAshes.Game
             if (Minimap != null)
             {
                 Minimap.SetLocation(location, ack.WorldState?["map"] as JArray);
+                Minimap.LocationTier = ack.WorldState?["tier"]?.ToObject<int?>() ?? 0;
                 RefreshEdgeExitAvailability();
             }
             if (Fog != null) Fog.Build(location, ack.WorldState?["map"] as JArray);

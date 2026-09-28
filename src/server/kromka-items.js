@@ -35,11 +35,13 @@ function normalizeItemCatalog(raw = {}) {
     const slot = String(input?.slot || '').trim();
     const conditionMode = String(input?.conditionMode || 'none').trim();
     const stackLimit = Math.max(0, Math.floor(Number(input?.stackLimit || 0)));
+    const tier = Number(input?.tier ?? 0);
     if (!name) throw new Error(`Kromka item ${id} has no display name`);
     if (!Number.isFinite(weight) || weight < 0) throw new Error(`Kromka item ${id} has an invalid weight`);
     if (!ALLOWED_CATEGORIES.has(category)) throw new Error(`Kromka item ${id} has an invalid category: ${category}`);
     if (!ALLOWED_SLOTS.has(slot)) throw new Error(`Kromka item ${id} has an invalid slot: ${slot}`);
     if (!ALLOWED_CONDITION_MODES.has(conditionMode)) throw new Error(`Kromka item ${id} has an invalid condition mode: ${conditionMode}`);
+    if (!Number.isInteger(tier) || tier < 0 || tier > 5) throw new Error(`Kromka item ${id} has an invalid tier`);
     if (id !== 'fists' && stackLimit < 1) throw new Error(`Kromka item ${id} has no stack capacity`);
     const acquisition = uniqueSafeIds(input?.acquisition);
     if (!acquisition.length || acquisition.some(value => !ALLOWED_ACQUISITION.has(value))) {
@@ -52,6 +54,8 @@ function normalizeItemCatalog(raw = {}) {
     items.push(Object.freeze({
       id,
       name,
+      description: String(input?.description || '').trim().slice(0, 240),
+      tier,
       weight: Number(weight.toFixed(3)),
       basePrice,
       category,
@@ -63,13 +67,21 @@ function normalizeItemCatalog(raw = {}) {
       hands: Math.max(0, Math.min(2, Math.floor(Number(input?.hands || 0)))),
       harvestTool: safeId(input?.harvestTool),
       modificationSlots: uniqueSafeIds(input?.modificationSlots),
-      acquisition
+      acquisition,
+      // Тиры (src/server/kromka-tiers.js): группа вариантов, исходный предмет
+      // варианта, семейство материала и облик, по которому клиент ищет модель.
+      tierGroup: safeId(input?.tierGroup),
+      variantOf: safeId(input?.variantOf),
+      family: safeId(input?.family),
+      materialKind: safeId(input?.materialKind),
+      visualId: safeId(input?.visualId)
     }));
     ids.add(id);
   }
   if (!items.length) throw new Error('Kromka item catalog is empty');
   for (const item of items) {
     if (item.ammoType && !ids.has(item.ammoType)) throw new Error(`Kromka item ${item.id} references unknown ammo ${item.ammoType}`);
+    if (item.variantOf && !ids.has(item.variantOf)) throw new Error(`Kromka item ${item.id} is a variant of unknown ${item.variantOf}`);
   }
   return Object.freeze({
     schema: String(raw?.schema || 'kromka.items.v1'),
@@ -134,7 +146,12 @@ function normalizeFieldRecipeCatalog(raw = {}, itemCatalog = {}) {
       inputs: Object.freeze(inputs),
       silverFee: Math.max(0, Math.floor(Number(input?.silverFee || 0))),
       workSeconds: Math.max(1, Math.floor(Number(input?.workSeconds || 1))),
-      output: Object.freeze({ id: outputId, qty: outputQty })
+      output: Object.freeze({ id: outputId, qty: outputQty }),
+      // Тир рецепта, группа его вариантов, профессия и уровень доступа.
+      tier: Math.max(0, Math.min(5, Math.floor(Number(input?.tier || 0)))),
+      recipeGroup: safeId(input?.recipeGroup),
+      profession: safeId(input?.profession),
+      level: Math.max(0, Math.floor(Number(input?.level || 0)))
     }));
     ids.add(id);
   }

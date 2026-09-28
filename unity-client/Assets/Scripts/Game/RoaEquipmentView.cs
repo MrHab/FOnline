@@ -166,6 +166,7 @@ namespace RealmOfAshes.Game
             string armorFit = RoaWornUtilityCatalog.ArmorFit(BaseItemId(equipment?["armor"]?.ToString()));
             foreach (string slot in Slots)
             {
+                _equippedIds[slot] = RoaInventory.BaseId(equipment?[slot]?.ToString() ?? string.Empty) ?? string.Empty;
                 string itemId = BaseItemId(equipment?[slot]?.ToString() ?? string.Empty);
                 tasks.Add(ApplySlot(baseUrl, bodyKey, slot, itemId, characterRoot, bones,
                     slot == "detector" || slot == "artifactBelt" ? armorFit : "none"));
@@ -418,11 +419,27 @@ namespace RealmOfAshes.Game
             return null;
         }
 
+        private readonly Dictionary<string, string> _equippedIds = new Dictionary<string, string>();
+
+        /// <summary>Настоящий id надетой вещи слота (с тиром: helmetT3), а не её облик.</summary>
+        public string EquippedItemId(string slot)
+        {
+            return _equippedIds.TryGetValue(slot ?? string.Empty, out string id) ? id : string.Empty;
+        }
+
+        /// <summary>
+        /// Облик вещи: вариант тира носится моделью исходника (helmetT3 → helmet).
+        /// Им же сверяются загруженные слоты, поэтому надетый тир виден на персонаже.
+        /// </summary>
         private static string BaseItemId(string runtimeId)
         {
-            if (string.IsNullOrEmpty(runtimeId) || !runtimeId.StartsWith("ui_")) return runtimeId;
-            string[] parts = runtimeId.Split('_');
-            return parts.Length == 4 ? parts[1] : runtimeId;
+            if (string.IsNullOrEmpty(runtimeId)) return runtimeId;
+            if (runtimeId.StartsWith("ui_"))
+            {
+                string[] parts = runtimeId.Split('_');
+                if (parts.Length == 4) runtimeId = parts[1];
+            }
+            return RoaItemData.VisualId(runtimeId);
         }
     }
 }

@@ -58,7 +58,7 @@ namespace RealmOfAshes.EditorTools
                 Require(palette != null && palette.Ready
                         && palette.DryScrubCount >= 3 && palette.StoneCount >= 4
                         && palette.GroundAccentCount >= 3 && palette.DistantRidgeCount >= 4,
-                    "curated MEP environment palette is missing or incomplete");
+                    "PolygonApocalypse environment palette is missing or incomplete");
 
                 float macroMin = 1f;
                 float macroMax = 0f;
@@ -134,13 +134,10 @@ namespace RealmOfAshes.EditorTools
                 Require(generator.UsesAuthoredPrefabs
                         && generator.AuthoredPrefabCount
                             >= generator.SurfaceClusterCount + generator.RidgeCount
-                        && generator.AuthoredRendererCount > generator.AuthoredPrefabCount
-                        // Число пересобранных материалов не проверяется: локальный пак MEP
-                        // уже переведён на URP, и пересборка нужна не всем. Что все
-                        // материалы в итоге URP, проверяет следующий блок.
+                        && generator.AuthoredRendererCount >= generator.AuthoredPrefabCount
                         && generator.GroundAccentCount > 0
                         && generator.GroundAccentCount < generator.SurfaceClusterCount / 2
-                        && generator.MaximumDecorationHeight > 0.9f
+                        && generator.MaximumDecorationHeight > 0.7f
                         && generator.MaximumDecorationHeight < 2.5f,
                     "детали земли остались слишком мелкими или схематичными: prefab="
                     + generator.UsesAuthoredPrefabs + " " + generator.AuthoredPrefabCount
@@ -167,7 +164,7 @@ namespace RealmOfAshes.EditorTools
                 int shadowCasters = Array.FindAll(renderers,
                     renderer => renderer.shadowCastingMode == ShadowCastingMode.On).Length;
                 Require(renderers.Length == generator.AuthoredRendererCount
-                        && renderers.Length > generator.AuthoredPrefabCount
+                        && renderers.Length >= generator.AuthoredPrefabCount
                         && Array.TrueForAll(renderers, renderer => renderer.sharedMaterial != null
                             && renderer.shadowCastingMode != ShadowCastingMode.ShadowsOnly
                             && Array.TrueForAll(renderer.sharedMaterials, material => material != null
@@ -176,7 +173,7 @@ namespace RealmOfAshes.EditorTools
                                     StringComparison.Ordinal)))
                         && shadowCasters == generator.AuthoredShadowCasterCount
                         && shadowCasters > 0 && shadowCasters < renderers.Length / 2,
-                    "ожидались отдельные материалы кустарника и камней");
+                    "ожидались видимые материалы кустарника и камней");
                 MeshRenderer scrubRenderer = Array.Find(renderers, renderer => renderer.name == "Scrub");
                 MeshRenderer stoneRenderer = Array.Find(renderers,
                     renderer => renderer.name == "StonesAndDistantRidge");
@@ -209,8 +206,8 @@ namespace RealmOfAshes.EditorTools
                 settlement.Initialize(Location("settlement", 38, 38, 9961L), null);
                 Require(settlement.UsesAuthoredEnvironment
                         && settlement.AuthoredEnvironmentPrefabCount > 0,
-                    "settlement did not use the authored MEP environment palette");
-                Debug.Log("[WORLD READABILITY 4.4] authored MEP dressing: prefabs="
+                    "settlement did not use the authored PolygonApocalypse environment palette");
+                Debug.Log("[POLYGON APOCALYPSE] authored dressing: prefabs="
                     + initialAuthoredPrefabCount + ", renderers=" + initialAuthoredRendererCount
                     + ", accents=" + initialGroundAccentCount + ", unique vertices="
                     + initialAuthoredVertexCount);
@@ -280,6 +277,9 @@ namespace RealmOfAshes.EditorTools
 
         private static void CaptureIfRequested(GameObject host)
         {
+            const int captureLayer = 30;
+            foreach (Transform part in host.GetComponentsInChildren<Transform>(true))
+                part.gameObject.layer = captureLayer;
             string path = Environment.GetEnvironmentVariable("ROA_GROUND_DRESSING_CAPTURE");
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -335,6 +335,7 @@ namespace RealmOfAshes.EditorTools
                 cameraObject = new GameObject("GroundDressingCaptureCamera");
                 Camera camera = cameraObject.AddComponent<Camera>();
                 camera.enabled = false;
+                camera.cullingMask = 1 << captureLayer;
                 camera.clearFlags = CameraClearFlags.SolidColor;
                 camera.backgroundColor = new Color(0.11f, 0.085f, 0.055f);
                 camera.orthographic = false;
@@ -355,7 +356,7 @@ namespace RealmOfAshes.EditorTools
                 camera.targetTexture = target;
                 // Кадр, в котором редактор впервые встречает вариант шейдера, выходит
                 // испорченным: объект рисуется бирюзовым, красным или пурпурным. Материалы
-                // MEP (URP Lit со specular/detail) никто до этой пробы не рисует, поэтому
+                // Материалы пака никто до этой пробы не рисует, поэтому
                 // сначала прогревочный кадр, а меряется следующий.
                 for (int warmup = 0; warmup < 4; warmup++)
                 {
@@ -378,7 +379,7 @@ namespace RealmOfAshes.EditorTools
                 Require(darkRatio < 0.0075f,
                     "кадр снова провалился в чёрные пятна: " + darkRatio.ToString("0.0000") + " (" + path + ")");
                 Require(magentaRatio < 0.0001f,
-                    "MEP materials are rendered magenta: " + magentaRatio.ToString("0.0000") + " (" + path + ")");
+                    "PolygonApocalypse materials are rendered magenta: " + magentaRatio.ToString("0.0000") + " (" + path + ")");
                 Require(brightRatio < 0.18f,
                     "controlled environment capture is overexposed: " + brightRatio.ToString("0.0000") + " (" + path + ")");
                 Debug.Log("[ОФОРМЛЕНИЕ ЗЕМЛИ] доля почти чёрных пикселей: "

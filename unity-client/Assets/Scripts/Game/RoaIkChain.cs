@@ -24,6 +24,9 @@ namespace RealmOfAshes.Game
 
         public bool Ready { get; private set; }
 
+        /// <summary>Last link of the chain (hand, ankle).</summary>
+        public Transform End => _bones != null && _bones.Length > 0 ? _bones[_bones.Length - 1] : null;
+
         public RoaIkChain(Transform[] bones, int iterations, float tolerance)
         {
             _bones = bones;

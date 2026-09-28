@@ -18,6 +18,14 @@ namespace RealmOfAshes.Game
         public Dictionary<string, int> Cost;
         public int SilverFee;
         public int WorkSeconds;
+        /// <summary>Тир рецепта (0 — без тира), группа его вариантов, профессия и уровень доступа.</summary>
+        public int Tier;
+        public string RecipeGroup = string.Empty;
+        public string Profession = string.Empty;
+        public int Level;
+
+        /// <summary>Ключ карточки: все тиры одного изделия — одна карточка.</summary>
+        public string GroupKey { get { return string.IsNullOrEmpty(RecipeGroup) ? Id : RecipeGroup; } }
 
         /// <summary>
         /// Комиссия заказа: на участке столицы её назначает арендатор
@@ -109,44 +117,54 @@ namespace RealmOfAshes.Game
             Recipe("medicinecraft", "Медикаменты", "medicine", 3, "chem_station", "chemicals", 2, "water", 1),
             Recipe("reagentcraft", "Химикаты", "chemicals", 3, "chem_station", "oil", 2, "water", 1, "scrap", 1),
             Recipe("repairkitcraft", "Ремкомплект", "repairKit", 1, "repair_bench", "ore", 2, "wood", 2),
-            Recipe("knifecraft", "Боевой нож", "knife", 1, "weapon_bench", "ore", 2, "wood", 1),
-            Recipe("pistolcraft", "9mm пистолет", "pistol", 1, "weapon_bench", "weaponParts", 1, "scrap", 4, "ammoParts", 2),
-            Recipe("revolvercraft", "Ржавый револьвер", "revolver", 1, "weapon_bench", "ore", 4, "scrap", 4, "wood", 2),
-            Recipe("sawedoffcraft", "Обрез", "sawedOffShotgun", 1, "weapon_bench", "scrap", 5, "wood", 3),
-            Recipe("smgcraft", "Самодельный ПП", "smg", 1, "weapon_bench", "scrap", 8, "weaponParts", 3, "wood", 2),
-            Recipe("riflecraft", "Охотничья винтовка", "rifle", 1, "weapon_bench", "weaponParts", 2, "scrap", 5, "wood", 2),
-            Recipe("assaultcraft", "Ржавый автомат", "assaultRifle", 1, "weapon_bench", "ore", 6, "wood", 3),
-            Recipe("machineguncraft", "Самодельный пулемёт", "machineGun", 1, "weapon_bench", "ore", 10, "wood", 4),
-            Recipe("lasercraft", "Лазерный пистолет", "laserPistol", 1, "energy_bench", "ore", 5, "wood", 2),
-            Recipe("flamercraft", "Огнемёт", "flamethrower", 1, "weapon_bench", "ore", 9, "wood", 3, "oil", 2),
-            Recipe("plasmacraft", "Плазменное ружьё", "plasmaRifle", 1, "energy_bench", "ore", 10, "wood", 2, "silver", 10),
-            Recipe("shotguncraft", "Дробовик", "shotgun", 1, "weapon_bench", "ore", 7, "wood", 4),
-            Recipe("rocketcrafter", "Ракетница", "rocketLauncher", 1, "weapon_bench", "ore", 14, "wood", 4, "silver", 14),
-            Recipe("leathercraft", "Кожаная куртка", "leather", 1, "repair_bench", "scrap", 5, "chemicals", 1),
-            Recipe("metalarmorcraft", "Металлическая броня", "metalArmor", 1, "repair_bench", "scrap", 12, "ore", 4),
-            Recipe("ballisticvestcraft", "Бронежилет", "ballisticVest", 1, "repair_bench", "scrap", 10, "ammoParts", 5, "chemicals", 2),
-            Recipe("combatarmorcraft", "Боевая броня", "combatArmor", 1, "repair_bench", "scrap", 18, "electronics", 6, "chemicals", 4),
-            Recipe("hazmatsuitcraft", "Костюм химзащиты", "hazmatSuit", 1, "chem_station", "chemicals", 10, "scrap", 6),
-            Recipe("heavyarmorcraft", "Тяжёлая броня", "heavyArmor", 1, "repair_bench", "scrap", 26, "ore", 10, "electronics", 6),
-            Recipe("energysuitcraft", "Энергозащитный костюм", "energySuit", 1, "energy_bench", "electronics", 16, "chemicals", 8, "scrap", 10),
-            Recipe("prewarhelmetcraft", "Довоенный боевой шлем", "preWarHelmet", 1, "energy_bench", "scrap", 6, "electronics", 3),
-            Recipe("weldedhelmetcraft", "Сварной шлем", "weldedHelmet", 1, "tool_bench", "scrap", 4),
-            Recipe("helmetcraft", "Стальной шлем", "helmet", 1, "repair_bench", "scrap", 4),
-            Recipe("tacticalhelmetcraft", "Тактический шлем", "tacticalHelmet", 1, "repair_bench", "scrap", 6, "electronics", 2),
-            Recipe("assaulthelmetcraft", "Штурмовой шлем", "assaultHelmet", 1, "repair_bench", "scrap", 8, "electronics", 3),
-            Recipe("bootscraft", "Армейские ботинки", "boots", 1, "tool_bench", "scrap", 3, "chemicals", 1),
-            Recipe("scoutbootscraft", "Разведботинки", "scoutBoots", 1, "tool_bench", "scrap", 4, "chemicals", 2),
-            Recipe("assaultbootscraft", "Штурмовые ботинки", "assaultBoots", 1, "tool_bench", "scrap", 5, "wood", 1),
-            Recipe("reinforcedbootscraft", "Усиленные ботинки", "reinforcedBoots", 1, "repair_bench", "scrap", 6, "ore", 2),
-            Recipe("backpackcraft", "Рюкзак", "backpack", 1, "tool_bench", "scrap", 5, "chemicals", 1),
-            Recipe("pickaxecraft", "Кирка", "pickaxe", 1, "tool_bench", "ore", 2, "wood", 2),
-            Recipe("axecraft", "Топор", "axe", 1, "tool_bench", "ore", 1, "wood", 3),
-            Recipe("handpumpcraft", "Ручной насос", "handPump", 1, "tool_bench", "ore", 3, "wood", 1, "scrap", 2),
             Recipe("weaponpartscraft", "Оружейные детали", "weaponParts", 2, "weapon_bench", "ore", 6, "scrap", 5),
             Recipe("electronicscraft", "Электроника", "electronics", 2, "energy_bench", "scrap", 3, "chemicals", 1)
         };
 
         public static IReadOnlyList<RoaCraftRecipe> Recipes { get { return _recipes; } }
+
+        /// <summary>Уровень профессии из состояния игрока (self.professions); 0, если её нет.</summary>
+        public static int ProfessionLevel(JObject self, string professionId)
+        {
+            if (self?["professions"] is JArray rows)
+                foreach (JToken token in rows)
+                    if (token is JObject row && row["id"]?.ToString() == professionId)
+                        return row["level"]?.ToObject<int?>() ?? 0;
+            return 0;
+        }
+
+        public static bool ProfessionAllows(JObject self, RoaCraftRecipe recipe)
+        {
+            return recipe == null || string.IsNullOrEmpty(recipe.Profession)
+                || ProfessionLevel(self, recipe.Profession) >= recipe.Level;
+        }
+
+        /// <summary>
+        /// По рецепту на изделие: старший тир, открытый профессией игрока (или
+        /// младший, если закрыты все). Для списков, где пять тиров — лишний шум.
+        /// </summary>
+        public static List<RoaCraftRecipe> GroupRepresentatives(JObject self)
+        {
+            var order = new List<string>();
+            var best = new Dictionary<string, RoaCraftRecipe>();
+            foreach (RoaCraftRecipe recipe in _recipes)
+            {
+                string key = recipe.GroupKey;
+                if (!best.TryGetValue(key, out RoaCraftRecipe current))
+                {
+                    order.Add(key);
+                    best[key] = recipe;
+                    continue;
+                }
+                bool open = ProfessionAllows(self, recipe);
+                bool currentOpen = ProfessionAllows(self, current);
+                if ((open && (!currentOpen || recipe.Tier > current.Tier)) || (!open && !currentOpen && recipe.Tier < current.Tier))
+                    best[key] = recipe;
+            }
+            var result = new List<RoaCraftRecipe>(order.Count);
+            foreach (string key in order) result.Add(best[key]);
+            return result;
+        }
 
         /// <summary>Atomically replaces the baked fallback recipes with server-authored rows.</summary>
         public static bool ApplyCatalog(JObject catalog, out string error)
@@ -202,7 +220,11 @@ namespace RealmOfAshes.Game
                     Station = station,
                     Cost = cost,
                     SilverFee = System.Math.Max(0, row?["silverFee"]?.ToObject<int?>() ?? 0),
-                    WorkSeconds = System.Math.Max(1, row?["workSeconds"]?.ToObject<int?>() ?? 1)
+                    WorkSeconds = System.Math.Max(1, row?["workSeconds"]?.ToObject<int?>() ?? 1),
+                    Tier = System.Math.Max(0, row?["tier"]?.ToObject<int?>() ?? 0),
+                    RecipeGroup = row?["recipeGroup"]?.ToString() ?? string.Empty,
+                    Profession = row?["profession"]?.ToString() ?? string.Empty,
+                    Level = System.Math.Max(0, row?["level"]?.ToObject<int?>() ?? 0)
                 });
             }
             _recipes = next;

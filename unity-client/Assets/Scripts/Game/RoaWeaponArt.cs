@@ -64,7 +64,8 @@ namespace RealmOfAshes.Game
         {
             EnsureScene();
 
-            string url = BaseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + weaponId + ".glb";
+            string rigId = RoaApocalypseModels.WeaponRig(weaponId);
+            string url = BaseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + rigId + ".glb";
             var import = new GltfImport();
 
             if (!await import.Load(RoaModelUrl.Lite(url)))
@@ -90,6 +91,9 @@ namespace RealmOfAshes.Game
                 if (_loadingWeaponId == weaponId) Clear(weaponId);
                 return;
             }
+
+            RoaApocalypseVisuals.AttachStatic(_model.transform,
+                RoaApocalypseModels.Weapon(weaponId), 180f);
 
             SetLayerRecursively(_model, RoaCharacterPreview.PreviewLayer);
             FrameAndRender();
@@ -139,11 +143,13 @@ namespace RealmOfAshes.Game
 
         private static Bounds ComputeBounds(GameObject root)
         {
-            var renderers = root.GetComponentsInChildren<Renderer>();
-            if (renderers.Length == 0) return new Bounds(root.transform.position, Vector3.zero);
+            var renderers = new List<Renderer>();
+            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>())
+                if (renderer.enabled) renderers.Add(renderer);
+            if (renderers.Count == 0) return new Bounds(root.transform.position, Vector3.zero);
 
             Bounds bounds = renderers[0].bounds;
-            for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+            for (int i = 1; i < renderers.Count; i++) bounds.Encapsulate(renderers[i].bounds);
             return bounds;
         }
 

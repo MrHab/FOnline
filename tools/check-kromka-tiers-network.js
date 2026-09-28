@@ -16,6 +16,8 @@ const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
 const tiers = require('../src/server/kromka-tiers');
 const gathering = require('../src/server/gathering');
+const zoneGrounds = require('../src/server/zone-grounds');
+const GROUNDS = zoneGrounds.normalizeGrounds(require('../data/kromka/grounds.json'));
 
 const ROOT = path.resolve(__dirname, '..');
 const LOCATION = 'tierArena';
@@ -110,6 +112,14 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
           `place ${place.id} carries its tier on the world map`);
       }
     }
+    // Угодья: у каждой зоны, кроме Ключей, — угодья клина и три семейства.
+    for (const zone of map.zones) {
+      const expected = GROUNDS.zones[zone.id];
+      if (zone.city) continue;
+      assert.equal(zone.grounds?.id || '', expected || '', `zone ${zone.id} carries its grounds on the world map`);
+      if (expected) assert.deepEqual(zone.grounds.families, [...GROUNDS.grounds[expected].families]);
+      assert.equal(zone.hotspot?.family || '', GROUNDS.hotspots[zone.id]?.family || '', `zone ${zone.id} carries its hotspot`);
+    }
     const cities = map.zones.filter(zone => zone.city);
     assert.equal(cities.length, 7, 'the world map has its seven cities');
     assert(map.zones.some(zone => !zone.city && zone.tier === 5) && map.zones.some(zone => !zone.city && zone.tier === 1),
@@ -122,14 +132,21 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     assert.equal(city.roomId.split(':')[0], CITY, 'the citizen joined the city');
     assert.equal(city.worldState?.tier, 1, 'a city is tier 1 whatever its sector danger');
     const cityNodes = city.worldState?.resources || [];
+    // Город растит семейства своих угодий — угодий сектора, где он стоит.
+    const cityZone = graph.zones.find(zone => zone.city === CITY);
+    const cityGround = zoneGrounds.groundsFor(GROUNDS, { zoneId: cityZone.id });
     for (const type of ['ore', 'wood', 'fiber', 'oil']) {
       const rows = cityNodes.filter(row => row.type === type);
-      assert(rows.length >= 2 && rows.every(row => row.tier === 1), `the city grows T1 ${type}: ` + JSON.stringify(cityNodes));
+      if (cityGround.families.includes(type)) {
+        assert(rows.length >= 2 && rows.every(row => row.tier === 1), `the city grows T1 ${type}: ` + JSON.stringify(cityNodes));
+      } else {
+        assert.equal(rows.length, 0, `the city grows no ${type}, its grounds lack it: ` + JSON.stringify(cityNodes));
+      }
     }
     const { TILES, WALL_HALF } = require('../src/server/city-builder');
     const outside = cityNodes.filter(row => Math.abs(row.tx - TILES / 2) >= WALL_HALF || Math.abs(row.tz - TILES / 2) >= WALL_HALF);
     assert.deepEqual(outside, [], 'every city node stands inside the city wall');
-    console.log(`PASS the city holds tier 1 nodes of every family (${cityNodes.length})`);
+    console.log(`PASS the city holds tier 1 nodes of its grounds' families (${cityGround.id}: ${cityNodes.length})`);
 
     // Инструмент не обязателен: кирка ниже тира узла не мешает, но и не ускоряет.
     const lowTool = await startGather(accounts.target);

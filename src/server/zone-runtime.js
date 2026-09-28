@@ -248,7 +248,7 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
    * nameOf(locationId) — имя места, как его видит игрок; tierOf(locationId) — тир
    * зоны и места (значок тира на карте), без него — опасность зоны.
    */
-  function worldMap(nameOf = () => '', tierOf = null) {
+  function worldMap(nameOf = () => '', tierOf = null, extrasOf = null) {
     const tierOfZone = zone => tierOf ? tierOf(zoneLocationId(zone)) : zone.difficulty;
     return {
       schema: 'kromka.worldMap.v1',
@@ -261,6 +261,8 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
         id: zoneLocationId(zone), n: zone.n, col: zone.col, row: zone.row, title: zone.title, region: zone.region, mode: zone.mode,
         tier: tierOfZone(zone),
         ...(zone.city ? { city: zone.city } : {}),
+        // Угодья и жила зоны (библия, 4.5), если сервер их передал.
+        ...(extrasOf ? extrasOf(zoneLocationId(zone)) : {}),
         // Открытые стороны: n, e, s, w.
         gates: ['north', 'east', 'south', 'west'].filter(side => zone.edges[side]?.open).map(side => side[0]).join(''),
         places: zone.places.filter(place => !place.hidden).map(place => ({

@@ -29,13 +29,16 @@ assert.equal(plots.plotIdFor('', 'x'), '');
 
 // --- возврат материалов --------------------------------------------------------------
 {
-  const base = plots.plotReturnRate(config, 'sluiceCity', 'weapon_bench');
+  const base = plots.plotReturnRate(config, 'settlement', 'weapon_bench');
   assert.equal(Number(base.toFixed(4)), Number((1 - 1 / 1.18).toFixed(4)), 'a plot returns 15.25% of materials');
   const regionalLocation = Object.keys(config.regions)[0];
   const regionalStation = config.regions[regionalLocation][0];
   assert.equal(Number(plots.plotReturnRate(config, regionalLocation, regionalStation).toFixed(4)), Number((1 - 1 / 1.33).toFixed(4)),
     'a profile region adds +15 bonus');
   assert.equal(Number(plots.plotReturnRate(config, 'x', 'y', true).toFixed(4)), Number((1 - 1 / 1.77).toFixed(4)), 'premium focus adds +59');
+  // Ремесло города (угодья, библия 4.5): переработка его семейства — профильный бонус на любом станке.
+  assert.equal(Number(plots.plotReturnRate(config, 'settlement', 'tool_bench', false, true).toFixed(4)), Number((1 - 1 / 1.33).toFixed(4)),
+    'the city craft adds the profile bonus on any bench');
   const rows = plots.rollPlotReturns([{ id: 'scrap', qty: 10 }, { id: 'silver', qty: 5 }, { id: 'wood', qty: 1 }], 0.25, () => 0.4);
   assert.deepEqual(plain(rows), [{ id: 'scrap', qty: 3 }], '2.5 scrap → 2 + roll; marks never return; 0.25 wood fails the roll');
 }

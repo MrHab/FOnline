@@ -527,6 +527,7 @@ const {
 const { buildTutorialStartingLoadout, buildTutorialSupplies } = require('./src/server/starting-loadout');
 const { harvestBonusChance } = require('./src/server/harvest-bonus');
 const gathering = require('./src/server/gathering');
+const zoneGrounds = require('./src/server/zone-grounds');
 const { planFailedPlayerActivities } = require('./src/server/player-activity-recovery');
 const {
   createResourceExpedition,
@@ -809,6 +810,8 @@ const KROMKA_TERRITORY_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'territory.j
 const KROMKA_PVE_AREAS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'pve-areas.json');
 const KROMKA_PUBLIC_EVENTS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'public-events.json');
 const KROMKA_NPCS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'npcs.json');
+// Угодья (библия, 4.5): какие семейства ресурсов растут в зоне и что перерабатывает город.
+const ZONE_GROUNDS = zoneGrounds.normalizeGrounds(JSON.parse(fs.readFileSync(path.join(BUNDLED_DATA_DIR, 'kromka', 'grounds.json'), 'utf8')));
 const KROMKA_ANOMALIES_FILE = path.join(BUNDLED_DATA_DIR, 'anomalies.json');
 const KROMKA_ONBOARDING_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'onboarding.json');
 const KROMKA_MUTANTS_FILE = path.join(BUNDLED_DATA_DIR, 'mutants.json');
@@ -2121,9 +2124,19 @@ app.get('/api/locations', (_, res) => {
 // обращении). Ответ сжат и кэшируется по ревизии зоны.
 // Обзорная карта мира зон: одна на всех, сжата и кэширована до смены графа.
 let worldMapResponse = null;
+/** Угодья зоны для карты мира: чьи они, три семейства и жила, если есть. */
+function serverPublicZoneGrounds(zoneLocationId = '') {
+  const ground = serverLocationGrounds(zoneLocationId);
+  const hotspot = ZONE_RUNTIME.isZone(zoneLocationId) ? ZONE_GROUNDS.hotspots[zoneLocationId] : null;
+  return {
+    ...(ground ? { grounds: { id: ground.id, name: ground.name, families: [...ground.families] } } : {}),
+    ...(hotspot ? { hotspot: { family: hotspot.family, tier: hotspot.tier, name: hotspot.name } } : {})
+  };
+}
+
 app.get('/api/world-map', (_, res) => {
   if (!worldMapResponse || worldMapResponse.revision !== ZONE_RUNTIME.graph.worldRevision) {
-    const body = Buffer.from(JSON.stringify({ ok: true, map: ZONE_RUNTIME.worldMap(serverLocationPublicName, serverLocationTier) }), 'utf8');
+    const body = Buffer.from(JSON.stringify({ ok: true, map: ZONE_RUNTIME.worldMap(serverLocationPublicName, serverLocationTier, serverPublicZoneGrounds) }), 'utf8');
     worldMapResponse = { revision: ZONE_RUNTIME.graph.worldRevision, body, gzip: gzipJsonBuffer(body) };
   }
   sendJsonBuffer(res, worldMapResponse.body, worldMapResponse.gzip);
@@ -2232,6 +2245,21 @@ function serverEcologySpeciesLivesInTier(species = {}, tier = 1) {
   return kromkaTiers.speciesLivesInTier(KROMKA_TIER_CONFIG, memberType, tier);
 }
 
+/**
+ * Вес вида в логове клетки: вид чужого тира не заводится, зверь со шкурой — по
+ * угодьям зоны (где шкур нет — не заводится, где они основные — чаще).
+ */
+function serverEcologySpeciesWeight(species = {}, cell = {}) {
+  if (!serverEcologySpeciesLivesInTier(species, cell.tier)) return 0;
+  const zone = serverEcologyZoneAt(cell.sx, cell.sy);
+  const ground = zone ? zoneGrounds.groundsFor(ZONE_GROUNDS, { zoneId: zone.id }) : null;
+  const memberType = String(species.members?.[0]?.type || '');
+  return zoneGrounds.beastWeight(ZONE_GROUNDS, ground, {
+    hideBeast: KROMKA_TIER_CONFIG.hideDrops.species.includes(memberType),
+    hotspotFamily: zone ? (ZONE_GROUNDS.hotspots[zone.id]?.family || '') : ''
+  });
+}
+
 function serverEcologySpeciesAllowedAt(species, sx, sy) {
   const zone = serverEcologyZoneAt(sx, sy);
   return !!zone && serverEcologySpeciesLivesInTier(species, zone.difficulty || 1);
@@ -2282,6 +2310,9 @@ function serverEcologyRevision() {
     DANGER_ECOLOGY.lairs,
     DANGER_ECOLOGY.species.map(row => [row.id, row.habitat, row.regions]),
     KROMKA_TIER_CONFIG.enemies.species,
+    KROMKA_TIER_CONFIG.hideDrops.species,
+    ZONE_GROUNDS.zones,
+    ZONE_GROUNDS.hotspots,
     ZONE_RUNTIME.graph.zones.map(zone => [zone.id, zone.mode, zone.difficulty])
   ]);
   return `zones:${Math.floor(ecologyHash01(source) * 4294967296).toString(36)}`;
@@ -2294,7 +2325,7 @@ function serverEcologyState() {
   if (state.mapRevision !== revision || !state.lairs.size) {
     // Группы прежних логов остаются бродягами, пока не погибнут.
     ecologyResetLairs(state, ecologyBuildLairs(DANGER_ECOLOGY, serverEcologyCandidates(), revision, {
-      speciesAllowed: (species, cell) => serverEcologySpeciesLivesInTier(species, cell.tier)
+      speciesAllowed: serverEcologySpeciesWeight
     }), revision);
   }
   dangerEcologyState = state;
@@ -16015,7 +16046,8 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   let plotReturns = plot
     ? rollPlotReturns(
       Object.entries(crafted.requirements || {}).map(([id, qty]) => ({ id, qty })),
-      plotReturnRate(WORLD_ECONOMY.plots, locationId, requiredStation, focusCost > 0),
+      plotReturnRate(WORLD_ECONOMY.plots, locationId, requiredStation, focusCost > 0,
+        serverCityRefinesRecipe(locationId, recipeId)),
       Math.random
     )
     : [];
@@ -17216,6 +17248,38 @@ function serverReachableTiles(room, loc = {}, starts = []) {
  * детерминированно (хеш id локации), подальше от входов и других узлов, в городе —
  * ближе к окраине, чтобы не перегородить улицы.
  */
+/**
+ * Ремесло города (библия, 4.5): переработка семейства, которого нет в его
+ * угодьях, получает профильный бонус участка на любом станке города.
+ */
+function serverCityRefinesRecipe(locationId = '', recipeId = '') {
+  const family = zoneGrounds.cityRefineFamily(ZONE_GROUNDS, locationId);
+  if (!family) return false;
+  const row = SERVER_TIER_FAMILY_BY_RESOURCE.get(family);
+  const outputId = String(KROMKA_FIELD_RECIPE_INDEXES.byId[String(recipeId || '')]?.output?.id || '');
+  return !!row && !!outputId && row.refined.ids.includes(outputId);
+}
+
+/**
+ * Угодья локации: город — свои угодья, зона — угодья своего клина, место —
+ * угодья зоны, в которой оно стоит. null — угодий нет (Ключи, обучение, база).
+ */
+function serverLocationGrounds(locationId = '') {
+  const id = String(locationId || '');
+  if (!id) return null;
+  if (ZONE_GROUNDS.byCity[id] || id === ZONE_GROUNDS.centerLocationId) {
+    return zoneGrounds.groundsFor(ZONE_GROUNDS, { cityLocationId: id });
+  }
+  const zoneId = ZONE_RUNTIME.isZone(id) ? id : (ZONE_RUNTIME.cityOf(id)?.id || ZONE_RUNTIME.parentZoneOf(id));
+  return zoneGrounds.groundsFor(ZONE_GROUNDS, { zoneId });
+}
+
+/** Жила основного ресурса угодий: только в самой зоне, не в местах внутри неё. */
+function serverLocationHotspotFamily(locationId = '') {
+  const id = String(locationId || '');
+  return ZONE_RUNTIME.isZone(id) ? (ZONE_GROUNDS.hotspots[id]?.family || '') : '';
+}
+
 function ensureTierResourceNodes(room, loc = roomLocation(room)) {
   if (!room || !(room.resources instanceof Map) || !Array.isArray(room.map)) return false;
   let changed = false;
@@ -17226,6 +17290,25 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
     changed = true;
   }
   const tier = serverRoomTier(room);
+  // Угодья решают, какие семейства растут здесь: узел семейства, которого в
+  // угодьях нет, становится семейством угодий (детерминированно по его id).
+  const roomLocationId = String(loc?.id || room.locationId || '');
+  const ground = serverLocationGrounds(roomLocationId);
+  const nodeTargets = zoneGrounds.nodeTargets(ZONE_GROUNDS, ground,
+    Object.values(SERVER_TIER_RESOURCE_MINIMUM).reduce((sum, value) => sum + value, 0),
+    serverLocationHotspotFamily(roomLocationId));
+  if (ground) {
+    for (const resource of room.resources.values()) {
+      if (resource.carcass) continue;
+      const type = normalizeServerResourceType(resource.type);
+      if (Number(nodeTargets[type] || 0) > 0) continue;
+      const replacement = zoneGrounds.replacementFamily(ground, stableSiteResourceHash(`${roomLocationId}:${resource.id}`) / 4294967296);
+      if (!replacement) continue;
+      resource.type = replacement;
+      updateResourceTile(room, resource);
+      changed = true;
+    }
+  }
   // Запас узла — по тиру, как заряды узлов Albion: полный узел остаётся полным.
   const charges = gathering.nodeCharges(KROMKA_TIER_CONFIG, tier);
   for (const resource of room.resources.values()) {
@@ -17270,7 +17353,7 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
     return best;
   };
 
-  for (const [type, minimum] of Object.entries(SERVER_TIER_RESOURCE_MINIMUM)) {
+  for (const [type, minimum] of Object.entries(nodeTargets)) {
     let count = [...room.resources.values()].filter(resource => normalizeServerResourceType(resource.type) === type).length;
     for (let index = 0; count < minimum && index < minimum; index++) {
       const id = `tier_${type}_${index + 1}`;

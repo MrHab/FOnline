@@ -138,6 +138,46 @@ namespace RealmOfAshes.Game
             return "Тир " + RoaTierData.Badge(tier) + ": ресурсы и враги только " + tier + "-го тира";
         }
 
+        /// <summary>Семейство ресурсов по-русски: ore → «руда».</summary>
+        public static string FamilyName(string family)
+        {
+            switch (family)
+            {
+                case "ore": return "руда";
+                case "wood": return "дерево";
+                case "fiber": return "волокно";
+                case "oil": return "нефть";
+                case "hide": return "шкуры";
+                default: return family ?? string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Строки карточки об угодьях (библия, 4.5): чьи угодья и три семейства
+        /// ресурсов по убыванию, а если зона — жила, то её имя и тир.
+        /// </summary>
+        public static string GroundsText(JObject zone)
+        {
+            var text = new System.Text.StringBuilder();
+            JObject grounds = zone?["grounds"] as JObject;
+            if (grounds != null)
+            {
+                var families = new List<string>();
+                foreach (JToken token in grounds["families"] as JArray ?? new JArray()) families.Add(FamilyName(token?.ToString()));
+                text.Append(grounds["name"]?.ToString() ?? "Угодья").Append(": ").Append(string.Join(", ", families));
+            }
+            JObject hotspot = zone?["hotspot"] as JObject;
+            if (hotspot != null)
+            {
+                if (text.Length > 0) text.Append('\n');
+                int tier = hotspot["tier"]?.ToObject<int?>() ?? 0;
+                text.Append("Жила ").Append(tier > 0 ? RoaTierData.Badge(tier) + ": " : ": ")
+                    .Append(hotspot["name"]?.ToString() ?? string.Empty)
+                    .Append(" — ").Append(FamilyName(hotspot["family"]?.ToString())).Append(" ×2");
+            }
+            return text.ToString();
+        }
+
         public static string DangerRulesText(string mode)
         {
             switch (DangerRank(mode))
@@ -343,6 +383,8 @@ namespace RealmOfAshes.Game
             body.Append("Зона ").Append(DangerRulesText(zone["mode"]?.ToString())).Append('\n');
             string tierLine = TierRulesText(Tier(_selectedPlace ?? zone));
             if (!string.IsNullOrEmpty(tierLine)) body.Append(tierLine).Append('\n');
+            string groundsLine = GroundsText(zone);
+            if (!string.IsNullOrEmpty(groundsLine)) body.Append(groundsLine).Append('\n');
             string gates = zone["gates"]?.ToString() ?? string.Empty;
             var open = new List<string>();
             foreach (char side in RoaWorldMapRoute.Sides) if (gates.IndexOf(side) >= 0) open.Add(RoaWorldMapRoute.GateName(side));

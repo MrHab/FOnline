@@ -341,9 +341,13 @@ function plotCraftFee(plot, config, userCharacterId = '', value = 0, baseFee = 0
   return { fee: Math.max(floor, shareOf(worth, config.unleasedFeePct)), payee: null, leased: false, own: false };
 }
 
-/** Доля возвращённых материалов: 1 − 1/(1 + бонус/100). */
-function plotReturnRate(config, locationId = '', station = '', premium = false) {
-  const regional = (config.regions[safeId(locationId)] || []).includes(safeId(station, 32));
+/**
+ * Доля возвращённых материалов: 1 − 1/(1 + бонус/100). Профильный бонус даёт
+ * станок профиля города или ремесло города (specialized — переработка
+ * семейства, которого нет в его угодьях).
+ */
+function plotReturnRate(config, locationId = '', station = '', premium = false, specialized = false) {
+  const regional = specialized || (config.regions[safeId(locationId)] || []).includes(safeId(station, 32));
   const bonus = config.plotBonus + (regional ? config.regionBonus : 0) + (premium ? config.premiumFocusBonus : 0);
   return bonus > 0 ? 1 - 1 / (1 + bonus / 100) : 0;
 }

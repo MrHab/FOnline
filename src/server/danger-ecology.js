@@ -296,7 +296,12 @@ function serializeEcologyState(state) {
 // --- логова ---------------------------------------------------------------------------------
 
 function pickSpecies(config, mode, region, roll, allowed = () => true) {
-  const weights = config.species.map(row => (allowed(row) ? row.habitat[mode] * (row.regions[region] ?? 1) : 0));
+  // allowed — да/нет или множитель веса (угодья делают зверя чаще или реже).
+  const weights = config.species.map(row => {
+    const verdict = allowed(row);
+    const factor = verdict === true ? 1 : verdict === false ? 0 : Math.max(0, Number(verdict) || 0);
+    return factor > 0 ? row.habitat[mode] * (row.regions[region] ?? 1) * factor : 0;
+  });
   const total = weights.reduce((sum, weight) => sum + weight, 0);
   if (!(total > 0)) return null;
   let left = roll * total;
@@ -312,7 +317,8 @@ function pickSpecies(config, mode, region, roll, allowed = () => true) {
  * место логова (логово зоны мира, `slot` — его номер в зоне): оно ставится
  * всегда; без `id` клетка становится логовом с вероятностью density цвета.
  * Расстановка детерминирована по ревизии: тот же мир даёт те же логова.
- * options.speciesAllowed(species, cell) отсекает виды, чуждые клетке (тир зоны).
+ * options.speciesAllowed(species, cell) отсекает виды, чуждые клетке (тир зоны),
+ * или возвращает множитель веса вида (угодья зоны).
  */
 function buildLairs(config, candidates = [], mapRevision = '', options = {}) {
   const speciesAllowed = typeof options.speciesAllowed === 'function' ? options.speciesAllowed : () => true;

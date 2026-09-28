@@ -15,8 +15,15 @@ function authoredNodeForSite(map = {}, site = {}) {
     && (keys.has(node.id) || keys.has(node.locationId))) || null;
 }
 
+// Места, которые остались на карте, но больше не живут в симуляции поселений:
+// «Баланс» — подземелье Комитета, а не город (библия, 4.4), в нём нет ни
+// торговца, ни охраны, ни жителей. Их прежняя запись уходит в архив, как у
+// снятых с карты мест.
+const RETIRED_SITE_IDS = new Set(['balanceBunker']);
+
 function isPlacedWorldSite(map, site) {
   return !!site && !site.districtInterest && !String(site.id || '').startsWith('district_interest_')
+    && !RETIRED_SITE_IDS.has(String(site.id || ''))
     && !!authoredNodeForSite(map, site);
 }
 

@@ -440,7 +440,6 @@ function defaultSites(globalMap = {}) {
   const caravanCamp = mapNode(globalMap, 'caravanCamp') || { x: 495, y: 495 };
   const sluiceCity = mapNode(globalMap, 'sluiceCity') || { x: 105, y: 255 };
   const secondHaven = mapNode(globalMap, 'secondHaven') || { x: 115, y: 105 };
-  const balanceBunker = mapNode(globalMap, 'balanceBunker') || { x: 325, y: 55 };
   const cascadeRegenerator = mapNode(globalMap, 'cascadeRegenerator') || { x: 225, y: 85 };
   const sites = {
     settlement: {
@@ -555,21 +554,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 260, water: 12, food: 8, medicine: 10, blue: 4 },
       security: 48,
       prosperity: 28
-    },
-    balanceBunker: {
-      id: 'balanceBunker',
-      type: 'settlement',
-      name: 'Баланс',
-      x: balanceBunker.x,
-      y: balanceBunker.y,
-      owner: 'continuity',
-      pvpMode: 'peaceful',
-      capital: true,
-      capitalFaction: 'continuity',
-      locationId: 'balanceBunker',
-      stockpile: { ...emptyStockpile(), silver: 600, medicine: 24, electronics: 30, blue: 30 },
-      security: 78,
-      prosperity: 55
     },
     cascadeRegenerator: {
       id: 'cascadeRegenerator',

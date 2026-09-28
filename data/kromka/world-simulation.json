@@ -92,15 +92,6 @@
       "integrity": 52,
       "tension": 38,
       "initialStock": { "water": 52, "food": 44, "medicine": 16, "oil": 10 }
-    },
-    "balanceBunker": {
-      "population": 132,
-      "protected": true,
-      "protectedMinimum": 80,
-      "health": 78,
-      "integrity": 88,
-      "tension": 26,
-      "initialStock": { "water": 70, "food": 55, "medicine": 26, "oil": 18 }
     }
   },
   "anomalyCycle": {

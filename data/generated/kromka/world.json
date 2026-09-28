@@ -1100,8 +1100,8 @@
       "kind": "complex",
       "locationCount": 1,
       "locationId": "balanceBunker",
-      "capital": true,
-      "capitalFaction": "continuity",
+      "capital": false,
+      "capitalFaction": "",
       "hidden": false,
       "danger": 5,
       "model": "relayAntenna",
@@ -1618,5 +1618,5 @@
       "spawnId": "keys-arrival"
     }
   ],
-  "contentHash": "f807fdd6908bb931b500db9be750572da5cb7ae21918816bb3fafc05e583b2fd"
+  "contentHash": "6d05af78adf4ddff3d4eab2c3dce359202a03e154c5e6ce302205b979b8a8325"
 }

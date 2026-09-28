@@ -41,10 +41,10 @@ function rows(input = []) {
 }
 
 const context = {
-  SERVER_FACTION_STORAGE_IDS: new Set(['uprava', 'free_artels', 'contour', 'tract_league', 'seconds', 'continuity']),
+  SERVER_FACTION_STORAGE_IDS: new Set(['uprava', 'free_artels', 'contour', 'tract_league', 'seconds']),
   sanitizeServerInventorySnapshot: rows,
   serverInventoryRowsToObject: input => Object.fromEntries(rows(input).map(row => [row.id, row.qty])),
-  locationCapitalFaction: value => ({ sluiceCity: 'uprava', scrapTown: 'free_artels', relayStation: 'contour', caravanCamp: 'tract_league', secondHaven: 'seconds', balanceBunker: 'continuity' })[String(value || '')] || ''
+  locationCapitalFaction: value => ({ sluiceCity: 'uprava', scrapTown: 'free_artels', relayStation: 'contour', caravanCamp: 'tract_league', secondHaven: 'seconds' })[String(value || '')] || ''
 };
 vm.createContext(context);
 vm.runInContext([

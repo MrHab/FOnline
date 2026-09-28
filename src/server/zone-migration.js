@@ -8,7 +8,12 @@
 // Та же функция работает при входе (восстановленные бэкапы) и в инструменте
 // tools/migrate-saves-to-zones.js. Модуль чистый.
 
-const { zoneAtPoint, zoneLocationId } = require('./zone-graph');
+const { zoneAtPoint, zoneLocationId, zoneOfPlace } = require('./zone-graph');
+
+// Ревизия мест: растёт, когда город перестаёт быть городом. Сервер пишет её в
+// каждое сохранение, поэтому зашедший в бывший город уже после перемены там и
+// останется, а сохранённый в нём раньше проснётся в безопасной зоне.
+const PLACES_REVISION = 1;
 
 const SAFE_MODES = Object.freeze(['peaceful', 'pve']);
 const HARSH_MODES = Object.freeze(['pvpFullDrop', 'pvpBlack']);
@@ -23,6 +28,11 @@ function finitePoint(value) {
 function zoneForMigration(graph, point) {
   const zone = zoneAtPoint(graph, point.x, point.y);
   if (!zone || !HARSH_MODES.includes(zone.mode)) return zone;
+  return nearestSafeZone(graph, zone);
+}
+
+/** Ближайшая к зоне синяя или мирная зона (сама зона, если она такая). */
+function nearestSafeZone(graph, zone) {
   let best = null;
   let bestD = Infinity;
   for (const other of graph.zones) {
@@ -65,6 +75,24 @@ function migrateSaveStateToZones(state, graph) {
     delete state.serverLocationContext;
     Object.assign(result, { changed: true, zoneId: taken.id, reason: 'sectorBecameCity' });
   }
+  // Город, который стал местом («Баланс» — подземелье с правилами красной зоны,
+  // библия 4.4), больше не мирен: сохранённый в нём до перемены просыпается в
+  // ближайшей к нему синей или мирной зоне, а не в подземелье.
+  const before = Number(state.placesRevision) || 0;
+  if (!result.changed && before < PLACES_REVISION && (graph.retiredCities || []).includes(saved)) {
+    const home = zoneOfPlace(graph, saved);
+    const safe = home ? nearestSafeZone(graph, home) : null;
+    if (safe) {
+      state.currentLocationId = zoneLocationId(safe);
+      state.player = { ...(state.player || {}), x: 0, z: 0 };
+      delete state.serverLocationContext;
+      Object.assign(result, { changed: true, zoneId: zoneLocationId(safe), reason: 'cityRetired' });
+    }
+  }
+  if (before < PLACES_REVISION) {
+    state.placesRevision = PLACES_REVISION;
+    result.changed = true;
+  }
   // Следы путешествия по карте больше ничего не значат.
   for (const key of ['globalMap', 'pendingWorldDrop', 'attachedPartyId']) {
     if (key in state) {
@@ -75,4 +103,4 @@ function migrateSaveStateToZones(state, graph) {
   return result;
 }
 
-module.exports = { migrateSaveStateToZones, zoneForMigration };
+module.exports = { PLACES_REVISION, migrateSaveStateToZones, nearestSafeZone, zoneForMigration };

@@ -9,12 +9,14 @@
   "cellsPerZone": 2
  },
  "capitals": [
-  "balanceBunker",
   "caravanCamp",
   "relayStation",
   "scrapTown",
   "secondHaven",
   "sluiceCity"
+ ],
+ "retiredCities": [
+  "balanceBunker"
  ],
  "zones": [
   {
@@ -747,10 +749,10 @@
    "col": 12,
    "row": 2,
    "n": 21,
-   "name": "Бункер «Баланс»",
-   "title": "Бункер «Баланс»",
+   "name": "Балансовый спуск",
+   "title": "Балансовый спуск №21",
    "region": "zero_basin",
-   "mode": "peaceful",
+   "mode": "pvp",
    "difficulty": 3,
    "ground": "zero_soil",
    "seed": 1019121387,
@@ -781,9 +783,17 @@
    "roads": [
     "zero_admin_access"
    ],
-   "places": [],
-   "authored": false,
-   "city": "balanceBunker"
+   "places": [
+    {
+     "locationId": "balanceBunker",
+     "kind": "complex",
+     "name": "Бункер «Баланс»",
+     "u": 0.35,
+     "v": 0.45,
+     "road": true
+    }
+   ],
+   "authored": false
   },
   {
    "id": "z_13_02",

@@ -66,14 +66,14 @@
       "type": "zoneGate",
       "auto": true,
       "direction": "east",
-      "label": "Бункер «Баланс»",
-      "to": "balanceBunker",
+      "label": "Балансовый спуск №21",
+      "to": "z_12_02",
       "entryKey": "entryFromWest",
       "tx": 155,
       "tz": 65,
       "radius": 5,
       "halfWidthTiles": 3,
-      "targetMode": "peaceful"
+      "targetMode": "pvp"
     },
     {
       "id": "gate_north",
@@ -29107,7 +29107,7 @@
     "gates": [
       {
         "dir": "east",
-        "to": "balanceBunker",
+        "to": "z_12_02",
         "tx": 155,
         "tz": 65,
         "halfWidthTiles": 3,

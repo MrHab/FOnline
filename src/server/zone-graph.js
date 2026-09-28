@@ -215,6 +215,8 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
     schema: SCHEMA, version: GRAPH_VERSION, worldRevision: String(globalMap.worldRevision || ''),
     grid: { cols, rows, zoneKm: ZONE_KM, cellsPerZone },
     capitals: [...capitals].filter(id => nodesById[id]).sort(),
+    // Бывшие города, ставшие местами: по ним миграция будит тех, кто в них сохранился.
+    ...((overrides.retiredCities || []).length ? { retiredCities: [...overrides.retiredCities].sort() } : {}),
     zones: [...zones.values()].sort((a, b) => a.n - b.n)
   };
   const lost = unreachableZones(graph);

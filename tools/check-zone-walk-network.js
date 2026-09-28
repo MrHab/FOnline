@@ -97,7 +97,7 @@ const getJson = route => new Promise((resolve, reject) => {
       'a city fills its own cell of the world map: ' + JSON.stringify(cityRow));
     const outpostRow = overview.zones.find(row => row.id === outpostZone.id);
     assert(outpostRow.places.some(place => place.id === 'roadOutpost'), 'places of a wasteland sector are listed');
-    assert.equal(overview.capitals.length, 6, 'the six capitals are marked');
+    assert.equal(overview.capitals.length, 5, 'the five faction cities are marked');
     console.log(`PASS the world map serves ${overview.zones.length} sectors, cities among them, with gates and places`);
 
     // --- ворота: только рядом и только к соседу ------------------------------------------------

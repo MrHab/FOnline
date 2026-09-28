@@ -18,19 +18,14 @@ const graph = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone
 const rules = travel.normalizeFastTravelRules(economy.fastTravel);
 const capitals = economy.dangerCells.capitals.map(id => ({ locationId: id, name: id, zone: zoneOfPlace(graph, id) }));
 
-assert.equal(capitals.length, 6, 'six faction capitals');
+assert.equal(capitals.length, 5, 'five faction cities');
 // Столица занимает свой сектор целиком: ворота соседей ведут прямо в неё.
 for (const row of capitals) assert(row.zone && row.zone.city === row.locationId, `${row.locationId} holds a sector of its own`);
 assert(economy.fastTravel && rules.baseFee > 0 && rules.feePerKm > 0, 'the fees come from economy.json');
 
-// Сеть переноса — пять городов фракций (библия, 4.1); Баланс — столица без диспетчера.
-const served = capitals.filter(row => travel.fastTravelServes(rules, row.locationId));
-assert.deepEqual(capitals.filter(row => !served.includes(row)).map(row => row.locationId), ['balanceBunker'], 'only Balance stays out of the network');
-assert.deepEqual(travel.fastTravelDestinations(rules, capitals, 'balanceBunker'), [], 'Balance has no dispatcher');
-const from = served[0];
+const from = capitals[0];
 const menu = travel.fastTravelDestinations(rules, capitals, from.locationId);
 assert.equal(menu.length, 4, 'a faction city sends to the four others');
-assert(!menu.some(row => row.locationId === 'balanceBunker'), 'nobody is sent to Balance');
 assert(menu.every(row => row.fee === Math.round(rules.baseFee + rules.feePerKm * row.distanceKm) || Math.abs(row.fee - (rules.baseFee + rules.feePerKm * row.distanceKm)) <= 1), 'the fee is base plus distance');
 assert(menu[0].fee <= menu[menu.length - 1].fee, 'nearer capitals are cheaper');
 assert.deepEqual(travel.fastTravelDestinations(rules, capitals, 'z_05_05'), [], 'no dispatcher outside a capital');
@@ -39,8 +34,8 @@ const trip = extra => ({ rules, capitals, fromLocationId: from.locationId, toLoc
 assert.equal(travel.fastTravelRefusal(trip()), '', 'a paid trip between capitals goes');
 assert.match(travel.fastTravelRefusal(trip({ fromLocationId: 'settlement' })), /только в столицах/);
 assert.match(travel.fastTravelRefusal(trip({ toLocationId: 'settlement' })), /только между столицами/);
+// «Баланс» — подземелье, а не город: диспетчера там нет и туда не отправляют.
 assert.match(travel.fastTravelRefusal(trip({ toLocationId: 'balanceBunker' })), /только между столицами/);
-assert.match(travel.fastTravelRefusal(trip({ fromLocationId: 'balanceBunker' })), /только в столицах/);
 assert.match(travel.fastTravelRefusal(trip({ lastCombatAt: 1_000_000 - 2000 })), /Из боя не отправляют/);
 assert.equal(travel.fastTravelRefusal(trip({ lastCombatAt: 1_000_000 - rules.combatLockMs - 1 })), '', 'the combat lock ends');
 assert.match(travel.fastTravelRefusal(trip({ cargo: [{ id: 'artifactSpring', category: 'artifacts', name: 'Артефакт «Пружина»' }] })), /не перевозят/);

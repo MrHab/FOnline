@@ -75,7 +75,7 @@ for (const node of map.nodes) {
   // Скрытые базы фракций — только выход в зону: внутрь попадают метро из узла Сердцевины.
   assert.equal(place.hidden === true, node.hidden === true, `${id}: hidden on the map means exit-only in its zone`);
 }
-assert.equal(graph.capitals.length, 6);
+assert.equal(graph.capitals.length, 5, 'five faction cities; Balance is a dungeon');
 // Столица занимает свой сектор целиком, и правила сектора — её собственные.
 for (const capital of graph.capitals) {
   const sector = zoneOfPlace(graph, capital);
@@ -98,7 +98,7 @@ for (const zone of graph.zones) {
 }
 const keysZone = zoneOfPlace(graph, 'settlement');
 assert(around(keysZone).every(other => other.mode === 'pvpFullDrop' && other.difficulty === 5), 'Keys is ringed by red zones of tier 5');
-for (const capital of graph.capitals.filter(id => id !== 'balanceBunker')) {
+for (const capital of graph.capitals) {
   assert(around(zoneOfPlace(graph, capital)).every(other => other.mode !== 'pvpFullDrop'), `${capital} is not next to a red zone`);
 }
 assert.equal(zoneAtPoint(graph, -50, 9999).id.startsWith('z_'), true, 'a point outside the world snaps to the nearest zone');

@@ -172,6 +172,29 @@ namespace RealmOfAshes.EditorTools
             Debug.Log("[ROA APOCALYPSE] Restored native size for " + count + " scene/prefab visuals.");
         }
 
+        /// <summary>
+        /// Из консоли: `-executeMethod RealmOfAshes.EditorTools.RoaApocalypseArtMigration.RunBatch`,
+        /// локации — из ROA_SCENES через запятую. Нужна сцене, вернувшейся из истории
+        /// до перехода на PolygonApocalypse: замена и родной размер, как у всех прочих.
+        /// </summary>
+        public static void RunBatch()
+        {
+            string list = Environment.GetEnvironmentVariable("ROA_SCENES");
+            if (string.IsNullOrWhiteSpace(list)) throw new InvalidOperationException("ROA_SCENES is empty.");
+            ValidatePack();
+            int count = 0;
+            foreach (string id in list.Split(',').Select(row => row.Trim()).Where(row => row.Length > 0))
+            {
+                string path = SceneRoot + "/" + id + ".unity";
+                if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null)
+                    throw new FileNotFoundException("Location scene is missing: " + path);
+                count += MigrateScene(path, false);
+                count += NormalizeSceneVisuals(path);
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log("[ROA APOCALYPSE] " + count + " scene visuals migrated in " + list + ".");
+        }
+
         [MenuItem("Realm of Ashes/PolygonApocalypse/Open city demo")]
         public static void OpenCityDemo()
         {

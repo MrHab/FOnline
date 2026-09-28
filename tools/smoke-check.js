@@ -635,7 +635,6 @@ async function assertWorldDataApis() {
     relayStation: 'contour',
     caravanCamp: 'tract_league',
     secondHaven: 'seconds',
-    balanceBunker: 'continuity',
     coreBaseUprava: 'uprava',
     coreBaseArtels: 'free_artels',
     coreBaseContour: 'contour',
@@ -643,7 +642,7 @@ async function assertWorldDataApis() {
   };
   // Столицы — города-секторы: их собирает конструктор, и сервер отдаёт такую
   // локацию по одной, как зону. В общем каталоге остаются только базы Сердцевины.
-  const cityCapitals = ['sluiceCity', 'scrapTown', 'relayStation', 'caravanCamp', 'secondHaven', 'balanceBunker'];
+  const cityCapitals = ['sluiceCity', 'scrapTown', 'relayStation', 'caravanCamp', 'secondHaven'];
   const coreBases = Object.keys(capitalStorageFactions).filter(id => !cityCapitals.includes(id)).sort();
   const locationsWithStorage = Object.values(publicLocationsData.locations || {})
     .filter(loc => !!loc?.storage)
@@ -652,7 +651,7 @@ async function assertWorldDataApis() {
   if (locationsWithStorage.join(',') !== coreBases.join(',')) {
     fail('personal storage exists outside the four core faction bases in the shared catalogue', JSON.stringify(locationsWithStorage));
   }
-  // Города-секторы: шесть столиц и Ключи. Все они приходят по одному.
+  // Города-секторы: пять столиц и Ключи. Все они приходят по одному.
   const capitalDefinitions = {};
   for (const id of [...cityCapitals, 'settlement']) {
     const one = await request(`/api/locations/${id}`);

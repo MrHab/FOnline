@@ -81,23 +81,51 @@ function mergeShelves(target = null, shelf = {}) {
  * замороженные марки ложатся на полку), полки переходят в legacyShelves.
  */
 function migrateLegacyMarket(markets, legacyInput = null, now = Date.now()) {
-  const legacy = normalizeMarketStore(legacyInput);
+  const moved = closeBookToLegacy(markets, normalizeMarketStore(legacyInput), now);
+  markets.migratedAt = Math.max(1, Math.floor(Number(now) || 1));
+  return moved;
+}
+
+/**
+ * Закрыть книгу: каждый ордер снимается (товар и замороженные марки ложатся на
+ * полку), полки уходят в legacyShelves — их заберут у первого аукционера.
+ */
+function closeBookToLegacy(markets, book, now = Date.now()) {
   let orders = 0;
-  for (const order of Object.values(legacy.orders)) {
+  for (const order of Object.values(book.orders)) {
     order.expiresAt = 0;
     orders += 1;
   }
-  expireOrders(legacy, undefined, now);
+  expireOrders(book, undefined, now);
   let shelves = 0;
-  for (const [characterId, shelf] of Object.entries(legacy.shelves)) {
+  for (const [characterId, shelf] of Object.entries(book.shelves)) {
     const key = safeId(characterId, 96);
     const clean = sanitizeShelf(shelf);
     if (!key || (clean.silver <= 0 && !clean.items.length)) continue;
     markets.legacyShelves[key] = mergeShelves(markets.legacyShelves[key] || null, clean);
     shelves += 1;
   }
-  markets.migratedAt = Math.max(1, Math.floor(Number(now) || 1));
   return { orders, shelves };
+}
+
+/**
+ * Книги городов, которые перестали быть городами («Баланс», библия 4.4):
+ * аукционера там больше нет, поэтому книга закрывается так же, как прежняя
+ * общая, и её полки ждут владельцев у любого другого аукционера.
+ */
+function retireCityBooks(markets, hubIds = [], now = Date.now()) {
+  const moved = { books: 0, orders: 0, shelves: 0 };
+  for (const hubId of hubIds) {
+    const id = safeId(hubId);
+    const book = id ? markets.books[id] : null;
+    if (!book) continue;
+    const out = closeBookToLegacy(markets, book, now);
+    delete markets.books[id];
+    moved.books += 1;
+    moved.orders += out.orders;
+    moved.shelves += out.shelves;
+  }
+  return moved;
 }
 
 function normalizeCityMarkets(input = {}, legacyInput = null, now = Date.now()) {
@@ -164,6 +192,7 @@ module.exports = {
   normalizeCityAuctionConfig,
   normalizeCityMarkets,
   migrateLegacyMarket,
+  retireCityBooks,
   cityBook,
   adoptLegacyShelf,
   sellerTaxPct,

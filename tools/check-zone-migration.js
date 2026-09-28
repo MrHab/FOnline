@@ -10,7 +10,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { migrateSaveStateToZones } = require('../src/server/zone-migration');
+const { PLACES_REVISION, migrateSaveStateToZones } = require('../src/server/zone-migration');
 const { zoneAtPoint, zoneOfPlace } = require('../src/server/zone-graph');
 
 const root = path.resolve(__dirname, '..');
@@ -80,5 +80,26 @@ for (const harsh of [red, black].filter(Boolean)) {
   assert(!state.serverLocationContext);
   assert.equal(migrateSaveStateToZones(state, graph).changed, false, 'and a second run changes nothing');
 }
+// Бывший город «Баланс» — подземелье с правилами красной зоны: сохранённый в
+// нём до перемены просыпается в ближайшей синей или мирной зоне, а зашедший
+// туда уже после (ревизия мест в сохранении) остаётся в подземелье.
+{
+  assert.deepEqual(graph.retiredCities, ['balanceBunker'], 'Balance is the retired city');
+  const home = zoneOfPlace(graph, 'balanceBunker');
+  assert(home && !home.city, 'Balance is a place inside an ordinary zone');
+  const state = { currentLocationId: 'balanceBunker', player: { x: 30, z: -44 }, serverLocationContext: { locationId: 'balanceBunker' } };
+  const out = migrateSaveStateToZones(state, graph);
+  assert.equal(out.reason, 'cityRetired');
+  const landed = graph.zones.find(zone => (zone.city || zone.id) === out.zoneId);
+  assert(['pve', 'peaceful'].includes(landed.mode), `a save in the former city wakes in a safe zone, got ${landed.mode}`);
+  const nearest = Math.min(...graph.zones.filter(zone => ['pve', 'peaceful'].includes(zone.mode))
+    .map(zone => Math.hypot(zone.col - home.col, zone.row - home.row)));
+  assert.equal(Math.hypot(landed.col - home.col, landed.row - home.row), nearest, 'the safe zone nearest to Balance');
+  assert.deepEqual([state.player.x, state.player.z, state.placesRevision], [0, 0, PLACES_REVISION]);
+  assert(!state.serverLocationContext);
+  const visitor = { currentLocationId: 'balanceBunker', player: { x: 1, z: -17 }, placesRevision: PLACES_REVISION };
+  assert.equal(migrateSaveStateToZones(visitor, graph).changed, false, 'a visitor saved after the change stays in the dungeon');
+  assert.equal(visitor.currentLocationId, 'balanceBunker');
+}
 
-console.log(`Zone migration OK: map characters land in the zone of their point (red and black move to the nearest blue or peaceful zone), cell scenes too, places stay, a sector a city took over wakes in the city, the map state is dropped and a second run changes nothing.`);
+console.log(`Zone migration OK: map characters land in the zone of their point (red and black move to the nearest blue or peaceful zone), cell scenes too, places stay, a sector a city took over wakes in the city, a save in the former city of Balance wakes in the nearest safe zone, the map state is dropped and a second run changes nothing.`);

@@ -133,4 +133,20 @@ assert.equal(plots.plotIdFor('', 'x'), '');
   assert.deepEqual(plain(state.payouts), { good: 12 });
 }
 
-console.log('Crafting plots OK: lease auctions with refunds, late-bid extension, renewal and expiry, lessee fees and burned settlement fees, 15–43% material returns, and a clean saved state.');
+// --- участки бывшего города («Баланс») закрываются с возвратами ------------------------
+{
+  const state = plots.normalizeCraftingPlotState(null, config);
+  const plot = plots.ensurePlot(state, config, { locationId: 'balanceBunker', objectId: 'yard', station: 'weapon_bench' });
+  plot.stationOwner = { characterId: 'builder', name: 'Строитель' };
+  plot.stationCost = { scrap: 20, weaponParts: 6 };
+  assert(plots.placePlotBid(state, config, plot.id, { characterId: 'bidder', name: 'Ставящий' }, config.minBid, DAY).ok);
+  const kept = plots.ensurePlot(state, config, { locationId: 'scrapTown', objectId: 'bench', station: 'tool_bench' });
+  const changes = plots.retireLocationPlots(state, config, ['balanceBunker'], () => 2);
+  assert.deepEqual(changes.map(row => row.kind), ['bidReturned', 'stationRefunded', 'retired']);
+  assert.equal(state.payouts.bidder, config.minBid, 'the bid returns to the bidder');
+  assert.equal(state.payouts.builder, Math.floor(26 * 2 * config.stationRefundPct), 'the builder gets the station refund');
+  assert.deepEqual(Object.keys(state.plots), [kept.id], 'only plots of the former city disappear');
+  assert.deepEqual(plots.retireLocationPlots(state, config, ['balanceBunker'], () => 2), [], 'a second start changes nothing');
+}
+
+console.log('Crafting plots OK: lease auctions with refunds, late-bid extension, renewal and expiry, lessee fees and burned settlement fees, 15–43% material returns, plots of a former city closed with refunds, and a clean saved state.');

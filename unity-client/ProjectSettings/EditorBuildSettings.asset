@@ -755,4 +755,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Kromka/Locations/z_14_09.unity
     guid: 3c12e3304f9846c41a217f0f6f4e12bb
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_02.unity
+    guid: db2e33ebd2b4efb488ad74c443197ca6
   m_configObjects: {}

@@ -22,8 +22,8 @@ const GROUNDS = zoneGrounds.normalizeGrounds(require('../data/kromka/grounds.jso
 const ROOT = path.resolve(__dirname, '..');
 const LOCATION = 'tierArena';
 const TIER = 3;
-// Город самого опасного сектора: всё равно первый тир и свои узлы у стен.
-const CITY = 'balanceBunker';
+// Город фракции: первый тир и узлы семейств своих угодий у стен.
+const CITY = 'relayStation';
 const NODE_ID = 'depot_scrap_01';
 const { config, itemCatalog } = tiers.readTieredCatalogs(path.join(ROOT, 'data'));
 const itemTier = id => itemCatalog.items.find(item => item.id === id)?.tier || 0;
@@ -121,12 +121,12 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
       assert.equal(zone.hotspot?.family || '', GROUNDS.hotspots[zone.id]?.family || '', `zone ${zone.id} carries its hotspot`);
     }
     const cities = map.zones.filter(zone => zone.city);
-    assert.equal(cities.length, 7, 'the world map has its seven cities');
+    assert.equal(cities.length, 6, 'the world map has its six cities');
     assert(map.zones.some(zone => !zone.city && zone.tier === 5) && map.zones.some(zone => !zone.city && zone.tier === 1),
       'the world map spans the tiers');
     console.log('PASS the world map carries the tier of every zone and place, cities are tier 1');
 
-    // Город: первый тир при опасности сектора 5, узлы всех семейств, у стен.
+    // Город: первый тир при любой опасности сектора, узлы семейств угодий, у стен.
     await h.connectAndJoin(accounts.progression);
     const city = accounts.progression.join;
     assert.equal(city.roomId.split(':')[0], CITY, 'the citizen joined the city');

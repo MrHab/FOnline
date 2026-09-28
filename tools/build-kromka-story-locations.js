@@ -37,7 +37,8 @@ for (const [index, lore] of catalog.locations.filter(row => wanted.has(row.id)).
   }
   const location = {
     schema: 'realm.location.v1', version: 1, id: lore.id, name: lore.displayName,
-    seed: 2026091200 + index, safe: settlement, pvpMode: settlement ? 'peaceful' : 'pvp',
+    // «Баланс» — подземелье Комитета с правилами красной зоны (библия, 4.4).
+    seed: 2026091200 + index, safe: settlement, pvpMode: settlement ? 'peaceful' : lore.id === 'balanceBunker' ? 'pvpFullDrop' : 'pvp',
     kind: lore.locationType, respawnAllowed: settlement, enemyCap: settlement ? 0 : 12, spawnCount: 0,
     ground: { preset: lore.macroRegion === 'chalk_lowland' ? 'chalkMud' : lore.macroRegion === 'glasslands' ? 'glassAsh' : 'industrialDust', label: lore.displayName },
     map: { width: 72, depth: 72, origin: 'center' }, grid: { snap: true, step: 2 },

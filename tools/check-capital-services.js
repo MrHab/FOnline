@@ -21,7 +21,7 @@ const server = read('server.js');
 const capitalBlock = server.slice(server.indexOf('const SERVER_FACTION_CAPITAL_LOCATIONS = {'));
 const capitals = [...capitalBlock.slice(0, capitalBlock.indexOf('};')).matchAll(/^\s{2}(\w+):\s*'([\w_]+)'/gm)]
   .map(row => ({ locationId: row[1], faction: row[2] }));
-assert(capitals.length >= 10, `столиц должно быть не меньше десяти, найдено ${capitals.length}`);
+assert(capitals.length >= 9, `столиц должно быть не меньше девяти, найдено ${capitals.length}`);
 
 const REQUIRED = ['auction', 'medic', 'repair'];
 const CLEARANCE = 1.2;

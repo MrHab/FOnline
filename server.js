@@ -243,6 +243,7 @@ const {
 const {
   normalizeCityMarkets,
   migrateLegacyMarket,
+  retireCityBooks,
   cityBook,
   adoptLegacyShelf,
   rulesForSeller: cityAuctionRulesForSeller,
@@ -257,6 +258,7 @@ const {
   placePlotBid,
   setPlotFee,
   settleCraftingPlots,
+  retireLocationPlots,
   plotCraftFee,
   plotReturnRate,
   rollPlotReturns,
@@ -268,8 +270,8 @@ const { entryKeyForDirection: dangerEntryKeyForDirection } = require('./src/serv
 const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
 const { createZoneRuntime } = require('./src/server/zone-runtime');
 const { TILES: CITY_TILES, WALL_HALF: CITY_WALL_HALF } = require('./src/server/city-builder');
-const { fastTravelDestinations, fastTravelRefusal, fastTravelServes, normalizeFastTravelRules } = require('./src/server/fast-travel');
-const { migrateSaveStateToZones } = require('./src/server/zone-migration');
+const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
+const { PLACES_REVISION, migrateSaveStateToZones } = require('./src/server/zone-migration');
 const { zoneAtPoint, zoneById, zoneLocationId, zoneOfLocation, zoneOfPlace, zoneRecipe } = require('./src/server/zone-graph');
 const { portalSignature, zonePortals } = require('./src/server/zone-portals');
 const { normalizeRecipe: normalizeZoneRecipe } = require('./src/server/zone-builder');
@@ -1112,7 +1114,6 @@ const SERVER_FACTION_CAPITAL_LOCATIONS = {
   relayStation: 'contour',
   caravanCamp: 'tract_league',
   secondHaven: 'seconds',
-  balanceBunker: 'continuity',
   coreBaseUprava: 'uprava',
   coreBaseArtels: 'free_artels',
   coreBaseContour: 'contour',
@@ -1148,11 +1149,6 @@ const SERVER_FACTION_CAPITAL_STORAGE = {
     x: 5,
     z: 11,
     name: 'Хранилище Вторых'
-  },
-  balanceBunker: {
-    x: 0,
-    z: 8,
-    name: 'Хранилище Комитета'
   },
   coreBaseUprava: { x: 14, z: 4, name: 'Хранилище Управы' },
   coreBaseArtels: { x: 14, z: 4, name: 'Хранилище Вольных артелей' },
@@ -4463,9 +4459,20 @@ if (WORLD_ECONOMY.worldModel.cityAuctions) {
     || Object.keys(savesDb.market.shelves || {}).length > 0;
   if (!firstMigration && legacyStillUsed) migrateLegacyMarket(savesDb.markets, savesDb.market, Date.now());
   if (firstMigration || legacyStillUsed) savesDb.market = normalizeMarketStore(null);
+  // Книга бывшего города (Баланс) закрывается: ордера снимаются, полки ждут
+  // владельцев у аукционеров других городов.
+  const retired = retireCityBooks(savesDb.markets, ZONE_RUNTIME.graph.retiredCities || [], Date.now());
+  if (retired.books) console.log(`Closed ${retired.books} auction book(s) of former cities: ${retired.orders} orders, ${retired.shelves} shelves wait at other auctioneers.`);
 }
 // Участки станков (экономика v3): аренда, ставки и невыплаченные марки.
 savesDb.craftingPlots = normalizeCraftingPlotState(savesDb.craftingPlots, WORLD_ECONOMY.plots);
+// Участки бывшего города (Баланс) закрываются: ставки и станки возвращаются
+// марками по базовой цене материалов, выплату игрок получит при входе.
+{
+  const retiredPlots = retireLocationPlots(savesDb.craftingPlots, WORLD_ECONOMY.plots, ZONE_RUNTIME.graph.retiredCities || [],
+    itemId => Number(KROMKA_ITEM_INDEXES.basePrices[itemId] || 0));
+  if (retiredPlots.length) console.log(`Closed ${retiredPlots.filter(row => row.kind === 'retired').length} crafting plot(s) of former cities.`);
+}
 // Синь на счетах аккаунтов и книга обменника синь↔марки (экономика v3).
 savesDb.accounts = normalizeAccountStore(savesDb.accounts, WORLD_ECONOMY.accountSin);
 savesDb.sinExchange = normalizeMarketStore(savesDb.sinExchange);
@@ -10735,6 +10742,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
     player.kromkaOnboarding || previousState.kromkaOnboarding || {}, KROMKA_ONBOARDING_CATALOG
   );
   next.worldRevision = 'kromka-1';
+  next.placesRevision = PLACES_REVISION;
   next.skillRanks = sanitizeSkillRanks(player.skillRanks || {});
   next.talentRanks = sanitizeTalentRanks(player.talentRanks || {});
   next.progressionLedger = sanitizeServerProgressionLedger(player.progressionLedger || {}, player);
@@ -17777,7 +17785,6 @@ function spawnAuthoredLocationActors(room, loc) {
  */
 function serverSpawnFastTravelDispatcher(room, loc) {
   if (!room || !loc || !(ZONE_RUNTIME.graph.capitals || []).includes(loc.id)) return 0;
-  if (!fastTravelServes(FAST_TRAVEL_RULES, loc.id)) return 0;
   const dims = locationTileDims(loc);
   // В городе-секторе диспетчер стоит у площади, а не у точки входа.
   const anchor = loc.cityPlan?.dispatcher || loc.entryFromWorld || loc.spawn

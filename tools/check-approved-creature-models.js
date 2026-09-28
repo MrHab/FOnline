@@ -27,6 +27,7 @@ const UNITY_MODEL_KEY_BY_CREATURE = {
   npc_radscorpion: 'enemyRadscorpion',
   npc_mutant_ant: 'enemyMutantAnt',
   npc_lantern_stag: 'kromkaLantern',
+  npc_rykhlyak: 'kromkaRykhlyak',
   npc_super_mutant: 'enemySuperMutant'
 };
 const EXPECTED_BOUNDS = {
@@ -57,6 +58,10 @@ const EXPECTED_BOUNDS = {
   npc_lantern_stag: {
     center: { x: -0.001995, y: 1.052869, z: 0.234507 },
     size: { x: 0.963712, y: 2.113113, z: 1.838245 }
+  },
+  npc_rykhlyak: {
+    center: { x: 0, y: 0.57484, z: 0.0975 },
+    size: { x: 0.645677, y: 1.148279, z: 1.833 }
   },
   npc_super_mutant: {
     center: { x: -0.003261, y: 1.273561, z: -0.01007 },
@@ -286,7 +291,7 @@ assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ modelKey: 
 assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ modelKey: 'crate' }), '');
 // The server publishes Kromka creature keys; Unity must render them with the approved GLBs.
 for (const [identity, file] of [
-  [{ name: 'Радскорпион' }, 'npc_radscorpion.glb'],
+  [{ name: 'Радскорпион' }, 'npc_rykhlyak.glb'],
   [{ species: 'ash_wolf' }, 'npc_ash_wolf.glb'],
   [{ modelKey: 'enemy_fire_gecko' }, 'npc_fire_gecko.glb'],
   [{ role: 'animal' }, 'brahmin.glb']

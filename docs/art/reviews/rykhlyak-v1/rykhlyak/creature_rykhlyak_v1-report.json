@@ -1,0 +1,257 @@
+{
+  "assetId": "creature_rykhlyak_v1",
+  "file": "creature_rykhlyak_v1.glb",
+  "boundsIdleMetres": {
+    "minimum": [
+      -0.322248,
+      -1.014,
+      0.0
+    ],
+    "maximum": [
+      0.32197,
+      0.820299,
+      1.148474
+    ],
+    "size": [
+      0.644218,
+      1.834299,
+      1.148474
+    ]
+  },
+  "collider": {
+    "type": "box",
+    "size": [
+      0.644218,
+      1.834299,
+      1.148474
+    ],
+    "center": [
+      -0.000139,
+      -0.09685,
+      0.574237
+    ]
+  },
+  "rig": {
+    "boneCount": 24
+  },
+  "requiredAnimations": [
+    "idle",
+    "walk",
+    "run",
+    "attack",
+    "hurt",
+    "death"
+  ],
+  "actualGlb": {
+    "meshDefinitions": 2,
+    "positionVertices": 1399,
+    "triangles": 674,
+    "materials": 6,
+    "textures": 18,
+    "skins": 1,
+    "skinJointCounts": [
+      24
+    ],
+    "animations": [
+      "attack",
+      "death",
+      "hurt",
+      "idle",
+      "run",
+      "walk"
+    ],
+    "nodes": [
+      "FrontFoot.R",
+      "FrontLowLeg.R",
+      "FrontUpLeg.R",
+      "FrontLeg.R",
+      "BackLowLeg.R",
+      "BackUpLeg.R",
+      "BackLeg.R",
+      "FrontLowLeg.L",
+      "FrontUpLeg.L",
+      "FrontLeg.L",
+      "BackLowLeg.L",
+      "BackUpLeg.L",
+      "BackLeg.L",
+      "Back",
+      "Head",
+      "Neck",
+      "Shoulders",
+      "Torso",
+      "Hips",
+      "Body",
+      "BackFoot.R",
+      "FrontFoot.L",
+      "BackFoot.L",
+      "root",
+      "rykhlyak_bone_growths",
+      "rykhlyak_quaternius_pig_body",
+      "rykhlyak_quaternius_rig",
+      "creature_rykhlyak_v1"
+    ]
+  },
+  "geometryAnalysis": {
+    "shape": {
+      "straightenedTailVertices": 32,
+      "raisedWitherVertices": 9
+    },
+    "materialPolygonCounts": {
+      "bristle": 184,
+      "mane": 14,
+      "belly": 80,
+      "hoof": 20
+    },
+    "boneGrowths": {
+      "spinalSpikes": [
+        {
+          "y": 2.55,
+          "length": 0.55,
+          "bone": "Back"
+        },
+        {
+          "y": 1.75,
+          "length": 0.8,
+          "bone": "Hips"
+        },
+        {
+          "y": 0.95,
+          "length": 1.0,
+          "bone": "Hips"
+        },
+        {
+          "y": 0.15,
+          "length": 1.15,
+          "bone": "Torso"
+        },
+        {
+          "y": -0.65,
+          "length": 1.3,
+          "bone": "Torso"
+        },
+        {
+          "y": -1.45,
+          "length": 1.1,
+          "bone": "Torso"
+        }
+      ],
+      "foreheadBoss": {
+        "y": -3.55,
+        "bone": "Head"
+      },
+      "tuskTips": [
+        [
+          -1.18,
+          -5.2,
+          3.201
+        ],
+        [
+          1.18,
+          -5.2,
+          3.201
+        ]
+      ],
+      "triangles": 112
+    },
+    "skinInfluenceNormalization": {
+      "verticesLimitedToFourInfluences": 79,
+      "maximumInfluencesBefore": 8,
+      "maximumInfluencesAfter": 4
+    },
+    "donorRigTransform": {
+      "bakedArmatureScale": 0.195,
+      "unitScale": 0.195,
+      "scaledLocationCurves": 444
+    }
+  },
+  "actions": {
+    "sourceToRuntime": {
+      "idle": "Idle",
+      "walk": "Walk",
+      "run": "Run",
+      "death": "Death"
+    },
+    "authored": {
+      "attack": "charge: rear back f6, low drive with head down f11, tusk toss f14, settle f22",
+      "hurt": "flinch: jolt back and head thrown aside f3, recover by f14"
+    },
+    "runtimeRanges": {
+      "idle": [
+        0.0,
+        150.0
+      ],
+      "walk": [
+        0.0,
+        64.0
+      ],
+      "run": [
+        0.0,
+        22.0
+      ],
+      "attack": [
+        0.0,
+        22.0
+      ],
+      "hurt": [
+        0.0,
+        14.0
+      ],
+      "death": [
+        0.0,
+        26.0
+      ]
+    },
+    "removedIkConstraints": 4
+  },
+  "groundContactCorrections": {
+    "actions": {
+      "idle": {
+        "sampledFrames": 151,
+        "minimumBeforeMetres": -0.000659,
+        "minimumAfterMetres": -0.000497,
+        "maximumVerticalCorrectionMetres": 0.002159
+      },
+      "walk": {
+        "sampledFrames": 65,
+        "minimumBeforeMetres": -0.004527,
+        "minimumAfterMetres": -0.000437,
+        "maximumVerticalCorrectionMetres": 0.006027
+      },
+      "run": {
+        "sampledFrames": 23,
+        "minimumBeforeMetres": -0.005319,
+        "minimumAfterMetres": 0.00136,
+        "maximumVerticalCorrectionMetres": 0.006819
+      },
+      "attack": {
+        "sampledFrames": 23,
+        "minimumBeforeMetres": -0.005116,
+        "minimumAfterMetres": -0.000465,
+        "maximumVerticalCorrectionMetres": 0.006616
+      },
+      "hurt": {
+        "sampledFrames": 15,
+        "minimumBeforeMetres": -0.005902,
+        "minimumAfterMetres": -0.000124,
+        "maximumVerticalCorrectionMetres": 0.007402
+      },
+      "death": {
+        "sampledFrames": 27,
+        "minimumBeforeMetres": -0.110682,
+        "minimumAfterMetres": -0.000372,
+        "maximumVerticalCorrectionMetres": 0.112182
+      }
+    }
+  },
+  "provenance": {
+    "donor": "Quaternius Farm Animal Pack / Pig.blend",
+    "donorSha256": "8AEC801123F31CA475000C738287DCD075DDA6BE4C5650C03B5657D801A847EF",
+    "license": "CC0 1.0 Universal",
+    "geometry": "donor topology; spine spikes, forehead boss and tusks are Realm meshes",
+    "animations": "Quaternius Idle, Walk, Run, Death; Realm-authored attack and hurt",
+    "materials": "original Realm of Ashes B+C packed 512 px PBR textures"
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "383CEAA3BF5793EE2A7526650DA99C60FE0147B575DD4C3690C6F909FC44E42B"
+}

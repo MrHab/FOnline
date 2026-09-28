@@ -159,6 +159,23 @@ const APPROVED_CREATURES = [
     expected: { meshes: 2, vertices: 10961, triangles: 3667, materials: 5, images: 15, channels: 690, joints: 38 }
   },
   {
+    id: 'npc_rykhlyak',
+    label: 'Рыхляк',
+    species: 'rykhlyak',
+    outputFile: 'npc_rykhlyak.glb',
+    reviewDirectory: fromRoot('docs', 'art', 'reviews', 'rykhlyak-v1', 'rykhlyak'),
+    reviewFile: 'creature_rykhlyak_v1.glb',
+    reviewReport: 'creature_rykhlyak_v1-report.json',
+    approvalFile: 'CRITIC_APPROVAL_V1.md',
+    approvedReviewSha256: '383CEAA3BF5793EE2A7526650DA99C60FE0147B575DD4C3690C6F909FC44E42B',
+    expectedRuntimeSha256: 'A47DAEEF98ED2EA90113CF2801B93F38F172131DD38F117E0AEA7D077CB95C69',
+    generator: fromRoot('tools', 'blender', 'build_quaternius_rykhlyak_review.py'),
+    sourceBlend: fromRoot('source-assets', 'quaternius', 'farm-animals', 'pig', 'Pig.blend'),
+    builderArgs: [],
+    runtimeScaleMultiplier: 1,
+    expected: { meshes: 2, vertices: 1399, triangles: 674, materials: 6, images: 18, channels: 438, joints: 24 }
+  },
+  {
     id: 'npc_super_mutant',
     label: 'Супермутант',
     species: 'super_mutant',

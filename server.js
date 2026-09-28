@@ -4881,7 +4881,7 @@ const SERVER_MODEL_FILE_BY_KEY = Object.freeze({
   ,kromkaBurned: 'npc_ghoul.glb'
   ,kromkaFold: 'npc_ghoul.glb'
   ,kromkaGari: 'npc_ash_wolf.glb'
-  ,kromkaRykhlyak: 'npc_radscorpion.glb'
+  ,kromkaRykhlyak: 'npc_rykhlyak.glb'
   ,kromkaDustling: 'npc_mutant_ant.glb'
   ,kromkaListener: 'npc_gecko.glb'
   ,kromkaMourner: 'npc_fire_gecko.glb'

@@ -38,12 +38,12 @@ namespace RealmOfAshes.EditorTools
             { "cargo_stack", "Props/SM_Prop_Container_01" },
             { "concrete_wall", "Props/SM_Prop_Barrier_Concrete_01" },
             { "cot_bed", "Props/SM_Prop_Bedframe_01" },
-            { "craft_station_ammo", "Props/SM_Prop_Workbench_01" },
-            { "craft_station_chem", "Props/SM_Prop_Workbench_01" },
+            { "craft_station_ammo", "Props/SM_Prop_SupplyPile_03" },
+            { "craft_station_chem", "Props/SM_Prop_Gas_Table_01" },
             { "craft_station_energy", "Props/SM_Prop_Generator_01" },
             { "craft_station_repair", "Props/SM_Prop_Workbench_01" },
-            { "craft_station_tools", "Props/SM_Prop_Workbench_01" },
-            { "craft_station_weapon", "Props/SM_Prop_Workbench_01" },
+            { "craft_station_tools", "Props/SM_Prop_WorkShelf_01" },
+            { "craft_station_weapon", "Props/SM_Prop_ShootingRange_01" },
             { "dead_tree_a", "Environment/SM_Env_Tree_Dead_01" },
             { "dead_tree_b", "Environment/SM_Env_Tree_Dead_02" },
             { "dead_tree_c", "Environment/SM_Env_Tree_Dead_03" },
@@ -83,7 +83,7 @@ namespace RealmOfAshes.EditorTools
             { "waterPump", "Props/SM_Prop_Barrel_Water_01" },
             { "storageChest", "Props/SM_Prop_Crate_Large_01" },
             { "craftStationRepair", "Props/SM_Prop_Workbench_01" },
-            { "craftStationChem", "Props/SM_Prop_Medical_Shelf_01" },
+            { "craftStationChem", "Props/SM_Prop_Gas_Table_01" },
             { "relayConsole", "Props/SM_Prop_Radio_01" },
             { "radioTower", "Props/SM_Prop_Radio_01" },
             { "planter", "Environment/SM_Env_Overgrowth_01" },
@@ -141,6 +141,46 @@ namespace RealmOfAshes.EditorTools
             int count = MigrateScene(MapScene, true);
             AssetDatabase.SaveAssets();
             Debug.Log("[ROA APOCALYPSE] " + count + " additional map models migrated.");
+        }
+
+        /// <summary>
+        /// Swap the pack model of shared prefabs whose entry in Models changed:
+        /// the migration itself skips a prefab that already has a replacement.
+        /// </summary>
+        [MenuItem("Realm of Ashes/PolygonApocalypse/Swap changed prefab visuals")]
+        public static void SwapChangedPrefabVisuals()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Visual migration requires Edit Mode.");
+            ValidatePack();
+            var swapped = new List<string>();
+            foreach (KeyValuePair<string, string> pair in Models)
+            {
+                string path = RecoveredRoot + "/" + pair.Key + ".prefab";
+                if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null) continue;
+                GameObject root = PrefabUtility.LoadPrefabContents(path);
+                try
+                {
+                    Transform visual = root.transform.Find(ReplacementName);
+                    if (visual == null) continue;
+                    GameObject source = PrefabUtility.GetCorrespondingObjectFromSource(visual.gameObject);
+                    if (source == Load(pair.Value)) continue;
+                    // The migration only disabled the prefab's own renderers: turn
+                    // them back on so the new model takes their footprint.
+                    UnityEngine.Object.DestroyImmediate(visual.gameObject);
+                    foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true)
+                        .Where(renderer => renderer is MeshRenderer || renderer is SkinnedMeshRenderer))
+                        renderer.enabled = true;
+                    if (!ReplaceVisual(root.transform, pair.Value))
+                        throw new InvalidOperationException("Could not swap the visual of " + path);
+                    PrefabUtility.SaveAsPrefabAsset(root, path);
+                    swapped.Add(pair.Key + " -> " + pair.Value);
+                }
+                finally { PrefabUtility.UnloadPrefabContents(root); }
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log("[ROA APOCALYPSE] Swapped " + swapped.Count + " prefab visuals"
+                + (swapped.Count > 0 ? ": " + string.Join(", ", swapped) : "."));
         }
 
         [MenuItem("Realm of Ashes/PolygonApocalypse/Restore native size in sample scenes")]

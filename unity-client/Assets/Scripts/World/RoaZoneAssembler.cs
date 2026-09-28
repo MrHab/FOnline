@@ -41,27 +41,8 @@ namespace RealmOfAshes.World
             {
                 done++;
                 if (entry == null || string.IsNullOrEmpty(entry.Prefab)) continue;
-                GameObject instance = Take(kit, entry.Prefab, parent);
+                GameObject instance = Place(kit, entry, parent);
                 if (instance == null) { MissingPrefabs++; continue; }
-                instance.name = string.IsNullOrEmpty(entry.Id) ? entry.Prefab : entry.Id;
-                RoaLocationLoader.ApplyTransform(instance.transform, entry);
-                ConfigureCollision(instance, entry);
-                // Объект с подсказкой помечаем: по метке её находит наведение курсора.
-                var tag = instance.GetComponent<RealmOfAshes.Game.RoaWorldObjectTag>();
-                if (entry.Hover != null)
-                {
-                    if (tag == null) tag = instance.AddComponent<RealmOfAshes.Game.RoaWorldObjectTag>();
-                    tag.ObjectId = entry.Id;
-                    ConfigureHoverProbe(instance, entry);
-                }
-                else
-                {
-                    if (tag != null) tag.ObjectId = string.Empty;
-                    // Экземпляр из пула мог носить зону наведения от прошлой вещи.
-                    foreach (BoxCollider box in instance.GetComponents<BoxCollider>())
-                        if (box.isTrigger) box.enabled = false;
-                }
-                instance.SetActive(true);
                 if (!string.IsNullOrEmpty(entry.Id))
                 {
                     roots[entry.Id] = instance;
@@ -76,6 +57,55 @@ namespace RealmOfAshes.World
             progress?.Invoke(1f);
             if (MissingPrefabs > 0)
                 Debug.LogWarning("[ROA] Зона " + definition.Id + ": нет префаба у " + MissingPrefabs + " объектов.");
+        }
+
+        /// <summary>
+        /// Поставить одну строку набора: так собирается зона, а в городе со своей
+        /// сценой — постройки игроков на участках, которых в сцене нет.
+        /// </summary>
+        public GameObject Place(RoaZoneKitCatalog kit, LocationObject entry, Transform parent)
+        {
+            if (kit == null || entry == null || string.IsNullOrEmpty(entry.Prefab)) return null;
+            GameObject instance = Take(kit, entry.Prefab, parent);
+            if (instance == null) return null;
+            instance.name = string.IsNullOrEmpty(entry.Id) ? entry.Prefab : entry.Id;
+            RoaLocationLoader.ApplyTransform(instance.transform, entry);
+            ConfigureCollision(instance, entry);
+            // Объект с подсказкой помечаем: по метке её находит наведение курсора.
+            var tag = instance.GetComponent<RealmOfAshes.Game.RoaWorldObjectTag>();
+            if (entry.Hover != null)
+            {
+                if (tag == null) tag = instance.AddComponent<RealmOfAshes.Game.RoaWorldObjectTag>();
+                tag.ObjectId = entry.Id;
+                ConfigureHoverProbe(instance, entry);
+            }
+            else
+            {
+                if (tag != null) tag.ObjectId = string.Empty;
+                // Экземпляр из пула мог носить зону наведения от прошлой вещи.
+                foreach (BoxCollider box in instance.GetComponents<BoxCollider>())
+                    if (box.isTrigger) box.enabled = false;
+            }
+            instance.SetActive(true);
+            return instance;
+        }
+
+        /// <summary>Вернуть в пул один объект: снесённую постройку на участке.</summary>
+        public void Release(GameObject instance)
+        {
+            if (instance == null) return;
+            int index = _active.FindIndex(pair => pair.Value == instance);
+            if (index < 0) return;
+            string key = _active[index].Key;
+            _active.RemoveAt(index);
+            instance.SetActive(false);
+            instance.transform.SetParent(PoolRoot(), false);
+            if (!_pool.TryGetValue(key, out Stack<GameObject> stack))
+            {
+                stack = new Stack<GameObject>();
+                _pool[key] = stack;
+            }
+            stack.Push(instance);
         }
 
         /// <summary>Вернуть все объекты зоны в пулы.</summary>
@@ -144,32 +174,39 @@ namespace RealmOfAshes.World
 
         private static void ConfigureCollision(GameObject instance, LocationObject entry)
         {
-            // Берём именно сплошной короб: у вещи с подсказкой рядом живёт триггер
+            // Берём именно сплошные короба: у вещи с подсказкой рядом живёт триггер
             // наведения, и перепутать их — значит снять с объекта коллизию.
-            BoxCollider box = null;
+            List<BoxCollider> boxes = new List<BoxCollider>();
             foreach (BoxCollider candidate in instance.GetComponents<BoxCollider>())
+                if (!candidate.isTrigger) boxes.Add(candidate);
+            bool solid = string.Equals(entry.Collision, "solid", StringComparison.OrdinalIgnoreCase)
+                && entry.CollisionParts != null && entry.CollisionParts.Count > 0;
+            int used = 0;
+            if (solid)
             {
-                if (candidate.isTrigger) continue;
-                box = candidate;
-                break;
+                // Короб на каждую часть: у мастерской участка это постройка и
+                // штабели двора, как их считает сервер.
+                foreach (JToken token in entry.CollisionParts)
+                {
+                    if (!(token is JObject part)) continue;
+                    BoxCollider box = used < boxes.Count ? boxes[used] : instance.AddComponent<BoxCollider>();
+                    if (used >= boxes.Count) boxes.Add(box);
+                    used++;
+                    float sizeX = Number(part["size"]?["x"], 1f);
+                    float sizeZ = Number(part["size"]?["z"], 1f);
+                    float height = Mathf.Max(0.3f, Number(part["height"], 1.5f));
+                    float centerX = Number(part["center"]?["x"], 0f);
+                    float centerZ = Number(part["center"]?["z"], 0f);
+                    // Часть задана в осях объекта, как её поворачивает сервер
+                    // (model-colliders.transformedBounds): оси сервера и Unity совпадают
+                    // (RoaCoords.ToUnity), масштаб и поворот даёт сам объект.
+                    box.size = new Vector3(Mathf.Max(0.05f, sizeX), height, Mathf.Max(0.05f, sizeZ));
+                    box.center = new Vector3(centerX, height * 0.5f, centerZ);
+                    box.enabled = true;
+                }
             }
-            JObject part = entry.CollisionParts != null && entry.CollisionParts.Count > 0 ? entry.CollisionParts[0] as JObject : null;
-            bool solid = string.Equals(entry.Collision, "solid", StringComparison.OrdinalIgnoreCase) && part != null;
-            if (!solid)
-            {
-                if (box != null) box.enabled = false;
-                return;
-            }
-            if (box == null) box = instance.AddComponent<BoxCollider>();
-            float sizeX = Number(part["size"]?["x"], 1f);
-            float sizeZ = Number(part["size"]?["z"], 1f);
-            float height = Mathf.Max(0.3f, Number(part["height"], 1.5f));
-            float centerX = Number(part["center"]?["x"], 0f);
-            float centerZ = Number(part["center"]?["z"], 0f);
-            // Оси сервера → Unity: z отражается (RoaCoords.ToUnity), масштаб и поворот даёт сам объект.
-            box.size = new Vector3(Mathf.Max(0.05f, sizeX), height, Mathf.Max(0.05f, sizeZ));
-            box.center = new Vector3(centerX, height * 0.5f, -centerZ);
-            box.enabled = true;
+            // Экземпляр из пула мог носить лишние короба от прошлой вещи.
+            for (int i = used; i < boxes.Count; i++) boxes[i].enabled = false;
         }
 
         private static float Number(JToken token, float fallback)

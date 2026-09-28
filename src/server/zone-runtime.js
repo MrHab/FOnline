@@ -12,7 +12,7 @@ const path = require('node:path');
 const { SIDES, zoneById, zoneLocationId, zoneOfLocation, zoneRecipe } = require('./zone-graph');
 const { loadZoneCatalog } = require('./zone-chunks');
 const { TILES, buildZone } = require('./zone-builder');
-const { buildCity, cityStationObjects } = require('./city-builder');
+const { buildCity, cityStationObjects, withoutBuiltPlotFences } = require('./city-builder');
 const { designateFiberNodes } = require('./kromka-tiers');
 
 const METRES = TILES * 2;
@@ -151,8 +151,12 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
       if (!catalog) catalog = loadZoneCatalog(zonesDir);
       const stations = cityStationObjects({ cityId: locationId, plots: authored.cityPlan?.plots },
         builtStations, catalog.kit);
-      const objects = stations.length ? [...(authored.objects || []), ...stations] : authored.objects;
-      return { ...authored, objects, id: locationId, cityZone: true, generated: false };
+      if (!stations.length) return { ...authored, id: locationId, cityZone: true, generated: false };
+      // Ревизия меняется вместе с застройкой: по ней клиент и кэш ответа
+      // /api/locations/<id> понимают, что город уже другой.
+      const built = crypto.createHash('sha1').update(JSON.stringify(stations.map(row => `${row.id}:${row.prefab || row.name || ''}`))).digest('hex').slice(0, 8);
+      return { ...authored, objects: [...withoutBuiltPlotFences(authored.objects, stations), ...stations], revision: `${authored.revision || ''}-b${built}`,
+        id: locationId, cityZone: true, generated: false };
     }
     if (!catalog) catalog = loadZoneCatalog(zonesDir);
     // Построенное игроками приходит извне: город чистый, а станки на участках —

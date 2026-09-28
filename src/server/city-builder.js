@@ -107,12 +107,30 @@ function normalizeCityRecipe(recipe = {}) {
   };
 }
 
-// Станки игроков: ключ ремесла → префаб набора. Город своих станков не ставит,
-// они появляются только на выигранном участке.
-const STATION_PREFABS = Object.freeze({
-  ammo_bench: 'craft_station_ammo', weapon_bench: 'craft_station_weapon', tool_bench: 'craft_station_tools',
-  repair_bench: 'craft_station_repair', energy_bench: 'craft_station_energy', chem_station: 'craft_station_chem'
+// Станки игроков. Город своих станков не ставит: на выигранном участке встаёт
+// мастерская ремесла, как здание в Albion, а перед входом — её мастер.
+// `model` — ключ станка, по которому сервер узнаёт его при крафте.
+const STATION_WORKSHOPS = Object.freeze({
+  ammo_bench: { model: 'craftStationAmmo', prefab: 'plot_workshop_ammo', master: 'Патронщик', masterAt: [2.2, 2.1],
+    appearance: { sex: 'male', hairId: 'short_crop', hairColorId: 'hair_02' }, armor: 'leather' },
+  weapon_bench: { model: 'craftStationWeapon', prefab: 'plot_workshop_weapon', master: 'Оружейник', masterAt: [0.9, 1.7],
+    appearance: { sex: 'male', hairId: 'short_crop', hairColorId: 'hair_08' }, armor: 'leather' },
+  tool_bench: { model: 'craftStationTools', prefab: 'plot_workshop_tools', master: 'Инструментальщица', masterAt: [2.2, 1.4],
+    appearance: { sex: 'female', hairId: 'tied_back', hairColorId: 'hair_04' }, armor: 'leather' },
+  repair_bench: { model: 'craftStationRepair', prefab: 'plot_workshop_repair', master: 'Механик', masterAt: [2.4, 1.7],
+    appearance: { sex: 'male', hairId: 'short_crop', hairColorId: 'hair_06' }, armor: 'leather' },
+  energy_bench: { model: 'craftStationEnergy', prefab: 'plot_workshop_energy', master: 'Энергетик', masterAt: [2.2, 1.8],
+    appearance: { sex: 'female', hairId: 'tied_back', hairColorId: 'hair_06' }, armor: 'leather' },
+  chem_station: { model: 'craftStationChem', prefab: 'plot_workshop_chem', master: 'Химик', masterAt: [2.4, 1.6],
+    appearance: { sex: 'female', hairId: 'tied_back', hairColorId: 'hair_08' }, armor: 'leather' }
 });
+
+/** Лицо участка — сторона, обращённая к площади: оттуда к нему и подходят. */
+function plotFacing(plot) {
+  return Math.abs(plot.tx - CENTRE) > Math.abs(plot.tz - CENTRE)
+    ? { dx: plot.tx > CENTRE ? -1 : 1, dz: 0 }
+    : { dx: 0, dz: plot.tz > CENTRE ? -1 : 1 };
+}
 
 /** Объект города из префаба набора: его же кладут и конструктор, и авторский город. */
 function cityKitObject(kit, cityId, id, prefab, tx, tz, degrees = 0, tags = [], shape = null) {
@@ -133,12 +151,14 @@ function cityKitObject(kit, cityId, id, prefab, tx, tz, degrees = 0, tags = [], 
     // без него игрок проходил бы сквозь стену и курсор не находил бы постройку.
     // Часть задаётся в осях самого объекта: масштаб на неё накладывает сервер,
     // и умножь мы здесь ещё раз — преграда встала бы шире постройки.
+    // Префаб из нескольких масс (мастерская и штабели у двора) перечисляет их в
+    // `parts`: одна общая коробка закрыла бы и двор, где стоит мастер.
     ...(entry.solid ? {
-      collisionParts: [{
-        center: { x: round2(entry.center?.[0] || 0), z: round2(entry.center?.[1] || 0) },
-        size: { x: round2(entry.size[0]), z: round2(entry.size[1]) },
-        height: round2(Math.max(0.4, Number(entry.height) || 1))
-      }]
+      collisionParts: (Array.isArray(entry.parts) && entry.parts.length ? entry.parts : [entry]).map(part => ({
+        center: { x: round2(part.center?.[0] || 0), z: round2(part.center?.[1] || 0) },
+        size: { x: round2(part.size[0]), z: round2(part.size[1]) },
+        height: round2(Math.max(0.4, Number(part.height) || 1))
+      }))
     } : {}),
     collisionSize: { width, depth },
     footprint: { x: width, z: depth },
@@ -147,6 +167,19 @@ function cityKitObject(kit, cityId, id, prefab, tx, tz, degrees = 0, tags = [], 
     tags: [...new Set([...tags, 'city-kit'])],
     ...(shape?.hover ? { hover: shape.hover } : {})
   };
+}
+
+/**
+ * Пролёты ограды застроенных участков (`plot_N_edge…`): мастерская занимает
+ * участок целиком, и забор свободного участка ей не нужен — ни вида, ни преграды.
+ */
+function withoutBuiltPlotFences(objects, stations) {
+  const built = new Set((stations || []).map(row => String(row?.interactive?.plotId || '')).filter(Boolean));
+  if (!built.size) return objects;
+  return (objects || []).filter(row => {
+    const match = /^(plot_\d+)_edge/.exec(String(row?.id || ''));
+    return !match || !built.has(match[1]);
+  });
 }
 
 /**
@@ -159,15 +192,47 @@ function cityStationObjects(plan, built, kit) {
   const rows = [];
   for (const row of Array.isArray(built) ? built : []) {
     const plot = plots.get(String(row?.plotId || ''));
-    const prefab = STATION_PREFABS[String(row?.station || '')];
-    if (!plot || !prefab) continue;
-    const station = cityKitObject(kit, plan?.cityId || '', `station_${plot.id}`, prefab, plot.tx, plot.tz, 0,
+    const workshop = STATION_WORKSHOPS[String(row?.station || '')];
+    if (!plot || !workshop) continue;
+    // Мастерская стоит задом к дальнему забору, входом — к лицу участка.
+    const face = plotFacing(plot);
+    const degrees = (Math.round(Math.atan2(face.dx, face.dz) * 180 / Math.PI) + 360) % 360;
+    const station = cityKitObject(kit, plan?.cityId || '', `station_${plot.id}`, workshop.prefab, plot.tx, plot.tz, degrees,
       ['city-station', 'crafting-station', row.station, `city-${plot.district}`]);
-    // Участок назван в самом станке: по нему сервер берёт плату и владельца.
+    // Мастерская и есть станок: по ключу модели сервер узнаёт его при крафте,
+    // а участок, названный в самой постройке, даёт плату и владельца.
+    station.model = workshop.model;
     station.interactive = { kind: 'craftingStation', craftingStations: [row.station],
                             stationSiteId: plan?.cityId || '', plotId: plot.id };
     station.role = 'cover';
     rows.push(station);
+    // Мастер стоит у рабочего места мастерской, сбоку от таблички торгов: точка
+    // `masterAt` — в осях мастерской (x вдоль фасада, z к лицу участка), как у префаба.
+    const turn = degrees * Math.PI / 180;
+    const [localX, localZ] = workshop.masterAt;
+    const master = {
+      x: localX * Math.cos(turn) + localZ * Math.sin(turn),
+      z: -localX * Math.sin(turn) + localZ * Math.cos(turn)
+    };
+    // Мастер — живой служащий: его ставит сервер, префаба у строки нет. Разговор
+    // с ним открывает станок мастерской. Ремесла в его тегах нет — иначе клиент
+    // принял бы и самого мастера за станок.
+    rows.push({
+      id: `master_${plot.id}`,
+      model: 'wastelandSettler',
+      name: workshop.master,
+      position: { x: round2(tileCentre(plot.tx) + master.x), y: 0, z: round2(tileCentre(plot.tz) + master.z) },
+      rotation: { x: 0, y: round2(degrees * Math.PI / 180), z: 0 },
+      scale: { x: 1, y: 1, z: 1 },
+      collision: 'solid',
+      tags: ['npc', 'friendly', 'service', 'city-station-master', `city-${plot.district}`],
+      entity: {
+        kind: 'npc', role: 'npc', hostileToPlayer: false, stationary: true,
+        service: 'stationMaster', stationObjectId: station.id,
+        appearance: { schema: 'realm.character-appearance.v1', skinToneId: 'skin_03', ...workshop.appearance },
+        equipment: { weapon: 'fists', armor: workshop.armor, helmet: '', boots: 'boots', backpack: '' }
+      }
+    });
   }
   return rows;
 }
@@ -396,7 +461,10 @@ function buildCity(recipe, kit) {
   put('homes_fire', 'campfire_rest', anchors.homes[0].tx + 3, anchors.homes[0].tz, 0, ['city-home', 'rest']);
 
   // --- построенное игроками: станок на выигранном участке ------------------------------------
-  objects.push(...cityStationObjects({ cityId: plan.cityId, plots }, plan.built, kit));
+  const playerStations = cityStationObjects({ cityId: plan.cityId, plots }, plan.built, kit);
+  const unfenced = withoutBuiltPlotFences(objects, playerStations).slice();
+  objects.length = 0;
+  objects.push(...unfenced, ...playerStations);
 
   // --- площадь: ориентир, доска работ, диспетчер, лазарет ------------------------------------
   const landmark = plan.mode === 'peaceful' && plan.region === 'northern_sluices' ? 'water_tank' : 'relay_antenna';
@@ -577,4 +645,4 @@ function cityRevision(definition) {
 }
 
 module.exports = { CITY_BUILDER_VERSION, DIRECTIONS, TILES, WALL_HALF, buildCity, cityKitObject,
-  cityRevision, cityStationObjects, normalizeCityRecipe };
+  cityRevision, cityStationObjects, normalizeCityRecipe, withoutBuiltPlotFences };

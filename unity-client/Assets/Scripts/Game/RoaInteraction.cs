@@ -176,7 +176,14 @@ namespace RealmOfAshes.Game
         /// <summary>Канонический id открытого станка: по нему отбираются рецепты.</summary>
         public string CraftingStation { get { return _active?["station"]?.ToString() ?? string.Empty; } }
         /// <summary>Участок поселения под открытым станком; null — станок без участка.</summary>
-        public JObject CraftingPlot { get { return RoaCraftingPlots.ForObject(_active?["id"]?.ToString()); } }
+        public JObject CraftingPlot
+        {
+            get
+            {
+                string plotId = _active?["plotId"]?.ToString();
+                return RoaCraftingPlots.ForObject(string.IsNullOrEmpty(plotId) ? _active?["id"]?.ToString() : plotId);
+            }
+        }
         /// <summary>Снимок счёта игрока (self.account): премиум и запас фокуса.</summary>
         public JObject CraftingAccount { get { return _self?["account"] as JObject; } }
         public bool CraftPending { get { return _craftPending; } }
@@ -304,6 +311,7 @@ namespace RealmOfAshes.Game
                 else if (_candidateKind == TargetKind.Storage) action = "открыть хранилище";
                 else if (_candidateKind == TargetKind.Container) action = "открыть";
                 else if (_candidate["dead"]?.ToObject<bool>() == true) action = "обыскать";
+                else if (!string.IsNullOrEmpty(_candidate["stationObjectId"]?.ToString())) action = "заказать работу";
                 else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) action = "поговорить";
                 else if (NpcHasTrade(_candidate)) action = "торговать";
                 else action = "услуги";
@@ -1288,40 +1296,7 @@ namespace RealmOfAshes.Game
                     Loader?.SetObjectVisible(entry.Id, visible);
                 }
 
-                TargetKind kind = StaticTargetKind(entry);
-                if (kind == TargetKind.None) continue;
-
-                string station = kind == TargetKind.CraftingStation ? CraftingStationId(entry) : string.Empty;
-                string boardSiteId = kind == TargetKind.JobBoard
-                    ? (entry.Interactive?["boardSiteId"]?.ToString() ?? _locationId)
-                    : string.Empty;
-                string questObjective = kind == TargetKind.QuestObject
-                    ? (entry.Interactive?["questObjective"]?.ToString() ?? string.Empty)
-                    : string.Empty;
-                // Табличка участка знает, за какой участок торгуются: без этого
-                // окно торгов не открыть.
-                string plotId = kind == TargetKind.PlotBoard
-                    ? (entry.Interactive?["plotId"]?.ToString() ?? string.Empty)
-                    : string.Empty;
-
-                _staticTargets.Add(new StaticTarget
-                {
-                    Kind = kind,
-                    Position = RoaCoords.ToUnity(entry.Position.X, entry.Position.Y, entry.Position.Z),
-                    Data = new JObject
-                    {
-                        ["id"] = entry.Id,
-                        ["name"] = string.IsNullOrEmpty(entry.Name)
-                            ? DefaultStaticName(kind, station)
-                            : entry.Name,
-                        ["staticKind"] = kind.ToString(),
-                        ["station"] = station,
-                        ["boardSiteId"] = boardSiteId,
-                        ["questObjective"] = questObjective,
-                        ["plotId"] = plotId,
-                        ["locationId"] = _locationId
-                    }
-                });
+                AddStaticTarget(entry);
             }
 
             var transitionIds = new HashSet<string>();
@@ -1333,6 +1308,58 @@ namespace RealmOfAshes.Game
             RebuildPortalTargets();
 
             RefreshResourceViews();
+        }
+
+        private void AddStaticTarget(LocationObject entry)
+        {
+            TargetKind kind = StaticTargetKind(entry);
+            if (kind == TargetKind.None) return;
+
+            string station = kind == TargetKind.CraftingStation ? CraftingStationId(entry) : string.Empty;
+            string boardSiteId = kind == TargetKind.JobBoard
+                ? (entry.Interactive?["boardSiteId"]?.ToString() ?? _locationId)
+                : string.Empty;
+            string questObjective = kind == TargetKind.QuestObject
+                ? (entry.Interactive?["questObjective"]?.ToString() ?? string.Empty)
+                : string.Empty;
+            // Табличка участка знает, за какой участок торгуются: без этого
+            // окно торгов не открыть. Мастерская на участке знает свой участок:
+            // по нему окно станка берёт владельца и плату.
+            string plotId = kind == TargetKind.PlotBoard || kind == TargetKind.CraftingStation
+                ? (entry.Interactive?["plotId"]?.ToString() ?? string.Empty)
+                : string.Empty;
+
+            _staticTargets.Add(new StaticTarget
+            {
+                Kind = kind,
+                Position = RoaCoords.ToUnity(entry.Position.X, entry.Position.Y, entry.Position.Z),
+                Data = new JObject
+                {
+                    ["id"] = entry.Id,
+                    ["name"] = string.IsNullOrEmpty(entry.Name)
+                        ? DefaultStaticName(kind, station)
+                        : entry.Name,
+                    ["staticKind"] = kind.ToString(),
+                    ["station"] = station,
+                    ["boardSiteId"] = boardSiteId,
+                    ["questObjective"] = questObjective,
+                    ["plotId"] = plotId,
+                    ["locationId"] = _locationId
+                }
+            });
+        }
+
+        /// <summary>
+        /// Мастерские на участках сменились, пока игрок в городе: цели станков
+        /// участков пересобираются по свежему определению, остальные не трогаются.
+        /// </summary>
+        public void RefreshPlotBuildings(LocationDefinition location)
+        {
+            if (location == null || !string.Equals(location.Id, _locationId, StringComparison.Ordinal)) return;
+            _staticTargets.RemoveAll(target => target.Kind == TargetKind.CraftingStation
+                && (target.Data?["id"]?.ToString() ?? string.Empty).StartsWith("station_plot_", StringComparison.Ordinal));
+            foreach (LocationObject entry in location.Objects ?? new List<LocationObject>())
+                if (RoaLocationLoader.IsPlotBuilding(entry) && entry.Position != null) AddStaticTarget(entry);
         }
 
         private void AddTransitionTarget(LocationTransition transition, HashSet<string> seen)
@@ -2209,6 +2236,7 @@ namespace RealmOfAshes.Game
 
             if (_candidateKind != TargetKind.Actor) return;
             if (_candidate["dead"]?.ToObject<bool>() == true) InspectCorpse(_candidate);
+            else if (TryOpenMasterStation(_candidate)) return;
             else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) OpenNpc(_candidate);
             else if (NpcHasTrade(_candidate))
             {
@@ -2369,9 +2397,29 @@ namespace RealmOfAshes.Game
             }
         }
 
+        /// <summary>
+        /// Мастер участка стоит у своей мастерской, как в Albion: разговор с ним
+        /// открывает её станок. Крафт уходит от имени станка — сервер меряет
+        /// расстояние до мастерской и берёт с неё участок и плату.
+        /// </summary>
+        private bool TryOpenMasterStation(JObject actor)
+        {
+            string stationId = actor?["stationObjectId"]?.ToString();
+            if (string.IsNullOrEmpty(stationId)) return false;
+            foreach (StaticTarget target in _staticTargets)
+            {
+                if (target.Kind != TargetKind.CraftingStation) continue;
+                if (target.Data?["id"]?.ToString() != stationId) continue;
+                OpenCrafting(target.Data);
+                return true;
+            }
+            return false;
+        }
+
         private void OpenCrafting(JObject station)
         {
             _active = (JObject)station.DeepClone();
+            RoaCraftingPlots.ActivePlotId = _active["plotId"]?.ToString() ?? string.Empty;
             _panel = PanelKind.Crafting;
             _scroll = Vector2.zero;
             _status = string.Empty;

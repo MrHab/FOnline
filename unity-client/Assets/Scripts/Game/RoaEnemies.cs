@@ -853,7 +853,8 @@ namespace RealmOfAshes.Game
 
                 string service = enemy.Snapshot["service"]?.ToString();
                 bool hasServiceMenu = service == "registrar" || service == "artifactLab"
-                    || service == "fastTravel";
+                    || service == "fastTravel"
+                    || !string.IsNullOrEmpty(enemy.Snapshot["stationObjectId"]?.ToString());
 
                 if (!dead && (hostile || (!canDialogue && !hasTrade && !hasServiceMenu))) continue;
 

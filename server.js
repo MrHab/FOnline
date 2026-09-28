@@ -17419,11 +17419,16 @@ function authoredNpcMatchesWastelandOwner(row = {}, site = null, loc = {}) {
   return faction === owner;
 }
 
-function spawnAuthoredLocationActors(room, loc) {
+/**
+ * `only` — отбор строк: пересоздаются только подходящие НПС, остальные (и их
+ * товар) не трогаются. Так мастера участков встают и уходят вместе с постройкой.
+ */
+function spawnAuthoredLocationActors(room, loc, only = null) {
   if (!room || !loc || !Array.isArray(loc.objects)) return 0;
   const preservedQuestNpcIds = new Set();
   for (const [id, actor] of [...room.enemies.entries()]) {
     if (actor?.authoredLocationId !== loc.id) continue;
+    if (only && !only({ id: actor.authoredLocationObjectId })) continue;
     const questNpcId = String(actor.kromkaNamedNpcId || '').slice(0, 96);
     if (questNpcId && !actor.dead) {
       preservedQuestNpcIds.add(questNpcId);
@@ -17462,6 +17467,7 @@ function spawnAuthoredLocationActors(room, loc) {
   }
   authoredRows.forEach((row, index) => {
     if (!locationDefinitionObjectIsNpc(row)) return;
+    if (only && !only(row)) return;
     // Именных и учебных НПС ставят их каталоги; строка — только их место и облик.
     const rowOwner = String(locationDefinitionObjectEntity(row).spawnedBy || '');
     if (rowOwner === 'named' || rowOwner === 'onboarding') return;
@@ -17540,6 +17546,7 @@ function spawnAuthoredLocationActors(room, loc) {
     }
     actor.authoredLocationId = loc.id;
     actor.authoredLocationObjectId = String(row.id || `authored_npc_${index + 1}`).slice(0, 64);
+    actor.stationObjectId = String(entity.stationObjectId || '').slice(0, 64);
     // Стоящий НПС смотрит туда, куда его повернули в сцене Unity: к стойке, к
     // воротам, к столу. Угол сервера и поворот сцены совпадают
     // (RoaCoords.ModelYawOffsetDeg = 0), так что поворот строки и есть взгляд.
@@ -17580,7 +17587,7 @@ function spawnAuthoredLocationActors(room, loc) {
     serverPrepareNpcCorpseLoot(actor, room);
     count++;
   });
-  return count + serverSpawnFastTravelDispatcher(room, loc);
+  return only ? count : count + serverSpawnFastTravelDispatcher(room, loc);
 }
 
 /**
@@ -19393,6 +19400,8 @@ function publicEnemy(e, viewer = null) {
     lootProfile: String(e.lootProfile || '').slice(0, 64),
     tradeProfile: String(e.tradeProfile || '').slice(0, 64),
     service: naturalCreature ? '' : String(e.service || '').slice(0, 32),
+    // Мастер участка: разговор с ним открывает станок его мастерской.
+    stationObjectId: naturalCreature ? '' : String(e.stationObjectId || '').slice(0, 64),
     territoryFactionId: String(e.territoryFactionId || '').slice(0, 32),
     special: npcSpecial ? {
       ST: clamp(Math.round(Number(npcSpecial.ST || 0)), 1, 10),
@@ -21034,8 +21043,19 @@ function serverRebuildCity(locationId = '') {
     if (normalizeLocationId(room?.locationId || '') !== id) continue;
     room.staticCollision = null;
     room.worldVersion = (Number(room.worldVersion) || 0) + 1;
+    // Мастер стоит у своей мастерской: встаёт с постройкой и уходит со сносом.
+    // Остальных НПС города (и товар торговцев) это не трогает.
+    if (room.worldReady) spawnAuthoredLocationActors(room, LOCATIONS[id], row => isCityStationMasterId(row?.id));
+    // Клиент перечитывает локацию и ставит или убирает мастерскую на месте.
+    if (room.sockets?.size) {
+      io.to(room.id).emit('locationRevision', { roomId: room.id, locationId: id, revision: String(LOCATIONS[id].revision || '') });
+    }
   }
   return true;
+}
+
+function isCityStationMasterId(id = '') {
+  return String(id || '').startsWith('master_plot_');
 }
 
 /** Невыплаченные марки участков (возвраты ставок, плата арендатору) — в рюкзак. */
@@ -33717,6 +33737,10 @@ function getLanUrls(port) {
   }
   return urls;
 }
+
+// Построенное на участках живёт в сохранениях: при старте города собираются уже
+// с ним, иначе мастерские пропадали до первой новой стройки.
+for (const city of ZONE_RUNTIME.cities()) serverRebuildCity(city.locationId);
 
 server.listen(PORT, '0.0.0.0', () => {
   const address = server.address();

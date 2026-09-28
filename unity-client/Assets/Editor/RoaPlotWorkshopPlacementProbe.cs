@@ -42,7 +42,9 @@ namespace RealmOfAshes.EditorTools
 
         private static readonly string[] Floors =
         {
-            "SM_Bld_Bunker_Concrete_Floor_01", "SM_Bld_Bunker_Floor_Wood_01", "SM_Bld_Bunker_Floor_Stone_01"
+            "SM_Bld_Bunker_Concrete_Floor_01", "SM_Bld_Bunker_Floor_Wood_01", "SM_Bld_Bunker_Floor_Stone_01",
+            // Бордюр — край того же основания: куски стыкуются внахлёст.
+            "SM_Env_Sidewalk_Edge_"
         };
 
         private sealed class Item
@@ -115,11 +117,14 @@ namespace RealmOfAshes.EditorTools
 
                 int problems = 0;
                 var solids = items.Where(item => !item.Floor && !item.Hanging).ToList();
-                // Всё стоит на фундаменте участка: плиты лежат от −6,25 до +6,25 м.
+                // Всё стоит на фундаменте участка: плиты лежат от −6,25 до +6,25 м,
+                // бордюр со столбиками обходит их снаружи и кончается у ±6,85 м
+                // (граница участка 14 × 14 м — ±7 м).
                 foreach (Item item in items.Where(item => !item.Name.StartsWith("KitCollision")))
                 {
                     Bounds b = item.Bounds;
-                    float outside = Mathf.Max(Mathf.Max(-6.25f - b.min.x, b.max.x - 6.25f), Mathf.Max(-6.25f - b.min.z, b.max.z - 6.25f));
+                    float edge = item.Floor ? 6.9f : 6.25f;
+                    float outside = Mathf.Max(Mathf.Max(-edge - b.min.x, b.max.x - edge), Mathf.Max(-edge - b.min.z, b.max.z - edge));
                     if (outside <= 0.05f) continue;
                     report.AppendLine(key + ": выходит за фундамент на " + outside.ToString("0.00") + " м — " + item.Name);
                     problems++;

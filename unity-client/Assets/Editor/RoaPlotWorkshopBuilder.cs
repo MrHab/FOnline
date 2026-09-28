@@ -111,6 +111,35 @@ namespace RealmOfAshes.EditorTools
                     yield return Flat(slab, x, z, 0f, -0.22f);
             yield return Flat("Buildings/SM_Bld_Bunker_Floor_Wood_01", -1.25f, 1.25f, 0f, -0.19f);
             yield return Flat("Buildings/SM_Bld_Bunker_Floor_Stone_01", 6.25f, 1.25f, 0f, -0.2f);
+            foreach (Part curb in Curb()) yield return curb;
+        }
+
+        /// <summary>
+        /// Бордюр по краю фундамента: без ограды он отделяет двор мастерской от
+        /// улицы. Кромка тротуара 5 × 0,49 м, 8 см над землёй — шагнуть можно,
+        /// преграды не даёт. Сторона плит 12,5 м пятиметровыми кусками не делится,
+        /// поэтому последний кусок заходит на соседний (кромка одного цвета, стык не
+        /// мерцает). Посреди фасада — въезд 3,5 м, на углах и у въезда — столбики.
+        /// </summary>
+        private static IEnumerable<Part> Curb()
+        {
+            const string edge = "Environment/SM_Env_Sidewalk_Edge_01";
+            const string post = "Environment/SM_Env_Sidewalk_Edge_Corner_01";
+            const float line = 6.49f;
+            const float end = line + 0.24f;
+            // Кусок лежит от своей точки на 5 м к −x (при повороте на 90° — к +z).
+            foreach (float x in new[] { end, end - 5f, 5f - end })
+                yield return Flat(edge, x, -line);
+            yield return Flat(edge, end, line);
+            yield return Flat(edge, -1.73f, line);
+            foreach (float side in new[] { -line, line })
+                foreach (float z in new[] { -6.25f, -1.25f, 1.25f })
+                    yield return Flat(edge, side, z, 90f);
+            foreach (float x in new[] { -line, line })
+                foreach (float z in new[] { -line, line })
+                    yield return Flat(post, x, z);
+            yield return Flat(post, -1.73f - 0.3f, line);
+            yield return Flat(post, 1.73f + 0.3f, line);
         }
 
         // Ключ станка сервера → мастерская. Координаты в метрах от центра участка;

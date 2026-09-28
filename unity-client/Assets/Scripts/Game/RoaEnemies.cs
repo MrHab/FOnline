@@ -1985,7 +1985,8 @@ namespace RealmOfAshes.Game
                     MaxHp = Mathf.Max(1, enemy.Snapshot["maxHp"]?.ToObject<int>() ?? enemy.Hp),
                     World = enemy.Root.transform.position + Vector3.up * (2.05f * scale),
                     Hostile = hostile,
-                    IsPlayer = false
+                    IsPlayer = false,
+                    NameOnly = !string.IsNullOrEmpty(enemy.Snapshot["stationObjectId"]?.ToString())
                 };
                 if (!hostile) plateEntry.Name = RoaInteraction.DisplayNpcName(enemy.Snapshot);
                 rows.Add(plateEntry);

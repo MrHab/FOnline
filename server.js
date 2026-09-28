@@ -5225,7 +5225,8 @@ function serverPlayersAllied(attacker = {}, target = {}) {
 }
 
 function serverPlayerCanDamageNpc(player, enemy, room) {
-  if (!enemy || enemy.dead || !roomAllowsNpcCombat(room)
+  // Мастер мастерской участка — служащий у станка, а не боец.
+  if (!enemy || enemy.dead || !roomAllowsNpcCombat(room) || enemy.service === 'stationMaster'
     || serverNpcIsKromkaOnboardingProtected(enemy)
     || !serverActorHostileToPlayer(enemy, player)) return false;
   if (serverCombatFactionsAllied(

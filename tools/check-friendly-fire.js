@@ -229,6 +229,14 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
   assert(!f.context.serverPlayerCanDamageNpc(f.p, f.enemy, f.room), 'Escorted party NPCs must be protected');
 }
 
+{
+  const f = fixture();
+  f.enemy.faction = 'raiders'; f.enemy.hostileToPlayer = true;
+  f.enemy.service = 'stationMaster';
+  assert(!f.context.serverPlayerCanDamageNpc(f.p, f.enemy, f.room),
+    'A plot workshop master is staff, not a combatant, even when his faction turns hostile');
+}
+
 // --- правила Сердцевины называются словами ------------------------------------
 // Выстрел приняли, ОД и патрон списаны, урона нет: без имени правила это
 // неотличимо от промаха, а правило сервер знает и так.

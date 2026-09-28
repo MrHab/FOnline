@@ -1444,6 +1444,7 @@ namespace RealmOfAshes.Game
             }
 
             if (enemy.Root == null) { Destroy(model); return; }
+            RoaEnemyModels.RestoreApprovedScale(modelKey, model.transform);
 
             // У части существ клипы свои, а часть моделей — статичный меш.
             enemy.Animation = model.GetComponentInChildren<Animation>();

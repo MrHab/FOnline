@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace RealmOfAshes.Game
 {
@@ -31,7 +32,7 @@ namespace RealmOfAshes.Game
             { "kromkaBurned", Wasteland + "npc_ghoul.glb" },
             { "kromkaFold", Wasteland + "npc_ghoul.glb" },
             { "kromkaGari", Wasteland + "npc_ash_wolf.glb" },
-            { "kromkaRykhlyak", Wasteland + "npc_radscorpion.glb" },
+            { "kromkaRykhlyak", Wasteland + "npc_rykhlyak.glb" },
             { "kromkaDustling", Wasteland + "npc_mutant_ant.glb" },
             { "kromkaListener", Wasteland + "npc_gecko.glb" },
             { "kromkaMourner", Wasteland + "npc_fire_gecko.glb" },
@@ -94,7 +95,7 @@ namespace RealmOfAshes.Game
         /// </summary>
         private static readonly HashSet<string> FacingHalfTurn = new HashSet<string>
         {
-            "enemyRadscorpion", "enemyMutantAnt", "kromkaRykhlyak", "kromkaDustling"
+            "enemyRadscorpion", "enemyMutantAnt", "kromkaDustling"
         };
 
         /// <summary>
@@ -103,11 +104,31 @@ namespace RealmOfAshes.Game
         /// </summary>
         private static readonly HashSet<string> OwnVisual = new HashSet<string>
         {
-            "kromkaLantern"
+            "kromkaLantern", "kromkaGari", "kromkaDustling", "kromkaRykhlyak", "brahmin", "friendlyBrahmin"
         };
 
         public static bool OwnsVisual(string modelKey) =>
             OwnVisual.Contains(modelKey ?? string.Empty);
+
+        /// <summary>
+        /// Волк и брамин собраны для three.js: корень ассета несёт квадратный
+        /// корень одобренного масштаба, потому что three.js применял его к
+        /// скиненной сетке дважды (runtimeScaleCompensation в
+        /// approved-creature-manifest.json). Unity применяет масштаб корня один
+        /// раз, поэтому без возведения в квадрат волк выходил 3,2 м вместо 2,1 м.
+        /// </summary>
+        private static readonly HashSet<string> SquareRootScaledGlb = new HashSet<string>
+        {
+            "kromkaGari", "brahmin", "friendlyBrahmin"
+        };
+
+        /// <summary>Возвращает корню GLB одобренный масштаб там, где он хранится как корень.</summary>
+        public static void RestoreApprovedScale(string modelKey, Transform model)
+        {
+            if (model == null || !SquareRootScaledGlb.Contains(modelKey ?? string.Empty)) return;
+            foreach (Transform root in model)
+                root.localScale = Vector3.Scale(root.localScale, root.localScale);
+        }
 
         /// <summary>Доворот модели в градусах.</summary>
         public static float YawOffset(string modelKey)

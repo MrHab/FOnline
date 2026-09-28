@@ -269,6 +269,11 @@ def export_candidate(
     root: bpy.types.Object,
     armature: bpy.types.Object,
     meshes: list[bpy.types.Object],
+    copyright_text: str = (
+        "Quaternius Ultimate Animated Animals / Stag topology, rig and "
+        "base animations: CC0 1.0. Realm of Ashes B+C materials and "
+        "symbiont glow: project work."
+    ),
 ) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     for obj in bpy.context.scene.objects:
@@ -280,11 +285,7 @@ def export_candidate(
         filepath=str(output.resolve()),
         export_format="GLB",
         use_selection=True,
-        export_copyright=(
-            "Quaternius Ultimate Animated Animals / Stag topology, rig and "
-            "base animations: CC0 1.0. Realm of Ashes B+C materials and "
-            "symbiont glow: project work."
-        ),
+        export_copyright=copyright_text,
         export_extras=True,
         export_yup=True,
         export_apply=False,

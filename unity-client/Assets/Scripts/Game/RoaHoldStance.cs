@@ -779,7 +779,9 @@ namespace RealmOfAshes.Game
                 // Длинное топорище при подъёме уходит наружу от виска.
                 // Длинный хват — подъём дальше вперёд: нижняя кисть не проходит перед животом.
                 float longGrip = Mathf.Max(0f, hold.Spacing - 0.3f);
-                RoaHoldPose lift = P(new Vector3(0.32f, 1.52f + longGrip * 0.4f, 0.32f + longGrip * 1.5f), new Vector3(0.18f, 0.94f, 0.2f), new Vector3(0f, 0.2f, -0.98f));
+                // Лезвие остаётся лицом вперёд, как в стойке: топор поворачивается целиком
+                // в плоскости замаха, а не проворачивается вокруг топорища.
+                RoaHoldPose lift = P(new Vector3(0.32f, 1.52f + longGrip * 0.4f, 0.32f + longGrip * 1.5f), new Vector3(0.18f, 0.94f, 0.2f), new Vector3(0f, -0.2f, 0.98f));
                 lift.Spine = windup.Spine * 0.5f;
                 // Над головой кисти впереди лба: нижняя — на 20 см перед лицом, не в нём.
                 RoaHoldPose over = P(new Vector3(0.12f, 1.86f, 0.4f), new Vector3(0.05f, 0.9f, 0.43f), new Vector3(0f, -0.43f, 0.9f));

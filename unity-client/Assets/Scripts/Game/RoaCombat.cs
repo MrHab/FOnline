@@ -351,9 +351,9 @@ namespace RealmOfAshes.Game
             if (!mouseHeld) _gatherClickHeld = false;
             // Сбор как в Albion: клик по ресурсу, когда под курсором нет цели,
             // начинает сбор, а не выстрел, и удержание кнопки после него не стреляет.
+            // Тот же фильтр, что у выстрела (окна и PIP-ASH — в inputAllowed): проверка
+            // EventSystem в WebGL считала курсор над UI и глушила клик по узлу.
             if (inputAllowed && !MobileInputMode && Input.GetMouseButtonDown(0) && _hoverTarget == null
-                && !(UnityEngine.EventSystems.EventSystem.current != null
-                    && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
                 && Interaction != null
                 && Interaction.TryGatherAtScreenPoint(Input.mousePosition))
                 _gatherClickHeld = true;

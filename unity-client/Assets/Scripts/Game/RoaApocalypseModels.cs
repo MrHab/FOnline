@@ -107,7 +107,7 @@ namespace RealmOfAshes.Game
         private Dictionary<string, GameObject> _items;
         private Dictionary<string, ArmorEntry> _armor;
         private Dictionary<string, FootwearEntry> _footwear;
-        private Dictionary<string, CreatureEntry> _creatures;
+        private Dictionary<string, List<CreatureEntry>> _creatures;
         private Dictionary<string, GameObject> _environment;
 
         private static RoaApocalypseModels Instance =>
@@ -297,21 +297,48 @@ namespace RealmOfAshes.Game
             return palette._items.TryGetValue(RoaItemData.VisualId(itemId), out GameObject prefab) ? prefab : null;
         }
 
-        public static GameObject Creature(string modelKey, out float pitch)
+        public static GameObject Creature(string modelKey, out float pitch) =>
+            Creature(modelKey, null, out pitch);
+
+        /// <summary>
+        /// Облик существа. У ключа может быть несколько вариантов (четыре зомби
+        /// Выжженных): вариант выбирается по id особи, чтобы толпа была разной,
+        /// а одна и та же особь выглядела одинаково у всех игроков.
+        /// </summary>
+        public static GameObject Creature(string modelKey, string variantSeed, out float pitch)
         {
             pitch = 0f;
             RoaApocalypseModels palette = Instance;
             if (palette == null || string.IsNullOrEmpty(modelKey)) return null;
             if (palette._creatures == null)
             {
-                palette._creatures = new Dictionary<string, CreatureEntry>(StringComparer.Ordinal);
+                palette._creatures = new Dictionary<string, List<CreatureEntry>>(StringComparer.Ordinal);
                 foreach (CreatureEntry entry in palette.creatures)
-                    if (entry != null && !string.IsNullOrEmpty(entry.modelKey) && entry.prefab != null)
-                        palette._creatures[entry.modelKey] = entry;
+                {
+                    if (entry == null || string.IsNullOrEmpty(entry.modelKey) || entry.prefab == null) continue;
+                    if (!palette._creatures.TryGetValue(entry.modelKey, out List<CreatureEntry> variants))
+                        palette._creatures[entry.modelKey] = variants = new List<CreatureEntry>();
+                    variants.Add(entry);
+                }
             }
-            if (!palette._creatures.TryGetValue(modelKey, out CreatureEntry chosen)) return null;
+            if (!palette._creatures.TryGetValue(modelKey, out List<CreatureEntry> options)) return null;
+            CreatureEntry chosen = options[(int)(VariantHash(variantSeed) % (uint)options.Count)];
             pitch = chosen.pitch;
             return chosen.prefab;
+        }
+
+        private static uint VariantHash(string value)
+        {
+            uint hash = 2166136261u;
+            unchecked
+            {
+                foreach (char c in value ?? string.Empty)
+                {
+                    hash ^= c;
+                    hash *= 16777619u;
+                }
+            }
+            return hash;
         }
 
         public static GameObject Environment(string modelKey)

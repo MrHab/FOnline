@@ -4846,7 +4846,7 @@ const SERVER_MODEL_FILE_BY_KEY = Object.freeze({
   ,kromkaDustling: 'npc_mutant_ant.glb'
   ,kromkaListener: 'npc_gecko.glb'
   ,kromkaMourner: 'npc_fire_gecko.glb'
-  ,kromkaLantern: 'brahmin.glb'
+  ,kromkaLantern: 'npc_lantern_stag.glb'
 });
 const SERVER_MODEL_KEY_BY_FILE = Object.freeze(Object.fromEntries(
   Object.entries(SERVER_MODEL_FILE_BY_KEY)

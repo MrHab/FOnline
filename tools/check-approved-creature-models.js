@@ -26,6 +26,7 @@ const UNITY_MODEL_KEY_BY_CREATURE = {
   npc_ash_wolf: 'enemyAshWolf',
   npc_radscorpion: 'enemyRadscorpion',
   npc_mutant_ant: 'enemyMutantAnt',
+  npc_lantern_stag: 'kromkaLantern',
   npc_super_mutant: 'enemySuperMutant'
 };
 const EXPECTED_BOUNDS = {
@@ -52,6 +53,10 @@ const EXPECTED_BOUNDS = {
   npc_mutant_ant: {
     center: { x: 0.000012, y: 0.354658, z: 0.02032 },
     size: { x: 2.009994, y: 0.675568, z: 2.15746 }
+  },
+  npc_lantern_stag: {
+    center: { x: -0.001995, y: 1.052869, z: 0.234507 },
+    size: { x: 0.963712, y: 2.113113, z: 1.838245 }
   },
   npc_super_mutant: {
     center: { x: -0.003261, y: 1.273561, z: -0.01007 },

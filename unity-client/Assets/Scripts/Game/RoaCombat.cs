@@ -126,6 +126,7 @@ namespace RealmOfAshes.Game
         private const float BlockedAttackFeedbackSeconds = 1f;
         private float _nextBlockedAttackFeedbackAt = -100f;
         private bool _desktopBlockedAttackHeld;
+        private bool _gatherClickHeld;
         private int _shotSeq;
         private string _fireMode = "single";
         private string _modeWeapon = string.Empty;
@@ -347,7 +348,21 @@ namespace RealmOfAshes.Game
             if (inputAllowed && Input.GetKeyDown(ReloadKey)) Reload();
             bool mouseHeld = !MobileInputMode && Input.GetMouseButton(0);
             if (!mouseHeld) _desktopBlockedAttackHeld = false;
-            if (inputAllowed && mouseHeld && Time.time >= _nextRequestAt) Attack();
+            if (!mouseHeld) _gatherClickHeld = false;
+            // Сбор как в Albion: клик по ресурсу, когда под курсором нет цели,
+            // начинает сбор, а не выстрел, и удержание кнопки после него не стреляет.
+            if (inputAllowed && !MobileInputMode && Input.GetMouseButtonDown(0) && _hoverTarget == null
+                && !(UnityEngine.EventSystems.EventSystem.current != null
+                    && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+                && Interaction != null
+                && Interaction.TryGatherAtScreenPoint(Input.mousePosition))
+                _gatherClickHeld = true;
+            if (inputAllowed && mouseHeld && !_gatherClickHeld && Time.time >= _nextRequestAt)
+            {
+                // Выстрел обрывает сбор: руки заняты оружием.
+                if (Interaction != null && Interaction.GatherActive) Interaction.StopGather(null);
+                Attack();
+            }
             UpdateHoverTarget(inputAllowed);
             UpdateTargetingFeedback(inputAllowed);
 

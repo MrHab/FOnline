@@ -526,6 +526,7 @@ const {
 } = require('./src/server/onsite-party-formation');
 const { buildTutorialStartingLoadout, buildTutorialSupplies } = require('./src/server/starting-loadout');
 const { harvestBonusChance } = require('./src/server/harvest-bonus');
+const gathering = require('./src/server/gathering');
 const { planFailedPlayerActivities } = require('./src/server/player-activity-recovery');
 const {
   createResourceExpedition,
@@ -11423,10 +11424,6 @@ function completeServerPlayerTrade(session = null) {
   return { ok: true };
 }
 
-function serverHarvestApCost() {
-  return 2;
-}
-
 function serverHarvestXp(qty = 1) {
   return 3 + Math.max(1, Math.floor(Number(qty || 1)));
 }
@@ -12871,7 +12868,7 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), optio
   enemy.killerId = p.id;
   enemy.npcLootProtectedUntil = now + 15000;
   applyEnemyProgressionLoot(room, enemy, p);
-  const skinning = serverApplySkinningLoot(room, enemy, p);
+  const carcass = serverSpawnCarcass(room, enemy, now);
   serverPrepareNpcCorpseLoot(enemy, room);
   serverGrantXp(p, enemy.xp || 0);
   enemy.attackTimer = 0;
@@ -12886,7 +12883,7 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), optio
     sourceZ: Number(sourceZ.toFixed(2)),
     damage: Math.max(0, Math.round(Number(options.damage || 0))),
     critical: !!options.critical,
-    ...(skinning ? { skinned: skinning.item } : {}),
+    ...(carcass ? { carcassId: carcass.id } : {}),
     t: now
   });
   recordServerWorldActivityEnemyKill(room, enemy, p, now);
@@ -13117,7 +13114,7 @@ function roomTileHasResource(room, tx, tz, clearance = 0) {
   if (!room || !(room.resources instanceof Map)) return false;
   const c = Math.max(0, Math.floor(Number(clearance || 0)));
   for (const r of room.resources.values()) {
-    if (!r || Number(r.hp || 0) <= 0) continue;
+    if (!r || r.carcass || Number(r.hp || 0) <= 0) continue;
     if (Math.abs(Number(r.tx) - tx) <= c && Math.abs(Number(r.tz) - tz) <= c) return true;
   }
   return false;
@@ -15324,39 +15321,88 @@ function applyEnemyProgressionLoot(room, enemy, p = {}) {
   return changed;
 }
 
-/** Старший тир ножа свежевальщика в сумке игрока (0 — ножа нет). */
-function serverSkinningKnifeInBag(p = {}) {
+/**
+ * Лучший инструмент группы (кирка, топор, серп, насос, нож свежевальщика) в
+ * сумке или в руках игрока: { id: '', tier: 0 } — инструмента нет. Сбор идёт и
+ * без него, инструмент только ускоряет цикл (src/server/gathering.js).
+ */
+function serverBestGatherTool(p = {}, group = '') {
   let best = { id: '', tier: 0 };
-  for (const row of sanitizeServerInventorySnapshot(p.inventory || [], { includeEquipped: true })) {
-    if (serverItemTierGroup(row.id) !== 'skinningKnife' || Number(row.qty || 0) <= 0) continue;
-    const tier = serverItemTier(row.id);
-    if (tier > best.tier) best = { id: row.id, tier };
+  if (!group) return best;
+  const candidates = sanitizeServerInventorySnapshot(p.inventory || [], { includeEquipped: true })
+    .filter(row => Number(row.qty || 0) > 0)
+    .map(row => row.id);
+  // Инструмент в руках лежит в снаряжении, а не в сумке.
+  const equipment = p.equipment && typeof p.equipment === 'object' ? p.equipment : {};
+  for (const id of Object.values(equipment)) if (id) candidates.push(serverBaseItemId(id));
+  for (const id of candidates) {
+    if (serverItemTierGroup(id) !== group) continue;
+    const tier = serverItemTier(id);
+    if (tier > best.tier) best = { id, tier };
   }
   return best;
 }
 
-// Шкура — добыча семейства «Шкуры»: зверь зоны тира N отдаёт шкуру тира N, если
-// у убившего в сумке нож свежевальщика не ниже N и навык «Свежевальщик» открыл тир.
-function serverApplySkinningLoot(room, enemy, p = {}) {
-  if (!room || !enemy || enemy.skinned || !serverNpcIsNaturalCreature(enemy, enemy)) return null;
-  const species = String(enemy.creatureTypeId || '');
-  if (!KROMKA_TIER_CONFIG.hideDrops.species.includes(species)) return null;
-  enemy.skinned = true;
-  const family = SERVER_TIER_FAMILY_BY_RESOURCE.get('hide');
-  const skill = family ? kromkaTiers.professionForFamily(KROMKA_TIER_CONFIG, 'gather', family.id) : null;
-  const tier = serverRoomTier(room);
-  const knife = serverSkinningKnifeInBag(p);
-  if (!family || !skill || knife.tier < tier || serverProfessionTierRefusal(p, skill.id, tier)) return null;
+/**
+ * Общие проверки сбора: узел жив, игрок рядом и видит его, навык открыл тир.
+ * Инструмент не обязателен: найденный инструмент своей группы только ускоряет.
+ */
+function serverGatherContext(p, data = {}) {
+  if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return { error: 'Игрок недоступен.' };
+  const room = rooms.get(p.roomId);
+  if (!room) return { error: 'Локация не найдена.' };
+  ensureRoomWorld(room);
+  const resource = findRoomResource(room, data);
+  if (!resource || Number(resource.hp || 0) <= 0) return { error: 'Ресурс уже исчерпан.' };
+  const resourceDef = serverResourceDef(resource.type);
+  const yieldItemId = serverResourceYieldItemId(resource, room);
+  if (!resourceDef || !SERVER_ITEM_IDS.has(yieldItemId)) return { error: 'Этот ресурс нельзя добыть.' };
+  const tierFamily = SERVER_TIER_FAMILY_BY_RESOURCE.get(normalizeServerResourceType(resource.type)) || null;
+  const resourceTier = tierFamily ? serverItemTier(yieldItemId) : 0;
+  const pos = resource.carcass
+    ? { x: Number(resource.x || 0), z: Number(resource.z || 0) }
+    : tileToWorld(resource.tx, resource.tz, roomTileDims(room));
+  const dist = Math.hypot(Number(p.x || 0) - pos.x, Number(p.z || 0) - pos.z);
+  if (dist > 3.2) return { error: 'Подойдите ближе к ресурсу.' };
+  if (!serverInteractionHasLineOfSight(room, p, pos, { ignoreObjectId: resource.authoredObjectId || resource.id })) {
+    return { error: 'Ресурс находится за препятствием.' };
+  }
+  const gatherSkill = tierFamily ? kromkaTiers.professionForFamily(KROMKA_TIER_CONFIG, 'gather', tierFamily.id) : null;
+  if (gatherSkill && resourceTier) {
+    const refusal = serverProfessionTierRefusal(p, gatherSkill.id, resourceTier);
+    if (refusal) return { error: refusal };
+  }
+  const activeActivity = ensureServerWorldActivityForRoom(room, Date.now());
+  const activityFieldKit = activeActivity?.kind === 'resource_expedition'
+    && sanitizeServerWorldTaskIds(p.worldTaskAccepted || []).includes(String(activeActivity.taskId || ''))
+    && ((activeActivity.allowedItemIds || []).includes(String(resourceDef.itemId || ''))
+      || (activeActivity.allowedItemIds || []).includes(yieldItemId));
+  // Полевой набор экспедиции работает как инструмент любого тира и не изнашивается.
+  const tool = activityFieldKit ? { id: '', tier: 5, fieldKit: true } : serverBestGatherTool(p, resourceDef.toolId);
+  return { room, resource, resourceDef, yieldItemId, tierFamily, resourceTier, gatherSkill, tool };
+}
+
+// Шкура — как в Albion: зверь с шкурой оставляет тушу, временный узел «hide»
+// тира зоны. Её свежуют кликом, как любой ресурс; нож не обязателен.
+function serverSpawnCarcass(room, enemy, now = Date.now()) {
+  if (!room || !(room.resources instanceof Map) || !enemy || enemy.carcassSpawned) return null;
+  if (!serverNpcIsNaturalCreature(enemy, enemy)) return null;
+  if (!KROMKA_TIER_CONFIG.hideDrops.species.includes(String(enemy.creatureTypeId || ''))) return null;
+  enemy.carcassSpawned = true;
   const rng = room.rng || Math.random;
   const [min, max] = KROMKA_TIER_CONFIG.hideDrops.qty;
-  const bonus = rng() < kromkaTiers.professionGatherBonus(KROMKA_TIER_CONFIG, serverProfessionXpOf(p, skill.id)) ? 1 : 0;
-  const qty = min + Math.floor(rng() * (max - min + 1)) + bonus;
-  if (qty <= 0) return null;
-  const item = { id: family.raw.ids[tier - 1], qty };
-  enemy.inventory = serverInventoryMergeRows(enemy.inventory || [], [item]);
-  serverWearPlayerItem(p, knife.id, 1);
-  const profession = serverGrantProfessionXp(p, skill.id, kromkaTiers.professionXpForWork(KROMKA_TIER_CONFIG, tier, qty));
-  return { item, profession };
+  const charges = min + Math.floor(rng() * (Math.max(min, max) - min + 1));
+  if (charges <= 0) return null;
+  const x = Number(enemy.x || 0), z = Number(enemy.z || 0);
+  const tile = worldToTile(x, z, roomTileDims(room));
+  const node = gathering.carcassResource(KROMKA_TIER_CONFIG, {
+    enemyId: enemy.id, tx: tile.tx, tz: tile.tz, tier: serverRoomTier(room), charges, now
+  });
+  node.x = x;
+  node.z = z;
+  room.resources.set(node.id, node);
+  emitResourceUpdate(room, node);
+  return node;
 }
 
 // «Нюх на тайники» срабатывает один раз на тайник — у первого открывшего с
@@ -16578,6 +16624,14 @@ const SERVER_RESOURCE_DEFS = {
     toolId: 'sickle',
     label: 'волокно',
     needTool: 'Для сбора волокна нужен серп.'
+  },
+  // Шкура — не узел карты, а туша убитого зверя (serverSpawnCarcass): клетки не занимает.
+  hide: {
+    itemId: 'hide',
+    tile: null,
+    toolId: 'skinningKnife',
+    label: 'шкура',
+    needTool: 'Для свежевания нужен нож свежевальщика.'
   }
 };
 
@@ -17144,10 +17198,20 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
     changed = true;
   }
   const tier = serverRoomTier(room);
+  // Запас узла — по тиру, как заряды узлов Albion: полный узел остаётся полным.
+  const charges = gathering.nodeCharges(KROMKA_TIER_CONFIG, tier);
   for (const resource of room.resources.values()) {
-    if (resource.tier === tier) continue;
-    resource.tier = tier;
-    changed = true;
+    if (resource.carcass) continue;
+    if (resource.tier !== tier) {
+      resource.tier = tier;
+      changed = true;
+    }
+    if (Number(resource.maxHp) !== charges) {
+      const full = Number(resource.hp || 0) >= Number(resource.maxHp || 0);
+      resource.hp = full ? charges : Math.min(Number(resource.hp || 0), charges);
+      resource.maxHp = charges;
+      changed = true;
+    }
   }
   const locationId = String(loc?.id || room.locationId || '');
   if (!locationId || SERVER_TIER_RESOURCE_SKIP.has(locationId)) return changed;
@@ -17203,7 +17267,7 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
         if (score > chosenScore) { chosen = { tx, tz }; chosenScore = score; }
       }
       if (!chosen) break;
-      room.resources.set(id, { id, tx: chosen.tx, tz: chosen.tz, type, tier, hp: 3, maxHp: 3, tierResourceNode: true });
+      room.resources.set(id, { id, tx: chosen.tx, tz: chosen.tz, type, tier, hp: charges, maxHp: charges, tierResourceNode: true });
       room.map[chosen.tz][chosen.tx] = serverResourceTile(type);
       count++;
       changed = true;
@@ -17219,7 +17283,15 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
 function updateRoomResourceRespawns(room, now = Date.now()) {
   if (!room || !(room.resources instanceof Map)) return false;
   let changed = false;
-  for (const resource of room.resources.values()) {
+  for (const [id, resource] of [...room.resources.entries()]) {
+    // Туша не восстанавливается: исчезает, когда её освежевали или она истлела.
+    if (resource?.carcass) {
+      if (Number(resource.hp || 0) <= 0 || now >= Number(resource.expiresAt || 0)) {
+        room.resources.delete(id);
+        changed = true;
+      }
+      continue;
+    }
     if (!resource || !(Number(resource.maxHp || 0) > 0)) continue;
     if (Number(resource.hp || 0) > 0) {
       resource.depletedAt = 0;
@@ -19799,7 +19871,13 @@ function publicResource(r) {
     tier: clamp(Math.round(Number(r?.tier || 0)), 0, 5),
     hp: clamp(Number(r?.hp ?? 0), 0, 999),
     maxHp: clamp(Number(r?.maxHp ?? 3), 1, 999),
-    respawnAt: Math.max(0, Number(r?.respawnAt || 0))
+    respawnAt: Math.max(0, Number(r?.respawnAt || 0)),
+    ...(r?.carcass ? {
+      carcass: true,
+      x: Number(Number(r.x || 0).toFixed(2)),
+      z: Number(Number(r.z || 0).toFixed(2)),
+      expiresAt: Math.max(0, Number(r.expiresAt || 0))
+    } : {})
   };
 }
 
@@ -19817,7 +19895,7 @@ function findRoomResource(room, data = {}) {
 }
 
 function updateResourceTile(room, r) {
-  if (!room || !r || !Array.isArray(room.map) || !Array.isArray(room.map[r.tz])) return;
+  if (!room || !r || r.carcass || !Array.isArray(room.map) || !Array.isArray(room.map[r.tz])) return;
   room.map[r.tz][r.tx] = r.authoredObjectId || Number(r.hp || 0) <= 0
     ? TILE_TYPES.GRASS
     : serverResourceTile(r.type);
@@ -32165,57 +32243,53 @@ io.on('connection', (socket) => {
 
 
 
+  // Сбор как в Albion (src/server/gathering.js): startGather открывает сессию у
+  // узла, каждый готовый цикл клиент засчитывает через harvestResource, а
+  // stopGather её закрывает. Шаг в сторону или урон прерывают сбор.
+  socket.on('startGather', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
+    const ctx = serverGatherContext(p, data);
+    if (ctx.error) {
+      if (p) p.gather = null;
+      return fail(ctx.error);
+    }
+    const now = Date.now();
+    p.gather = gathering.beginGatherSession({
+      config: KROMKA_TIER_CONFIG, resource: ctx.resource, player: p, roomId: p.roomId, tool: ctx.tool, now
+    });
+    const tool = p.gather.toolId || ctx.tool.fieldKit ? { id: p.gather.toolId, tier: ctx.tool.tier } : null;
+    if (typeof ack === 'function') ack({ ok: true, cycleMs: p.gather.cycleMs, tool, resource: publicResource(ctx.resource) });
+  });
+
+  socket.on('stopGather', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    if (p) p.gather = null;
+    if (typeof ack === 'function') ack({ ok: true });
+  });
+
   socket.on('harvestResource', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
-    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
-    const room = rooms.get(p.roomId);
-    if (!room) return fail('Локация не найдена.');
-    ensureRoomWorld(room);
-
-    const resource = findRoomResource(room, data);
-    if (!resource || Number(resource.hp || 0) <= 0) return fail('Ресурс уже исчерпан.');
-    const resourceDef = serverResourceDef(resource.type);
-    const yieldItemId = serverResourceYieldItemId(resource, room);
-    if (!resourceDef || !SERVER_ITEM_IDS.has(yieldItemId)) return fail('Этот ресурс нельзя добыть.');
-    const tierFamily = SERVER_TIER_FAMILY_BY_RESOURCE.get(normalizeServerResourceType(resource.type)) || null;
-    const resourceTier = tierFamily ? serverItemTier(yieldItemId) : 0;
-
-    const pos = tileToWorld(resource.tx, resource.tz, roomTileDims(room));
-    const dist = Math.hypot(Number(p.x || 0) - pos.x, Number(p.z || 0) - pos.z);
-    if (dist > 3.2) return fail('Подойдите ближе к ресурсу.');
-    if (!serverInteractionHasLineOfSight(room, p, pos, { ignoreObjectId: resource.authoredObjectId || resource.id })) {
-      return fail('Ресурс находится за препятствием.');
+    const ctx = serverGatherContext(p, data);
+    if (ctx.error) {
+      if (p) p.gather = null;
+      return fail(ctx.error, { stop: true });
     }
-
-    const expectedTool = resourceDef.toolId;
-    const activeActivity = ensureServerWorldActivityForRoom(room, Date.now());
-    const activityFieldKit = activeActivity?.kind === 'resource_expedition'
-      && sanitizeServerWorldTaskIds(p.worldTaskAccepted || []).includes(String(activeActivity.taskId || ''))
-      && ((activeActivity.allowedItemIds || []).includes(String(resourceDef.itemId || ''))
-        || (activeActivity.allowedItemIds || []).includes(yieldItemId));
-    // Инструмент берётся из рук на сервере: группа должна совпасть с узлом,
-    // а тир инструмента — быть не ниже тира узла.
-    const equippedToolId = serverActiveWeaponId(p);
-    if (!activityFieldKit && serverItemTierGroup(equippedToolId) !== expectedTool) return fail(resourceDef.needTool);
-    if (!activityFieldKit && resourceTier > serverItemTier(equippedToolId)) {
-      return fail(`Это ${resourceDef.label} тира ${resourceTier}: нужен инструмент тира ${resourceTier} или выше.`);
-    }
-    const gatherSkill = tierFamily ? kromkaTiers.professionForFamily(KROMKA_TIER_CONFIG, 'gather', tierFamily.id) : null;
-    if (gatherSkill && resourceTier) {
-      const refusal = serverProfessionTierRefusal(p, gatherSkill.id, resourceTier);
-      if (refusal) return fail(refusal);
-    }
-
+    const { room, resource, yieldItemId, resourceTier, gatherSkill } = ctx;
     const now = Date.now();
-    if (p.lastHarvestAt && now - p.lastHarvestAt < 320) return fail('Слишком частая добыча.');
-    p.lastHarvestAt = now;
+    const cycle = gathering.checkGatherCycle(KROMKA_TIER_CONFIG, p.gather, {
+      resourceId: resource.id, roomId: p.roomId, player: p, now, lastDamageAt: p.lastServerDamageAt
+    });
+    if (!cycle.ok) {
+      if (cycle.stop) p.gather = null;
+      return fail(cycle.error, { stop: !!cycle.stop, reason: cycle.reason || '' });
+    }
 
     syncServerActionProgressionPlayer(p, data);
-    const spend = serverPrepareFixedActionAp(p, data, serverHarvestApCost(p), now, 'добыча ресурса');
-    if (!spend.ok) return fail(spend.error, { apCost: spend.apCost, ...serverMedicalApAck(p) });
     const rng = room.rng || Math.random;
-    const condition = activityFieldKit ? 100 : Number(serverPlayerItemCondition(p, equippedToolId) ?? 100);
+    const toolId = p.gather.toolId;
+    const condition = toolId ? Number(serverPlayerItemCondition(p, toolId) ?? 100) : 100;
     const professionBonus = gatherSkill
       ? kromkaTiers.professionGatherBonus(KROMKA_TIER_CONFIG, serverProfessionXpOf(p, gatherSkill.id))
       : 0;
@@ -32227,10 +32301,13 @@ io.on('connection', (socket) => {
       * premiumGather, rng));
     const carryCheck = serverLimitItemsByCarry(p, {}, [{ id: yieldItemId, qty }], { apply: false });
     qty = Math.max(0, Number(carryCheck.items?.[0]?.qty || 0));
-    if (qty <= 0) return fail('Нет места для ресурса.', { carry: carryCheck.carry });
+    if (qty <= 0) {
+      p.gather = null;
+      return fail('Нет места для ресурса.', { stop: true, carry: carryCheck.carry });
+    }
 
     resource.hp = Math.max(0, Number(resource.hp || 0) - 1);
-    if (Number(resource.hp || 0) <= 0) {
+    if (Number(resource.hp || 0) <= 0 && !resource.carcass) {
       // Узел выработан: он исчезает с карты и вернётся по таймеру.
       resource.depletedAt = now;
       resource.respawnAt = now + RESOURCE_RESPAWN_MS;
@@ -32240,7 +32317,7 @@ io.on('connection', (socket) => {
     refreshRoomWorldState(room);
 
     const item = { id: yieldItemId, qty };
-    if (!activityFieldKit) serverWearPlayerItem(p, equippedToolId, 1.5);
+    if (toolId) serverWearPlayerItem(p, toolId, 1.5);
     serverInventoryAdd(p, item.id, item.qty);
     if (resource.id === 'yard_ore') serverRecordTutorialFact(p, 'oreGathered', item.qty);
     if (resource.id === 'yard_wood') serverRecordTutorialFact(p, 'woodGathered', item.qty);
@@ -32251,8 +32328,14 @@ io.on('connection', (socket) => {
       ? serverGrantProfessionXp(p, gatherSkill.id, kromkaTiers.professionXpForWork(KROMKA_TIER_CONFIG, resourceTier || 1, workUnits))
       : null;
     const activityUpdate = recordServerWorldActivityHarvest(room, p, item, now);
+    const depleted = Number(resource.hp || 0) <= 0;
+    const cycleMs = p.gather.cycleMs;
+    if (depleted) p.gather = null;
+    else gathering.advanceGatherSession(p.gather, now);
+    // Освежёванная туша исчезает сразу; клиент убирает её по resourceUpdated.
+    if (depleted && resource.carcass) room.resources.delete(resource.id);
     const publicRes = publicResource(resource);
-    if (typeof ack === 'function') ack({ ok: true, item, xp, profession, apCost: spend.apCost, ...serverMedicalApAck(p), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), resource: publicRes, activity: activityUpdate.activity, depleted: Number(resource.hp || 0) <= 0 });
+    if (typeof ack === 'function') ack({ ok: true, item, xp, profession, apCost: 0, cycleMs, next: !depleted, ...serverMedicalApAck(p), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), resource: publicRes, activity: activityUpdate.activity, depleted });
     emitResourceUpdate(room, resource, socket.id, item);
   });
 

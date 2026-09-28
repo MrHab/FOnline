@@ -401,6 +401,7 @@ namespace RealmOfAshes.Game
             RefreshSystemStatus(worldHud && !mobile);
             RefreshEconomyFeedback(worldHud);
             RefreshInteractionPrompt(worldHud);
+            RefreshGatherBar(worldHud);
             RefreshExitBanner(worldHud);
             RefreshQuickRadial();
             RefreshPlayer();
@@ -449,6 +450,7 @@ namespace RealmOfAshes.Game
             BuildCompactWeaponConsole();
             BuildQuickbar();
             BuildInteractionPrompt();
+            BuildGatherBar();
             BuildExitBanner();
             BuildQuickRadial(root.transform);
             BuildSystemStatus();

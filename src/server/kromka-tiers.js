@@ -124,6 +124,7 @@ function normalizeTierConfig(raw = {}) {
     enemySpecies[id] = Object.freeze({ baseTier: clampTier(row.baseTier), tiers: Object.freeze([...new Set(tiersOfSpecies)]) });
   }
   const qty = Array.isArray(hideDrops.qty) ? hideDrops.qty : [1, 2];
+  const gathering = raw.gathering || {};
   return Object.freeze({
     schema: 'kromka.tiers.v1',
     version: Math.max(1, Math.floor(Number(raw.version || 1))),
@@ -152,6 +153,13 @@ function normalizeTierConfig(raw = {}) {
     hideDrops: Object.freeze({
       qty: Object.freeze([Math.floor(finite(qty[0], 1, 0, 50)), Math.floor(finite(qty[1], 2, 0, 50))]),
       species: Object.freeze((Array.isArray(hideDrops.species) ? hideDrops.species : []).map(safeId).filter(Boolean))
+    }),
+    gathering: Object.freeze({
+      cycleMs: tierArray(gathering.cycleMs, 2500, 200, 60000),
+      toolSpeed: finite(gathering.toolSpeed, 0.6, 0.1, 1),
+      charges: tierArray(gathering.charges, 5, 1, 100),
+      moveToleranceM: finite(gathering.moveToleranceM, 0.9, 0.1, 5),
+      carcassMs: Math.floor(finite(gathering.carcassMs, 180000, 10000, 3600000))
     })
   });
 }

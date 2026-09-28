@@ -23,6 +23,16 @@ const PICKAXE_HIT_WEAR = (() => {
   const { config, itemCatalog } = readTieredCatalogs(path.join(PROJECT_ROOT, 'data'));
   return 1.5 * tierWearMultiplier(config, itemCatalog.items.find(item => item.id === 'pickaxe').tier);
 })();
+// Сбор как в Albion: запас узла и длительность цикла — из data/kromka/tiers.json.
+const { GATHER_T1_CHARGES, GATHER_T1_TOOL_CYCLE_MS } = (() => {
+  const { readTieredCatalogs } = require('../src/server/kromka-tiers');
+  const gathering = require('../src/server/gathering');
+  const { config } = readTieredCatalogs(path.join(PROJECT_ROOT, 'data'));
+  return {
+    GATHER_T1_CHARGES: gathering.nodeCharges(config, 1),
+    GATHER_T1_TOOL_CYCLE_MS: gathering.gatherCycleMs(config, 1, 1)
+  };
+})();
 const COMBAT_LOCATION_ID = 'combatRuntimeArena';
 const HARVEST_NODE_ID = 'depot_scrap_01';
 const NPC_LOCATION_TAGS = new Set([
@@ -1703,7 +1713,7 @@ function waitForResourceRespawn(socket, resourceId, timeoutMs = RESOURCE_RESPAWN
   });
 }
 
-async function assertHarvestRequiresEquippedTool(accounts) {
+async function assertTimedGathering(accounts) {
   const account = accounts.harvest;
   await connectAndJoin(account);
   invariant(account.join.roomId === COMBAT_LOCATION_ID,
@@ -1711,13 +1721,15 @@ async function assertHarvestRequiresEquippedTool(accounts) {
   invariant((Array.isArray(account.join.players) ? account.join.players : []).length === 0,
     'Harvest fixture inherited players from the preceding combat phase', account.join.players);
   invariant(account.join.self?.equipmentRuntime?.weapon === account.weaponRuntimeId,
-    'Harvest fixture did not start with the wrong weapon equipped', account.join.self);
+    'Harvest fixture did not start with a pistol, not a tool, in hand', account.join.self);
 
   const resource = (Array.isArray(account.join.worldState?.resources)
     ? account.join.worldState.resources
     : []).find(row => row?.id === HARVEST_NODE_ID);
   invariant(resource && resource.type === 'ore' && resource.tier === 1 && Number(resource.hp) > 0,
     'Harvest fixture is missing the authored T1 ore node', account.join.worldState?.resources);
+  invariant(Number(resource.maxHp) === GATHER_T1_CHARGES && Number(resource.hp) === GATHER_T1_CHARGES,
+    'A fresh T1 node does not hold the T1 charges from data/kromka/tiers.json', resource);
   const resourceX = (Number(resource.tx) - 19 + 0.5) * 2;
   const resourceZ = (Number(resource.tz) - 19 + 0.5) * 2;
   invariant(Math.hypot(Number(account.join.x) - resourceX, Number(account.join.z) - resourceZ) <= 3.2,
@@ -1736,128 +1748,80 @@ async function assertHarvestRequiresEquippedTool(accounts) {
   const resourceUpdates = [];
   const onResourceUpdated = payload => resourceUpdates.push(payload);
   account.socket.on('resourceUpdated', onResourceUpdated);
+  const harvest = () => socketAck(account.socket, 'harvestResource', {
+    id: resource.id,
+    skillRanks: {},
+    talentRanks: {}
+  });
   try {
-    const rejected = await socketAck(account.socket, 'harvestResource', {
-      id: resource.id,
-      toolId: 'pickaxe',
-      baseToolId: 'pickaxe',
-      skillRanks: {},
-      talentRanks: {}
-    });
-    invariant(rejected.ok === false,
-      'Server allowed harvesting with a pistol equipped and a pickaxe only in the bag', rejected);
-
-    const afterRejected = await socketAck(account.socket, 'join', joinPayload(account));
-    const rejectedResource = (Array.isArray(afterRejected.worldState?.resources)
-      ? afterRejected.worldState.resources
-      : []).find(row => row?.id === resource.id);
-    invariant(afterRejected.ok === true
-      && afterRejected.alreadyJoined === true
-      && afterRejected.self?.equipmentRuntime?.weapon === account.weaponRuntimeId,
-    'Rejected harvest changed the live equipped weapon or joined session', afterRejected);
-    invariant(Number(afterRejected.self?.combat?.ap) === initialAp,
-      'Rejected harvest spent authoritative AP', {
-        before: initialAp,
-        after: afterRejected.self?.combat?.ap
-      });
-    invariant(Number(afterRejected.self?.itemConditions?.pickaxe) === initialCondition,
-      'Rejected harvest wore the bagged pickaxe', afterRejected.self?.itemConditions);
-    invariant(inventoryRowQty(afterRejected.self?.inventory, 'ore') === initialOre,
-      'Rejected harvest granted resource loot', afterRejected.self?.inventory);
-    invariant(rejectedResource && Number(rejectedResource.hp) === Number(resource.hp),
-      'Rejected harvest damaged the resource node', {
-        before: resource,
-        after: rejectedResource
-      });
+    // Сбор как в Albion: без начатого сбора цикл не засчитывается.
+    const unstarted = await harvest();
+    invariant(unstarted.ok === false && unstarted.stop === true,
+      'Server counted a gather cycle that was never started', unstarted);
     invariant(resourceUpdates.length === 0,
-      'Rejected harvest emitted a resource mutation', resourceUpdates);
+      'A refused gather cycle emitted a resource mutation', resourceUpdates);
 
-    const equipped = await sendEquipmentAction(account, 'pickaxe');
-    invariant(equipped.ack.ok === true
-      && equipped.ack.changed === true
-      && equipped.ack.self?.equipmentRuntime?.weapon === 'pickaxe',
-    'Harvest fixture could not equip its carried pickaxe', equipped.ack);
-    const beforeSuccessAp = Number(equipped.ack.self?.combat?.ap);
-    const maxSuccessAp = Number(equipped.ack.self?.combat?.maxAp);
-    const beforeSuccessCondition = Number(equipped.ack.self?.itemConditions?.pickaxe);
-    invariant(Number.isFinite(maxSuccessAp)
-      && Math.abs(maxSuccessAp - beforeSuccessAp - 1) <= 0.05,
-    'Equipping the harvest tool did not leave exactly one AP to regenerate', {
-      before: initialAp,
-      after: beforeSuccessAp,
-      max: maxSuccessAp
-    });
+    // Инструмент не обязателен: кирка лежит в сумке, в руках пистолет, и она
+    // только ускоряет цикл тира 1 (cycleMs × toolSpeed).
+    const started = await socketAck(account.socket, 'startGather', { id: resource.id });
+    invariant(started.ok === true
+      && Number(started.cycleMs) === GATHER_T1_TOOL_CYCLE_MS
+      && started.tool?.id === 'pickaxe',
+    'Starting to gather with a bagged pickaxe did not give the tool-sped T1 cycle', started);
 
-    // Equipment switching spends one AP. Let the authoritative 1.8 AP/s
-    // regeneration fill that single-point deficit before measuring harvest:
-    // otherwise request latency is indistinguishable from a partial refund.
-    await delay(750);
+    const early = await harvest();
+    invariant(early.ok === false && early.stop === false && early.reason === 'early',
+      'Server counted a gather cycle before it finished', early);
+    invariant(resourceUpdates.length === 0,
+      'An early gather cycle emitted a resource mutation', resourceUpdates);
 
-    const harvested = await socketAck(account.socket, 'harvestResource', {
-      id: resource.id,
-      toolId: 'pickaxe',
-      baseToolId: 'pickaxe',
-      skillRanks: {},
-      talentRanks: {}
-    });
-    invariant(harvested.ok === true && harvested.item?.id === 'ore',
-      'Server rejected harvesting with the required tool equipped', harvested);
+    await delay(Number(started.cycleMs));
+    const harvested = await harvest();
+    invariant(harvested.ok === true && harvested.item?.id === 'ore' && harvested.next === true,
+      'Server rejected a finished gather cycle', harvested);
     invariant(Number(resource.hp) - Number(harvested.resource?.hp) === 1,
-      'Successful harvest did not damage the resource exactly once', {
+      'A gather cycle did not take exactly one charge', {
         before: resource,
         after: harvested.resource
       });
-    // Износ за удар 1.5 делится на прочность тира кирки (data/kromka/tiers.json).
-    invariant(Number(harvested.self?.itemConditions?.pickaxe) === Number((beforeSuccessCondition - PICKAXE_HIT_WEAR).toFixed(2)),
-      'Successful harvest did not apply exactly one tool wear', {
-        before: beforeSuccessCondition,
+    // Износ за цикл 1.5 делится на прочность тира кирки (data/kromka/tiers.json).
+    invariant(Number(harvested.self?.itemConditions?.pickaxe) === Number((initialCondition - PICKAXE_HIT_WEAR).toFixed(2)),
+      'A gather cycle did not wear the helping tool exactly once', {
+        before: initialCondition,
         after: harvested.self?.itemConditions?.pickaxe
       });
     invariant(inventoryRowQty(harvested.inventory, 'ore')
       === initialOre + Number(harvested.item?.qty || 0),
-    'Successful harvest did not grant exactly its acknowledged loot', {
+    'A gather cycle did not grant exactly its acknowledged loot', {
       before: initialOre,
       item: harvested.item,
       inventory: harvested.inventory
     });
-    invariant(Number(harvested.apCost) === 2,
-      'Successful harvest acknowledged an unexpected AP cost', harvested);
-    const expectedAfterAp = maxSuccessAp - Number(harvested.apCost);
-    invariant(Math.abs(Number(harvested.ap) - expectedAfterAp) <= 0.05,
-      'Successful harvest did not spend one 2-AP action', {
-        before: maxSuccessAp,
-        after: harvested.ap,
-        cost: harvested.apCost,
-        expectedAfter: expectedAfterAp
-      });
+    invariant(Number(harvested.apCost) === 0 && Number(harvested.ap) >= initialAp - 0.05,
+      'Timed gathering still spent action points', { before: initialAp, after: harvested });
     await delay(80);
     invariant(resourceUpdates.length === 1
       && resourceUpdates[0]?.resource?.id === resource.id
       && Number(resourceUpdates[0]?.resource?.hp) === Number(resource.hp) - 1,
-    'Successful harvest did not emit exactly one matching resource update', resourceUpdates);
+    'A gather cycle did not emit exactly one matching resource update', resourceUpdates);
 
     // Истощение в мире физическое: выработанный узел исчезает с карты и
-    // возвращается по таймеру. Это должно работать и вне точек мировой карты,
-    // иначе срубленное дерево пропадало бы навсегда. Сливаем запас жилы
-    // подряд — очков действий хватает, а задерживаться в опасной локации нельзя.
+    // возвращается по таймеру. Сбор идёт циклами, пока узел не опустеет.
     let drained = harvested;
-    for (let attempt = 0; attempt < 10 && drained.depleted !== true; attempt += 1) {
-      await delay(360);
-      drained = await socketAck(account.socket, 'harvestResource', {
-        id: resource.id,
-        toolId: 'pickaxe',
-        baseToolId: 'pickaxe',
-        skillRanks: {},
-        talentRanks: {}
-      });
+    for (let attempt = 0; attempt < GATHER_T1_CHARGES && drained.depleted !== true; attempt += 1) {
+      await delay(Number(harvested.cycleMs));
+      drained = await harvest();
       invariant(drained.ok === true,
-        'Server rejected a follow-up harvest while draining the authored node', drained);
+        'Server rejected a follow-up gather cycle while draining the authored node', drained);
     }
-    invariant(drained.depleted === true && Number(drained.resource?.hp) === 0,
-      'Repeated harvesting never exhausted the authored node', drained);
+    invariant(drained.depleted === true && drained.next === false && Number(drained.resource?.hp) === 0,
+      'Gathering never exhausted the authored node', drained);
     invariant(Number(drained.resource?.respawnAt || 0) > Date.now(),
       'A depleted node outside a world-map site scheduled no respawn, '
       + 'so physical depletion would be permanent', drained.resource);
+    const afterEmpty = await harvest();
+    invariant(afterEmpty.ok === false && afterEmpty.stop === true,
+      'Server kept gathering from an exhausted node', afterEmpty);
 
     // Возрождение сервер рассылает всей комнате обновлением мира.
     const revived = await waitForResourceRespawn(account.socket, resource.id);
@@ -2289,7 +2253,7 @@ async function main() {
       'legacyMix',
       'target'
     ]);
-    await assertHarvestRequiresEquippedTool(accounts);
+    await assertTimedGathering(accounts);
 
     console.log(
       'Combat runtime OK: runtime-id profile sync and reload/fire survived save + reconnect, '
@@ -2299,7 +2263,7 @@ async function main() {
       + 'loaded/reserve stayed conserved, targeted and untargeted replay/cadence were enforced, '
       + 'paired pistols spent both runtime magazines atomically, fell back to one loaded hand, and reloaded both magazines, '
       + 'a revolver and a sawed-off fired a paired volley from their own magazines, '
-      + 'harvest required the matching equipped tool and applied one authoritative wear, '
+      + 'gathering ran in timed cycles only after it was started, a bagged tool sped it up and wore once per cycle without spending AP, '
       + 'a node drained outside a world-map site scheduled a respawn and came back at full capacity, '
       + 'NPC traders left weapons to the Black Market and a refused loaded pistol stayed untouched, '
       + 'equipment changes were revisioned/idempotent, hand slots persisted, and one-/two-handed conflicts were atomic, '

@@ -17,7 +17,7 @@ namespace RealmOfAshes.Game
     /// Компонент ничего не переносит между инвентарями локально. Любая сделка,
     /// награда, взлом и добыча применяются только из ack с каноническим self.
     /// </summary>
-    public sealed class RoaInteraction : MonoBehaviour
+    public sealed partial class RoaInteraction : MonoBehaviour
     {
         public string BaseUrl = "http://127.0.0.1:3000";
         public RoaSocketClient Socket;
@@ -139,7 +139,6 @@ namespace RealmOfAshes.Game
         private float _plotRefreshAt;
         // null — поле ещё не заполнено значением по умолчанию; пустую строку
         // игрок стёр сам, и её не нужно тут же заполнять заново.
-        private bool _harvestPending;
         private bool _robPending;
         private bool _worldRequestPending;
         private bool _tradePending;
@@ -295,7 +294,13 @@ namespace RealmOfAshes.Game
                 string name = _candidateKind == TargetKind.Actor
                     ? DisplayNpcName(_candidate) : (_candidate["name"]?.ToString() ?? "Объект");
                 string action;
-                if (_candidateKind == TargetKind.Resource) action = "добыть";
+                if (_candidateKind == TargetKind.Resource)
+                {
+                    action = _candidate["type"]?.ToString() == "hide" ? "свежевать" : "добыть";
+                    name += " · " + FormatCharges(_candidate["hp"]?.ToObject<int?>() ?? 0,
+                        _candidate["maxHp"]?.ToObject<int?>() ?? 0);
+                    return "ЛКМ / " + InteractKey + " — " + action + ": " + name;
+                }
                 else if (_candidateKind == TargetKind.CraftingStation) action = "открыть станок";
                 else if (_candidateKind == TargetKind.JobBoard) action = "посмотреть контракты";
                 else if (_candidateKind == TargetKind.PlotBoard) action = "торги за участок";
@@ -303,7 +308,8 @@ namespace RealmOfAshes.Game
                 else if (_candidateKind == TargetKind.Transition) action = "перейти";
                 else if (_candidateKind == TargetKind.Storage) action = "открыть хранилище";
                 else if (_candidateKind == TargetKind.Container) action = "открыть";
-                else if (_candidate["dead"]?.ToObject<bool>() == true) action = "обыскать";
+                else if (_candidate["dead"]?.ToObject<bool>() == true)
+                    return InteractKey + " — обыскать: " + name + (CorpseHasCarcass(_candidate) ? " · ЛКМ — свежевать" : string.Empty);
                 else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) action = "поговорить";
                 else if (NpcHasTrade(_candidate)) action = "торговать";
                 else action = "услуги";
@@ -1759,8 +1765,13 @@ namespace RealmOfAshes.Game
             // Тир узла — тир зоны: «Руда T3» сразу говорит, какой нужен инструмент.
             int resourceTier = row["tier"]?.ToObject<int?>() ?? 0;
             view.Data["name"] = ResourceLabel(row["type"]?.ToString()) + (resourceTier > 0 ? " T" + resourceTier : string.Empty);
-            view.Position = RoaCoords.TileToWorld(tx, tz, _mapWidth, _mapDepth);
+            view.Position = IsCarcass(row) ? CarcassPosition(row) : RoaCoords.TileToWorld(tx, tz, _mapWidth, _mapDepth);
             bool available = row["hp"]?.ToObject<float>() > 0f;
+            if (id == _gatherId)
+            {
+                _gatherCharges = row["hp"]?.ToObject<int?>() ?? _gatherCharges;
+                _gatherMaxCharges = row["maxHp"]?.ToObject<int?>() ?? _gatherMaxCharges;
+            }
 
             bool loaderOwnsVisual = Loader != null && Loader.TryGetObjectRoot(id, out GameObject _);
             if (_locationReady && (_authoredResourceIds.Contains(id) || loaderOwnsVisual))
@@ -1773,7 +1784,7 @@ namespace RealmOfAshes.Game
             }
             else if (_locationReady)
             {
-                if (view.Marker == null) view.Marker = CreateResourceMarker(id, row);
+                if (view.Marker == null) view.Marker = IsCarcass(row) ? CreateCarcassMarker(id) : CreateResourceMarker(id, row);
                 view.Marker.transform.position = view.Position;
                 view.Marker.SetActive(available);
             }
@@ -1900,6 +1911,7 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            UpdateGathering();
             if (_panel != PanelKind.None)
             {
                 MaintainServerHolds();
@@ -2178,7 +2190,7 @@ namespace RealmOfAshes.Game
 
             if (_candidateKind == TargetKind.Resource)
             {
-                HarvestResource(_candidate);
+                BeginGather(_candidate);
                 return;
             }
             if (_candidateKind == TargetKind.CraftingStation)
@@ -2310,63 +2322,6 @@ namespace RealmOfAshes.Game
                     Show("Ответ перехода не удалось разобрать.", 4f);
                 onFinished?.Invoke(false);
             });
-        }
-
-        private void HarvestResource(JObject resource)
-        {
-            if (_harvestPending || resource == null) return;
-            string id = resource["id"]?.ToString();
-            string toolRuntimeId = _self?["equipmentRuntime"]?["weapon"]?.ToString() ?? string.Empty;
-            string toolId = BaseItemId(toolRuntimeId);
-            if (string.IsNullOrEmpty(id)) return;
-
-            _harvestPending = true;
-            Show("Добыча ресурса…", 2f);
-            PlayGatherAction(resource["type"]?.ToString());
-            Socket.EmitWithAck("harvestResource", new Dictionary<string, object>
-            {
-                ["id"] = id,
-                ["tx"] = resource["tx"]?.ToObject<int>() ?? 0,
-                ["tz"] = resource["tz"]?.ToObject<int>() ?? 0,
-                ["type"] = resource["type"]?.ToString() ?? string.Empty,
-                ["toolId"] = toolRuntimeId,
-                ["baseToolId"] = toolId
-            }, ack =>
-            {
-                _harvestPending = false;
-                ApplyActionAck(ack);
-                if (ack?["ok"]?.ToObject<bool>() != true)
-                {
-                    Show(ack?["error"]?.ToString() ?? "Сервер отклонил добычу ресурса.");
-                    return;
-                }
-
-                JObject item = ack["item"] as JObject;
-                JObject profession = ack["profession"] as JObject;
-                string itemId = item?["id"]?.ToString() ?? string.Empty;
-                Show("Получено: " + (string.IsNullOrEmpty(itemId) ? "ресурс" : RoaItemData.Name(itemId))
-                    + " x" + (item?["qty"]?.ToObject<int>() ?? 1)
-                    + (profession != null ? " · " + profession["name"] + " +" + profession["gained"]
-                        + (profession["leveledUp"]?.ToObject<bool>() == true ? " — уровень " + profession["level"] + "!" : string.Empty)
-                        : string.Empty));
-            });
-        }
-
-        /// <summary>
-        /// Персонаж добывает сразу, не дожидаясь ответа сервера: рубит дерево и
-        /// бьёт жилу с размаха, срезает волокно у земли, возится у качалки.
-        /// </summary>
-        private void PlayGatherAction(string type)
-        {
-            RoaCharacterView view = Player != null ? Player.View : null;
-            if (view == null) return;
-            switch (type)
-            {
-                case "wood":
-                case "ore": view.PlayAction("chop", 1.0f); break;
-                case "fiber": view.PlayAction("harvest", 1.5f, 1.3f); break;
-                default: view.PlayAction("kneel_work", 1.6f); break;
-            }
         }
 
         private void OpenCrafting(JObject station)
@@ -3048,7 +3003,7 @@ namespace RealmOfAshes.Game
             _locationId = string.Empty;
             _encounterLocation = false;
             _craftPending = false;
-            _harvestPending = false;
+            EndGather(null);
             _transitionPending = false;
             _world = new JObject();
             _worldRequestPending = false;
@@ -3501,6 +3456,7 @@ namespace RealmOfAshes.Game
             if (type == "wood") return "Древесина";
             if (type == "oil") return "Нефть";
             if (type == "fiber") return "Волокно";
+            if (type == "hide") return "Шкура";
             if (type == "blue") return "Синь";
             return "Ресурс";
         }

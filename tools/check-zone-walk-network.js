@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 'use strict';
 
-// Зоны мира на настоящем сервере: зона — обычная общая локация, её ворота —
-// локальные переходы через changeLocation. Город занимает сектор целиком: южные
-// ворота соседней зоны вводят прямо в Ключи, а край Ключей возвращает в неё же;
-// издалека и в несоседний сектор не пускает; реконнект и перезапуск сервера
-// возвращают персонажа туда же. Портал места и его край проверяются на «Заставе 17».
+// Зоны мира на настоящем сервере: зона — обычная общая локация, переходы —
+// локальные changeLocation. Зона в зону — сплошная полоса по открытой стороне:
+// перейти можно где угодно у края, и игрок выходит напротив той же точки. Город
+// занимает сектор целиком: портал у южного края соседней зоны вводит прямо в
+// Ключи, а портал в проёме северных ворот Ключей возвращает в неё же; край
+// города закрыт. Издалека и в несоседний сектор не пускает; реконнект и
+// перезапуск сервера возвращают персонажа туда же. Портал места и его край
+// проверяются на «Заставе 17».
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -40,6 +43,9 @@ const sectorDefinition = id => {
 };
 const homeDef = sectorDefinition(home.id);
 const cityGate = homeDef.transitions.find(row => row.id === 'gate_south');
+// Восточный сосед — обычная зона: туда ведёт полоса края, а не портал.
+const eastGate = homeDef.transitions.find(row => row.id === 'gate_east');
+const eastDef = sectorDefinition(east);
 // Место с порталом: «Застава 17» стоит в секторе южнее города.
 const outpostZone = zoneOfPlace(graph, 'roadOutpost');
 const outpostDef = sectorDefinition(outpostZone.id);
@@ -59,6 +65,9 @@ const getJson = route => new Promise((resolve, reject) => {
   placeInZone('harvest', 'settlement', { x: 0, z: -22 });
   const portal = outpostDef.transitions.find(row => row.to === 'roadOutpost');
   placeInZone('target', outpostZone.id, world(portal));
+  // Ходок краем стоит у точки входа восточных ворот: коридор от неё к краю свободен.
+  const eastEntry = world(homeDef.entryFromEast);
+  placeInZone('progression', home.id, eastEntry);
 
   await h.startServer();
   try {
@@ -83,6 +92,8 @@ const getJson = route => new Promise((resolve, reject) => {
       'the sector names its own scene');
     assert.match(String(one.json.location.revision), /^f-[0-9a-f]{8}$/, 'the sector revision follows its file');
     assert(one.json.location.transitions.some(row => row.id === 'gate_south' && row.targetPvpMode), 'gates carry the rules of the sector behind them');
+    assert.equal(one.json.location.transitions.find(row => row.id === 'gate_south').crossing, 'portal', 'the way into a city is a portal');
+    assert.equal(one.json.location.transitions.find(row => row.id === 'gate_east').crossing, 'edge', 'the way into a zone is the edge strip');
     const all = await getJson('/api/locations');
     assert(!Object.keys(all.json.locations).some(id => /^z_\d\d_\d\d$/.test(id)), 'the full catalogue does not carry zones');
     assert(!all.json.locations.settlement, 'a city sector is as heavy as a zone and is served by id too');
@@ -118,6 +129,16 @@ const getJson = route => new Promise((resolve, reject) => {
     assert.equal(keysDefinition.generated, false, 'a city laid into its scene is not assembled at runtime');
     assert.equal(keysDefinition.cityAuthored, true, 'the city is served from its own file');
     assert(keysDefinition.cityPlan?.bank?.rect, 'the city plan names the bank');
+    // Край города закрыт: выходят порталами в проёмах ворот, по одному на открытую сторону.
+    assert.equal(keysDefinition.allowGlobalMapExit, false, 'the edge of the city is closed');
+    assert.equal(keysDefinition.sectorGates, undefined, 'the city has no edge exits any more');
+    const cityPortals = keysDefinition.transitions.filter(row => row.type === 'zoneGate' && row.crossing === 'portal');
+    assert.deepEqual(cityPortals.map(row => row.direction).sort(), Object.keys(city.edges).filter(side => city.edges[side].open).sort(),
+      'a gate portal on every open side: ' + JSON.stringify(cityPortals));
+    const northPortal = cityPortals.find(row => row.direction === 'north');
+    const northGate = keysDefinition.cityPlan.gates.find(row => row.dir === 'north');
+    assert.deepEqual([northPortal.tx, northPortal.tz, northPortal.to, northPortal.auto], [northGate.tx, northGate.tz, home.id, true],
+      'the north portal stands in the north gate and leads to the zone north of the city');
     const landing = zoneWalk.cityWorld('settlement', keysDefinition.entryFromNorth);
     assert(Math.hypot(crossed.x - landing.x, crossed.z - landing.z) < 6,
       `arrives at the north side of the city: ${crossed.x},${crossed.z} vs ${landing.x},${landing.z}`);
@@ -142,16 +163,18 @@ const getJson = route => new Promise((resolve, reject) => {
     assert(Math.abs(Number(irena.activityFacing) - Number(irenaRow.rotation.y)) < 1e-3, 'the named guide faces as turned in the scene');
     h.closeSocket(accounts.harvest);
 
-    // --- обратно пешком: к северному краю города и назад в зону ---------------------------------
-    // Улица от северных ворот к площади свободна по построению: идём по ней наружу.
+    // --- обратно пешком: к порталу северных ворот и назад в зону -----------------------------
+    // Улица от северных ворот к площади свободна по построению: идём по ней к проёму.
     const state = { x: crossed.x, z: crossed.z };
-    const cityEdge = zoneWalk.cityEdge('settlement', 'north');
-    assert(await driveTo(walker, state, cityEdge.x, cityEdge.z, 420), 'walked to the north edge of the city: ' + JSON.stringify(state));
+    const earlyCity = await h.socketAck(walker.socket, 'changeLocation', { locationId: home.id });
+    assert.equal(earlyCity.ok, false, 'the zone opens only from the gate portal');
+    const gatePortal = zoneWalk.cityWorld('settlement', northGate);
+    assert(await driveTo(walker, state, gatePortal.x, gatePortal.z + 2, 420), 'walked to the north gate of the city: ' + JSON.stringify(state));
     const back = await h.socketAck(walker.socket, 'changeLocation', { locationId: home.id });
-    assert(back.ok && back.locationId === home.id, 'the north edge of the city leads back into the zone: ' + JSON.stringify(back).slice(0, 300));
+    assert(back.ok && back.locationId === home.id, 'the north gate portal leads back into the zone: ' + JSON.stringify(back).slice(0, 300));
     const homeLanding = world(homeDef.entryFromSouth);
-    assert(Math.hypot(back.x - homeLanding.x, back.z - homeLanding.z) < 3, 'arrives at the south entry of the home zone');
-    console.log('PASS walking to the edge of the city crosses back into the neighbouring sector');
+    assert(Math.hypot(back.x - homeLanding.x, back.z - homeLanding.z) < 3, 'arrives next to the city portal of the home zone');
+    console.log('PASS the gate portal of the city leads back into the neighbouring sector');
     await delay(300);
     assert.deepEqual(hints, ['zoneGates', 'worldMap'], 'the first gate teaches gates and the world map once: ' + JSON.stringify(hints));
     console.log('PASS the first gate crossing shows the gate and world map hints once');
@@ -172,6 +195,36 @@ const getJson = route => new Promise((resolve, reject) => {
     assert.equal(walker.join.self.zone.id, home.id);
     assert(Math.hypot(walker.join.x - before.x, walker.join.z - before.z) < 1.5, 'a server restart keeps the position');
     console.log('PASS reconnect and server restart return the character to the same zone and spot');
+
+    // --- зона в зону: сплошная полоса по краю, выход напротив точки пересечения -------------------
+    const edgeWalker = accounts.progression;
+    await h.connectAndJoin(edgeWalker);
+    assert.equal(edgeWalker.join.locationId, home.id);
+    const edgeState = { x: edgeWalker.join.x, z: edgeWalker.join.z };
+    const notYet = await h.socketAck(edgeWalker.socket, 'changeLocation', { locationId: east });
+    assert.equal(notYet.ok, false, 'the neighbour opens only from the edge');
+    // Бывшая точка ворот ещё не край: переход теперь — вся полоса у самого края.
+    const oldGate = world(eastGate);
+    assert(await driveTo(edgeWalker, edgeState, oldGate.x, edgeState.z, 120), 'walked to the old gate point: ' + JSON.stringify(edgeState));
+    const atOldGate = await h.socketAck(edgeWalker.socket, 'changeLocation', { locationId: east });
+    assert.equal(atOldGate.ok, false, 'the old gate circle no longer crosses on its own');
+    const half = homeDef.map.width / 2;
+    assert(await driveTo(edgeWalker, edgeState, half - 2.5, edgeState.z, 120), 'walked into the east edge strip: ' + JSON.stringify(edgeState));
+    const crossedAt = { ...edgeState };
+    const over = await h.socketAck(edgeWalker.socket, 'changeLocation', { locationId: east });
+    assert(over.ok && over.locationId === east, 'the east edge strip leads into the east zone: ' + JSON.stringify(over).slice(0, 300));
+    const eastHalf = eastDef.map.width / 2;
+    assert(Math.abs(over.x - (-eastHalf + 9)) < 6 && Math.abs(over.z - crossedAt.z) < 6,
+      `arrives opposite the crossing, just inside the west side: ${over.x},${over.z} after crossing at ${crossedAt.x},${crossedAt.z}`);
+    console.log(`PASS the edge strip leads into the neighbouring zone opposite the crossing point (${crossedAt.z.toFixed(1)} → ${over.z.toFixed(1)})`);
+    // И обратно тем же краем: к западной полосе соседа и назад, снова напротив.
+    const backState = { x: over.x, z: over.z };
+    assert(await driveTo(edgeWalker, backState, -eastHalf + 2.5, backState.z, 120), 'walked into the west edge strip: ' + JSON.stringify(backState));
+    const returned = await h.socketAck(edgeWalker.socket, 'changeLocation', { locationId: home.id });
+    assert(returned.ok && returned.locationId === home.id, 'the west edge strip leads back: ' + JSON.stringify(returned).slice(0, 300));
+    assert(Math.abs(returned.x - (half - 9)) < 6 && Math.abs(returned.z - backState.z) < 6, 'the way back lands opposite too');
+    console.log('PASS the way back by the edge strip lands opposite the crossing as well');
+    h.closeSocket(edgeWalker);
 
     // --- места: портал из зоны на «Заставу 17», её край — обратно в ту же зону ----------------
     const settler = accounts.target;
@@ -201,7 +254,7 @@ const getJson = route => new Promise((resolve, reject) => {
     await h.stopServer();
     h.cleanupSync();
   }
-  console.log('Zone walk network OK: zones are shared rooms, gates cross only to neighbours and land opposite, a city sector is entered as the city itself, zone identity survives reconnect and restart, places open from their zone and their edge leads back into it.');
+  console.log('Zone walk network OK: zones are shared rooms, the edge strip crosses only to neighbours and lands opposite the crossing, a city is entered and left by gate portals, zone identity survives reconnect and restart, places open from their zone and their edge leads back into it.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

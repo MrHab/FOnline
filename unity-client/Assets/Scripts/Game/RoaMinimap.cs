@@ -333,23 +333,28 @@ namespace RealmOfAshes.Game
                 }
             }
 
-            if (_location != null && _location.ExitZone != null && _location.CanExitAtEdge && _edgeExitAllowed)
-                PaintEdgeExitBand(pixels);
+            if (_location != null && _location.Zone != null)
+                PaintEdgeExitBand(pixels, _location.EdgeStrip("north") != null, _location.EdgeStrip("east") != null,
+                    _location.EdgeStrip("south") != null, _location.EdgeStrip("west") != null);
+            else if (_location != null && _location.ExitZone != null && _location.CanExitAtEdge && _edgeExitAllowed)
+                PaintEdgeExitBand(pixels, true, true, true, true);
 
             _staticTexture.SetPixels32(pixels);
             _staticTexture.Apply(false, false);
         }
 
-        private void PaintEdgeExitBand(Color32[] pixels)
+        /// <summary>Золотая полоса по краю: у места — вся, у зоны — стороны, открытые в соседа.</summary>
+        private void PaintEdgeExitBand(Color32[] pixels, bool north, bool east, bool south, bool west)
         {
             int band = Mathf.Min(RoaWorldExitBoundary.ExitBandTileCount,
                 Mathf.Max(1, Mathf.Min(MapWidth, MapDepth) / 2));
             var gold = new Color32(246, 177, 47, 255);
+            const int closed = int.MaxValue;
             for (int tz = 0; tz < MapDepth; tz++)
             for (int tx = 0; tx < MapWidth; tx++)
             {
-                int edge = Mathf.Min(Mathf.Min(tx, MapWidth - 1 - tx),
-                    Mathf.Min(tz, MapDepth - 1 - tz));
+                int edge = Mathf.Min(Mathf.Min(west ? tx : closed, east ? MapWidth - 1 - tx : closed),
+                    Mathf.Min(north ? tz : closed, south ? MapDepth - 1 - tz : closed));
                 if (edge >= band) continue;
                 int index = tz * MapWidth + tx;
                 float strength = edge == 0 ? 0.82f : 0.48f;

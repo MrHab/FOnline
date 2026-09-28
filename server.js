@@ -1447,7 +1447,9 @@ function normalizeLocationDefinition(raw, fallback = null) {
       };
     });
   }
-  if (!loc.exit && Array.isArray(loc.transitions)) {
+  // Старым местам без выхода выходом служит первый переход. У зоны выхода нет:
+  // её стороны — полосы и порталы, а копия первых ворот рисовалась бы лишним порталом.
+  if (!loc.exit && loc.kind !== 'zone' && Array.isArray(loc.transitions)) {
     const firstLocationExit = loc.transitions.find(row => row && row.type !== 'globalMap' && row.to);
     if (firstLocationExit) {
       loc.exit = {
@@ -4609,20 +4611,26 @@ function kromkaPublicLocationDefinition(location = {}) {
       const rules = serverTransitionZoneRules({ to: gate.to });
       return { ...gate, ...(rules ? { targetPvpMode: rules.mode, targetZoneRules: rules } : {}) };
     };
-    next.sectorGates = cityGates.map(withRules);
-    const asCityGate = row => {
-      const side = serverCitySideOfTile(location, row);
-      const gate = withRules(cityGates.find(item => item.side === side) || cityGates[0]);
+    // Выход из города — порталы в проёмах ворот; край города больше не выводит,
+    // а старые дороги «в мир» переходами не считаются.
+    next.allowGlobalMapExit = false;
+    const portals = cityGates.map(withRules).map(gate => {
+      const portal = serverCityGatePortal(location, gate.side);
       return {
-        ...row, type: 'zoneGate', direction: gate.side, to: gate.to, entryKey: gate.entryKey,
-        label: `Выход: ${gate.title}`,
+        id: `gate_${gate.side}`, type: 'zoneGate', auto: true, crossing: 'portal', direction: gate.side,
+        to: gate.to, entryKey: gate.entryKey, label: `Выход: ${gate.title}`, tx: portal.tx, tz: portal.tz, radius: portal.radius,
         ...(gate.targetZoneRules ? { targetPvpMode: gate.targetPvpMode, targetZoneRules: gate.targetZoneRules } : {})
       };
-    };
-    if (Array.isArray(next.transitions)) {
-      next.transitions = next.transitions.map(row => (serverLegacyCityExit(location, row) ? asCityGate(row) : row));
-    }
-    if (next.exit && serverLegacyCityExit(location, next.exit)) next.exit = asCityGate(next.exit);
+    });
+    next.transitions = [
+      ...(Array.isArray(next.transitions) ? next.transitions.filter(row => !serverLegacyCityExit(location, row)) : []),
+      ...portals
+    ];
+    if (next.exit && serverLegacyCityExit(location, next.exit)) delete next.exit;
+  }
+  // Ворота зоны: в соседнюю зону — полоса края, в город — портал.
+  if (ZONE_RUNTIME.isZone(next.id) && Array.isArray(next.transitions)) {
+    next.transitions = next.transitions.map(row => (row?.type === 'zoneGate' ? { ...row, crossing: serverZoneGateCrossing(row) } : row));
   }
   // Куда выводит край места: зона мира, её название и правила.
   const parentZone = ZONE_RUNTIME.parentZoneView(next.id);
@@ -13039,6 +13047,15 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
     }
   }
   if (current.exit && normalizeLocationId(current.exit.to || '') === target) candidates.push(current.exit);
+  // Зона в зону — сплошная полоса по всей открытой стороне: переход там, где
+  // игрок пересёк край, а не в точке ворот. Портал остаётся только у города.
+  if (ZONE_RUNTIME.isZone(current.id)) {
+    const edgeGate = candidates.find(row => row?.type === 'zoneGate' && serverZoneGateCrossing(row) === 'edge');
+    if (edgeGate) {
+      if (!serverPlayerAtZoneEdge(p, current, edgeGate.direction)) return null;
+      return { ...edgeGate, crossing: 'edge', crossedAt: { x: Number(p.x || 0), z: Number(p.z || 0) } };
+    }
+  }
   // Старые дороги «в мир» переходами не считаются: у места они ведут в его зону,
   // у города — в соседний сектор той стороны, где стоят.
   const authored = candidates.filter(row => !serverLegacyWorldExit(current, row)
@@ -13048,10 +13065,13 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
   }) || null;
   if (authored) return authored;
-  // Город занимает сектор целиком: его край ведёт прямо в соседний сектор той стороны.
+  // Город: выход — портал в проёме ворот той стороны, край города не выводит.
   const cityGate = ZONE_RUNTIME.cityGates(current.id).find(row => normalizeLocationId(row.to) === target);
-  if (cityGate && serverPlayerAtCityEdge(p, cityGate.side)) {
-    return { id: `gate_${cityGate.side}`, type: 'zoneGate', direction: cityGate.side, to: cityGate.to, entryKey: cityGate.entryKey };
+  if (cityGate) {
+    const portal = serverCityGatePortal(current, cityGate.side);
+    const point = tileToWorld(portal.tx, portal.tz, locationTileDims(current));
+    if (Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > portal.radius + 1.0) return null;
+    return { id: `gate_${cityGate.side}`, type: 'zoneGate', crossing: 'portal', direction: cityGate.side, to: cityGate.to, entryKey: cityGate.entryKey };
   }
   // Край места ведёт в зону мира, где это место стоит; край комнаты точки
   // мира — в зону точки, к её порталу.
@@ -27004,13 +27024,15 @@ function serverZoneChannelPreference(p = {}, zoneId = '') {
  * Отряд у ворот: кто стоит рядом с шагнувшим и не в перестрелке, проходит
  * вместе с ним в тот же канал; отставшим сервер говорит, какими воротами ушли.
  */
-function serverZoneGateFollowers(p, fromRoomId, from, room, entryKey, label = '') {
+function serverZoneGateFollowers(p, fromRoomId, from, room, entryKey, label = '', edgeSide = '') {
   const now = Date.now();
   for (const mate of serverWorldPartyMatesOnline(p)) {
     if (mate.roomId !== fromRoomId || mate.dead || Number(mate.hp || 0) <= 0) continue;
     const near = Math.hypot(Number(mate.x || 0) - from.x, Number(mate.z || 0) - from.z) <= ZONE_GATE_FOLLOW_METRES;
+    // Через край товарищ выходит там же, где стоял, — напротив своей точки.
+    const arrival = edgeSide ? serverZoneEdgeArrival(roomLocation(room), edgeSide, { x: mate.x, z: mate.z }) : null;
     if (near && serverZoneGatePvpPauseLeft(mate, now) <= 0
-      && transferPlayerToServerRoom(mate, room, { entryKey, reason: 'zoneGateFollow', message: `Отряд прошёл ворота: ${label}`.slice(0, 160) })) {
+      && transferPlayerToServerRoom(mate, room, { entryKey, ...(arrival || {}), reason: 'zoneGateFollow', message: `Отряд прошёл ворота: ${label}`.slice(0, 160) })) {
       mate.zoneArrivalShieldUntil = now + ZONE_ARRIVAL_SHIELD_MS;
       continue;
     }
@@ -27024,7 +27046,7 @@ function serverZoneGateFollowers(p, fromRoomId, from, room, entryKey, label = ''
  */
 // Подсказки первого входа в зону мира: как ходить воротами и где карта мира.
 const ZONE_FIRST_HINTS = Object.freeze([
-  { id: 'zoneGates', text: 'Вы в зоне мира. Проходы по краям — ворота в соседние зоны: шагните в проход. У ворот видно, куда они ведут и насколько там опасно.' },
+  { id: 'zoneGates', text: 'Вы в зоне мира. Золотая полоса по краю ведёт в соседнюю зону: пересеките её где угодно — и вы на той же линии в соседней зоне. В город ведёт светящийся портал у края. У полосы и портала видно, куда они ведут и насколько там опасно.' },
   { id: 'worldMap', text: 'Карта мира — кнопка у миникарты: зоны, их цвета, места и где вы стоите.' }
 ]);
 
@@ -28264,6 +28286,8 @@ function serverGlobalPointForPlayer(p = {}) {
 function serverPlayerCanLeaveByEdge(p = {}) {
   const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
   if (loc.allowGlobalMapExit === false) return false;
+  // Из города выходят порталом у ворот, край города закрыт.
+  if (loc.cityZone || ZONE_RUNTIME.cityOf(loc.id)) return false;
   const prologueLocationId = normalizeLocationId(KROMKA_ONBOARDING_CATALOG.firstMissionLocationId || 'randomRuinedRoad');
   if (loc.id === prologueLocationId && p.kromkaOnboarding?.phase === 'firstMission') return false;
   return true;
@@ -28271,12 +28295,15 @@ function serverPlayerCanLeaveByEdge(p = {}) {
 
 function serverClosedLocationMovementBounds(p = {}, room = null, radius = PLAYER_COLLISION_RADIUS) {
   if (!room || serverPlayerCanLeaveByEdge(p)) return null;
-  const bounds = normalizedLocationPlayableBounds(roomLocation(room));
+  const loc = roomLocation(room);
+  const bounds = normalizedLocationPlayableBounds(loc);
   const inset = Math.max(1, WORLD_MAP_EXIT_BAND_TILES);
-  const minTileX = Math.min(bounds.maxX, bounds.minX + inset);
-  const maxTileX = Math.max(bounds.minX, bounds.maxX - inset);
-  const minTileZ = Math.min(bounds.maxZ, bounds.minZ + inset);
-  const maxTileZ = Math.max(bounds.minZ, bounds.maxZ - inset);
+  // У зоны сторона, открытая в соседнюю зону, — полоса перехода: к ней подходят вплотную.
+  const edges = serverZoneEdgeSides(loc);
+  const minTileX = edges.has('west') ? bounds.minX : Math.min(bounds.maxX, bounds.minX + inset);
+  const maxTileX = edges.has('east') ? bounds.maxX : Math.max(bounds.minX, bounds.maxX - inset);
+  const minTileZ = edges.has('north') ? bounds.minZ : Math.min(bounds.maxZ, bounds.minZ + inset);
+  const maxTileZ = edges.has('south') ? bounds.maxZ : Math.max(bounds.minZ, bounds.maxZ - inset);
   const safeRadius = clamp(Number(radius || 0), 0, TILE * 0.45);
   const epsilon = 0.001;
   const boundsDims = roomTileDims(room);
@@ -28294,32 +28321,68 @@ function serverPointInsideClosedLocationBounds(x, z, bounds = null) {
     && Number(z) >= bounds.minZ && Number(z) <= bounds.maxZ;
 }
 
-/**
- * Игрок стоит у края города со стороны `side`. Полоса та же, что у мест (включая
- * запас у старых дорог), а сторона — ближайшая к нему, как и у клиента.
- */
-function serverPlayerAtCityEdge(p = {}, side = '') {
-  const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
-  if (!loc.cityZone || !serverPlayerAtPlaceEdge(p)) return false;
-  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), locationTileDims(loc));
-  const bounds = normalizedLocationPlayableBounds(loc);
-  const distances = [
-    ['north', tile.tz - bounds.minZ], ['south', bounds.maxZ - tile.tz],
-    ['west', tile.tx - bounds.minX], ['east', bounds.maxX - tile.tx]
-  ];
-  return distances.sort((a, b) => a[1] - b[1])[0][0] === side;
+// Переходы между секторами. Зона в зону — сплошная полоса по открытой стороне:
+// игрок проходит край где угодно и выходит в соседней зоне напротив той же
+// точки, в нескольких шагах от её края. Город и зона связаны порталами: в городе
+// портал в проёме ворот, в зоне — у края, обращённого к городу.
+const ZONE_EDGE_ARRIVAL_INSET_TILES = 4;
+const CITY_GATE_PORTAL_RADIUS = 5;
+
+/** Как проходят ворота зоны: 'edge' — полосой края, 'portal' — порталом (в город). */
+function serverZoneGateCrossing(row = {}) {
+  return ZONE_RUNTIME.cityOf(normalizeLocationId(row.to || '')) ? 'portal' : 'edge';
 }
 
-/** Сторона города, к которой ближе всего тайл: старые дороги «в мир» становятся её воротами. */
-function serverCitySideOfTile(loc = {}, row = {}) {
-  const bounds = normalizedLocationPlayableBounds(loc);
-  const tx = Number(row.tx || 0);
-  const tz = Number(row.tz || 0);
-  const distances = [
-    ['north', tz - bounds.minZ], ['south', bounds.maxZ - tz],
-    ['west', tx - bounds.minX], ['east', bounds.maxX - tx]
-  ];
-  return distances.sort((a, b) => a[1] - b[1])[0][0];
+/** Стороны зоны, открытые полосой перехода в соседнюю зону. */
+function serverZoneEdgeSides(loc = {}) {
+  if (!loc?.id || !ZONE_RUNTIME.isZone(loc.id)) return new Set();
+  return new Set((loc.transitions || [])
+    .filter(row => row?.type === 'zoneGate' && serverZoneGateCrossing(row) === 'edge')
+    .map(row => String(row.direction || '')));
+}
+
+/** Игрок в полосе перехода на стороне `side` зоны: крайние клетки и клетка запаса. */
+function serverPlayerAtZoneEdge(p = {}, loc = {}, side = '') {
+  if (!p?.roomId || !serverZoneEdgeSides(loc).has(side)) return false;
+  const dims = locationTileDims(loc);
+  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), dims);
+  const band = WORLD_MAP_EXIT_BAND_TILES;
+  if (side === 'north') return tile.tz <= band;
+  if (side === 'south') return tile.tz >= dims.h - 1 - band;
+  if (side === 'west') return tile.tx <= band;
+  if (side === 'east') return tile.tx >= dims.w - 1 - band;
+  return false;
+}
+
+/**
+ * Точка прибытия после перехода краем: напротив места пересечения, у стороны
+ * соседа, обращённой назад, за её полосой — шаг вперёд ведёт дальше, а не обратно.
+ */
+function serverZoneEdgeArrival(target = {}, side = '', crossedAt = null) {
+  if (!target || !crossedAt || !Number.isFinite(Number(crossedAt.x)) || !Number.isFinite(Number(crossedAt.z))) return null;
+  const dims = locationTileDims(target);
+  const halfW = dims.w * TILE / 2;
+  const halfH = dims.h * TILE / 2;
+  const depth = (ZONE_EDGE_ARRIVAL_INSET_TILES + 0.5) * TILE;
+  const along = (value, half) => clamp(Number(value), -half + depth, half - depth);
+  if (side === 'north') return { x: along(crossedAt.x, halfW), z: halfH - depth };
+  if (side === 'south') return { x: along(crossedAt.x, halfW), z: -halfH + depth };
+  if (side === 'west') return { x: halfW - depth, z: along(crossedAt.z, halfH) };
+  if (side === 'east') return { x: -halfW + depth, z: along(crossedAt.z, halfH) };
+  return null;
+}
+
+/** Портал выхода из города со стороны `side`: в проёме ворот стены. */
+function serverCityGatePortal(loc = {}, side = '') {
+  const gate = (loc.cityPlan?.gates || []).find(row => row?.dir === side);
+  const centre = CITY_TILES / 2;
+  const fallback = {
+    north: { tx: centre, tz: centre - CITY_WALL_HALF }, south: { tx: centre, tz: centre + CITY_WALL_HALF },
+    west: { tx: centre - CITY_WALL_HALF, tz: centre }, east: { tx: centre + CITY_WALL_HALF, tz: centre }
+  }[side] || { tx: centre, tz: centre };
+  const tx = Number.isFinite(Number(gate?.tx)) ? Number(gate.tx) : fallback.tx;
+  const tz = Number.isFinite(Number(gate?.tz)) ? Number(gate.tz) : fallback.tz;
+  return { tx, tz, radius: CITY_GATE_PORTAL_RADIUS };
 }
 
 function serverPlayerAtPlaceEdge(p = {}) {
@@ -33402,9 +33465,12 @@ io.on('connection', (socket) => {
     rememberPlayerSettlement(p, room.locationId);
     const entryKey = serverEntryKeyForTransition(locationId, {}, transitionTicket || localTransition);
     const entryTile = !transitionTicket ? localTransition?.entryTile : null;
-    const spawn = entryTile
+    const edgeArrival = !transitionTicket && localTransition?.crossing === 'edge'
+      ? serverZoneEdgeArrival(LOCATIONS[locationId], localTransition.direction, localTransition.crossedAt)
+      : null;
+    const spawn = edgeArrival || (entryTile
       ? tileToWorld(entryTile.tx, entryTile.tz + 2, locationTileDims(LOCATIONS[locationId]))
-      : playerSpawnWorld(locationId, entryKey);
+      : playerSpawnWorld(locationId, entryKey));
     p.x = spawn.x;
     p.z = spawn.z;
     if (zoneCrossing && ZONE_RUNTIME.isZone(locationId)) p.zoneArrivalShieldUntil = Date.now() + ZONE_ARRIVAL_SHIELD_MS;
@@ -33461,7 +33527,8 @@ io.on('connection', (socket) => {
     emitWorldContainersSnapshot(room, true, socket.id);
     emitServerArtifactState(p, 'locationChanged');
     if (zoneCrossing && localTransition?.type === 'zoneGate') {
-      serverZoneGateFollowers(p, crossedFrom.roomId, crossedFrom, room, entryKey, String(localTransition.label || room.locationId));
+      serverZoneGateFollowers(p, crossedFrom.roomId, crossedFrom, room, entryKey, String(localTransition.label || room.locationId),
+        localTransition.crossing === 'edge' ? localTransition.direction : '');
     }
     if (serverShowZoneFirstHints(p)) persistActivePlayerState(p);
   };

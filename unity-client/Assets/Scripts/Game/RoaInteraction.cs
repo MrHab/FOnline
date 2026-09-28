@@ -149,7 +149,6 @@ namespace RealmOfAshes.Game
         private string _zoneWarningTarget = string.Empty;
         private float _zoneWarningUntil;
         private string _acknowledgedZoneMode = string.Empty;
-        private Material _transitionMaterial;
         private QuantityKind _quantityKind;
         private string _quantityItemId = string.Empty;
         private int _quantityValue = 1;
@@ -1391,6 +1390,8 @@ namespace RealmOfAshes.Game
                     ["auto"] = transition.Auto,
                     ["to"] = transition.To,
                     ["entryKey"] = transition.EntryKey ?? string.Empty,
+                    ["crossing"] = transition.Crossing ?? string.Empty,
+                    ["direction"] = transition.Direction ?? string.Empty,
                     ["locationId"] = _locationId,
                     ["targetPvpMode"] = transition.TargetPvpMode ?? string.Empty,
                     ["targetZoneRules"] = transition.TargetZoneRules != null
@@ -1398,51 +1399,20 @@ namespace RealmOfAshes.Game
                         : JValue.CreateNull()
                 }
             };
-            target.Marker = CreateTransitionMarker(position);
+            // Полоса края зоны рисуется границей локации, а не точкой: переход — вся сторона.
+            if (!transition.IsEdgeStrip) target.Marker = CreatePortalMarker(position, target.Range, transition.Direction);
             _staticTargets.Add(target);
         }
 
-        private GameObject CreateTransitionMarker(Vector3 position)
+        /// <summary>
+        /// Портал перехода: светящееся пятно с искрами. У ворот (есть сторона) оно
+        /// вытянуто вдоль края, у портала места — квадратное.
+        /// </summary>
+        private GameObject CreatePortalMarker(Vector3 position, float range, string direction)
         {
-            var root = new GameObject("LocationTransitionMarker");
-            root.transform.SetParent(transform, false);
-            root.transform.position = position + Vector3.up * 0.08f;
-            var line = root.AddComponent<LineRenderer>();
-            line.loop = true;
-            line.useWorldSpace = false;
-            line.positionCount = 48;
-            line.startWidth = 0.055f;
-            line.endWidth = 0.055f;
-            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            line.receiveShadows = false;
-            if (_transitionMaterial == null)
-            {
-                Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
-                    ?? Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
-                if (shader != null)
-                {
-                    _transitionMaterial = new Material(shader);
-                    Color color = new Color(0.85f, 0.74f, 0.43f, 0.76f);
-                    _transitionMaterial.color = color;
-                    if (_transitionMaterial.HasProperty("_BaseColor"))
-                        _transitionMaterial.SetColor("_BaseColor", color);
-                    if (_transitionMaterial.HasProperty("_Surface")) _transitionMaterial.SetFloat("_Surface", 1f);
-                    if (_transitionMaterial.HasProperty("_SrcBlend"))
-                        _transitionMaterial.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    if (_transitionMaterial.HasProperty("_DstBlend"))
-                        _transitionMaterial.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    if (_transitionMaterial.HasProperty("_ZWrite")) _transitionMaterial.SetFloat("_ZWrite", 0f);
-                    _transitionMaterial.renderQueue = 3000;
-                    _transitionMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                }
-            }
-            line.sharedMaterial = _transitionMaterial;
-            for (int i = 0; i < line.positionCount; i++)
-            {
-                float angle = i / (float)line.positionCount * Mathf.PI * 2f;
-                line.SetPosition(i, new Vector3(Mathf.Cos(angle) * 0.92f, 0f, Mathf.Sin(angle) * 0.92f));
-            }
-            return root;
+            Vector3 across = direction == "north" || direction == "south" ? Vector3.right
+                : direction == "east" || direction == "west" ? Vector3.forward : Vector3.zero;
+            return RoaPortalGlow.Create(transform, position, range, across, RoaPortalGlow.PortalGold).gameObject;
         }
 
         private void Start()
@@ -1459,14 +1429,6 @@ namespace RealmOfAshes.Game
         {
             Detach();
             ClosePanel(false);
-        }
-
-        private void OnDestroy()
-        {
-            if (_transitionMaterial == null) return;
-            if (Application.isPlaying) Destroy(_transitionMaterial);
-            else DestroyImmediate(_transitionMaterial);
-            _transitionMaterial = null;
         }
 
         private void Attach()
@@ -1974,6 +1936,13 @@ namespace RealmOfAshes.Game
             foreach (StaticTarget target in _staticTargets)
             {
                 if (target.Kind != TargetKind.Transition || target.Data?["auto"]?.ToObject<bool>() != true) continue;
+                if (target.Data["crossing"]?.ToString() == "edge")
+                {
+                    // Сплошная полоса: переход там, где игрок пересёк край своей стороны.
+                    string side = target.Data["direction"]?.ToString() ?? string.Empty;
+                    if (RoaWorldExitBoundary.IsInSideBand(position, _mapWidth, _mapDepth, side)) { inside = target.Data; break; }
+                    continue;
+                }
                 Vector3 delta = target.Position - position;
                 delta.y = 0f;
                 if (delta.magnitude <= target.Range) { inside = target.Data; break; }
@@ -2151,6 +2120,8 @@ namespace RealmOfAshes.Game
 
             foreach (StaticTarget target in _staticTargets)
             {
+                // Полоса края — вся сторона зоны, у бывшей точки ворот нечего нажимать.
+                if (target.Kind == TargetKind.Transition && target.Data?["crossing"]?.ToString() == "edge") continue;
                 float range = target.Range > 0f ? target.Range
                     : (target.Kind == TargetKind.Storage ? 4.5f : 5.0f);
                 Vector3 delta = target.Position - origin;
@@ -2321,7 +2292,9 @@ namespace RealmOfAshes.Game
                 entryKey = target == "settlement" ? "entryFromWasteland" : "entryFromSettlement";
 
             _transitionPending = true;
-            Show("Переход: " + (transition["name"]?.ToString() ?? "локация") + "…", 3f);
+            bool seamless = transition["crossing"]?.ToString() == "edge";
+            // Край зоны — продолжение пути, а не телепорт: без сообщения и экрана загрузки.
+            if (!seamless) Show("Переход: " + (transition["name"]?.ToString() ?? "локация") + "…", 3f);
             var payload = new Dictionary<string, object>
             {
                 ["locationId"] = target,
@@ -2348,8 +2321,12 @@ namespace RealmOfAshes.Game
                     onFinished?.Invoke(true);
                     return;
                 }
+                if (seamless) RoaGameBootstrap.Active?.BeginSeamlessCrossing();
                 if (Socket.ApplyLocationTransitionAck(ack) == null)
+                {
+                    RoaGameBootstrap.Active?.CancelSeamlessCrossing();
                     Show("Ответ перехода не удалось разобрать.", 4f);
+                }
                 onFinished?.Invoke(false);
             });
         }

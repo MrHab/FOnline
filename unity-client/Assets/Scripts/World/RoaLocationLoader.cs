@@ -227,9 +227,27 @@ namespace RealmOfAshes.World
             _currentRoot = new GameObject("Location:" + definition.Id);
             Current = definition;
 
-            // Край места выводит в его зону, а закрытое сюжетом место получает
-            // непроходимый пунктир. У самой зоны края нет: её стены и ворота собирает конструктор.
-            if (definition.ExitZone != null || !definition.CanExitAtEdge)
+            // Зона: сторона, открытая в соседнюю зону, — сплошная полоса перехода,
+            // прочие закрыты (в город ведёт портал). Город: край закрыт целиком, выход —
+            // порталы у ворот. Место: край выводит в его зону, а закрытое сюжетом
+            // место получает непроходимый пунктир.
+            if (definition.Zone != null || definition.CityZone)
+            {
+                var sides = new[] { "north", "east", "south", "west" };
+                var open = new bool[4];
+                var labels = new string[4];
+                for (int side = 0; side < 4; side++)
+                {
+                    LocationTransition strip = definition.CityZone ? null : definition.EdgeStrip(sides[side]);
+                    open[side] = strip != null;
+                    labels[side] = strip?.Label ?? string.Empty;
+                }
+                var exitBoundary = _currentRoot.AddComponent<RoaWorldExitBoundary>();
+                exitBoundary.ConfigureSides(definition.TileWidth, definition.TileDepth, open, labels,
+                    definition.CityZone ? "ГРАНИЦА ГОРОДА" : "КРАЙ ЗОНЫ",
+                    definition.CityZone ? "Выход из города — порталы у ворот" : "Здесь прохода нет");
+            }
+            else if (definition.ExitZone != null || !definition.CanExitAtEdge)
             {
                 var exitBoundary = _currentRoot.AddComponent<RoaWorldExitBoundary>();
                 exitBoundary.Configure(definition.TileWidth, definition.TileDepth);

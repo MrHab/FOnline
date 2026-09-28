@@ -750,10 +750,7 @@ namespace RealmOfAshes.Game
             if (width <= 0 || depth <= 0) return;
             Vector3 position = _controller.transform.position;
             bool inBand = RoaWorldExitBoundary.IsInExitBand(position, width, depth);
-            // Город занимает сектор: каждая его сторона ведёт к своему соседу.
-            ParentZoneInfo target = Loader?.Current?.SectorGate(RoaWorldExitBoundary.EdgeSide(position, width, depth)) ?? parentZone;
-            EdgeExitTarget = target;
-            Interaction.UpdateZoneEdge(target, inBand);
+            Interaction.UpdateZoneEdge(parentZone, inBand);
             if (inBand) _edgeExitRetryAt = Time.unscaledTime + 0.75f;
         }
 
@@ -801,10 +798,8 @@ namespace RealmOfAshes.Game
         }
 
         public bool CinematicActive { get { return _cinematicActive; } }
-        /// <summary>Край текущего места выводит в его зону: место стоит в зоне и сюжет его не держит.</summary>
-        /// <summary>Куда выводит край там, где стоит игрок: зона места или сторона города.</summary>
-        public ParentZoneInfo EdgeExitTarget { get; private set; }
 
+        /// <summary>Край текущего места выводит в его зону: место стоит в зоне и сюжет его не держит.</summary>
         public bool CurrentLocationHasEdgeExit
         {
             get { return AllowsEdgeExit(Loader?.Current, Onboarding?.Phase); }
@@ -1548,8 +1543,41 @@ namespace RealmOfAshes.Game
             _status = "Вошли в " + ack.LocationId + " (комната '" + ack.RoomId + "')";
             Debug.Log("[ROA] " + _status + ", lease=" + ack.CharacterLeaseId);
 
+            // Бесшовен только тот вход, что начался переходом краем зоны.
+            _seamless = _seamlessPending;
+            _seamlessPending = false;
+            _seamlessStartedAt = Time.unscaledTime;
+            _seamlessReadyAt = -1f;
             _stage = Stage.LoadingLocation;
             StartCoroutine(EnterWorld(ack));
+        }
+
+        // --- бесшовный переход краем зоны: короткое затемнение вместо экрана загрузки ----------
+        private bool _seamlessPending;
+        private bool _seamless;
+        private float _seamlessStartedAt;
+        private float _seamlessReadyAt = -1f;
+        private const float SeamlessFadeIn = 0.12f;
+        private const float SeamlessFadeOut = 0.35f;
+
+        /// <summary>
+        /// Следующий вход — продолжение пути через край зоны: без карточки загрузки,
+        /// лишь короткое затемнение; игрок и камера сохраняют направление.
+        /// </summary>
+        public void BeginSeamlessCrossing() { _seamlessPending = true; }
+
+        public void CancelSeamlessCrossing() { _seamlessPending = false; }
+
+        public bool LoadingSeamless { get { return _seamless; } }
+
+        /// <summary>Непрозрачность затемнения бесшовного перехода: быстро темнеет, затем светлеет.</summary>
+        public float SeamlessVeilAlpha
+        {
+            get
+            {
+                if (_seamlessReadyAt > 0f) return 1f - Mathf.Clamp01((Time.unscaledTime - _seamlessReadyAt) / SeamlessFadeOut);
+                return Mathf.Clamp01((Time.unscaledTime - _seamlessStartedAt) / SeamlessFadeIn);
+            }
         }
 
         /// <summary>Убрать локальную сцену и её сущности (выход к экрану персонажей).</summary>
@@ -1635,6 +1663,8 @@ namespace RealmOfAshes.Game
             get
             {
                 bool loading = _stage == Stage.Joining || _stage == Stage.LoadingLocation;
+                if (_seamless)
+                    return loading || (_seamlessReadyAt > 0f && Time.unscaledTime - _seamlessReadyAt < SeamlessFadeOut);
                 return loading || (Time.unscaledTime - _loadingShownAt < LoadingMinVisible && _loadingShownAt > 0f && _stage == Stage.InWorld);
             }
         }
@@ -1788,6 +1818,7 @@ namespace RealmOfAshes.Game
             SetGameMenuOpen(false);
             SetLoading("Мир готов.", 1f);
             _loadingShownAt = Time.unscaledTime; // минимум 360 мс показа готового экрана
+            if (_seamless) _seamlessReadyAt = Time.unscaledTime;
             _loadingStartup = false;
             _stage = Stage.InWorld;
         }

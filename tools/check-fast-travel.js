@@ -23,9 +23,14 @@ assert.equal(capitals.length, 6, 'six faction capitals');
 for (const row of capitals) assert(row.zone && row.zone.city === row.locationId, `${row.locationId} holds a sector of its own`);
 assert(economy.fastTravel && rules.baseFee > 0 && rules.feePerKm > 0, 'the fees come from economy.json');
 
-const from = capitals[0];
+// Сеть переноса — пять городов фракций (библия, 4.1); Баланс — столица без диспетчера.
+const served = capitals.filter(row => travel.fastTravelServes(rules, row.locationId));
+assert.deepEqual(capitals.filter(row => !served.includes(row)).map(row => row.locationId), ['balanceBunker'], 'only Balance stays out of the network');
+assert.deepEqual(travel.fastTravelDestinations(rules, capitals, 'balanceBunker'), [], 'Balance has no dispatcher');
+const from = served[0];
 const menu = travel.fastTravelDestinations(rules, capitals, from.locationId);
-assert.equal(menu.length, 5, 'a capital sends to the five others');
+assert.equal(menu.length, 4, 'a faction city sends to the four others');
+assert(!menu.some(row => row.locationId === 'balanceBunker'), 'nobody is sent to Balance');
 assert(menu.every(row => row.fee === Math.round(rules.baseFee + rules.feePerKm * row.distanceKm) || Math.abs(row.fee - (rules.baseFee + rules.feePerKm * row.distanceKm)) <= 1), 'the fee is base plus distance');
 assert(menu[0].fee <= menu[menu.length - 1].fee, 'nearer capitals are cheaper');
 assert.deepEqual(travel.fastTravelDestinations(rules, capitals, 'z_05_05'), [], 'no dispatcher outside a capital');
@@ -34,6 +39,8 @@ const trip = extra => ({ rules, capitals, fromLocationId: from.locationId, toLoc
 assert.equal(travel.fastTravelRefusal(trip()), '', 'a paid trip between capitals goes');
 assert.match(travel.fastTravelRefusal(trip({ fromLocationId: 'settlement' })), /только в столицах/);
 assert.match(travel.fastTravelRefusal(trip({ toLocationId: 'settlement' })), /только между столицами/);
+assert.match(travel.fastTravelRefusal(trip({ toLocationId: 'balanceBunker' })), /только между столицами/);
+assert.match(travel.fastTravelRefusal(trip({ fromLocationId: 'balanceBunker' })), /только в столицах/);
 assert.match(travel.fastTravelRefusal(trip({ lastCombatAt: 1_000_000 - 2000 })), /Из боя не отправляют/);
 assert.equal(travel.fastTravelRefusal(trip({ lastCombatAt: 1_000_000 - rules.combatLockMs - 1 })), '', 'the combat lock ends');
 assert.match(travel.fastTravelRefusal(trip({ cargo: [{ id: 'artifactSpring', category: 'artifacts', name: 'Артефакт «Пружина»' }] })), /не перевозят/);
@@ -87,7 +94,7 @@ const marks = self => (self?.inventory || []).filter(row => row.id === 'silver')
     const tradeState = { x: Number(accounts.trade.join.x), z: Number(accounts.trade.join.z) };
     assert(await zoneWalk.driveTo(h, accounts.trade, tradeState, seen.x - 2, seen.z, 60), 'the player walks up to the dispatcher: ' + JSON.stringify(tradeState));
     const list = await h.socketAck(accounts.trade.socket, 'fastTravel', { action: 'list' });
-    assert(list.ok && list.destinations.length === 5, 'the dispatcher lists five capitals: ' + JSON.stringify(list).slice(0, 300));
+    assert(list.ok && list.destinations.length === 4, 'the dispatcher lists the four other faction cities: ' + JSON.stringify(list).slice(0, 300));
     const pick = list.destinations[0];
     const transfer = new Promise(resolve => accounts.trade.socket.once('serverWorldTransfer', resolve));
     const before = marks(accounts.trade.join.self);

@@ -5,7 +5,7 @@
   "name": "Депо Обводное",
   "seed": 2026091404,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pvpBlack",
   "kind": "clanBase",
   "clanBaseId": "bypass_depot",
   "respawnAllowed": false,

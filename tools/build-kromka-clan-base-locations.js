@@ -30,7 +30,7 @@ for (const [index, base] of catalog.bases.entries()) {
   ];
   const data = {
     schema: 'realm.location.v1', version: 1, id: base.locationId, name: base.displayName,
-    seed: 2026091400 + index, safe: false, pvpMode: 'pvp', kind: 'clanBase', clanBaseId: base.id,
+    seed: 2026091400 + index, safe: false, pvpMode: 'pvpBlack', kind: 'clanBase', clanBaseId: base.id,
     respawnAllowed: false, enemyCap: 0, spawnCount: 0,
     ground: { preset: base.macroRegion === 'chalk_lowland' ? 'chalkMud' : base.macroRegion === 'glasslands' ? 'glassAsh' : 'industrialDust', label: base.displayName },
     map: { width: 80, depth: 80, origin: 'center' }, grid: { snap: true, step: 2 },

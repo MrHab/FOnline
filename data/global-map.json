@@ -73,8 +73,8 @@
     },
     {
       "id": "clanHydroNode2",
-      "x": 232,
-      "y": 263,
+      "x": 230,
+      "y": 210,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanHydroNode2",
@@ -86,7 +86,7 @@
       "modelScale": 1,
       "rotationY": 0,
       "note": "ГЭС-2. turbine-hall, spillway-bridge.",
-      "macroRegion": "northern_sluices",
+      "macroRegion": "middle_vein",
       "visualProfile": "clan-hydro-node-two-v1",
       "worldRevision": "kromka-1",
       "roadAccess": false
@@ -273,8 +273,8 @@
     },
     {
       "id": "resourceScrapFields",
-      "x": 118,
-      "y": 196,
+      "x": 50,
+      "y": 190,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceScrapFields",
@@ -313,8 +313,8 @@
     },
     {
       "id": "clanOreExchange",
-      "x": 84,
-      "y": 265,
+      "x": 170,
+      "y": 170,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanOreExchange",
@@ -326,15 +326,15 @@
       "modelScale": 1,
       "rotationY": 0,
       "note": "Рудный перевал. ore-conveyor, transfer-tower.",
-      "macroRegion": "ore_arc",
+      "macroRegion": "middle_vein",
       "visualProfile": "clan-ore-transfer-v1",
       "worldRevision": "kromka-1",
       "roadAccess": false
     },
     {
       "id": "clanFactoryCycle",
-      "x": 128,
-      "y": 244,
+      "x": 150,
+      "y": 210,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanFactoryCycle",
@@ -346,7 +346,7 @@
       "modelScale": 1,
       "rotationY": 0,
       "note": "Цех обратного цикла. reaction-towers, pipe-bridge.",
-      "macroRegion": "ore_arc",
+      "macroRegion": "middle_vein",
       "visualProfile": "clan-reagent-cycle-v1",
       "worldRevision": "kromka-1",
       "roadAccess": false
@@ -493,8 +493,8 @@
     },
     {
       "id": "clanChalkSluice",
-      "x": 267,
-      "y": 88,
+      "x": 290,
+      "y": 130,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanChalkSluice",
@@ -613,8 +613,8 @@
     },
     {
       "id": "vectorLab",
-      "x": 338,
-      "y": 225,
+      "x": 290,
+      "y": 150,
       "kind": "complex",
       "locationCount": 1,
       "locationId": "vectorLab",
@@ -633,8 +633,8 @@
     },
     {
       "id": "clanRelayEast",
-      "x": 358,
-      "y": 184,
+      "x": 250,
+      "y": 190,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanRelayEast",
@@ -753,8 +753,8 @@
     },
     {
       "id": "clanFortZero",
-      "x": 232,
-      "y": 32,
+      "x": 218,
+      "y": 44,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanFortZero",
@@ -1227,6 +1227,10 @@
         {
           "x": 232,
           "y": 32
+        },
+        {
+          "x": 218,
+          "y": 44
         }
       ]
     }

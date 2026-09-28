@@ -410,8 +410,8 @@
     },
     {
       "id": "clanHydroNode2",
-      "x": 232,
-      "z": 263
+      "x": 230,
+      "z": 210
     },
     {
       "id": "settlement",
@@ -460,8 +460,8 @@
     },
     {
       "id": "resourceScrapFields",
-      "x": 118,
-      "z": 196
+      "x": 50,
+      "z": 190
     },
     {
       "id": "antHive",
@@ -470,13 +470,13 @@
     },
     {
       "id": "clanOreExchange",
-      "x": 84,
-      "z": 265
+      "x": 170,
+      "z": 170
     },
     {
       "id": "clanFactoryCycle",
-      "x": 128,
-      "z": 244
+      "x": 150,
+      "z": 210
     },
     {
       "id": "caravanCamp",
@@ -515,8 +515,8 @@
     },
     {
       "id": "clanChalkSluice",
-      "x": 267,
-      "z": 88
+      "x": 290,
+      "z": 130
     },
     {
       "id": "relayStation",
@@ -545,13 +545,13 @@
     },
     {
       "id": "vectorLab",
-      "x": 338,
-      "z": 225
+      "x": 290,
+      "z": 150
     },
     {
       "id": "clanRelayEast",
-      "x": 358,
-      "z": 184
+      "x": 250,
+      "z": 190
     },
     {
       "id": "resourceChemSpring",
@@ -580,8 +580,8 @@
     },
     {
       "id": "clanFortZero",
-      "x": 232,
-      "z": 32
+      "x": 218,
+      "z": 44
     },
     {
       "id": "wasteland",
@@ -923,6 +923,10 @@
         [
           232,
           32
+        ],
+        [
+          218,
+          44
         ]
       ]
     }

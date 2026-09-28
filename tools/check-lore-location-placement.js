@@ -47,7 +47,9 @@ for (const r of seed.routes) {
 assert(at('sluiceCity').y > at('settlement').y && at('settlement').y > at('cascadeRegenerator').y,
   'Cascade must descend north to south');
 assert(at('scrapTown').x < at('settlement').x && at('relayStation').x > at('settlement').x);
-assert(at('vectorLab').x > at('relayStation').x, 'Vector belongs deeper in the Glasslands than the safe K-3 city');
+// «Вектор» — в красном клине глубоко в Стеколье, вдали от безопасного Контура-3.
+assert(Math.hypot(at('vectorLab').x-at('relayStation').x, at('vectorLab').y-at('relayStation').y) > 40,
+  'Vector belongs deep in the Glasslands, far from the safe K-3 city');
 assert(at('relayOutpost').x < at('relayStation').x, 'K-3 perimeter must control the western approach');
 assert(distance(at('relayStation'), route('ore_freight_rail')) < 12, 'K-3 safe entry needs freight access');
 assert(distance(at('roadOutpost'), route('ore_freight_rail')) < 4, 'Outpost 17 must guard the rail bridge approach');

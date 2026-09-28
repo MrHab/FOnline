@@ -89453,7 +89453,7 @@ Transform:
   m_GameObject: {fileID: 372359264}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -7.2000003, y: 0.020453658, z: -4.6}
+  m_LocalPosition: {x: -14, y: 0.020453658, z: -4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -222590,7 +222590,7 @@ Transform:
   m_GameObject: {fileID: 996596081}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 7.7000003, y: -0.0022740324, z: 6.2000003}
+  m_LocalPosition: {x: 10, y: -0.0022740324, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -288026,7 +288026,7 @@ Transform:
   m_GameObject: {fileID: 1237629875}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 14.8, y: 0.80117255, z: -7.5}
+  m_LocalPosition: {x: 10, y: 0.80117255, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -395935,7 +395935,7 @@ Transform:
   m_GameObject: {fileID: 1701857391}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.2000003, y: 0.2614228, z: -11.3}
+  m_LocalPosition: {x: 4, y: 0.2614228, z: -6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -395970,7 +395970,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaWorldLocationAuthoring
   _stableLocationId: clanHydroNode2
-  _macroRegion: 0
+  _macroRegion: 1
   _locationScenePath: Assets/Scenes/Kromka/Locations/clanHydroNode2.unity
   _dangerBand: 2
   _selectionRadiusKm: 2
@@ -415815,7 +415815,7 @@ Transform:
   m_GameObject: {fileID: 1805339954}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.2000003, y: -0.3376956, z: 11.8}
+  m_LocalPosition: {x: 2.8, y: -0.3376956, z: 10.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -432642,7 +432642,7 @@ Transform:
   m_GameObject: {fileID: 1885479374}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -10.6, y: 0.93069553, z: -11.5}
+  m_LocalPosition: {x: -2, y: 0.93069553, z: -2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -432677,7 +432677,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaWorldLocationAuthoring
   _stableLocationId: clanOreExchange
-  _macroRegion: 2
+  _macroRegion: 1
   _locationScenePath: Assets/Scenes/Kromka/Locations/clanOreExchange.unity
   _dangerBand: 2
   _selectionRadiusKm: 2
@@ -445582,7 +445582,7 @@ Transform:
   m_GameObject: {fileID: 1955112179}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -6.2000003, y: 0.51110435, z: -9.400001}
+  m_LocalPosition: {x: -4, y: 0.51110435, z: -6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -445617,7 +445617,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaWorldLocationAuthoring
   _stableLocationId: clanFactoryCycle
-  _macroRegion: 2
+  _macroRegion: 1
   _locationScenePath: Assets/Scenes/Kromka/Locations/clanFactoryCycle.unity
   _dangerBand: 2
   _selectionRadiusKm: 2
@@ -455359,7 +455359,7 @@ Transform:
   m_GameObject: {fileID: 2001076021}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 16.800001, y: 0.8772094, z: -3.4}
+  m_LocalPosition: {x: 6, y: 0.8772094, z: -4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

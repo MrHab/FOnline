@@ -266,7 +266,8 @@
     "south": {
      "to": "z_11_02",
      "open": true,
-     "along": 0.34
+     "along": 0.15,
+     "road": "zero_admin_access"
     },
     "west": {
      "to": "z_10_01",
@@ -283,16 +284,7 @@
    "roads": [
     "zero_admin_access"
    ],
-   "places": [
-    {
-     "locationId": "clanFortZero",
-     "kind": "clan_base",
-     "name": "Форт 14",
-     "u": 0.6,
-     "v": 0.6,
-     "road": true
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -689,11 +681,23 @@
     "east": {
      "to": "z_11_02",
      "open": true,
-     "along": 0.496
+     "along": 0.15,
+     "road": "zero_admin_access"
     }
    },
-   "roads": [],
-   "places": [],
+   "roads": [
+    "zero_admin_access"
+   ],
+   "places": [
+    {
+     "locationId": "clanFortZero",
+     "kind": "clan_base",
+     "name": "Форт 14",
+     "u": 0.9,
+     "v": 0.2,
+     "road": true
+    }
+   ],
    "authored": false
   },
   {
@@ -712,7 +716,8 @@
     "north": {
      "to": "z_11_01",
      "open": true,
-     "along": 0.34
+     "along": 0.15,
+     "road": "zero_admin_access"
     },
     "south": {
      "to": "z_11_03",
@@ -722,7 +727,8 @@
     "west": {
      "to": "z_10_02",
      "open": true,
-     "along": 0.496
+     "along": 0.15,
+     "road": "zero_admin_access"
     },
     "east": {
      "to": "z_12_02",
@@ -730,7 +736,9 @@
      "along": 0.407
     }
    },
-   "roads": [],
+   "roads": [
+    "zero_admin_access"
+   ],
    "places": [],
    "authored": false
   },
@@ -1958,16 +1966,7 @@
    "roads": [
     "zero_service_line"
    ],
-   "places": [
-    {
-     "locationId": "clanChalkSluice",
-     "kind": "clan_base",
-     "name": "Меловой шлюз",
-     "u": 0.35,
-     "v": 0.4,
-     "road": true
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -3371,7 +3370,16 @@
    "roads": [
     "tract_main"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "clanChalkSluice",
+     "kind": "clan_base",
+     "name": "Меловой шлюз",
+     "u": 0.5,
+     "v": 0.5,
+     "road": true
+    }
+   ],
    "authored": false
   },
   {
@@ -4104,7 +4112,16 @@
     }
    },
    "roads": [],
-   "places": [],
+   "places": [
+    {
+     "locationId": "vectorLab",
+     "kind": "complex",
+     "name": "Объект «Вектор»",
+     "u": 0.5,
+     "v": 0.5,
+     "road": false
+    }
+   ],
    "authored": false
   },
   {
@@ -4562,7 +4579,16 @@
    "roads": [
     "tract_main"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "clanOreExchange",
+     "kind": "clan_base",
+     "name": "Рудный перевал",
+     "u": 0.5,
+     "v": 0.5,
+     "road": false
+    }
+   ],
    "authored": false
   },
   {
@@ -4981,7 +5007,16 @@
     }
    },
    "roads": [],
-   "places": [],
+   "places": [
+    {
+     "locationId": "resourceScrapFields",
+     "kind": "resource",
+     "name": "Сортировочные поля",
+     "u": 0.5,
+     "v": 0.5,
+     "road": true
+    }
+   ],
    "authored": false
   },
   {
@@ -5095,16 +5130,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "resourceScrapFields",
-     "kind": "resource",
-     "name": "Сортировочные поля",
-     "u": 0.9,
-     "v": 0.8,
-     "road": true
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -5431,7 +5457,16 @@
    "roads": [
     "ore_freight_rail"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "clanRelayEast",
+     "kind": "clan_base",
+     "name": "Ретранслятор В-9",
+     "u": 0.5,
+     "v": 0.5,
+     "road": false
+    }
+   ],
    "authored": false
   },
   {
@@ -5628,16 +5663,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "clanRelayEast",
-     "kind": "clan_base",
-     "name": "Ретранслятор В-9",
-     "u": 0.9,
-     "v": 0.2,
-     "road": false
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -5890,7 +5916,16 @@
    "roads": [
     "ore_freight_rail"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "clanFactoryCycle",
+     "kind": "clan_base",
+     "name": "Цех обратного цикла",
+     "u": 0.5,
+     "v": 0.5,
+     "road": false
+    }
+   ],
    "authored": false
   },
   {
@@ -6076,7 +6111,16 @@
    "roads": [
     "ore_freight_rail"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "clanHydroNode2",
+     "kind": "clan_base",
+     "name": "ГЭС-2",
+     "u": 0.5,
+     "v": 0.5,
+     "road": false
+    }
+   ],
    "authored": false
   },
   {
@@ -6874,16 +6918,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "vectorLab",
-     "kind": "complex",
-     "name": "Объект «Вектор»",
-     "u": 0.9,
-     "v": 0.25,
-     "road": false
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -7076,16 +7111,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "clanFactoryCycle",
-     "kind": "clan_base",
-     "name": "Цех обратного цикла",
-     "u": 0.4,
-     "v": 0.2,
-     "road": false
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -7457,16 +7483,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "clanOreExchange",
-     "kind": "clan_base",
-     "name": "Рудный перевал",
-     "u": 0.2,
-     "v": 0.25,
-     "road": false
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -7725,16 +7742,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "clanHydroNode2",
-     "kind": "clan_base",
-     "name": "ГЭС-2",
-     "u": 0.6,
-     "v": 0.15,
-     "road": false
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {

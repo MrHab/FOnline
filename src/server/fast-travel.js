@@ -13,7 +13,8 @@ const DEFAULT_RULES = Object.freeze({
   baseFee: 40,
   feePerKm: 0.5,
   combatLockMs: 15000,
-  blockedCategories: Object.freeze(['artifacts'])
+  blockedCategories: Object.freeze(['artifacts']),
+  excludeLocations: Object.freeze([])
 });
 
 function finite(value, fallback, min, max) {
@@ -24,12 +25,22 @@ function finite(value, fallback, min, max) {
 function normalizeFastTravelRules(raw = {}) {
   const src = raw && typeof raw === 'object' ? raw : {};
   const categories = Array.isArray(src.blockedCategories) ? src.blockedCategories : DEFAULT_RULES.blockedCategories;
+  const excluded = Array.isArray(src.excludeLocations) ? src.excludeLocations : DEFAULT_RULES.excludeLocations;
   return Object.freeze({
     baseFee: Math.round(finite(src.baseFee, DEFAULT_RULES.baseFee, 0, 100000)),
     feePerKm: finite(src.feePerKm, DEFAULT_RULES.feePerKm, 0, 1000),
     combatLockMs: Math.round(finite(src.combatLockMs, DEFAULT_RULES.combatLockMs, 0, 600000)),
-    blockedCategories: Object.freeze(categories.map(value => String(value || '').replace(/[^a-zA-Z0-9_-]/g, '')).filter(Boolean))
+    blockedCategories: Object.freeze(categories.map(value => String(value || '').replace(/[^a-zA-Z0-9_-]/g, '')).filter(Boolean)),
+    excludeLocations: Object.freeze(excluded.map(value => String(value || '').replace(/[^a-zA-Z0-9_-]/g, '')).filter(Boolean))
   });
+}
+
+/**
+ * Держит ли столица диспетчера. Столица, исключённая правилами (Баланс — не
+ * город фракции), в сеть переноса не входит ни отправной точкой, ни целью.
+ */
+function fastTravelServes(rules, locationId) {
+  return !(rules?.excludeLocations || []).includes(String(locationId || ''));
 }
 
 /** Расстояние между зонами по прямой, км. */
@@ -47,9 +58,10 @@ function fastTravelFee(rules, fromZone, toZone) {
  * name, zone}], где zone — зона столицы в графе ({col, row}).
  */
 function fastTravelDestinations(rules, capitals = [], fromLocationId = '', feeMultiplier = 1) {
-  const from = capitals.find(row => row.locationId === fromLocationId);
+  const served = capitals.filter(row => fastTravelServes(rules, row.locationId));
+  const from = served.find(row => row.locationId === fromLocationId);
   if (!from) return [];
-  return capitals
+  return served
     .filter(row => row.locationId !== fromLocationId)
     .map(row => ({
       locationId: row.locationId,
@@ -67,7 +79,7 @@ function fastTravelDestinations(rules, capitals = [], fromLocationId = '', feeMu
 function fastTravelRefusal(trip = {}) {
   const rules = trip.rules || DEFAULT_RULES;
   const capitals = Array.isArray(trip.capitals) ? trip.capitals : [];
-  if (!capitals.some(row => row.locationId === trip.fromLocationId)) return 'Диспетчер переноса есть только в столицах фракций.';
+  if (!capitals.some(row => row.locationId === trip.fromLocationId && fastTravelServes(rules, row.locationId))) return 'Диспетчер переноса есть только в столицах фракций.';
   const destination = fastTravelDestinations(rules, capitals, trip.fromLocationId, trip.feeMultiplier ?? 1).find(row => row.locationId === trip.toLocationId);
   if (!destination) return 'Туда диспетчер не отправляет: перенос идёт только между столицами.';
   const now = Number(trip.now || Date.now());
@@ -87,6 +99,7 @@ module.exports = {
   fastTravelDestinations,
   fastTravelFee,
   fastTravelRefusal,
+  fastTravelServes,
   normalizeFastTravelRules,
   zoneDistanceKm
 };

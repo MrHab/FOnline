@@ -797,7 +797,7 @@
       "id": "clanHydroNode2",
       "displayName": "ГЭС-2",
       "locationType": "clan_base",
-      "macroRegion": "northern_sluices",
+      "macroRegion": "middle_vein",
       "visualProfile": "clan-hydro-node-two-v1",
       "anomalyDensity": 0.12,
       "landmarkTags": [
@@ -831,7 +831,7 @@
       "id": "clanOreExchange",
       "displayName": "Рудный перевал",
       "locationType": "clan_base",
-      "macroRegion": "ore_arc",
+      "macroRegion": "middle_vein",
       "visualProfile": "clan-ore-transfer-v1",
       "anomalyDensity": 0.17,
       "landmarkTags": [
@@ -848,7 +848,7 @@
       "id": "clanFactoryCycle",
       "displayName": "Цех обратного цикла",
       "locationType": "clan_base",
-      "macroRegion": "ore_arc",
+      "macroRegion": "middle_vein",
       "visualProfile": "clan-reagent-cycle-v1",
       "anomalyDensity": 0.2,
       "landmarkTags": [

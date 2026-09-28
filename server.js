@@ -268,7 +268,7 @@ const { entryKeyForDirection: dangerEntryKeyForDirection } = require('./src/serv
 const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
 const { createZoneRuntime } = require('./src/server/zone-runtime');
 const { TILES: CITY_TILES, WALL_HALF: CITY_WALL_HALF } = require('./src/server/city-builder');
-const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
+const { fastTravelDestinations, fastTravelRefusal, fastTravelServes, normalizeFastTravelRules } = require('./src/server/fast-travel');
 const { migrateSaveStateToZones } = require('./src/server/zone-migration');
 const { zoneAtPoint, zoneById, zoneLocationId, zoneOfLocation, zoneOfPlace, zoneRecipe } = require('./src/server/zone-graph');
 const { portalSignature, zonePortals } = require('./src/server/zone-portals');
@@ -17777,6 +17777,7 @@ function spawnAuthoredLocationActors(room, loc) {
  */
 function serverSpawnFastTravelDispatcher(room, loc) {
   if (!room || !loc || !(ZONE_RUNTIME.graph.capitals || []).includes(loc.id)) return 0;
+  if (!fastTravelServes(FAST_TRAVEL_RULES, loc.id)) return 0;
   const dims = locationTileDims(loc);
   // В городе-секторе диспетчер стоит у площади, а не у точки входа.
   const anchor = loc.cityPlan?.dispatcher || loc.entryFromWorld || loc.spawn

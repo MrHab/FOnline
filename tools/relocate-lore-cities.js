@@ -28,8 +28,22 @@ const MOVES = {
   settlement: { x: 210, y: 150, region: 'middle_vein' },        // z_10_07 — центр
   // Места, что стояли в новых секторах городов: город занимает сектор целиком.
   resourceOilPump: { x: 168, y: 34, region: 'zero_basin' },     // z_08_01 (библия, 6)
-  coreBaseLeague: { x: 210, y: 127, region: 'tract_isthmus' }   // z_10_06, рядом с Ключами
+  coreBaseLeague: { x: 210, y: 127, region: 'tract_isthmus' },  // z_10_06, рядом с Ключами
+  // Клановые базы — только в красных зонах (библия, 4.3), внутри — чёрная локация.
+  clanHydroNode2: { x: 230, y: 210, region: 'middle_vein' },     // z_11_10
+  clanOreExchange: { x: 170, y: 170, region: 'middle_vein' },    // z_08_08
+  clanFactoryCycle: { x: 150, y: 210, region: 'middle_vein' },   // z_07_10
+  clanRelayEast: { x: 250, y: 190, region: 'glasslands' },       // z_12_09
+  clanChalkSluice: { x: 290, y: 130, region: 'chalk_lowland' },  // z_14_06
+  clanFortZero: { x: 218, y: 44, region: 'zero_basin' },         // z_10_02, конец южной служебной дороги
+  // Места по таблице раздела 6: «Вектор» — в красный клин, поля — в синие у Раздолья.
+  vectorLab: { x: 290, y: 150, region: 'glasslands' },           // z_14_07
+  resourceScrapFields: { x: 50, y: 190, region: 'ore_arc' }      // z_02_09
 };
+
+// Клановые базы — чёрные локации: внутри выпадает всё (библия, 4.3 и 16.5).
+const CLAN_BASES = ['clanHydroNode2', 'clanFilterT6', 'clanOreExchange', 'clanFactoryCycle',
+  'clanDepotBypass', 'clanRelayEast', 'clanChalkSluice', 'clanFortZero'];
 
 // Железная ветвь по лору связывает Рудную дугу, Ключи и Стеколье: продлевается
 // до Контура-3. Дорога к Топливной рампе кончается у рампы.
@@ -42,6 +56,12 @@ function patchRoutes(routes) {
     }
     if (route.id === 'fuel_ramp_access') {
       route.points[route.points.length - 1] = [MOVES.resourceOilPump.x, MOVES.resourceOilPump.y];
+    }
+    // Южная служебная дорога доходит до Форта 14 на его новом месте.
+    if (route.id === 'zero_admin_access') {
+      const last = route.points[route.points.length - 1];
+      const fort = MOVES.clanFortZero;
+      if (last[0] !== fort.x || last[1] !== fort.y) route.points.push([fort.x, fort.y]);
     }
   }
 }
@@ -86,6 +106,13 @@ for (const [id, move] of Object.entries(MOVES)) {
   patchRegionText('data/kromka/locations.json', id, move.region);
   const rel = `data/locations/${id}.json`;
   if (fs.existsSync(file(rel))) patchRegionText(rel, id, move.region);
+}
+
+for (const id of CLAN_BASES) {
+  const rel = `data/locations/${id}.json`;
+  const text = fs.readFileSync(file(rel), 'utf8');
+  const next = text.replace(/("pvpMode": ")[a-zA-Z]+(")/, '$1pvpBlack$2');
+  if (next !== text) fs.writeFileSync(file(rel), next);
 }
 
 const territory = read('data/kromka/territory.json');

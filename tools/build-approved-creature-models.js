@@ -139,6 +139,26 @@ const APPROVED_CREATURES = [
     expected: { meshes: 1, vertices: 6788, triangles: 2498, materials: 7, images: 21, channels: 888, joints: 49 }
   },
   {
+    id: 'npc_lantern_stag',
+    label: 'Фонарник',
+    species: 'lantern',
+    outputFile: 'npc_lantern_stag.glb',
+    reviewDirectory: fromRoot('docs', 'art', 'reviews', 'lantern-stag-v1', 'lantern'),
+    reviewFile: 'creature_lantern_stag_v1.glb',
+    reviewReport: 'creature_lantern_stag_v1-report.json',
+    approvalFile: 'CRITIC_APPROVAL_V1.md',
+    approvedReviewSha256: '5DC0CBFBF881CEF4A444A24C0C4B620594E4688B068EC34950592A96368306A9',
+    expectedRuntimeSha256: '7264FDF1F96E0B530B3C868580D88E57C208362B48268136D2CF97A993BFE8A0',
+    generator: fromRoot('tools', 'blender', 'build_quaternius_lantern_stag_review.py'),
+    sourceGlb: fromRoot(
+      'source-assets', 'quaternius', 'ultimate-animated-animals', 'stag', 'Stag.glb'
+    ),
+    sourceBlend: null,
+    builderArgs: [],
+    runtimeScaleMultiplier: 1,
+    expected: { meshes: 2, vertices: 10961, triangles: 3667, materials: 5, images: 15, channels: 690, joints: 38 }
+  },
+  {
     id: 'npc_super_mutant',
     label: 'Супермутант',
     species: 'super_mutant',

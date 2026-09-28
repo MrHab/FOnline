@@ -1,0 +1,222 @@
+{
+  "assetId": "creature_lantern_stag_v1",
+  "file": "creature_lantern_stag_v1.glb",
+  "boundsIdleMetres": {
+    "minimum": [
+      -0.483758,
+      -1.112367,
+      -0.05851
+    ],
+    "maximum": [
+      0.479954,
+      0.839729,
+      2.115266
+    ],
+    "size": [
+      0.963712,
+      1.952096,
+      2.173776
+    ]
+  },
+  "collider": {
+    "type": "box",
+    "size": [
+      0.963712,
+      1.952096,
+      2.173776
+    ],
+    "center": [
+      -0.001902,
+      -0.136319,
+      1.028378
+    ]
+  },
+  "rig": {
+    "armatures": 1,
+    "boneCount": 38,
+    "deformingBones": 38
+  },
+  "requiredAnimations": [
+    "idle",
+    "walk",
+    "run",
+    "attack",
+    "hurt",
+    "death"
+  ],
+  "actualGlb": {
+    "meshDefinitions": 2,
+    "positionVertices": 10961,
+    "triangles": 3667,
+    "materials": 5,
+    "textures": 15,
+    "skins": 1,
+    "skinJointCounts": [
+      38
+    ],
+    "animations": [
+      "attack",
+      "death",
+      "hurt",
+      "idle",
+      "run",
+      "walk"
+    ],
+    "nodes": [
+      "Head",
+      "Neck3",
+      "Neck2",
+      "Neck1",
+      "Torso3",
+      "FrontLowerLeg.L",
+      "FrontUpperLeg.L",
+      "FrontShoulder.L",
+      "FrontLowerLeg.R",
+      "FrontUpperLeg.R",
+      "FrontShoulder.R",
+      "Torso2",
+      "Torso",
+      "BackLowerLeg.L",
+      "BackUpperLeg.L",
+      "BackLeg.L",
+      "BackShoulder.L",
+      "BackLowerLeg.R",
+      "BackUpperLeg.R",
+      "BackLeg.R",
+      "BackShoulder.R",
+      "Tail3",
+      "Tail2",
+      "Tail1",
+      "Back",
+      "PoleTargetBack.L",
+      "PoleTarget.L",
+      "PoleTargetBack.R",
+      "PoleTarget.R",
+      "Body",
+      "FFB.L",
+      "IKBackLeg.L",
+      "FF.L",
+      "IKFrontLeg.L",
+      "FFB.R",
+      "IKBackLeg.R",
+      "FF.R",
+      "IKFrontLeg.R",
+      "lantern_quaternius_stag_body",
+      "lantern_symbiont_antlers",
+      "lantern_quaternius_rig",
+      "creature_lantern_stag_v1"
+    ]
+  },
+  "geometryAnalysis": {
+    "primaryBodyConnectedComponents": 1076,
+    "sourceVertices": 4203,
+    "sourceTriangles": 2051,
+    "antlerTriangles": 1616,
+    "antlerPolygons": 1616,
+    "flatShaded": true,
+    "materialPolygonCounts": {
+      "fur": 930,
+      "underfur": 825,
+      "hooves": 252,
+      "eyes": 44
+    },
+    "skinInfluenceNormalization": {
+      "verticesLimitedToFourInfluences": 0,
+      "maximumInfluencesBefore": 4,
+      "maximumInfluencesAfter": 4
+    },
+    "donorRigTransform": {
+      "bakedArmatureScale": 38.0,
+      "unitScale": 0.38,
+      "scaledLocationCurves": 444
+    }
+  },
+  "actions": {
+    "sourceToRuntime": {
+      "idle": "AnimalArmature|Idle",
+      "walk": "AnimalArmature|Walk",
+      "run": "AnimalArmature|Gallop",
+      "attack": "AnimalArmature|Attack_Headbutt",
+      "hurt": "AnimalArmature|Idle_HitReact_Left",
+      "death": "AnimalArmature|Death"
+    },
+    "runtimeRanges": {
+      "idle": [
+        0.0,
+        80.0
+      ],
+      "walk": [
+        0.0,
+        28.0
+      ],
+      "run": [
+        0.0,
+        12.0
+      ],
+      "attack": [
+        0.0,
+        19.0
+      ],
+      "hurt": [
+        0.0,
+        11.0
+      ],
+      "death": [
+        0.0,
+        26.0
+      ]
+    },
+    "authoredMotion": "Quaternius quadruped idle, walk, gallop, headbutt, hit reaction and death, baked by the donor glTF export"
+  },
+  "groundContactCorrections": {
+    "actions": {
+      "idle": {
+        "sampledFrames": 81,
+        "minimumBeforeMetres": 0.0,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.0
+      },
+      "walk": {
+        "sampledFrames": 29,
+        "minimumBeforeMetres": -0.019677,
+        "minimumAfterMetres": -1e-06,
+        "maximumVerticalCorrectionMetres": 0.021177
+      },
+      "run": {
+        "sampledFrames": 13,
+        "minimumBeforeMetres": -0.041505,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.043005
+      },
+      "attack": {
+        "sampledFrames": 20,
+        "minimumBeforeMetres": -0.0242,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.0257
+      },
+      "hurt": {
+        "sampledFrames": 12,
+        "minimumBeforeMetres": -0.0242,
+        "minimumAfterMetres": 0.0015,
+        "maximumVerticalCorrectionMetres": 0.0257
+      },
+      "death": {
+        "sampledFrames": 27,
+        "minimumBeforeMetres": -0.258393,
+        "minimumAfterMetres": -0.0,
+        "maximumVerticalCorrectionMetres": 0.259893
+      }
+    }
+  },
+  "provenance": {
+    "donor": "Quaternius Ultimate Animated Animals / Stag (official glTF, poly.pizza)",
+    "donorSha256": "3C2DF7C13A3D37C8660684E46AA1E5A2BF7E91A9B279983921D48BD93D0B67ED",
+    "license": "CC0 1.0 Universal",
+    "geometry": "unaltered donor topology; antlers stay a Head-bone child",
+    "animations": "Quaternius Idle, Walk, Gallop, Attack_Headbutt, Idle_HitReact_Left, Death",
+    "materials": "original Realm of Ashes B+C packed 512 px PBR textures; emissive symbiont antlers"
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "5DC0CBFBF881CEF4A444A24C0C4B620594E4688B068EC34950592A96368306A9"
+}

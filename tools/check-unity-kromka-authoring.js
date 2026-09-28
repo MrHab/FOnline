@@ -214,12 +214,13 @@ includes(sovietCc0License, [
 
 const positions = new Map(seed.locations.map(row => [row.id, row]));
 for (const [id, x, z] of [
-  ['sluiceCity', 186, 262],
-  ['settlement', 195, 205],
-  ['scrapTown', 76, 210],
-  ['caravanCamp', 125, 155],
-  ['relayStation', 284, 181],
-  ['secondHaven', 297, 110],
+  // Города — пятиугольником вокруг Ключей (библия, 4.4): центры своих секторов.
+  ['sluiceCity', 170, 270],
+  ['settlement', 210, 150],
+  ['scrapTown', 70, 170],
+  ['caravanCamp', 155, 52],
+  ['relayStation', 310, 210],
+  ['secondHaven', 290, 70],
   ['cascadeRegenerator', 205, 65]
 ]) {
   const point = positions.get(id);

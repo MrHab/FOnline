@@ -45,8 +45,13 @@ for (const zone of graph.zones) {
   if (eventZone && groundsZone) break;
   // Города собирает свой конструктор — здесь нужны обычные зоны пустоши.
   if (zone.city) continue;
-  const definition = buildZone(zoneRecipe(graph, zone.id), catalog);
-  if (!(definition.zone.eventAnchors || []).length) continue;
+  // Сервер берёт закреплённый сектор из data/zones/authored, а не свежую сборку:
+  // конструктор с тех пор мог поменяться, и якоря разошлись бы.
+  const authored = path.join(root, 'data', 'zones', 'authored', `${zone.id}.json`);
+  const definition = fs.existsSync(authored)
+    ? JSON.parse(fs.readFileSync(authored, 'utf8'))
+    : buildZone(zoneRecipe(graph, zone.id), catalog);
+  if (!(definition.zone?.eventAnchors || []).length) continue;
   if (!eventZone && zone.mode === 'pvp' && !insideGrounds(zone)) { eventZone = zone; built[zone.id] = definition; }
   if (!groundsZone && insideGrounds(zone)) { groundsZone = zone; built[zone.id] = definition; }
 }

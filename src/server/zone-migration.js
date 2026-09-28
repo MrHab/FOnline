@@ -55,6 +55,16 @@ function migrateSaveStateToZones(state, graph) {
       Object.assign(result, { changed: true, zoneId: zoneLocationId(zone), reason: onMap ? 'globalMap' : 'dangerCell' });
     }
   }
+  // Сектор, который занял переехавший город (библия, 4.4), больше не зона: кто
+  // сохранился в нём, просыпается в этом городе, у его центра.
+  const saved = String(state.currentLocationId || '');
+  const taken = !result.changed && saved ? graph.zones.find(zone => zone.id === saved && zone.city) : null;
+  if (taken) {
+    state.currentLocationId = taken.city;
+    state.player = { ...(state.player || {}), x: 0, z: 0 };
+    delete state.serverLocationContext;
+    Object.assign(result, { changed: true, zoneId: taken.id, reason: 'sectorBecameCity' });
+  }
   // Следы путешествия по карте больше ничего не значат.
   for (const key of ['globalMap', 'pendingWorldDrop', 'attachedPartyId']) {
     if (key in state) {

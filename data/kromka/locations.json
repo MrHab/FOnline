@@ -67,7 +67,7 @@
       "id": "caravanCamp",
       "displayName": "Перекрёсток",
       "locationType": "caravan_hub",
-      "macroRegion": "tract_isthmus",
+      "macroRegion": "zero_basin",
       "visualProfile": "crossroads-caravan-yard-v1",
       "anomalyDensity": 0.05,
       "landmarkTags": [
@@ -1262,7 +1262,7 @@
       "id": "coreBaseLeague",
       "displayName": "Узел Лиги",
       "locationType": "settlement",
-      "macroRegion": "middle_vein",
+      "macroRegion": "tract_isthmus",
       "visualProfile": "territory-base-tract_league-v1",
       "anomalyDensity": 0,
       "landmarkTags": [

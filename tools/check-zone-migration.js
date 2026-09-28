@@ -68,5 +68,16 @@ for (const harsh of [red, black]) {
   assert.equal(migrateSaveStateToZones(state, graph).changed, false, 'migration is idempotent');
   assert(zoneOfPlace(graph, 'settlement'), 'Keys stands in a zone its edge leads to');
 }
+// Сектор, который занял переехавший город: персонаж просыпается в самом городе.
+{
+  const sector = graph.zones.find(zone => zone.city);
+  const state = { currentLocationId: sector.id, player: { x: 40, z: -12 }, serverLocationContext: { locationId: sector.id } };
+  const out = migrateSaveStateToZones(state, graph);
+  assert.equal(out.reason, 'sectorBecameCity');
+  assert.equal(state.currentLocationId, sector.city, 'a save in a sector a city took over wakes in that city');
+  assert.deepEqual([state.player.x, state.player.z], [0, 0]);
+  assert(!state.serverLocationContext);
+  assert.equal(migrateSaveStateToZones(state, graph).changed, false, 'and a second run changes nothing');
+}
 
-console.log(`Zone migration OK: map characters land in the zone of their point (red and black move to the nearest blue or peaceful zone), cell scenes too, places stay, the map state is dropped and a second run changes nothing.`);
+console.log(`Zone migration OK: map characters land in the zone of their point (red and black move to the nearest blue or peaceful zone), cell scenes too, places stay, a sector a city took over wakes in the city, the map state is dropped and a second run changes nothing.`);

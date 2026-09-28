@@ -116,8 +116,9 @@ for (const capital of graph.capitals) {
   }
 }
 assert.equal(route(graph, keys.id, 'z_99_99'), null);
-// Дороги карты идут по воротам: у зоны Ключей дорога выходит и на север, и на юг.
-assert(keys.edges.north.road && keys.edges.south.road, 'the Tesma road crosses the Keys zone north to south');
+// Дороги карты идут по воротам: через Ключи в центре (библия, 4.4) дорога
+// проходит насквозь — входит одними воротами и выходит другими.
+assert(Object.values(keys.edges).filter(edge => edge.open && edge.road).length >= 2, 'a map road runs through the Keys zone');
 
 // --- стык с конструктором: собирается каждая зона мира, ворота соседей сходятся -----------
 const catalog = loadZoneCatalog(path.join(root, 'data', 'zones'));

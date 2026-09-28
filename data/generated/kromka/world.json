@@ -435,8 +435,8 @@
     },
     {
       "id": "sluiceCity",
-      "x": 186,
-      "y": 262,
+      "x": 170,
+      "y": 270,
       "kind": "settlement",
       "locationCount": 1,
       "locationId": "sluiceCity",
@@ -475,8 +475,8 @@
     },
     {
       "id": "settlement",
-      "x": 195,
-      "y": 205,
+      "x": 210,
+      "y": 150,
       "kind": "settlement",
       "locationCount": 1,
       "locationId": "settlement",
@@ -575,8 +575,8 @@
     },
     {
       "id": "scrapTown",
-      "x": 76,
-      "y": 210,
+      "x": 70,
+      "y": 170,
       "kind": "settlement",
       "locationCount": 1,
       "locationId": "scrapTown",
@@ -735,8 +735,8 @@
     },
     {
       "id": "caravanCamp",
-      "x": 125,
-      "y": 155,
+      "x": 155,
+      "y": 52,
       "kind": "settlement",
       "locationCount": 1,
       "locationId": "caravanCamp",
@@ -748,7 +748,7 @@
       "modelScale": 1,
       "rotationY": 0,
       "note": "Перекрёсток. route-pylon, cargo-crane.",
-      "macroRegion": "tract_isthmus",
+      "macroRegion": "zero_basin",
       "visualProfile": "crossroads-caravan-yard-v1",
       "worldRevision": "kromka-1",
       "roadAccess": true
@@ -855,8 +855,8 @@
     },
     {
       "id": "secondHaven",
-      "x": 297,
-      "y": 110,
+      "x": 290,
+      "y": 70,
       "kind": "settlement",
       "locationCount": 1,
       "locationId": "secondHaven",
@@ -895,8 +895,8 @@
     },
     {
       "id": "relayStation",
-      "x": 284,
-      "y": 181,
+      "x": 310,
+      "y": 210,
       "kind": "settlement",
       "locationCount": 1,
       "locationId": "relayStation",
@@ -1055,8 +1055,8 @@
     },
     {
       "id": "resourceOilPump",
-      "x": 147,
-      "y": 56,
+      "x": 168,
+      "y": 34,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceOilPump",
@@ -1255,8 +1255,8 @@
     },
     {
       "id": "coreBaseLeague",
-      "x": 206,
-      "y": 141,
+      "x": 210,
+      "y": 127,
       "kind": "settlement",
       "locationCount": 1,
       "locationId": "coreBaseLeague",
@@ -1268,7 +1268,7 @@
       "modelScale": 1,
       "rotationY": 0,
       "note": "Узел Лиги. metro-gate, faction-yard.",
-      "macroRegion": "middle_vein",
+      "macroRegion": "tract_isthmus",
       "visualProfile": "territory-base-tract_league-v1",
       "worldRevision": "kromka-1",
       "roadAccess": true
@@ -1427,6 +1427,10 @@
         [
           275,
           185
+        ],
+        [
+          310,
+          210
         ]
       ]
     },
@@ -1540,8 +1544,8 @@
           57
         ],
         [
-          147,
-          56
+          168,
+          34
         ]
       ]
     },
@@ -1610,5 +1614,5 @@
       "spawnId": "keys-arrival"
     }
   ],
-  "contentHash": "d1297a4f9efdf6e2d30099567fa9214033c23a4ae6551974ad97264e0e6af66a"
+  "contentHash": "c5a2a3161da9cdc0b0649f636dba30809c8f983e2b7b972ea6331ea6dce38f4c"
 }

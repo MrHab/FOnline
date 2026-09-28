@@ -6583,10 +6583,14 @@ function serverPveAreaNodeYieldIds(area = {}) {
   const locationId = normalizeLocationId(area?.locationId || '');
   const loc = LOCATIONS[locationId];
   const tier = serverLocationTier(locationId);
+  // Растут только семейства угодий локации (узлы чужих семейств перекрашиваются).
+  const ground = serverLocationGrounds(locationId);
+  const targets = zoneGrounds.nodeTargets(ZONE_GROUNDS, ground,
+    Object.values(SERVER_TIER_RESOURCE_MINIMUM).reduce((sum, value) => sum + value, 0), '');
   const types = [
     ...(Array.isArray(loc?.objects) ? loc.objects : []).map(row => locationObjectResourceType(row)),
-    ...Object.keys(SERVER_TIER_RESOURCE_MINIMUM)
-  ].filter(type => SERVER_TIER_FAMILY_BY_RESOURCE.has(type));
+    ...Object.keys(targets)
+  ].filter(type => SERVER_TIER_FAMILY_BY_RESOURCE.has(type) && Number(targets[type] || 0) > 0);
   return [...new Set(types)].map(type => SERVER_TIER_FAMILY_BY_RESOURCE.get(type).raw.ids[tier - 1]);
 }
 

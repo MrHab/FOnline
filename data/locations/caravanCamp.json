@@ -15,7 +15,7 @@
   "spawnCount": 0,
   "allowGlobalMapExit": true,
   "runtimeMode": "unity-authored",
-  "macroRegion": "tract_isthmus",
+  "macroRegion": "zero_basin",
   "ground": {
     "preset": "scrapDust"
   },

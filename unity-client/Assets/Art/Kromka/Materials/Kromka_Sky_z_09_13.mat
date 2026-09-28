@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Kromka_Sky_z_07_02
+  m_Name: Kromka_Sky_z_09_13
   m_Shader: {fileID: 106, guid: 0000000000000000f000000000000000, type: 0}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -32,7 +32,7 @@ Material:
     - _SunSize: 0.04
     - _SunSizeConvergence: 5
     m_Colors:
-    - _GroundColor: {r: 0.13858, g: 0.13694, b: 0.1271, a: 1}
-    - _SkyTint: {r: 0.20095, g: 0.21785, b: 0.22025001, a: 1}
+    - _GroundColor: {r: 0.17548, g: 0.19229001, b: 0.17507, a: 1}
+    - _SkyTint: {r: 0.22569999, g: 0.254975, b: 0.25242501, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -50,11 +50,29 @@ namespace RealmOfAshes.Game
             {
                 { "walk", 1.26f },
                 { "run", 3.72f },
-                { "walk_back", 1.20f },
-                { "run_back", 3.41f },
-                { "crouch_walk", 2.11f },
-                { "crouch_walk_back", 2.23f }
+                { "walk_back", 0.87f },
+                { "run_back", 2.22f },
+                { "crouch_run", 3.72f },
+                { "crouch_run_back", 2.23f },
+                // CMU (tools/import-cmu-clips.js печатает скорость хода клипа).
+                { "strafe_left", 0.55f },
+                { "strafe_right", 0.55f },
+                { "strafe_run_left", 1.40f },
+                { "strafe_run_right", 1.40f },
+                { "crouch_walk", 0.72f },
+                { "crouch_walk_back", 0.64f }
             };
+
+        // Сектор бокового шага: угол движения от прицела, градусы.
+        private const float StrafeSectorFromDeg = 55f;
+        private const float StrafeSectorToDeg = 125f;
+        private const float StrafeSectorHysteresisDeg = 6f;
+        // Выше — приставной шаг вместо бокового; выше StrafeMaxSpeed вбок не семенят.
+        private const float StrafeRunSpeed = 1.0f;
+        private const float StrafeMaxSpeed = 3.2f;
+        // Выше — бег пригнувшись (UAL) вместо шага в приседе (CMU).
+        private const float CrouchRunSpeed = 2.0f;
+        private const float BackRunSpeed = 1.6f;
 
         private const float StrideSyncMin = 0.6f;
         private const float StrideSyncMax = 2.9f;
@@ -95,6 +113,7 @@ namespace RealmOfAshes.Game
         private readonly HashSet<string> _clips = new HashSet<string>();
         private string _currentClip = string.Empty;
         private bool _backward;
+        private bool _strafing;
 
         private readonly RoaCharacterPose _pose = new RoaCharacterPose();
         private readonly RoaHitReaction _hitReaction = new RoaHitReaction();
@@ -197,6 +216,7 @@ namespace RealmOfAshes.Game
 
         /// <summary>Длительность вспышки удара по умолчанию, с.</summary>
         private const float AttackSeconds = 0.45f;
+        private const float CrossSeconds = 0.52f;
         private const int HeavyHitDamage = 25;
         private const float DeathImpactMemorySeconds = 0.9f;
 
@@ -231,6 +251,18 @@ namespace RealmOfAshes.Game
 
         /// <summary>Клип, который играет сейчас. Для диагностики.</summary>
         public string CurrentClip { get { return _currentClip; } }
+
+        /// <summary>Доля пройденного текущего клипа, 0..1 (у петли — внутри цикла).</summary>
+        public float CurrentClipPhase
+        {
+            get
+            {
+                AnimationState state = _animation != null && !string.IsNullOrEmpty(_currentClip) ? _animation[_currentClip] : null;
+                if (state == null || state.length <= 0f) return 0f;
+                float phase = state.time / state.length;
+                return state.wrapMode == WrapMode.Loop ? Mathf.Repeat(phase, 1f) : Mathf.Clamp01(phase);
+            }
+        }
         public string BodyKey { get { return _bodyKey; } }
         public bool HasBrokenArmVisual { get { return _brokenArm; } }
         public bool HasBrokenLegVisual { get { return _brokenLeg; } }
@@ -618,10 +650,11 @@ namespace RealmOfAshes.Game
 
             if (!Ready || !_clips.Contains("attack")) return;
 
-            _attackUntil = Time.time + AttackSeconds;
             _actionUntil = 0f;
             // Джеб и кросс чередуются: серия ударов не выглядит одним повтором.
             _attackClip = _alternateAttack && _clips.Contains("punch_cross") ? "punch_cross" : "attack";
+            // Кросс длиннее джеба: удар доходит до конца, а не обрывается на вытянутой руке.
+            _attackUntil = Time.time + (_attackClip == "punch_cross" ? CrossSeconds : AttackSeconds);
             _alternateAttack = !_alternateAttack;
 
             // Перезапуск с нуля: очередь выстрелов должна давать удар на каждый,
@@ -677,10 +710,10 @@ namespace RealmOfAshes.Game
             if (_presentationTier == RoaActorPresentationTier.Near)
                 _hitReaction.Trigger(transform, sourceWorld, hasSource, damage, critical);
 
-            // Во время движения ноги продолжают текущий gait; направленный
-            // процедурный слой даёт реакцию без полнотелого скольжения hurt-клипа.
-            bool fullBody = !_hitReaction.Ready || _presentationTier != RoaActorPresentationTier.Near
-                || !_locomoting;
+            // Ноги продолжают текущий gait или стойку; направленный процедурный слой
+            // даёт реакцию всей цепью позвоночника и тазом. Клипы hurt/hit_head (UAL)
+            // дёргают одну шею — они остались дальнему LOD, где слоя нет.
+            bool fullBody = !_hitReaction.Ready || _presentationTier != RoaActorPresentationTier.Near;
             if (!fullBody || !_clips.Contains("hurt"))
             {
                 _hurtUntil = 0f;
@@ -922,8 +955,13 @@ namespace RealmOfAshes.Game
             float surfaceMinY = hasMeshBounds ? meshMinY : minY;
             float targetClearance = hasMeshBounds
                 ? DeathMeshGroundClearanceMeters : DeathContactHeightMeters;
-            float correction = Mathf.Clamp(groundY + targetClearance - surfaceMinY,
+            float settled = Mathf.Clamp(groundY + targetClearance - surfaceMinY,
                 -DeathMaximumGroundCorrectionMeters, DeathMaximumGroundCorrectionMeters);
+            // Пока тело падает, рамка меша — грубая коробка скина и тянет его вверх
+            // («подскок» в начале смерти). В падении кости лишь не уходят под пол,
+            // к лёжа поправка переходит целиком.
+            float falling = float.IsInfinity(minY) ? 0f : Mathf.Max(0f, groundY - minY);
+            float correction = Mathf.Lerp(falling, settled, _deathPoseFrozen ? 1f : _deathSettleWeight * _deathSettleWeight);
             Vector3 local = transform.localPosition;
             local.y += correction;
             transform.localPosition = local;
@@ -1362,6 +1400,7 @@ namespace RealmOfAshes.Game
                 Turning = false;
                 _turnHold = 0f;
                 _backward = false;
+                _strafing = false;
                 _crouching = false;
                 if (Time.time >= _hurtUntil && Time.time >= _attackUntil)
                 {
@@ -1395,16 +1434,23 @@ namespace RealmOfAshes.Game
             float sideAmount = Mathf.Clamp(Vector3.Dot(move, right), -1f, 1f);
             float relativeAngle = Mathf.Atan2(sideAmount, forwardAmount);
 
-            _backward = actuallyMoving
+            // Боковой шаг — свой клип (CMU): ноги идут приставным шагом, корпус смотрит
+            // на прицел. Он возможен до StrafeMaxSpeed — быстрее вбок человек не
+            // семенит, а разворачивается и бежит; в приседе боковых клипов нет.
+            bool strafeAllowed = actuallyMoving && !crouching && speed <= StrafeMaxSpeed
+                && _clips.Contains("strafe_left") && _clips.Contains("strafe_right");
+            _strafing = strafeAllowed && IsStrafeSector(Mathf.Abs(relativeAngle) * Mathf.Rad2Deg, _strafing);
+            _backward = actuallyMoving && !_strafing
                 && (_backward ? forwardAmount < BackwardExit : forwardAmount < BackwardEnter);
+            int strafeSign = _strafing ? (relativeAngle > 0f ? 1 : -1) : 0;
 
             _locomoting = actuallyMoving || Turning;
             bool locomoting = _locomoting;
             bool fast = speed > RunSpeedThreshold;
 
-            // Ноги смотрят строго по пути: клип «вперёд» разворачивается на угол
-            // движения, клип «назад» — на противоположный. Обе ветки дают один и
-            // тот же непрерывный угол на границе режимов.
+            // Ноги смотрят по пути с поправкой на клип: «вперёд» разворачивается на
+            // угол движения, «назад» — на противоположный, боковой шаг — на угол
+            // от чистого бока (не больше ~40°). Корпус остаётся на прицеле.
             float lowerBodyYaw = 0f;
             if (Turning)
             {
@@ -1412,11 +1458,20 @@ namespace RealmOfAshes.Game
             }
             else if (actuallyMoving)
             {
-                float pathYaw = _backward ? WrapAngle(relativeAngle + Mathf.PI) : relativeAngle;
+                float pathYaw = _strafing ? relativeAngle - strafeSign * Mathf.PI * 0.5f
+                    : _backward ? WrapAngle(relativeAngle + Mathf.PI) : relativeAngle;
                 lowerBodyYaw = Mathf.Clamp(pathYaw, -LowerBodyYawClamp, LowerBodyYawClamp);
             }
+            else if (!crouching)
+            {
+                // Стойка стрелка — боком: ноги и таз развёрнуты к стороне оружия, левая
+                // нога впереди, корпус возвращается к прицелу скруткой.
+                lowerBodyYaw = ArmedStanceYaw();
+            }
 
-            string clip = SelectClip(actuallyMoving, crouching, _backward, fast);
+            string clip = strafeSign != 0
+                ? StrafeClip(strafeSign, speed)
+                : SelectClip(actuallyMoving, crouching, _backward, fast, speed);
 
             // Ближний LOD сохраняет gait даже если игрок начал двигаться уже
             // после попадания. На дальнем LOD остаётся дешёвый полнотелый клип.
@@ -1449,9 +1504,9 @@ namespace RealmOfAshes.Game
 
             _crouching = crouching;
 
-            // Клип приседа на месте уже сидит: процедурные просадка и наклон — только
-            // для приседа в движении (и для тела без такого клипа).
-            bool poseCrouch = crouching && clip != "crouch_idle";
+            // Стойка, шаг и бег в приседе уже сидят в клипах: процедурные просадка и
+            // наклон — только для бега спиной пригнувшись (UAL, таз почти на высоте шага).
+            bool poseCrouch = crouching && clip == "crouch_run_back";
             _pose.Step(locomoting, Turning, clip, lowerBodyYaw,
                 sideAmount, forwardAmount, _turnAmount, poseCrouch, false, dt,
                 contactWeight, contactForward, contactSide);
@@ -1523,6 +1578,7 @@ namespace RealmOfAshes.Game
 
                 // Строго после того, как анимация записала кадр, иначе она затрёт смещения.
                 _pose.Apply();
+                ApplyPunchDrive();
             }
             else
             {
@@ -1846,7 +1902,63 @@ namespace RealmOfAshes.Game
             _injuryIndicator.gameObject.SetActive(count > 0);
         }
 
-        private string SelectClip(bool moving, bool crouching, bool backward, bool fast)
+        /// <summary>
+        /// Сектор бокового шага по углу движения от прицела (0° — вперёд), с
+        /// гистерезисом, чтобы клип не мигал на границе.
+        /// </summary>
+        public static bool IsStrafeSector(float absAngleDeg, bool strafing)
+        {
+            float from = strafing ? StrafeSectorFromDeg - StrafeSectorHysteresisDeg : StrafeSectorFromDeg;
+            float to = strafing ? StrafeSectorToDeg + StrafeSectorHysteresisDeg : StrafeSectorToDeg;
+            return absAngleDeg > from && absAngleDeg < to;
+        }
+
+        /// <summary>
+        /// Удар идёт от бёдер: таз доворачивается к удару (джеб — вправо, кросс —
+        /// влево) и вес уходит на переднюю ногу, пятка задней проворачивается сама.
+        /// </summary>
+        private void ApplyPunchDrive()
+        {
+            bool jab = _currentClip == "attack", cross = _currentClip == "punch_cross";
+            if ((!jab && !cross) || Time.time >= _attackUntil) return;
+            if (!_bones.TryGetValue("pelvis", out Transform pelvis) || pelvis == null) return;
+            float phase = Mathf.Clamp01(CurrentClipPhase / 0.55f);
+            float drive = Mathf.Sin(phase * Mathf.PI);
+            float yaw = (jab ? 1f : -1f) * PunchHipYawDeg * drive;
+            pelvis.rotation = Quaternion.AngleAxis(yaw, transform.up) * pelvis.rotation;
+            pelvis.position += transform.forward * (PunchWeightShift * drive);
+            // Грудь не должна докручиваться сверх клипа: позвоночник возвращает половину.
+            if (_bones.TryGetValue("spine_02", out Transform chest) && chest != null)
+                chest.rotation = Quaternion.AngleAxis(-yaw * 0.5f, transform.up) * chest.rotation;
+        }
+
+        private const float PunchHipYawDeg = 13f;
+        private const float PunchWeightShift = 0.05f;
+
+        private float ArmedStanceYaw()
+        {
+            if (_weapon == null || !_weapon.HoldActive) return 0f;
+            string kind = _weapon.HoldKind;
+            if (kind == "LongGun" || kind == "SawedOff" || kind == "HipGun") return 0.38f;
+            if (kind == "Pistol" && _offhandWeapon == null) return 0.17f;
+            return 0f;
+        }
+
+        private string StrafeClip(int sign, float speed)
+        {
+            string side = sign > 0 ? "right" : "left";
+            // Приставной шаг быстрее обычного бокового: у клипа свои ноги и темп.
+            if (speed > StrafeRunSpeed && _clips.Contains("strafe_run_" + side)) return "strafe_run_" + side;
+            return "strafe_" + side;
+        }
+
+        private static bool IsStrafeClip(string clip)
+        {
+            return clip == "strafe_left" || clip == "strafe_right"
+                || clip == "strafe_run_left" || clip == "strafe_run_right";
+        }
+
+        private string SelectClip(bool moving, bool crouching, bool backward, bool fast, float speed)
         {
             if (!moving)
             {
@@ -1860,13 +1972,18 @@ namespace RealmOfAshes.Game
 
             if (crouching)
             {
+                // Шаг в приседе (CMU) медленный; быстрее — бег пригнувшись (UAL).
+                bool crouchRun = speed > CrouchRunSpeed;
+                if (backward && crouchRun && _clips.Contains("crouch_run_back")) return "crouch_run_back";
                 if (backward && _clips.Contains("crouch_walk_back")) return "crouch_walk_back";
+                if (crouchRun && _clips.Contains("crouch_run")) return "crouch_run";
                 if (_clips.Contains("crouch_walk")) return "crouch_walk";
             }
 
             if (backward)
             {
-                if (fast && _clips.Contains("run_back")) return "run_back";
+                // Назад быстро не шагают: выше BackRunSpeed — короткий частый бег спиной.
+                if (speed > BackRunSpeed && _clips.Contains("run_back")) return "run_back";
                 if (_clips.Contains("walk_back")) return "walk_back";
 
                 // Фолбэк web-клиента: клипов заднего хода нет — играем обычный
@@ -1883,7 +2000,9 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void ApplyTimeScale(string clip, bool moving, float speed, float sideAmount, float dt)
         {
-            bool authoredBackClip = clip == "walk_back" || clip == "run_back" || clip == "crouch_walk_back";
+            bool authoredBackClip = clip == "walk_back" || clip == "run_back" || clip == "crouch_walk_back"
+                || clip == "crouch_run_back"
+                || IsStrafeClip(clip);
             float sideStrength = Mathf.Abs(sideAmount);
 
             float playbackTarget;
@@ -1986,7 +2105,9 @@ namespace RealmOfAshes.Game
             AnimationState nextState = _animation[clip];
             if (preservePhase && nextState != null) nextState.normalizedTime = phase;
 
-            float fade = previous == "idle" || clip == "idle" ? 0.12f
+            // Из стойки после удара руки опускаются не рывком.
+            float fade = (previous == "attack" || previous == "punch_cross") && clip == "idle" ? 0.25f
+                : previous == "idle" || clip == "idle" ? 0.12f
                 : previous == "turn" || clip == "turn" ? 0.10f
                 : preservePhase ? 0.18f
                 : 0.14f;
@@ -2008,8 +2129,8 @@ namespace RealmOfAshes.Game
 
         private static float LocomotionPhaseOffset(string clip)
         {
-            return clip == "run" || clip == "run_back"
-                || clip == "crouch_walk" || clip == "crouch_walk_back"
+            // Ход назад укорочен и идёт в фазе с шагом назад — без сдвига.
+            return clip == "run" || clip == "crouch_run" || clip == "crouch_run_back"
                 ? FastGaitPhaseOffset : 0f;
         }
 
@@ -2017,7 +2138,7 @@ namespace RealmOfAshes.Game
         {
             return clip == "walk" || clip == "run"
                 || clip == "walk_back" || clip == "run_back"
-                || clip == "crouch_walk" || clip == "crouch_walk_back";
+                || clip == "crouch_run" || clip == "crouch_run_back";
         }
 
         private static float WrapAngle(float radians)

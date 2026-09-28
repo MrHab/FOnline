@@ -342,6 +342,7 @@ namespace RealmOfAshes.Game
             }
             // The rig drops its root to bend the knees (idle, walk, crouch); the
             // feet come back onto the floor here, and a toe never cuts into it.
+            if (_view != null && (_view.Dead || _view.CurrentClip == "death")) KeepHandsAboveFloor();
             PlantFoot(_leftLeg, _leftBall);
             PlantFoot(_rightLeg, _rightBall);
             // Limb proportions differ: a held weapon hangs on the source hands, so
@@ -351,7 +352,12 @@ namespace RealmOfAshes.Game
             HoldMissPrimary = -1f;
             HoldMissSupport = -1f;
             HoldArchetype = string.Empty;
-            if (!armed) return;
+            if (!armed)
+            {
+                RelaxFreeHands();
+                DrinkFromHand();
+                return;
+            }
             RoaWeaponView weapon = _view.HeldWeapon;
             if (weapon != null && weapon.HoldActive && (weapon.HoldRight.Active || weapon.HoldLeft.Active))
             {
@@ -458,6 +464,28 @@ namespace RealmOfAshes.Game
             }, 12, 0.003f);
         }
 
+        /// <summary>Лёжа кисти не уходят под пол: рука приподнимается в плече.</summary>
+        private void KeepHandsAboveFloor()
+        {
+            // Пол — у родителя: мёртвое тело сдвигается по высоте поправкой земли.
+            float floor = (transform.parent != null ? transform.parent.position.y : transform.position.y) + 0.03f;
+            foreach (RoaHandGrip grip in new[] { _rightGrip, _leftGrip })
+            {
+                if (grip == null || !grip.Ready || grip.Hand.parent == null || grip.Hand.parent.parent == null) continue;
+                Transform shoulder = grip.Hand.parent.parent;
+                Vector3 arm = grip.Hand.position - shoulder.position;
+                if (grip.Hand.position.y >= floor || arm.sqrMagnitude < 1e-4f) continue;
+                // Точно: рука той же длины поворачивается в вертикальной плоскости, пока
+                // кисть не встанет на высоту пола над плечом.
+                float length = arm.magnitude;
+                float want = Mathf.Min(floor - shoulder.position.y, length);
+                Vector3 flat = Vector3.ProjectOnPlane(arm, Vector3.up);
+                if (flat.sqrMagnitude < 1e-6f) flat = transform.forward;
+                Vector3 target = flat.normalized * Mathf.Sqrt(Mathf.Max(0f, length * length - want * want)) + Vector3.up * want;
+                shoulder.rotation = Quaternion.FromToRotation(arm, target) * shoulder.rotation;
+            }
+        }
+
         private void PlantFoot(RoaIkChain leg, Transform ball)
         {
             if (leg == null || !leg.Ready || _ankleRestHeight < 0f) return;
@@ -476,11 +504,20 @@ namespace RealmOfAshes.Game
             if (ball == null || _ballRestHeight < 0f) return;
             float ballFloor = floor + _ballRestHeight * 0.6f;
             Vector3 toe = ball.position - ankle.position;
-            if (ball.position.y >= ballFloor || toe.sqrMagnitude < 1e-4f) return;
+            if (toe.sqrMagnitude < 1e-4f) return;
             Vector3 axis = Vector3.Cross(toe, Vector3.up);
             if (axis.sqrMagnitude < 1e-6f) return;
-            float lift = Mathf.Asin(Mathf.Clamp((ballFloor - ball.position.y) / toe.magnitude, 0f, 1f)) * Mathf.Rad2Deg;
-            ankle.rotation = Quaternion.AngleAxis(lift, axis.normalized) * ankle.rotation;
+            if (ball.position.y < ballFloor)
+            {
+                float lift = Mathf.Asin(Mathf.Clamp((ballFloor - ball.position.y) / toe.magnitude, 0f, 1f)) * Mathf.Rad2Deg;
+                ankle.rotation = Quaternion.AngleAxis(lift, axis.normalized) * ankle.rotation;
+            }
+            else if (ankle.position.y < lowest + 0.05f && ball.position.y < ballFloor + 0.07f)
+            {
+                // Опорная стопа с зависшим носком (присед, стойка): носок ложится на пол.
+                float press = Mathf.Asin(Mathf.Clamp((ball.position.y - ballFloor) / toe.magnitude, 0f, 1f)) * Mathf.Rad2Deg;
+                ankle.rotation = Quaternion.AngleAxis(-press, axis.normalized) * ankle.rotation;
+            }
         }
 
         /// <summary>Положить видимую кисть на рукоять; вернуть промах ладони, м (−1 — цели нет).</summary>
@@ -528,6 +565,167 @@ namespace RealmOfAshes.Game
             elbow.rotation = Quaternion.FromToRotation(hand.position - elbow.position, reach - elbow.position) * elbow.rotation;
             hand.rotation = handRotation;
             return true;
+        }
+
+        /// <summary>
+        /// Пустые руки: пальцы — мягкий полукулак (в ударе — кулак), а на ходу мах
+        /// руки ограничен, как у человека: плечо вперёд не больше ~20° на шаге и ~40° на
+        /// бегу, локоть не сгибается «подносом», ладонь смотрит к бедру, не вверх.
+        /// </summary>
+        private void RelaxFreeHands()
+        {
+            string clip = _view != null ? _view.CurrentClip : string.Empty;
+            bool punching = clip == "attack" || clip == "punch_cross";
+            bool running = clip == "run" || clip == "run_back" || clip == "crouch_run" || clip == "crouch_run_back";
+            bool crouchWalk = clip == "crouch_walk" || clip == "crouch_walk_back" || clip == "crouch_idle";
+            bool walking = clip == "walk" || clip == "walk_back" || clip.StartsWith("strafe_", System.StringComparison.Ordinal)
+                || crouchWalk;
+            // Мах считается от груди, а не от ног: бегущий боком машет руками вдоль
+            // своего корпуса, а не «крылом» поперёк.
+            Vector3 chestRight = transform.right;
+            if (_rightGrip != null && _leftGrip != null && _rightGrip.Ready && _leftGrip.Ready
+                && _rightGrip.Hand.parent != null && _leftGrip.Hand.parent != null)
+            {
+                Vector3 across = Vector3.ProjectOnPlane(_rightGrip.Hand.parent.parent.position
+                    - _leftGrip.Hand.parent.parent.position, Vector3.up);
+                if (across.sqrMagnitude > 1e-4f) chestRight = across.normalized;
+            }
+            Vector3 chestForward = Vector3.Cross(chestRight, Vector3.up);
+            foreach ((RoaHandGrip grip, bool left) in new[] { (_rightGrip, false), (_leftGrip, true) })
+            {
+                if (grip == null || !grip.Ready) continue;
+                if (running || walking)
+                    LimitSwing(grip, left, clip == "walk_back" ? 10f : clip == "run_back" ? 25f : running ? 40f : 20f,
+                        clip == "run_back" ? 45f : running ? 95f : clip == "walk_back" ? 15f : 30f, chestForward, chestRight,
+                        crouchWalk ? 35f : 0f, crouchWalk ? 12f : 1f);
+                if (punching) grip.ApplyFingers(RoaFingerPose.Wrap, 0.004f);
+                else grip.ApplyFingers(RoaFingerPose.Loose, 0.03f);
+            }
+        }
+
+        /// <summary>
+        /// Еда и питьё (клип consume, UAL): кисть в клипе поднимается к лицу, но
+        /// держит её перед грудью ладонью вверх. Здесь левая кисть на время глотка
+        /// подносит бутылку к губам горлышком ко рту, голова чуть запрокинута.
+        /// </summary>
+        private void DrinkFromHand()
+        {
+            if (_view == null || _view.CurrentClip != "consume" || _leftGrip == null || !_leftGrip.Ready
+                || _leftArm == null || _visibleHead == null) return;
+            float phase = _view.CurrentClipPhase;
+            float up = Mathf.Clamp01((phase - 0.08f) / 0.17f);
+            float down = Mathf.Clamp01((0.8f - phase) / 0.12f);
+            float w = Mathf.Min(up * up * (3f - 2f * up), down * down * (3f - 2f * down));
+            if (w < 0.01f) return;
+            // Бутылку пьют запрокинув голову (клип сам отклоняет её — здесь добавка до
+            // ~18°), локоть поднят вперёд.
+            TiltHead(-20f * w, 0f);
+            Vector3 forward = transform.forward;
+            Vector3 mouth = _visibleHead.position + forward * 0.13f - transform.up * 0.09f;
+            Vector3 bottle = mouth + forward * 0.05f - transform.up * 0.1f - transform.right * 0.02f;
+            _leftGrip.HeldFrame(0.03f, out Vector3 centre, out Vector3 axis, out Vector3 back);
+            Vector3 toMouth = (mouth - bottle).normalized;
+            Vector3 outward = (-transform.right + forward * 0.5f).normalized;
+            RoaHandTarget drink = new RoaHandTarget
+            {
+                Active = true,
+                Centre = Vector3.Lerp(centre, bottle, w),
+                Axis = Vector3.Slerp(axis, toMouth, w).normalized,
+                Back = Vector3.Slerp(back, outward, w).normalized,
+                Radius = 0.03f,
+                Fingers = RoaFingerPose.Wrap,
+                Elbow = Vector3.down * 0.8f + forward * 0.5f - transform.right * 0.3f,
+                HasElbow = true
+            };
+            Hold(_leftArm, _leftGrip, drink, true);
+        }
+
+        private static void LimitSwing(RoaHandGrip grip, bool left, float maxShoulderDeg, float maxElbowDeg,
+            Vector3 forward, Vector3 right, float minElbowDeg = 0f, float minSideDeg = 1f)
+        {
+            Transform hand = grip.Hand;
+            Transform elbow = hand.parent;
+            Transform shoulder = elbow != null ? elbow.parent : null;
+            if (shoulder == null) return;
+            Vector3 outward = left ? -right : right;
+
+            // Плечо: доля «вперёд» у направления плеча — не больше sin(max).
+            Vector3 upper = elbow.position - shoulder.position;
+            Vector3 dir = upper.normalized;
+            float along = Vector3.Dot(dir, forward);
+            float limit = Mathf.Sin(maxShoulderDeg * Mathf.Deg2Rad);
+            // Только опущенная рука: поднятую (жест, клип действия) кап не трогает.
+            if (along > limit && dir.y < 0.3f)
+            {
+                Vector3 rest = dir - forward * along;
+                float restLength = rest.magnitude;
+                if (restLength > 1e-4f)
+                {
+                    Vector3 wanted = forward * limit + rest / restLength * Mathf.Sqrt(1f - limit * limit);
+                    shoulder.rotation = Quaternion.FromToRotation(dir, wanted) * shoulder.rotation;
+                }
+            }
+
+            // Плечо в стороне: не дальше 25° наружу («крыло») и не внутрь за линию
+            // плеча — кисти не сходятся перед пахом.
+            dir = (elbow.position - shoulder.position).normalized;
+            float side = Vector3.Dot(dir, outward);
+            float sideLimit = Mathf.Sin(25f * Mathf.Deg2Rad);
+            // В приседе плечо отведено сильнее: кисти ложатся снаружи колен, а не в бёдра.
+            float clampedSide = Mathf.Clamp(side, Mathf.Sin(minSideDeg * Mathf.Deg2Rad), sideLimit);
+            if (!Mathf.Approximately(side, clampedSide) && dir.y < 0.3f)
+            {
+                Vector3 rest = dir - outward * side;
+                float restLength = rest.magnitude;
+                if (restLength > 1e-4f)
+                {
+                    Vector3 wanted = outward * clampedSide + rest / restLength * Mathf.Sqrt(1f - clampedSide * clampedSide);
+                    shoulder.rotation = Quaternion.FromToRotation(dir, wanted) * shoulder.rotation;
+                }
+            }
+
+            // Локоть: сгиб не больше maxElbow; в приседе — не меньше minElbow (кисти к
+            // бёдрам, а не плетьми до колен).
+            upper = (elbow.position - shoulder.position).normalized;
+            Vector3 lower = hand.position - elbow.position;
+            float bend = Vector3.Angle(upper, lower);
+            if (bend > maxElbowDeg)
+            {
+                Vector3 wanted = Vector3.Slerp(upper, lower.normalized, maxElbowDeg / bend);
+                elbow.rotation = Quaternion.FromToRotation(lower, wanted) * elbow.rotation;
+            }
+            else if (bend < minElbowDeg)
+            {
+                Vector3 flexAxis = Vector3.Cross(upper, forward);
+                if (flexAxis.sqrMagnitude > 1e-6f)
+                    elbow.rotation = Quaternion.AngleAxis(minElbowDeg - bend, flexAxis.normalized) * elbow.rotation;
+            }
+
+            // Кисть — снаружи линии плеча (на 5 см), руки не сходятся к паху.
+            Vector3 fromShoulder = hand.position - shoulder.position;
+            float handOut = Vector3.Dot(fromShoulder, outward);
+            if (handOut < 0.05f)
+            {
+                float length = fromShoulder.magnitude;
+                Vector3 swingAxis = Vector3.Cross(fromShoulder, outward);
+                if (length > 0.1f && swingAxis.sqrMagnitude > 1e-6f)
+                {
+                    float angle = Mathf.Asin(Mathf.Clamp((0.05f - handOut) / length, 0f, 0.5f)) * Mathf.Rad2Deg;
+                    shoulder.rotation = Quaternion.AngleAxis(angle, swingAxis.normalized) * shoulder.rotation;
+                }
+            }
+
+            // Ладонь к бедру: тыл кисти — наружу и немного вперёд. Поворот вокруг
+            // предплечья делят предплечье и кисть: у тела нет костей скрутки.
+            grip.HeldFrame(0.03f, out _, out _, out Vector3 back);
+            Vector3 axis = (hand.position - elbow.position).normalized;
+            Vector3 have = Vector3.ProjectOnPlane(back, axis);
+            Vector3 want = Vector3.ProjectOnPlane(outward + forward * 0.35f, axis);
+            if (have.sqrMagnitude < 1e-6f || want.sqrMagnitude < 1e-6f) return;
+            float roll = Vector3.SignedAngle(have, want, axis);
+            Quaternion half = Quaternion.AngleAxis(roll * 0.5f, axis);
+            elbow.rotation = half * elbow.rotation;
+            hand.rotation = half * hand.rotation;
         }
 
         /// <summary>Приблизить плечо к отвесу (гасит мах руки при ходьбе на долю amount).</summary>

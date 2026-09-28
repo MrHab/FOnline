@@ -209,33 +209,37 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "E686E3A4CE952B3F3B7F01A6D74A27F5151573F060E2904D0857828B5FA05EC4",
+  "sha256": "0DF7E1435A792435BCA30C00971D82B0E3403F38D8F2AC0F687CD6778341BF20",
   "animations": [
     "run",
     "turn",
     "walk",
     "walk_back",
     "run_back",
-    "crouch_walk",
-    "crouch_walk_back",
     "idle",
     "attack",
     "hurt",
     "death",
-    "crouch_idle",
     "hit_head",
     "punch_cross",
     "pistol_idle",
     "pistol_shoot",
     "pistol_reload",
-    "sword_idle",
-    "sword_attack",
-    "pickup",
     "kneel_work",
     "chop",
-    "harvest",
     "consume",
-    "chest_open"
+    "chest_open",
+    "crouch_run",
+    "crouch_run_back",
+    "strafe_left",
+    "strafe_right",
+    "strafe_run_left",
+    "strafe_run_right",
+    "crouch_walk",
+    "crouch_walk_back",
+    "crouch_idle",
+    "pickup",
+    "harvest"
   ],
   "ualImport": {
     "source": "Quaternius Universal Animation Library (CC0)",
@@ -260,5 +264,23 @@
       "chest_open"
     ],
     "heightScale": 1.0349
+  },
+  "cmuImport": {
+    "source": "CMU Graphics Lab Motion Capture Database (mocap.cs.cmu.edu), BVH conversion by Bruce Hahne",
+    "clips": {
+      "strafe_left": "69_42",
+      "strafe_right": "69_42 mirrored",
+      "strafe_run_left": "06_09",
+      "strafe_run_right": "06_09 mirrored",
+      "crouch_walk": "136_09",
+      "crouch_walk_back": "136_11",
+      "crouch_idle": "136_11",
+      "pickup": "69_68",
+      "harvest": "139_06"
+    },
+    "aliases": {
+      "crouch_run": "run",
+      "crouch_run_back": "crouch_walk_back"
+    }
   }
 }

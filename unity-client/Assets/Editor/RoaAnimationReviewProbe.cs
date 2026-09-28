@@ -62,12 +62,21 @@ namespace RealmOfAshes.EditorTools
             public string Clip = string.Empty;
         }
 
+        private const string LibraryAsset = "Packages/com.realmofashes.models/characters/npc/npc_humanoid_animations.glb";
+
         [MenuItem("Realm of Ashes/Animation/Review character animations")]
         public static void RunBatch()
         {
             if (EditorApplication.isPlaying) { RunBatchAsync(); return; }
             try
             {
+                // Пакет моделей лежит вне проекта: правку библиотеки клипов первичный
+                // Refresh не видит, а ревью должно показывать текущие клипы.
+                AssetDatabase.ImportAsset(LibraryAsset, ImportAssetOptions.ForceUpdate);
+                var imported = new List<string>();
+                foreach (UnityEngine.Object sub in AssetDatabase.LoadAllAssetsAtPath(LibraryAsset))
+                    if (sub is AnimationClip) imported.Add(sub.name);
+                Debug.Log("[ANIM REVIEW] library clips: " + string.Join(", ", imported));
                 _previousEnterPlayModeOptionsEnabled = EditorSettings.enterPlayModeOptionsEnabled;
                 _previousEnterPlayModeOptions = EditorSettings.enterPlayModeOptions;
                 _batchOptionsCaptured = true;
@@ -129,30 +138,45 @@ namespace RealmOfAshes.EditorTools
                 new State { Name = "run_back", Velocity = new Vector3(0f, 0f, -4.0f) },
                 new State { Name = "strafe_walk", Aim = true, Velocity = new Vector3(1.8f, 0f, 0f) },
                 new State { Name = "strafe_run", Aim = true, Velocity = new Vector3(4.2f, 0f, 0f) },
+                new State { Name = "strafe_step", Aim = true, Velocity = new Vector3(-0.8f, 0f, 0f) },
+                new State { Name = "strafe_diag", Aim = true, Velocity = new Vector3(1.3f, 0f, 1.3f) },
                 new State { Name = "crouch_idle", Crouch = true },
-                new State { Name = "crouch_walk", Velocity = new Vector3(0f, 0f, 2.2f), Crouch = true },
-                new State { Name = "crouch_back", Velocity = new Vector3(0f, 0f, -2.0f), Crouch = true },
-                new State { Name = "punch", Action = view => view.PlayAttack(0.45f), Seconds = 0.5f },
+                new State { Name = "crouch_walk", Velocity = new Vector3(0f, 0f, 1.2f), Crouch = true },
+                new State { Name = "crouch_back", Velocity = new Vector3(0f, 0f, -1.0f), Crouch = true },
+                new State { Name = "crouch_run", Velocity = new Vector3(0f, 0f, 3.0f), Crouch = true },
+                new State { Name = "punch", Action = view => view.PlayAttack(0.45f), Seconds = 0.8f },
                 new State { Name = "hurt", Action = view => view.PlayHit(), Seconds = 0.6f },
+                new State { Name = "pickup", Action = view => view.PlayAction("pickup", 1.35f), Seconds = 1.35f },
+                new State { Name = "consume", Action = view => view.PlayAction("consume", 1.2f), Seconds = 1.2f },
+                new State { Name = "harvest", Action = view => view.PlayAction("harvest", 1.5f, 1.3f), Seconds = 1.5f },
                 new State { Name = "rifle_idle", Weapon = "assaultRifle", Aim = true },
                 new State { Name = "rifle_walk", Weapon = "assaultRifle", Aim = true, Velocity = new Vector3(0f, 0f, 1.6f) },
                 new State { Name = "rifle_run", Weapon = "assaultRifle", Velocity = new Vector3(0f, 0f, 4.4f) },
-                new State { Name = "rifle_crouch_walk", Weapon = "assaultRifle", Aim = true, Crouch = true, Velocity = new Vector3(0f, 0f, 2.2f) },
-                new State { Name = "rifle_fire", Weapon = "assaultRifle", Aim = true, Action = view => view.PlayAttack(), Seconds = 0.35f },
-                new State { Name = "rifle_reload", Weapon = "assaultRifle", Aim = true, Action = view => view.StartReload(1.2f), Seconds = 1.2f },
+                new State { Name = "rifle_crouch_walk", Weapon = "assaultRifle", Aim = true, Crouch = true, Velocity = new Vector3(0f, 0f, 1.2f) },
+                new State { Name = "rifle_fire", Weapon = "assaultRifle", Aim = true, Action = view => view.PlayAttack(), Seconds = 0.6f },
+                new State { Name = "rifle_reload", Weapon = "assaultRifle", Aim = true, Action = view => view.StartReload(2.2f), Seconds = 2.2f },
+                new State { Name = "pistol_reload", Weapon = "pistol", Aim = true, Action = view => view.StartReload(1.8f), Seconds = 1.8f },
                 new State { Name = "pistol_idle", Weapon = "pistol", Aim = true },
                 new State { Name = "pistol_walk", Weapon = "pistol", Aim = true, Velocity = new Vector3(0f, 0f, 1.6f) },
-                new State { Name = "pistol_fire", Weapon = "pistol", Aim = true, Action = view => view.PlayAttack(), Seconds = 0.35f },
+                new State { Name = "pistol_fire", Weapon = "pistol", Aim = true, Action = view => view.PlayAttack(), Seconds = 0.6f },
                 new State { Name = "axe_idle", Weapon = "axe" },
                 new State { Name = "axe_walk", Weapon = "axe", Velocity = new Vector3(0f, 0f, 1.6f) },
                 new State { Name = "axe_swing", Weapon = "axe", Action = view => view.PlayAttack(0.55f), Seconds = 0.6f },
+                // Замах и удар подробно: кадры каждые 0.07 с до контакта.
+                new State { Name = "axe_swing_detail", Weapon = "axe", Action = view => view.PlayAttack(0.55f), Seconds = 0.35f },
+                // Прочие удары сверху: зазор рук до головы меряется по каждому кадру.
+                new State { Name = "katana_swing", Weapon = "polygonKatana01", Action = view => view.PlayAttack(0.55f), Seconds = 0.6f },
+                new State { Name = "pipe_swing", Weapon = "polygonPipe01", Action = view => view.PlayAttack(0.55f), Seconds = 0.6f },
+                new State { Name = "crowbar_swing", Weapon = "polygonCrowbar01", Action = view => view.PlayAttack(0.55f), Seconds = 0.6f },
+                new State { Name = "pipe_wrench_swing", Weapon = "handPump", Action = view => view.PlayAttack(0.55f), Seconds = 0.6f },
+                new State { Name = "spade_swing", Weapon = "pickaxe", Action = view => view.PlayAttack(0.55f), Seconds = 0.6f },
                 new State { Name = "death", Action = view => view.SetDead(true), Seconds = 1.6f }
             };
             foreach (string clip in new[]
             {
-                "idle", "attack", "hurt", "crouch_idle", "hit_head", "punch_cross", "pistol_idle", "pistol_shoot",
-                "pistol_reload", "sword_idle", "sword_attack", "pickup", "kneel_work",
-                "chop", "harvest", "consume", "chest_open"
+                "idle", "attack", "punch_cross", "crouch_idle", "crouch_walk", "crouch_walk_back", "crouch_run",
+                "crouch_run_back", "pickup", "kneel_work", "chop", "harvest", "consume", "chest_open",
+                "strafe_left", "strafe_right", "strafe_run_left", "strafe_run_right"
             })
                 rows.Add(new State { Name = "clip_" + clip, Clip = clip });
             // Смерть — последней: после неё тело не встаёт.
@@ -197,7 +221,7 @@ namespace RealmOfAshes.EditorTools
                         float phase = f / (float)Frames;
                         foreach (Rig rig in new[] { oldRig, newRig })
                         {
-                            if (rig.Anim[state.Clip] == null) throw new InvalidOperationException(rig.Name + " has no clip " + state.Clip);
+                            if (rig.Anim[state.Clip] == null) throw new InvalidOperationException(rig.Name + " has no clip " + state.Clip + " (" + ClipNames(rig.Anim) + ")");
                             rig.Anim.Play(state.Clip);
                             SetPhase(rig, state.Clip, phase);
                         }
@@ -230,10 +254,16 @@ namespace RealmOfAshes.EditorTools
                     Time.captureDeltaTime = 1f / 30f;
                     foreach (Rig rig in new[] { oldRig, newRig }) state.Action(rig.View);
                     float start = Time.time;
+                    clearance = float.MaxValue;
                     for (int f = 0; f < Frames; f++)
                     {
                         float at = state.Seconds * f / (Frames - 1);
-                        while (Time.time - start < at) await Drive(new[] { oldRig, newRig }, state, 0f);
+                        while (Time.time - start < at)
+                        {
+                            await Drive(new[] { oldRig, newRig }, state, 0f);
+                            TrackHeadClearance(newRig, Time.time - start);
+                        }
+                        TrackHeadClearance(newRig, Time.time - start);
                         Shoot(sheet, f, oldRig, newRig, metrics, state.Name + " t " + (Time.time - start).ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
                     }
                     Time.captureDeltaTime = 0f;
@@ -245,6 +275,10 @@ namespace RealmOfAshes.EditorTools
                 UnityEngine.Object.Destroy(sheet);
                 if (metrics.Length >= 2) metrics.Length -= 2; // висячая запятая последнего кадра
                 report.Append("  \"").Append(state.Name).Append("\": [\n").Append(metrics).Append("\n  ],\n");
+                if (clearance < float.MaxValue)
+                    report.Append("  \"").Append(state.Name).Append("_body_clearance\": {\"min\": ").Append(F(clearance))
+                        .Append(", \"t\": ").Append(F(clearanceAt)).Append(", \"part\": \"").Append(clearancePart).Append("\"},\n");
+                clearance = float.MaxValue;
             }
             report.Append("  \"rows\": \"old-side, new-side, old-3/4, new-3/4; floor y = 0\"\n}\n");
             File.WriteAllText(Path.Combine(OutDir, "report.json"), report.ToString());
@@ -286,6 +320,48 @@ namespace RealmOfAshes.EditorTools
                 throw new InvalidOperationException("Preview texture is " + rig.Preview.Texture.width + "x" + rig.Preview.Texture.height);
             CollectBones(rig);
             return rig;
+        }
+
+        private static string ClipNames(Animation animation)
+        {
+            var names = new List<string>();
+            foreach (AnimationState state in animation) names.Add(state.name);
+            return string.Join(", ", names);
+        }
+
+        private static float clearance = float.MaxValue, clearanceAt;
+        private static string clearancePart = string.Empty;
+
+        /// <summary>
+        /// Зазор кистей, локтей и середин предплечий до головы (сфера r 0.13 над костью
+        /// головы) на каждом кадре действия: промежуточные кадры замаха лист не снимает.
+        /// Отрицательный — рука в голове.
+        /// </summary>
+        private static void TrackHeadClearance(Rig rig, float t)
+        {
+            if (!rig.Bones.TryGetValue("head", out Transform head) || head == null) return;
+            Transform frame = rig.View.transform;
+            Vector3 centre = head.position + frame.up * 0.13f + frame.forward * 0.06f;
+            foreach (string side in new[] { "l", "r" })
+            {
+                if (!rig.Bones.TryGetValue("hand_" + side, out Transform hand) || hand == null) continue;
+                if (!rig.Bones.TryGetValue("elbow_" + side, out Transform elbow) || elbow == null) continue;
+                foreach ((string part, Vector3 point) in new[] { ("hand_" + side, hand.position),
+                    ("forearm_" + side, (hand.position + elbow.position) * 0.5f), ("elbow_" + side, elbow.position) })
+                {
+                    float gap = Vector3.Distance(point, centre) - 0.13f - 0.045f;
+                    if (gap < clearance) { clearance = gap; clearanceAt = t; clearancePart = part; }
+                }
+                // Кисть против корпуса: капсула от таза до груди, r 0.12 (живот, грудь).
+                if (rig.Bones.TryGetValue("hips", out Transform hips) && hips != null
+                    && rig.Bones.TryGetValue("spine_03", out Transform chest) && chest != null)
+                {
+                    Vector3 axis = chest.position - hips.position;
+                    float along = Mathf.Clamp01(Vector3.Dot(hand.position - hips.position, axis) / axis.sqrMagnitude);
+                    float gap = Vector3.Distance(hand.position, hips.position + axis * along) - 0.12f - 0.045f;
+                    if (gap < clearance) { clearance = gap; clearanceAt = t; clearancePart = "hand_" + side + "_torso"; }
+                }
+            }
         }
 
         private static void CollectBones(Rig rig)
@@ -359,7 +435,8 @@ namespace RealmOfAshes.EditorTools
             Grab(sheet, frame, 3, newRig, false);
             metrics.Append("    {\"frame\": ").Append(frame).Append(", \"label\": \"").Append(label).Append("\", ")
                 .Append("\"old\": ").Append(Measure(oldRig, "foot_l", "foot_r", "ball_l", "ball_r", "hand_l", "hand_r"))
-                .Append(", \"new\": ").Append(Measure(newRig, "ankle_l", "ankle_r", "ball_l", "ball_r", "hand_l", "hand_r", "src_hand_l", "src_hand_r", "weapon_support"))
+                .Append(", \"new\": ").Append(Measure(newRig, "ankle_l", "ankle_r", "ball_l", "ball_r", "hand_l", "hand_r", "src_hand_l", "src_hand_r", "weapon_support",
+                    "head", "spine_03", "elbow_l", "elbow_r", "hips"))
                 .Append(", \"skin\": ").Append(SkinState(newRig)).Append("},\n");
         }
 

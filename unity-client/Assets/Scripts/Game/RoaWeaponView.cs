@@ -170,7 +170,10 @@ namespace RealmOfAshes.Game
             }
 
             _recoilSide = -_recoilSide;
-            _recoilStartedAt = Time.time;
+            // Выстрел из опущенного оружия: толчок — когда приклад дошёл до плеча
+            // (сначала вскинуть, потом стрелять), иначе он теряется в подъёме.
+            float raiseLeft = _hold != null && _hold.Firearm ? (1f - _raise) * RaiseUpSeconds : 0f;
+            _recoilStartedAt = Time.time + raiseLeft;
         }
 
         /// <summary>
@@ -349,6 +352,7 @@ namespace RealmOfAshes.Game
 
         private RoaMeleeGrip.Profile _melee;
         private readonly Transform[] _spine = new Transform[RoaMeleeGrip.SpineBones.Length];
+        private Transform _hips;
         private float _swingStartedAt = -1f;
 
         /// <summary>Оружие ближнего боя в руках.</summary>
@@ -564,6 +568,7 @@ namespace RealmOfAshes.Game
 
             for (int i = 0; i < RoaMeleeGrip.SpineBones.Length; i++)
                 _spine[i] = Bone(bones, RoaMeleeGrip.SpineBones[i]);
+            _hips = Bone(bones, "pelvis");
 
             // Дуло есть только у огнестрела: у ножа и топора ствола не существует,
             // и требовать socket_muzzle от них — ошибка.
@@ -971,10 +976,12 @@ namespace RealmOfAshes.Game
             Vector3 side = Vector3.Cross(Vector3.up, barrel);
             if (side.sqrMagnitude < 1e-6f) return;
             bool longGun = !_shortGun;
-            // Толчок заметен с игровой камеры: ствол подбрасывает на 10–14°, отводит на 4–6 см.
+            // Толчок заметен с игровой камеры, но не театрален: ствол подбрасывает на
+            // 8° (пистолет — кисть на 12°), назад в плечо на 5 см (пистолет — локти на 4 см),
+            // и за 0.3 с оружие возвращается.
             float scale = _hold != null ? _hold.RecoilScale : 1f;
-            float pitch = (longGun ? 10f : 14f) * weight * scale;
-            float back = (longGun ? 0.06f : 0.04f) * weight * Mathf.Max(scale, 0.35f);
+            float pitch = (longGun ? 8f : 12f) * weight * scale;
+            float back = (longGun ? 0.05f : 0.04f) * weight * Mathf.Max(scale, 0.35f);
             Quaternion climb = Quaternion.AngleAxis(-pitch, side.normalized);
             Vector3 push = -barrel * back;
             Vector3 handOffset = _hand.position - grip;

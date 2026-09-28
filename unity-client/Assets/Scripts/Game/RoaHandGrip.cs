@@ -17,7 +17,9 @@ namespace RealmOfAshes.Game
         /// <summary>Вторая рука на пистолете: пальцы поверх пальцев первой, большой вдоль рамки.</summary>
         Support,
         /// <summary>Свободная ладонь, пальцы слегка согнуты (рука-противовес).</summary>
-        Relaxed
+        Relaxed,
+        /// <summary>Пустая кисть на ходу и в стойке: пальцы лишь слегка согнуты.</summary>
+        Loose
     }
 
     /// <summary>
@@ -203,6 +205,12 @@ namespace RealmOfAshes.Game
                     Curl(_index, 32f, 42f, 28f);
                     Curl(_fingers, 42f, 52f, 36f);
                     Thumb(30f, 14f, 10f);
+                    break;
+                case RoaFingerPose.Loose:
+                    // Расслабленная кисть: пальцы согнуты дугой, мизинец сильнее указательного.
+                    Curl(_index, 14f, 20f, 12f);
+                    Curl(_fingers, 20f, 28f, 18f);
+                    Thumb(18f, 8f, 6f);
                     break;
                 case RoaFingerPose.Support:
                     Curl(_index, wrap * 0.9f, wrap, wrap * 0.7f);

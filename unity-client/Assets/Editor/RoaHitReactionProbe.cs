@@ -46,7 +46,7 @@ namespace RealmOfAshes.EditorTools
                         && Quaternion.Angle(Quaternion.identity, head.localRotation) > 1f,
                         "пиковая реакция не изменила позвоночник и голову");
 
-                for (int i = 0; i < 6; i++) reaction.Apply(0.08f);
+                for (float t = RoaHitReaction.ImpactSeconds; t < RoaHitReaction.Duration + 0.08f; t += 0.08f) reaction.Apply(0.08f);
                 Require(!reaction.Active && reaction.CurrentWeight == 0f,
                         "реакция не завершилась за отведённое время");
                 Debug.Log("[РЕАКЦИЯ НА УРОН] готово: направление=±крен/±наклон, "

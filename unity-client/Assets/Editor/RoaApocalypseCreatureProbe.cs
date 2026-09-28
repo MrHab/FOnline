@@ -9,15 +9,53 @@ using UnityEngine;
 
 namespace RealmOfAshes.EditorTools
 {
-    // One-shot probe keeps the user's current scene untouched.
+    // One-shot probe keeps the user's current scene untouched. Lines up the four
+    // Выжженные zombie variants and the creatures that bring their own GLB look.
     public static class RoaApocalypseCreatureProbe
     {
         private static bool _enteredPlayMode;
         private static readonly string[] Models =
         {
-            "kromkaBurned", "kromkaGari", "kromkaDustling",
-            "kromkaRykhlyak", "kromkaLantern"
+            "kromkaBurned", "kromkaBurned", "kromkaBurned", "kromkaBurned",
+            "kromkaGari", "kromkaDustling", "kromkaRykhlyak", "kromkaLantern"
         };
+
+        /// <summary>
+        /// Id особей подбираются так, чтобы Выжженные показали разные варианты
+        /// зомби: проба заодно проверяет, что вариантов у ключа четыре.
+        /// </summary>
+        private static string[] PickIds()
+        {
+            var ids = new string[Models.Length];
+            var usedBurned = new System.Collections.Generic.HashSet<GameObject>();
+            int seed = 0;
+            for (int i = 0; i < Models.Length; i++)
+            {
+                if (Models[i] != "kromkaBurned") { ids[i] = "apocalypse-probe-" + i; continue; }
+                for (; seed < 1000; seed++)
+                {
+                    string id = "apocalypse-probe-burned-" + seed;
+                    GameObject variant = RoaApocalypseModels.Creature(Models[i], id, out _);
+                    if (variant != null && usedBurned.Add(variant)) { ids[i] = id; break; }
+                }
+                if (ids[i] == null)
+                    throw new InvalidOperationException("kromkaBurned has only " + usedBurned.Count
+                        + " zombie variants; expected 4.");
+            }
+            return ids;
+        }
+
+        private static bool HasVisual(Transform creature, string key)
+        {
+            foreach (Transform node in creature.GetComponentsInChildren<Transform>(true))
+            {
+                bool visual = RoaEnemyModels.OwnsVisual(key)
+                    ? node.name.StartsWith("EnemyModel:")
+                    : node.name == RoaApocalypseVisuals.ChildName;
+                if (visual && node.GetComponentsInChildren<Renderer>(true).Length > 0) return true;
+            }
+            return false;
+        }
 
         [InitializeOnLoadMethod]
         private static void RunIfRequested()
@@ -66,12 +104,13 @@ namespace RealmOfAshes.EditorTools
                 MethodInfo create = typeof(RoaEnemies).GetMethod("Create",
                     BindingFlags.Instance | BindingFlags.NonPublic);
                 if (create == null) throw new InvalidOperationException("Enemy creation method missing.");
+                string[] ids = PickIds();
                 for (int i = 0; i < Models.Length; i++)
                 {
                     string key = Models[i];
                     var row = new JObject
                     {
-                        ["id"] = "apocalypse-probe-" + i,
+                        ["id"] = ids[i],
                         ["name"] = key,
                         ["modelKey"] = key,
                         ["visual"] = key,
@@ -82,26 +121,25 @@ namespace RealmOfAshes.EditorTools
                         ["hp"] = 100,
                         ["maxHp"] = 100
                     };
-                    if (create.Invoke(enemies, new object[] { "probe-" + i, row }) == null)
+                    if (create.Invoke(enemies, new object[] { ids[i], row }) == null)
                         throw new InvalidOperationException("Could not create " + key);
-                    host.transform.GetChild(i).position = new Vector3(i * 2.6f, 0f, 0f);
+                    host.transform.GetChild(i).position = new Vector3(i * 2.2f, 0f, 0f);
                 }
+                int count = 0;
                 var deadline = DateTime.UtcNow.AddSeconds(90);
                 while (DateTime.UtcNow < deadline)
                 {
-                    int visuals = 0;
-                    foreach (Transform node in host.GetComponentsInChildren<Transform>(true))
-                        if (node.name == RoaApocalypseVisuals.ChildName) visuals++;
-                    if (visuals == Models.Length) break;
+                    count = 0;
+                    for (int i = 0; i < Models.Length; i++)
+                        if (HasVisual(host.transform.GetChild(i), Models[i])) count++;
+                    if (count == Models.Length) break;
                     await Task.Delay(100);
                 }
-                int count = 0;
-                foreach (Transform node in host.GetComponentsInChildren<Transform>(true))
-                    if (node.name == RoaApocalypseVisuals.ChildName
-                        && node.GetComponentsInChildren<Renderer>(true).Length > 0) count++;
                 if (count != Models.Length)
                     throw new InvalidOperationException("Only " + count + "/" + Models.Length
-                        + " creatures have PolygonApocalypse geometry.");
+                        + " creatures have visible geometry.");
+                // Skinned meshes show last frame's skin until the animation ticks.
+                await Task.Delay(600);
                 foreach (Transform node in host.GetComponentsInChildren<Transform>(true))
                     node.gameObject.layer = 30;
 
@@ -111,9 +149,9 @@ namespace RealmOfAshes.EditorTools
                 camera.clearFlags = CameraClearFlags.SolidColor;
                 camera.backgroundColor = new Color(0.15f, 0.17f, 0.18f);
                 camera.orthographic = true;
-                camera.orthographicSize = 4.6f;
-                camera.transform.position = new Vector3(5.2f, 5.5f, 12f);
-                camera.transform.LookAt(new Vector3(5.2f, 0.7f, 0f));
+                camera.orthographicSize = 5.2f;
+                camera.transform.position = new Vector3(7.7f, 5.5f, 12f);
+                camera.transform.LookAt(new Vector3(7.7f, 0.9f, 0f));
                 lightRoot = new GameObject("ApocalypseCreatureSun");
                 Light light = lightRoot.AddComponent<Light>();
                 light.type = LightType.Directional;

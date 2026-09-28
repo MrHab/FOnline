@@ -240,6 +240,43 @@
       }
     },
     {
+      "id": "npc_lantern_stag",
+      "category": "creature",
+      "species": "lantern",
+      "label": "Фонарник",
+      "file": "/assets/models/wasteland/npc_lantern_stag.glb",
+      "sha256": "7264FDF1F96E0B530B3C868580D88E57C208362B48268136D2CF97A993BFE8A0",
+      "approvedReviewSha256": "5DC0CBFBF881CEF4A444A24C0C4B620594E4688B068EC34950592A96368306A9",
+      "runtimeScaleMultiplier": 1,
+      "runtimeScaleCompensation": null,
+      "bytes": 2934660,
+      "meshes": 2,
+      "vertices": 10961,
+      "triangles": 3667,
+      "materials": 5,
+      "images": 15,
+      "animations": [
+        "attack",
+        "death",
+        "hurt",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "animationChannels": 690,
+      "skins": 1,
+      "boundsMeters": {
+        "x": 0.963712,
+        "y": 2.113113,
+        "z": 1.838245
+      },
+      "centerMeters": {
+        "x": -0.001995,
+        "y": 1.052869,
+        "z": 0.234507
+      }
+    },
+    {
       "id": "npc_super_mutant",
       "category": "creature",
       "species": "super_mutant",

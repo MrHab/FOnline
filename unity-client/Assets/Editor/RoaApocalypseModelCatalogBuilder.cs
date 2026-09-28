@@ -185,6 +185,10 @@ namespace RealmOfAshes.EditorTools
             AddCreatures(creatures, "Characters/SM_Chr_Criminal_Male_01", 0f, "enemyRaider");
             AddCreatures(creatures, "Characters/SM_Chr_Zombie_Male_01", 0f,
                 "enemyGhoul", "kromkaBurned", "kromkaFold");
+            // Выжженные — все четыре зомби пака; вариант особи выбирается по её id.
+            AddCreatures(creatures, "Characters/SM_Chr_Zombie_Male_02", 0f, "kromkaBurned");
+            AddCreatures(creatures, "Characters/SM_Chr_Zombie_Female_01", 0f, "kromkaBurned");
+            AddCreatures(creatures, "Characters/SM_Chr_Zombie_Female_02", 0f, "kromkaBurned");
             AddCreatures(creatures, "Characters/SM_Chr_Zombie_Male_02", 0f,
                 "enemySuperMutant");
             AddCreatures(creatures, "Characters/SM_Chr_Zombie_Male_02", 70f,
@@ -194,7 +198,7 @@ namespace RealmOfAshes.EditorTools
             AddCreatures(creatures, "Characters/SM_Chr_Zombie_Female_01", 75f,
                 "enemyMutantAnt", "kromkaDustling");
             AddCreatures(creatures, "Characters/SM_Chr_Zombie_Female_02", 55f,
-                "brahmin", "friendlyBrahmin", "kromkaLantern");
+                "brahmin", "friendlyBrahmin");
 
             var environment = new List<RoaApocalypseModels.EnvironmentEntry>();
             foreach (KeyValuePair<string, string> pair in RoaApocalypseArtMigration.EnvironmentModels)

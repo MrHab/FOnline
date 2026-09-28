@@ -191,14 +191,12 @@ namespace RealmOfAshes.EditorTools
             AddCreatures(creatures, "Characters/SM_Chr_Zombie_Female_02", 0f, "kromkaBurned");
             AddCreatures(creatures, "Characters/SM_Chr_Zombie_Male_02", 0f,
                 "enemySuperMutant");
+            // Складные зомби-заглушки остаются только у зверей без своей модели;
+            // Гарь, Пыльник, Рыхляк, брамин и Фонарник рисуют свой GLB (RoaEnemyModels.OwnsVisual).
             AddCreatures(creatures, "Characters/SM_Chr_Zombie_Male_02", 70f,
-                "enemyAshWolf", "kromkaGari", "enemyGecko", "kromkaListener");
+                "enemyGecko", "kromkaListener");
             AddCreatures(creatures, "Characters/SM_Chr_Zombie_Female_02", 70f,
-                "enemyRadscorpion", "kromkaRykhlyak", "enemyFireGecko", "kromkaMourner");
-            AddCreatures(creatures, "Characters/SM_Chr_Zombie_Female_01", 75f,
-                "enemyMutantAnt", "kromkaDustling");
-            AddCreatures(creatures, "Characters/SM_Chr_Zombie_Female_02", 55f,
-                "brahmin", "friendlyBrahmin");
+                "enemyFireGecko", "kromkaMourner");
 
             var environment = new List<RoaApocalypseModels.EnvironmentEntry>();
             foreach (KeyValuePair<string, string> pair in RoaApocalypseArtMigration.EnvironmentModels)

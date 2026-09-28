@@ -67,7 +67,7 @@ namespace RealmOfAshes.Game
         /// Клик мышью по ресурсу. true — клик занят сбором (или подсказкой
         /// «подойдите ближе») и не должен стрелять.
         /// </summary>
-        public bool TryGatherAtScreenPoint(Vector2 screenPoint)
+        public bool TryGatherAtScreenPoint(Vector2 screenPoint, bool weaponTargetUnderCursor = false)
         {
             if (_panel != PanelKind.None || Player == null || Socket == null) return false;
             Camera camera = Camera.main;
@@ -102,7 +102,7 @@ namespace RealmOfAshes.Game
                 bestNear = distance;
                 picked = view;
             }
-            if (picked == null) return false;
+            if (picked == null || (weaponTargetUnderCursor && !pickedByHit)) return false;
             Vector3 delta = picked.Position - Player.transform.position;
             delta.y = 0f;
             if (delta.magnitude > ContainerRange)

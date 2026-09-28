@@ -353,9 +353,11 @@ namespace RealmOfAshes.Game
             // начинает сбор, а не выстрел, и удержание кнопки после него не стреляет.
             // Тот же фильтр, что у выстрела (окна и PIP-ASH — в inputAllowed): проверка
             // EventSystem в WebGL считала курсор над UI и глушила клик по узлу.
-            if (inputAllowed && !MobileInputMode && Input.GetMouseButtonDown(0) && _hoverTarget == null
+            // Попадание в модель узла — явное намерение и выигрывает даже у цели
+            // оружия; близость луча к точке узла — только когда цели нет.
+            if (inputAllowed && !MobileInputMode && Input.GetMouseButtonDown(0)
                 && Interaction != null
-                && Interaction.TryGatherAtScreenPoint(Input.mousePosition))
+                && Interaction.TryGatherAtScreenPoint(Input.mousePosition, _hoverTarget != null))
                 _gatherClickHeld = true;
             if (inputAllowed && mouseHeld && !_gatherClickHeld && Time.time >= _nextRequestAt)
             {

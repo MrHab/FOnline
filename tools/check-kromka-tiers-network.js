@@ -145,9 +145,16 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     console.log('PASS the profession level gates the node tier');
 
     // Всё сходится: кирка T3 ускоряет цикл, руда тира 3 и опыт профессии по тиру.
+    // Сосед по комнате видит сбор: событие начала и конца и поле снимка.
+    const seen = [];
+    const onGathering = payload => { if (payload?.id === accounts.trade.socket.id) seen.push(payload); };
+    accounts.target.socket.on('playerGathering', onGathering);
     const started = await startGather(accounts.trade);
     assert(started.ok && started.tool?.id === 'pickaxeT3' && started.cycleMs === gathering.gatherCycleMs(config, TIER, TIER),
       'a pickaxe of the node tier speeds the cycle: ' + JSON.stringify(started).slice(0, 200));
+    await wait(80);
+    assert(seen.length === 1 && seen[0].type === 'ore' && seen[0].cycleMs === started.cycleMs,
+      'the room hears that the miner started gathering ore: ' + JSON.stringify(seen));
     await wait(started.cycleMs);
     const mined = await harvest(accounts.trade);
     assert(mined.ok, 'a T3 miner with a T3 pickaxe mines: ' + JSON.stringify(mined).slice(0, 300));
@@ -159,6 +166,11 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     assert.equal(miningView?.maxTier, TIER);
     assert(Number(mined.self?.itemConditions?.pickaxeT3) < 100, 'a gather cycle wears the helping tool');
     console.log('PASS a T3 miner gets T3 ore and tiered profession xp');
+    await h.socketAck(accounts.trade.socket, 'stopGather', {});
+    await wait(80);
+    accounts.target.socket.off('playerGathering', onGathering);
+    assert(seen.length === 2 && seen[1].type === '', 'the room hears that the miner stopped: ' + JSON.stringify(seen));
+    console.log('PASS the room sees a neighbour start and stop gathering');
 
     // Налётчик локации тира 3: сила и снаряжение этого тира.
     const enemies = accounts.trade.join.worldState?.enemies || accounts.trade.join.enemies || [];

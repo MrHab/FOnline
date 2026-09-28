@@ -234,15 +234,19 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void PlayGatherLoop()
         {
-            RoaCharacterView view = Player != null ? Player.View : null;
-            if (view == null) return;
-            float seconds = _gatherCycleSeconds + 0.4f;
-            switch (_gatherType)
+            PlayGatherClip(Player != null ? Player.View : null, _gatherType, _gatherCycleSeconds + 0.4f);
+        }
+
+        /// <summary>Клип сбора по типу ресурса — один и тот же у своего и у чужих персонажей.</summary>
+        public static bool PlayGatherClip(RoaCharacterView view, string type, float seconds)
+        {
+            if (view == null) return false;
+            switch (type)
             {
                 case "wood":
-                case "ore": view.PlayAction("chop", seconds); break;
-                case "fiber": view.PlayAction("harvest", seconds, 1.3f); break;
-                default: view.PlayAction("kneel_work", seconds); break;
+                case "ore": return view.PlayAction("chop", seconds);
+                case "fiber": return view.PlayAction("harvest", seconds, 1.3f);
+                default: return view.PlayAction("kneel_work", seconds);
             }
         }
 

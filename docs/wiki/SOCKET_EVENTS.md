@@ -179,6 +179,7 @@ reconnect не дублирует награду, приглашение, дру
 | `artifactState` | Адресный снимок артефактов комнаты: `shift` — состояние сдвига, `detector`, сигналы `artifacts` и `artifactRuntime`. У Mk2/Mk3 к найденному артефакту добавляются тир и цвет тира; вид — только у Mk3. |
 | `boltThrown` | Всей комнате итог броска болта: `playerId`, `from`, `to`, `magnetic`, `hit` и разряженное поле `anomaly` (`id`, `type`, `contact`, `dischargedUntil`, `permanentlyDischarged`). |
 | `playerVehicle` | Всей комнате, включая седока: игрок `id` сел на транспорт (`vehicle` — `itemId`, `kind`, `speed`) или спешился (`vehicle: null`, `reason` — `request`, `hit`, `downed`, `stunned`, `unequipped`, `death`). То же поле `vehicle` есть в публичном состоянии игрока (`snapshot`, `playerJoined`, `self`). |
+| `playerGathering` | Всей комнате: игрок `id` начал собирать ресурс (`type` — `ore`, `wood`, `fiber`, `oil` или `hide`, `cycleMs` — длительность цикла) или закончил (`type` пуст). Другие клиенты играют его анимацию сбора, пока он стоит на месте. То же поле `gathering` есть в публичном состоянии игрока (`snapshot`, `playerJoined`). |
 | `anomalyState` | Всей комнате снимок аномальных полей после разрядки (`kromka.anomaly-state.v1`): `fields` с `active`, `dischargedUntil`, `permanentlyDischarged` и `revision`, параметры болта `bolt`. Тот же снимок приходит в состоянии комнаты полем `anomalies`. |
 
 ### Личное убежище, кланы и осады

@@ -15382,6 +15382,34 @@ function serverGatherContext(p, data = {}) {
   return { room, resource, resourceDef, yieldItemId, tierFamily, resourceTier, gatherSkill, tool };
 }
 
+/** Тип ресурса, который игрок собирает в своей комнате, или '' — не собирает. */
+function serverPlayerGatheringType(p = {}) {
+  const session = p?.gather;
+  return session && session.roomId === String(p.roomId || '') ? String(session.type || '') : '';
+}
+
+/**
+ * Комната видит сбор: начало и конец рассылаются сразу, чтобы другие игроки
+ * включили и сняли анимацию, не дожидаясь полного снимка.
+ */
+function serverEmitPlayerGathering(p = {}) {
+  if (!p?.id || !p.roomId) return;
+  io.to(p.roomId).emit('playerGathering', {
+    id: p.id,
+    roomId: p.roomId,
+    type: serverPlayerGatheringType(p),
+    cycleMs: p.gather ? Number(p.gather.cycleMs || 0) : 0,
+    t: Date.now()
+  });
+}
+
+/** Закончить сбор игрока и сообщить комнате. */
+function serverEndGather(p) {
+  if (!p || !p.gather) return;
+  p.gather = null;
+  serverEmitPlayerGathering(p);
+}
+
 // Шкура — как в Albion: зверь с шкурой оставляет тушу, временный узел «hide»
 // тира зоны. Её свежуют кликом, как любой ресурс; нож не обязателен.
 function serverSpawnCarcass(room, enemy, now = Date.now()) {
@@ -27552,6 +27580,8 @@ function publicPlayer(p) {
     crouching: !!p.crouching,
     moving: !!p.moving,
     turning: !!p.turning,
+    // Что игрок сейчас собирает (ore, wood, fiber, oil, hide) — другие видят анимацию сбора.
+    gathering: serverPlayerGatheringType(p),
     // На чём игрок едет; пешком — null. Остальные клиенты сажают его в седло.
     vehicle: publicMountedVehicle(p.mountedVehicle),
     hp: Math.round(Number(p.hp || 0)),
@@ -32251,20 +32281,22 @@ io.on('connection', (socket) => {
     const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
     const ctx = serverGatherContext(p, data);
     if (ctx.error) {
-      if (p) p.gather = null;
+      serverEndGather(p);
       return fail(ctx.error);
     }
     const now = Date.now();
     p.gather = gathering.beginGatherSession({
       config: KROMKA_TIER_CONFIG, resource: ctx.resource, player: p, roomId: p.roomId, tool: ctx.tool, now
     });
+    p.gather.type = normalizeServerResourceType(ctx.resource.type);
+    serverEmitPlayerGathering(p);
     const tool = p.gather.toolId || ctx.tool.fieldKit ? { id: p.gather.toolId, tier: ctx.tool.tier } : null;
     if (typeof ack === 'function') ack({ ok: true, cycleMs: p.gather.cycleMs, tool, resource: publicResource(ctx.resource) });
   });
 
   socket.on('stopGather', (data = {}, ack) => {
     const p = players.get(socket.id);
-    if (p) p.gather = null;
+    serverEndGather(p);
     if (typeof ack === 'function') ack({ ok: true });
   });
 
@@ -32273,7 +32305,7 @@ io.on('connection', (socket) => {
     const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
     const ctx = serverGatherContext(p, data);
     if (ctx.error) {
-      if (p) p.gather = null;
+      serverEndGather(p);
       return fail(ctx.error, { stop: true });
     }
     const { room, resource, yieldItemId, resourceTier, gatherSkill } = ctx;
@@ -32282,7 +32314,7 @@ io.on('connection', (socket) => {
       resourceId: resource.id, roomId: p.roomId, player: p, now, lastDamageAt: p.lastServerDamageAt
     });
     if (!cycle.ok) {
-      if (cycle.stop) p.gather = null;
+      if (cycle.stop) serverEndGather(p);
       return fail(cycle.error, { stop: !!cycle.stop, reason: cycle.reason || '' });
     }
 
@@ -32302,7 +32334,7 @@ io.on('connection', (socket) => {
     const carryCheck = serverLimitItemsByCarry(p, {}, [{ id: yieldItemId, qty }], { apply: false });
     qty = Math.max(0, Number(carryCheck.items?.[0]?.qty || 0));
     if (qty <= 0) {
-      p.gather = null;
+      serverEndGather(p);
       return fail('Нет места для ресурса.', { stop: true, carry: carryCheck.carry });
     }
 
@@ -32330,7 +32362,7 @@ io.on('connection', (socket) => {
     const activityUpdate = recordServerWorldActivityHarvest(room, p, item, now);
     const depleted = Number(resource.hp || 0) <= 0;
     const cycleMs = p.gather.cycleMs;
-    if (depleted) p.gather = null;
+    if (depleted) serverEndGather(p);
     else gathering.advanceGatherSession(p.gather, now);
     // Освежёванная туша исчезает сразу; клиент убирает её по resourceUpdated.
     if (depleted && resource.carcass) room.resources.delete(resource.id);

@@ -77,6 +77,8 @@ namespace RealmOfAshes.Net
 
         /// <summary>Игрок комнаты (в том числе свой) сел на транспорт или спешился: id, vehicle, reason.</summary>
         public event Action<JObject> OnPlayerVehicle;
+        /// <summary>Другой игрок начал или закончил сбор ресурса (type пуст — закончил).</summary>
+        public event Action<JObject> OnPlayerGathering;
         public event Action<JObject> OnArtifactState;
         public event Action<JObject> OnPersonalBaseState;
         public event Action<JObject> OnKromkaClanState;
@@ -468,6 +470,13 @@ namespace RealmOfAshes.Net
                 var payload = First<JObject>(args);
                 if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
                     OnPlayerVehicle?.Invoke(payload);
+            }));
+
+            _connection.On("playerGathering", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
+                    OnPlayerGathering?.Invoke(payload);
             }));
 
             _connection.On("artifactState", args => _mainThread.Enqueue(() =>

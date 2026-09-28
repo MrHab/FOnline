@@ -17134,6 +17134,9 @@ function serverReachableTiles(room, loc = {}, starts = []) {
  * детерминированно (хеш id локации), подальше от входов и других узлов, в городе —
  * ближе к окраине, чтобы не перегородить улицы.
  */
+// Комната -> карта и число узлов после последней расстановки узлов семейств.
+const TIER_RESOURCE_FILLED_MAP = new WeakMap();
+
 function ensureTierResourceNodes(room, loc = roomLocation(room)) {
   if (!room || !(room.resources instanceof Map) || !Array.isArray(room.map)) return false;
   let changed = false;
@@ -17164,6 +17167,13 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
     maxX = Math.min(maxX, CITY_TILES - 1 - inner); maxZ = Math.min(maxZ, CITY_TILES - 1 - inner);
   }
   if (maxX <= minX || maxZ <= minZ) return changed;
+  // Обход проходимости дорогой (тысячи проверок коллизий), а зовут эту функцию на
+  // каждый ensureRoomWorld: считать его, только когда узла действительно не хватает,
+  // и не повторять для той же карты и тех же узлов: места уже не нашлось.
+  const missing = Object.entries(SERVER_TIER_RESOURCE_MINIMUM).some(([type, minimum]) =>
+    [...room.resources.values()].filter(resource => normalizeServerResourceType(resource.type) === type).length < minimum);
+  const filled = TIER_RESOURCE_FILLED_MAP.get(room);
+  if (!missing || (filled?.map === room.map && filled.size === room.resources.size)) return changed;
   const centreX = (minX + maxX) / 2, centreZ = (minZ + maxZ) / 2;
   const halfSize = Math.max(1, Math.min(maxX - minX, maxZ - minZ) / 2);
   const keepClear = serverResourceKeepClearTiles(room, loc);
@@ -17209,6 +17219,7 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
       changed = true;
     }
   }
+  TIER_RESOURCE_FILLED_MAP.set(room, { map: room.map, size: room.resources.size });
   if (changed) {
     room.staticCollisionKey = '';
     room.staticCollisionObjects = null;

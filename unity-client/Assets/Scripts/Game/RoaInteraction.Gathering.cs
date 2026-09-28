@@ -73,16 +73,33 @@ namespace RealmOfAshes.Game
             Camera camera = Camera.main;
             if (camera == null) return false;
             Ray ray = camera.ScreenPointToRay(screenPoint);
+            // Сперва попадание в видимую модель узла (авторская модель стоит не
+            // в центре клетки), затем — близость луча к точке узла (туша).
             ResourceView picked = null;
-            float best = GatherClickRadius;
-            foreach (ResourceView view in _resources.Values)
+            float bestHit = float.MaxValue;
+            float bestNear = GatherClickRadius;
+            bool pickedByHit = false;
+            foreach (KeyValuePair<string, ResourceView> pair in _resources)
             {
+                ResourceView view = pair.Value;
                 if (view.Data == null || !(view.Data["hp"]?.ToObject<float>() > 0f)) continue;
                 if (Fog != null && !Fog.IsVisible(view.Position)) continue;
+                if (TryResourceBounds(pair.Key, view, out Bounds bounds))
+                {
+                    bounds.Expand(0.5f);
+                    if (bounds.IntersectRay(ray, out float along) && along < bestHit)
+                    {
+                        bestHit = along;
+                        picked = view;
+                        pickedByHit = true;
+                    }
+                    continue;
+                }
+                if (pickedByHit) continue;
                 Vector3 point = view.Position + Vector3.up * 0.6f;
                 float distance = Vector3.Cross(ray.direction, point - ray.origin).magnitude;
-                if (distance >= best) continue;
-                best = distance;
+                if (distance >= bestNear) continue;
+                bestNear = distance;
                 picked = view;
             }
             if (picked == null) return false;
@@ -97,6 +114,23 @@ namespace RealmOfAshes.Game
             }
             BeginGather(picked.Data);
             return true;
+        }
+
+        /// <summary>Габариты видимой модели узла: маркер или объект локации.</summary>
+        private bool TryResourceBounds(string id, ResourceView view, out Bounds bounds)
+        {
+            bounds = default(Bounds);
+            GameObject root = view.Marker;
+            if (root == null && Loader != null) Loader.TryGetObjectRoot(id, out root);
+            if (root == null || !root.activeInHierarchy) return false;
+            bool found = false;
+            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>())
+            {
+                if (!renderer.enabled) continue;
+                if (!found) { bounds = renderer.bounds; found = true; }
+                else bounds.Encapsulate(renderer.bounds);
+            }
+            return found;
         }
 
         /// <summary>Начать сбор с узла: сервер проверяет дистанцию, навык и выдаёт длительность цикла.</summary>

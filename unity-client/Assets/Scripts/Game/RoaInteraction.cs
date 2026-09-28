@@ -296,6 +296,8 @@ namespace RealmOfAshes.Game
                 string action;
                 if (_candidateKind == TargetKind.Resource)
                 {
+                    // Сбор с этого узла уже идёт: остаток и цикл показывает полоса сбора.
+                    if (GatherActive && _candidate["id"]?.ToString() == _gatherId) return string.Empty;
                     action = _candidate["type"]?.ToString() == "hide" ? "свежевать" : "добыть";
                     name += " · " + FormatCharges(_candidate["hp"]?.ToObject<int?>() ?? 0,
                         _candidate["maxHp"]?.ToObject<int?>() ?? 0);

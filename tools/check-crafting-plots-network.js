@@ -77,6 +77,44 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   });
   const plotAction = (role, data) => h.socketAck(accounts[role].socket, 'craftingPlotAction', data);
   const plotOf = state => (state.plots || []).find(row => row.plotId === PLOT_ID);
+  const MASTER_OBJECT = `master_${plot.id}`;
+  const cityNow = async () => (await (await fetch(`${h.baseUrl()}/api/locations/${LOCATION}`)).json()).location;
+  // Застроенный участок, как в Albion: мастерская ремесла и живой мастер у входа.
+  // Город отдаётся с новой ревизией, а мастер стоит в комнате и ведёт к станку.
+  const expectWorkshop = async (notice, when) => {
+    const loc = await cityNow();
+    const station = loc.objects.find(row => row.id === STATION_OBJECT);
+    assert(station, `${when}: мастерской нет в городе`);
+    assert.equal(station.prefab, 'plot_workshop_weapon', `${when}: на участке оружейная мастерская`);
+    assert.equal(station.model, 'craftStationWeapon', `${when}: мастерская — оружейный станок для сервера`);
+    assert(!loc.objects.some(row => String(row.id).startsWith(`${plot.id}_edge`)), `${when}: у застроенного участка остался забор`);
+    const masterRow = loc.objects.find(row => row.id === MASTER_OBJECT);
+    assert(masterRow, `${when}: у мастерской нет мастера`);
+    assert.equal(masterRow.entity?.stationObjectId, STATION_OBJECT, `${when}: мастер ведёт к своему станку`);
+    const gap = Math.hypot(masterRow.position.x - station.position.x, masterRow.position.z - station.position.z);
+    // Игрок у мастера должен дотянуться до станка: сервер меряет до мастерской не дальше 4,6 м.
+    assert(gap < 3.5, `${when}: мастер стоит у мастерской, а не в ${gap.toFixed(1)} м`);
+    if (notice) {
+      assert.equal(notice.locationId, LOCATION);
+      assert.equal(notice.revision, loc.revision, `${when}: ревизия в уведомлении совпадает с городом`);
+    }
+    h.closeSocket(accounts.target);
+    await h.connectAndJoin(accounts.target);
+    const actor = (accounts.target.join.worldState?.enemies || []).find(row => row.stationObjectId === STATION_OBJECT);
+    assert(actor && actor.hostileToPlayer === false, `${when}: живого мастера нет в комнате: ` + JSON.stringify((accounts.target.join.worldState?.enemies || []).map(row => [row.id, row.name, row.service, row.stationObjectId, Math.round(row.x), Math.round(row.z)])));
+    assert(Math.hypot(actor.x - masterRow.position.x, actor.z - masterRow.position.z) < 1,
+      `${when}: мастер встал не на своё место`);
+    return loc;
+  };
+  const expectNoWorkshop = async when => {
+    const loc = await cityNow();
+    assert(!loc.objects.some(row => row.id === STATION_OBJECT || row.id === MASTER_OBJECT), `${when}: мастерская осталась в городе`);
+    assert(loc.objects.some(row => String(row.id).startsWith(`${plot.id}_edge`)), `${when}: у свободного участка нет забора`);
+    h.closeSocket(accounts.target);
+    await h.connectAndJoin(accounts.target);
+    assert(!(accounts.target.join.worldState?.enemies || []).some(row => row.stationObjectId === STATION_OBJECT),
+      `${when}: мастер снесённой мастерской остался в комнате`);
+  };
 
   await h.startServer();
   try {
@@ -150,11 +188,19 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     assert(price && price.cost.scrap === 20 && price.worth > 0, 'цена станка видна: ' + JSON.stringify(poor.stationCosts));
     assert.equal(poor.stationRefundPct, 0.5, 'город возвращает половину');
     const scrapBefore = qty((await plotAction('trade', { action: 'state' })).self, 'scrap');
+    await expectNoWorkshop('до постройки');
+    // Игрок в городе узнаёт о постройке сразу: клиент перечитает мастерские.
+    const revisionNotice = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('после постройки не пришёл locationRevision')), 5000);
+      accounts.harvest.socket.once('locationRevision', payload => { clearTimeout(timer); resolve(payload); });
+    });
     const built = await plotAction('trade', { action: 'build', plotId: PLOT_ID, station: 'weapon_bench', requestId: 'build-1' });
     assert(built.ok && plotOf(built).station === 'weapon_bench', 'станок построен: ' + JSON.stringify(built).slice(0, 300));
     assert.equal(qty(built.self, 'scrap'), scrapBefore - 20, 'постройка забрала лом');
     assert.equal(qty(built.self, 'weaponParts'), 0, 'постройка забрала оружейные части');
     assert.equal(plotOf(built).stationMine, true, 'станок числится за строителем');
+    await expectWorkshop(await revisionNotice, 'после постройки');
+    console.log('PASS the built plot gets a workshop and its master, and players in the city hear of it');
     const twice = await plotAction('trade', { action: 'build', plotId: PLOT_ID, station: 'tool_bench', requestId: 'build-2' });
     assert(!twice.ok && /уже стоит/.test(twice.error), 'второй станок на участок не ставят');
     const brokeBuild = await plotAction('harvest', { action: 'build', plotId: PLOT_ID, station: 'weapon_bench', requestId: 'build-poor' });
@@ -222,6 +268,8 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   await h.startServer();
   try {
     for (const role of ['trade', 'harvest']) await h.connectAndJoin(accounts[role]);
+    // Постройка живёт в сохранениях: после перезапуска город собирается уже с ней.
+    await expectWorkshop(null, 'после перезапуска');
     const builder = await plotAction('trade', { action: 'state' });
     assert.equal(builder.payout, refund, `строителю вернулась половина: ${refund}, пришло ${builder.payout}`);
     const lost = plotOf(builder);
@@ -239,6 +287,7 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     const razed = await plotAction('harvest', { action: 'demolish', plotId: PLOT_ID, requestId: 'raze-1' });
     assert(razed.ok && plotOf(razed).station === '', 'станок снесён: ' + JSON.stringify(razed).slice(0, 300));
     assert.equal(qty(razed.self, 'scrap'), scrapBeforeDemolish, 'снос ничего не возвращает');
+    await expectNoWorkshop('после сноса');
     const nothing = await plotAction('harvest', { action: 'demolish', plotId: PLOT_ID, requestId: 'raze-2' });
     assert(!nothing.ok && /нечего сносить/.test(nothing.error), 'сносить второй раз нечего');
     console.log('PASS the station outlives its builder, who gets half back once, and the heir razes it for nothing');
@@ -251,7 +300,7 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   assert.equal(razedSave.station, '', 'снесённый станок не вернулся после перезапуска');
   assert.equal(razedSave.lessee.characterId, accounts.harvest.characterId, 'участок остался за новым владельцем');
   h.cleanupSync();
-  console.log('Crafting plots network OK: an empty city plot has no station, auction bids refund (also to offline bidders), the winner pays materials and builds a station, the owner works free, a guest pays his fee, a stale fee is refused, lease and station survive a restart, a handover pays the builder half the current price of his materials once, and the heir razes the station for nothing.');
+  console.log('Crafting plots network OK: an empty city plot has no station, auction bids refund (also to offline bidders), the winner pays materials and builds a station, the owner works free, a guest pays his fee, a stale fee is refused, a built plot shows a workshop with its master (also after a restart), lease and station survive a restart, a handover pays the builder half the current price of his materials once, and the heir razes the station (workshop and master go with it) for nothing.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

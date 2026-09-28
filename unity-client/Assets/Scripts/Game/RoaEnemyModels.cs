@@ -35,7 +35,7 @@ namespace RealmOfAshes.Game
             { "kromkaDustling", Wasteland + "npc_mutant_ant.glb" },
             { "kromkaListener", Wasteland + "npc_gecko.glb" },
             { "kromkaMourner", Wasteland + "npc_fire_gecko.glb" },
-            { "kromkaLantern", Wasteland + "brahmin.glb" },
+            { "kromkaLantern", Wasteland + "npc_lantern_stag.glb" },
             { "brahmin", Wasteland + "brahmin.glb" },
             { "friendlyBrahmin", Wasteland + "brahmin.glb" }
         };
@@ -96,6 +96,18 @@ namespace RealmOfAshes.Game
         {
             "enemyRadscorpion", "enemyMutantAnt", "kromkaRykhlyak", "kromkaDustling"
         };
+
+        /// <summary>
+        /// Существа, чей GLB сам и есть облик: поверх него не кладётся
+        /// зомби-заглушка PolygonApocalypse из каталога.
+        /// </summary>
+        private static readonly HashSet<string> OwnVisual = new HashSet<string>
+        {
+            "kromkaLantern"
+        };
+
+        public static bool OwnsVisual(string modelKey) =>
+            OwnVisual.Contains(modelKey ?? string.Empty);
 
         /// <summary>Доворот модели в градусах.</summary>
         public static float YawOffset(string modelKey)

@@ -73,6 +73,8 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnEnemyActivityDelta;
         public event Action<JObject> OnWorldState;
         public event Action<JObject> OnAnomalyState;
+        /// <summary>Локация комнаты изменилась на сервере (застроили или снесли участок).</summary>
+        public event Action<JObject> OnLocationRevision;
         public event Action<JObject> OnBoltThrown;
 
         /// <summary>Игрок комнаты (в том числе свой) сел на транспорт или спешился: id, vehicle, reason.</summary>
@@ -448,6 +450,13 @@ namespace RealmOfAshes.Net
                 JObject state = payload?["state"] as JObject ?? payload;
                 if (state != null && IsForCurrentRoom(state["roomId"]?.ToString()))
                     OnWorldState?.Invoke(state);
+            }));
+
+            _connection.On("locationRevision", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
+                    OnLocationRevision?.Invoke(payload);
             }));
 
             _connection.On("anomalyState", args => _mainThread.Enqueue(() =>

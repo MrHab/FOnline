@@ -114,7 +114,8 @@ namespace RealmOfAshes.EditorTools
                         float margin = server.Margin(px, pz);
                         if (Mathf.Abs(margin) < 0.06f) continue; // граница: округления не считаем
                         bool serverInside = margin > 0f;
-                        Vector3 point = new Vector3(px, halfY, -pz);
+                        // Оси сервера и Unity совпадают (RoaCoords.ToUnity).
+                        Vector3 point = new Vector3(px, halfY, pz);
                         bool clientInside = (box.ClosestPoint(point) - point).sqrMagnitude < 1e-6f;
                         samples++;
                         if (serverInside != clientInside)
@@ -231,7 +232,7 @@ namespace RealmOfAshes.EditorTools
 
         private static Vector3 TileToUnity(int tx, int tz, int w, int d)
         {
-            return new Vector3((tx - w / 2f + 0.5f) * Tile, 0f, -((tz - d / 2f + 0.5f) * Tile));
+            return new Vector3((tx - w / 2f + 0.5f) * Tile, 0f, (tz - d / 2f + 0.5f) * Tile);
         }
 
         private static void AddGroundAndMarkers(LocationDefinition zone)

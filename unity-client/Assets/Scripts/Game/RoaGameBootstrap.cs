@@ -932,6 +932,7 @@ namespace RealmOfAshes.Game
             Socket.OnDisconnected += HandleDisconnected;
             Socket.OnAuthoritativeSelf += HandleAuthoritativeSelf;
             Socket.OnWorldState += HandleWorldStateVisuals;
+            Socket.OnLocationRevision += HandleLocationRevision;
         }
 
         private void OnDisable()
@@ -943,6 +944,7 @@ namespace RealmOfAshes.Game
             Socket.OnDisconnected -= HandleDisconnected;
             Socket.OnAuthoritativeSelf -= HandleAuthoritativeSelf;
             Socket.OnWorldState -= HandleWorldStateVisuals;
+            Socket.OnLocationRevision -= HandleLocationRevision;
         }
 
         private void OnDestroy()
@@ -1208,6 +1210,22 @@ namespace RealmOfAshes.Game
         public int ProgressionCatalogVersion { get; private set; }
 
         #endregion
+
+        /// <summary>
+        /// Участок застроили или снесли, пока игрок в городе: мастерская встаёт
+        /// или уходит без перезагрузки локации, а с ней — цель станка.
+        /// </summary>
+        private void HandleLocationRevision(JObject payload)
+        {
+            if (Loader == null || payload == null) return;
+            string locationId = payload["locationId"]?.ToString();
+            string revision = payload["revision"]?.ToString();
+            if (string.IsNullOrEmpty(locationId)) return;
+            StartCoroutine(Loader.RefreshPlotBuildings(locationId, revision, fresh =>
+            {
+                if (Interaction != null) Interaction.RefreshPlotBuildings(fresh);
+            }));
+        }
 
         private void HandleWorldStateVisuals(JObject state)
         {

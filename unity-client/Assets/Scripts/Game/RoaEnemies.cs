@@ -853,7 +853,8 @@ namespace RealmOfAshes.Game
 
                 string service = enemy.Snapshot["service"]?.ToString();
                 bool hasServiceMenu = service == "registrar" || service == "artifactLab"
-                    || service == "fastTravel";
+                    || service == "fastTravel"
+                    || !string.IsNullOrEmpty(enemy.Snapshot["stationObjectId"]?.ToString());
 
                 if (!dead && (hostile || (!canDialogue && !hasTrade && !hasServiceMenu))) continue;
 
@@ -1299,7 +1300,7 @@ namespace RealmOfAshes.Game
             }
             else
             {
-                _ = LoadModelGuarded(enemy, url, key);
+                _ = LoadModelGuarded(enemy, url, key, id);
             }
 
             return enemy;
@@ -1403,11 +1404,11 @@ namespace RealmOfAshes.Game
         /// в такой задаче никто не наблюдает: без этого перехвата сбой выглядит
         /// как «модель просто не появилась», без единой строки в консоли.
         /// </summary>
-        private async Task LoadModelGuarded(Enemy enemy, string url, string modelKey)
+        private async Task LoadModelGuarded(Enemy enemy, string url, string modelKey, string id)
         {
             try
             {
-                await LoadModel(enemy, url, modelKey);
+                await LoadModel(enemy, url, modelKey, id);
             }
             catch (MissingReferenceException)
             {
@@ -1420,7 +1421,7 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private async Task LoadModel(Enemy enemy, string url, string modelKey)
+        private async Task LoadModel(Enemy enemy, string url, string modelKey, string id)
         {
             GltfImport import = await LoadCached(url);
 
@@ -1447,11 +1448,13 @@ namespace RealmOfAshes.Game
 
             // У части существ клипы свои, а часть моделей — статичный меш.
             enemy.Animation = model.GetComponentInChildren<Animation>();
-            float pitch;
-            GameObject packPrefab = RoaApocalypseModels.Creature(modelKey, out pitch);
+            float pitch = 0f;
+            GameObject packPrefab = RoaEnemyModels.OwnsVisual(modelKey)
+                ? null : RoaApocalypseModels.Creature(modelKey, id, out pitch);
             if (packPrefab != null)
                 RoaApocalypseVisuals.AttachStatic(model.transform, packPrefab, 0f, pitch);
-            else Debug.LogWarning("[ROA] No PolygonApocalypse creature model for " + modelKey);
+            else if (!RoaEnemyModels.OwnsVisual(modelKey))
+                Debug.LogWarning("[ROA] No PolygonApocalypse creature model for " + modelKey);
             if (enemy.Animation != null)
             {
                 enemy.Animation.wrapMode = WrapMode.Loop;
@@ -1982,7 +1985,8 @@ namespace RealmOfAshes.Game
                     MaxHp = Mathf.Max(1, enemy.Snapshot["maxHp"]?.ToObject<int>() ?? enemy.Hp),
                     World = enemy.Root.transform.position + Vector3.up * (2.05f * scale),
                     Hostile = hostile,
-                    IsPlayer = false
+                    IsPlayer = false,
+                    NameOnly = !string.IsNullOrEmpty(enemy.Snapshot["stationObjectId"]?.ToString())
                 };
                 if (!hostile) plateEntry.Name = RoaInteraction.DisplayNpcName(enemy.Snapshot);
                 rows.Add(plateEntry);

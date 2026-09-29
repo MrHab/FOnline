@@ -457,7 +457,7 @@ namespace RealmOfAshes.Game
             return Mathf.Clamp(Mathf.CeilToInt(Mathf.Max(RoaCoords.Tile, metres) / RoaCoords.Tile), 1, 32);
         }
 
-        private static Color32 GroundColor(string preset)
+        public static Color32 GroundColor(string preset)
         {
             switch (preset)
             {

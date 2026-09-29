@@ -153,10 +153,11 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 ворот Сердцевины), `RoaPveAreaNet` (PvE-области, «Искать следы»).
 
 **Карта мира и активности** — `RoaWorldOverviewCanvas` (окно «КАРТА МИРА»:
-подписи зон и мест, карточка, путь и строка пути под миникартой; плоская сетка —
-запасной вид), `RoaWorldMap3D` (3D-вид: сцена `KromkaGlobalMap` поверх зоны в
+подписи зон и мест, путь и строка пути под миникартой; плоская сетка —
+запасной вид; partial `.ZoneWindow` — окно зоны в духе Albion и компас),
+`RoaWorldMap3D` (3D-вид: сцена `KromkaGlobalMap` поверх зоны в
 своём слое и своей камерой, сетка зон по `GET /api/world-map` на рельефе,
-флажок, выбор и путь), `RoaWorldMapRoute` (путь по зонам через открытые ворота),
+флажок, выбор, путь и снимок местности зоны сверху для окна), `RoaWorldMapRoute` (путь по зонам через открытые ворота),
 `RoaMapWindowCanvas` (карта локации), `RoaWorldActivityCanvas`
 (+`.Feedback` и partial-файл `RoaWorldActivityNavigation.cs`),
 `RoaActivityBeacon`, `RoaActivityZoneMarker`, `RoaActivityFeedback`,

@@ -31388,7 +31388,8 @@ io.on('connection', (socket) => {
   });
 
   // Сквозная проверка кампании (tools/check-kromka-live-journey) переезжает между местами
-  // сразу: дорогу через ворота зон проверяют проверки зон. Есть только в тестовом сервере.
+  // сразу, а проверка переходов (tools/check-zone-transitions-network) ставит игрока к
+  // каждому краю и порталу. Есть только в тестовом сервере.
   if (process.env.NODE_ENV === 'test' && process.env.KROMKA_TEST_TRAVEL === '1') {
     socket.on('qaTravel', (data = {}, ack) => {
       const p = players.get(socket.id);
@@ -31396,8 +31397,10 @@ io.on('connection', (socket) => {
       const reply = payload => { if (typeof ack === 'function') ack({ ...payload, self: p ? publicAuthoritativePlayerState(p) : null }); };
       if (!p || !p.roomId || !LOCATIONS[to]) return reply({ ok: false, error: 'Нет такого места.' });
       const room = chooseRoomForLocation(to);
-      if (!transferPlayerToServerRoom(p, room, { entryKey: 'entryFromWorld', reason: 'qaTravel' })) return reply({ ok: false, error: 'Перенос сорвался.' });
-      reply({ ok: true, locationId: to, roomId: room.id });
+      // Проверка переходов ставит игрока в точку края или портала: x/z в метрах локации.
+      const point = Number.isFinite(Number(data.x)) && Number.isFinite(Number(data.z)) ? { x: Number(data.x), z: Number(data.z) } : {};
+      if (!transferPlayerToServerRoom(p, room, { entryKey: 'entryFromWorld', ...point, reason: 'qaTravel' })) return reply({ ok: false, error: 'Перенос сорвался.' });
+      reply({ ok: true, locationId: to, roomId: room.id, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)) });
     });
   }
 

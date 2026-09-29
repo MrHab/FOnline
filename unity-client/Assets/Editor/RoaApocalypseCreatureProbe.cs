@@ -17,7 +17,7 @@ namespace RealmOfAshes.EditorTools
         private static readonly string[] Models =
         {
             "kromkaBurned", "kromkaBurned", "kromkaBurned", "kromkaBurned",
-            "kromkaGari", "kromkaDustling", "kromkaRykhlyak", "kromkaLantern"
+            "kromkaGari", "kromkaDustling", "kromkaRykhlyak", "kromkaLantern", "friendlyBrahmin"
         };
 
         /// <summary>
@@ -149,9 +149,22 @@ namespace RealmOfAshes.EditorTools
                 camera.clearFlags = CameraClearFlags.SolidColor;
                 camera.backgroundColor = new Color(0.15f, 0.17f, 0.18f);
                 camera.orthographic = true;
-                camera.orthographicSize = 5.2f;
-                camera.transform.position = new Vector3(7.7f, 5.5f, 12f);
-                camera.transform.LookAt(new Vector3(7.7f, 0.9f, 0f));
+                camera.orthographicSize = 6f;
+                camera.transform.position = new Vector3(8.8f, 5.5f, 12f);
+                camera.transform.LookAt(new Vector3(8.8f, 0.9f, 0f));
+                for (int i = 0; i < Models.Length; i++)
+                {
+                    Bounds size = default;
+                    bool any = false;
+                    foreach (Renderer renderer in host.transform.GetChild(i).GetComponentsInChildren<Renderer>())
+                    {
+                        if (!renderer.enabled || renderer.name.StartsWith("Kromka")) continue;
+                        if (!any) { size = renderer.bounds; any = true; }
+                        else size.Encapsulate(renderer.bounds);
+                    }
+                    Debug.Log("[ROA APOCALYPSE] Creature lineup size " + Models[i] + " "
+                        + size.size.ToString("F2"));
+                }
                 lightRoot = new GameObject("ApocalypseCreatureSun");
                 Light light = lightRoot.AddComponent<Light>();
                 light.type = LightType.Directional;

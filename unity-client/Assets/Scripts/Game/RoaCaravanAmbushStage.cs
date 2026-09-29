@@ -122,9 +122,7 @@ namespace RealmOfAshes.Game
                     }
                     foreach (Collider collider in model.GetComponentsInChildren<Collider>(true))
                         collider.enabled = false;
-                    float creaturePitch;
-                    RoaApocalypseVisuals.AttachStatic(model.transform,
-                        RoaApocalypseModels.Creature("brahmin", out creaturePitch), 0f, creaturePitch);
+                    RoaEnemyModels.RestoreApprovedScale("brahmin", model.transform);
                     AddPacks(root.transform);
                     _brahmins.Add(root.transform);
                 }

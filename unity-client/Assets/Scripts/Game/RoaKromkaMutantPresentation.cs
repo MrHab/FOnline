@@ -16,6 +16,7 @@ namespace RealmOfAshes.Game
             new Dictionary<string, Material>(StringComparer.Ordinal);
 
         private string _creatureTypeId = string.Empty;
+        private bool _ownVisual;
         private string _primaryAttackId = string.Empty;
         private Transform _silhouette;
         private Transform _tell;
@@ -30,6 +31,10 @@ namespace RealmOfAshes.Game
         {
             _creatureTypeId = NormalizeCreatureType(creatureTypeId, modelKey);
             if (string.IsNullOrEmpty(_creatureTypeId)) return;
+            // Своя анимированная модель уже несёт облик вида: статичные примитивы
+            // не привязаны к костям и повисли бы в воздухе. Остаются подсказка
+            // атаки и свет симбионта.
+            _ownVisual = RoaEnemyModels.OwnsVisual(modelKey);
 
             _phase = StablePhase(stableId);
             GameObject holder = new GameObject("KromkaSilhouette:" + _creatureTypeId);
@@ -108,7 +113,7 @@ namespace RealmOfAshes.Game
         private void BuildGari()
         {
             Color keratin = new Color(0.055f, 0.05f, 0.045f, 1f);
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < (_ownVisual ? 0 : 5); i++)
             {
                 float z = -0.38f + i * 0.19f;
                 float height = i == 2 ? 0.48f : 0.34f;
@@ -121,19 +126,24 @@ namespace RealmOfAshes.Game
         private void BuildRykhlyak()
         {
             Color bone = new Color(0.78f, 0.7f, 0.54f, 1f);
+            if (!_ownVisual) BuildRykhlyakGrowths(bone);
+            _tell = Add(PrimitiveType.Sphere, "ChargeTell", new Vector3(0f, 0.89f, 0.18f), new Vector3(1.26f, 0.12f, 1f), Vector3.zero, new Color(1f, 0.72f, 0.18f), true);
+            RememberTellScale();
+        }
+
+        private void BuildRykhlyakGrowths(Color bone)
+        {
             Add(PrimitiveType.Sphere, "BoneShoulder", new Vector3(0f, 0.84f, 0.08f), new Vector3(1.18f, 0.38f, 0.92f), Vector3.zero, bone);
             Add(PrimitiveType.Capsule, "TuskLeft", new Vector3(-0.34f, 0.5f, 0.66f), new Vector3(0.1f, 0.46f, 0.1f), new Vector3(68f, 0f, -24f), bone);
             Add(PrimitiveType.Capsule, "TuskRight", new Vector3(0.34f, 0.5f, 0.66f), new Vector3(0.1f, 0.46f, 0.1f), new Vector3(68f, 0f, 24f), bone);
-            _tell = Add(PrimitiveType.Sphere, "ChargeTell", new Vector3(0f, 0.89f, 0.18f), new Vector3(1.26f, 0.12f, 1f), Vector3.zero, new Color(1f, 0.72f, 0.18f), true);
-            RememberTellScale();
         }
 
         private void BuildDustling()
         {
             Color shell = new Color(0.35f, 0.25f, 0.12f, 1f);
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < (_ownVisual ? 0 : 4); i++)
                 Add(PrimitiveType.Sphere, "ColonySegment" + i, new Vector3(0f, 0.38f, -0.42f + i * 0.28f), new Vector3(0.72f - i * 0.06f, 0.3f, 0.46f), Vector3.zero, shell);
-            for (int i = -1; i <= 1; i++)
+            for (int i = -1; i <= (_ownVisual ? -2 : 1); i++)
                 Add(PrimitiveType.Cube, "RaisedVent" + i, new Vector3(i * 0.22f, 0.63f, 0f), new Vector3(0.1f, 0.34f, 0.18f), new Vector3(0f, 0f, i * 16f), new Color(0.58f, 0.43f, 0.18f));
             _tell = Add(PrimitiveType.Sphere, "DustTell", new Vector3(0f, 0.45f, 0f), Vector3.one * 0.88f, Vector3.zero, new Color(0.9f, 0.58f, 0.12f), true);
             RememberTellScale();
@@ -161,11 +171,12 @@ namespace RealmOfAshes.Game
         private void BuildLantern()
         {
             Color glow = new Color(0.12f, 0.95f, 0.78f, 1f);
-            for (int i = -1; i <= 1; i++)
+            for (int i = -1; i <= (_ownVisual ? -2 : 1); i++)
                 Add(PrimitiveType.Sphere, "LanternBulb" + i, new Vector3(i * 0.34f, 1.22f - Mathf.Abs(i) * 0.08f, -0.04f), Vector3.one * (i == 0 ? 0.24f : 0.19f), Vector3.zero, glow, true);
             GameObject lightObject = new GameObject("SymbiontLight");
             lightObject.transform.SetParent(_silhouette, false);
-            lightObject.transform.localPosition = new Vector3(0f, 1.18f, 0f);
+            // У оленя свет идёт от рогов над головой.
+            lightObject.transform.localPosition = new Vector3(0f, _ownVisual ? 1.9f : 1.18f, _ownVisual ? 0.45f : 0f);
             Light light = lightObject.AddComponent<Light>();
             light.type = LightType.Point;
             light.color = glow;

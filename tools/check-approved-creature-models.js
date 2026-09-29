@@ -28,6 +28,7 @@ const UNITY_MODEL_KEY_BY_CREATURE = {
   npc_mutant_ant: 'enemyMutantAnt',
   npc_lantern_stag: 'kromkaLantern',
   npc_rykhlyak: 'kromkaRykhlyak',
+  npc_rat: 'kromkaRat',
   npc_super_mutant: 'enemySuperMutant'
 };
 const EXPECTED_BOUNDS = {
@@ -62,6 +63,10 @@ const EXPECTED_BOUNDS = {
   npc_rykhlyak: {
     center: { x: 0, y: 0.57484, z: 0.0975 },
     size: { x: 0.645677, y: 1.148279, z: 1.833 }
+  },
+  npc_rat: {
+    center: { x: 0, y: 0.162638, z: -0.194404 },
+    size: { x: 0.203559, y: 0.313944, z: 0.955726 }
   },
   npc_super_mutant: {
     center: { x: -0.003261, y: 1.273561, z: -0.01007 },

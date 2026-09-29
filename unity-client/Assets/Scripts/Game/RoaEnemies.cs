@@ -81,6 +81,7 @@ namespace RealmOfAshes.Game
             public bool UnifiedHumanoid;
             public string Clip = string.Empty;
             public float YawOffset;
+            public float NameplateLift = DefaultNameplateLift;
 
             // Существа-гуманоиды (супермутант, гуль) не единая humanoid-база, но
             // носят видимую броню и оружие — как в web (05a_remote_actor_equipment,
@@ -185,6 +186,7 @@ namespace RealmOfAshes.Game
                 case "kromkaListener": return new BodyProfile(0.47f, 1.08f, 0.54f);
                 case "kromkaMourner": return new BodyProfile(0.52f, 1.28f, 0.64f);
                 case "kromkaLantern": return new BodyProfile(0.64f, 1.58f, 0.79f);
+                case "kromkaRat": return new BodyProfile(0.20f, 0.40f, 0.20f);
                 case "enemySuperMutant": return new BodyProfile(0.52f, 2.38f, 1.19f);
                 case "enemyRadscorpion": return new BodyProfile(0.58f, 0.72f, 0.36f);
                 case "enemyMutantAnt": return new BodyProfile(0.38f, 0.48f, 0.24f);
@@ -196,6 +198,15 @@ namespace RealmOfAshes.Game
                 default: return new BodyProfile(0.40f, 1.78f, 0.89f);
             }
         }
+
+        private const float DefaultNameplateLift = 2.05f;
+
+        /// <summary>
+        /// Высота таблички имени над корнем. Крысюк ростом с кошку: на обычных
+        /// двух метрах табличка висела бы над пустым местом, а не над зверьком.
+        /// </summary>
+        public static float NameplateLiftFor(string modelKey) =>
+            (modelKey ?? string.Empty) == "kromkaRat" ? 0.95f : DefaultNameplateLift;
 
         public static CapsuleCollider InstallPresentationBody(GameObject root, BodyProfile profile,
                                                                out Rigidbody rigidbody)
@@ -342,6 +353,7 @@ namespace RealmOfAshes.Game
                 case "stagger": return "ОГЛУШЁН";
                 case "alarm": return "ТРЕВОГА";
                 case "attack": return "АТАКУЕТ";
+                case "flee": return "УДИРАЕТ";
                 case "combat":
                 case "factioncombat":
                 case "tactical": return "В БОЮ";
@@ -762,8 +774,9 @@ namespace RealmOfAshes.Game
                 if (enemy.Gate != null && !enemy.Gate.IsVisible) continue;
                 bool hostile = ReadBoolean(enemy.Snapshot?["hostileToPlayer"], true);
                 bool training = ReadBoolean(enemy.Snapshot?["trainingTarget"]);
-                if (medical ? (hostile || training || Value(enemy.Snapshot, "hp") >= Value(enemy.Snapshot, "maxHp"))
-                    : (!hostile && !training)) continue;
+                bool prey = ReadBoolean(enemy.Snapshot?["prey"]);
+                if (medical ? (hostile || training || prey || Value(enemy.Snapshot, "hp") >= Value(enemy.Snapshot, "maxHp"))
+                    : (!hostile && !training && !prey)) continue;
                 Vector3 delta = enemy.Root.transform.position - origin;
                 delta.y = 0f;
                 float sq = delta.sqrMagnitude;
@@ -1280,6 +1293,7 @@ namespace RealmOfAshes.Game
                 UnifiedHumanoid = unifiedHumanoid,
                 CarriesWeapon = !unifiedHumanoid && CreatureWeaponModels.Contains(key),
                 YawOffset = unifiedHumanoid ? 0f : RoaEnemyModels.YawOffset(key),
+                NameplateLift = unifiedHumanoid ? DefaultNameplateLift : NameplateLiftFor(key),
                 Snapshot = (JObject)row.DeepClone(),
                 LastPacketTime = Time.time,
                 BodyRadius = bodyProfile.Radius,
@@ -1984,12 +1998,16 @@ namespace RealmOfAshes.Game
                         enemy.Snapshot["activityPhase"]?.ToString()),
                     Hp = enemy.Hp,
                     MaxHp = Mathf.Max(1, enemy.Snapshot["maxHp"]?.ToObject<int>() ?? enemy.Hp),
-                    World = enemy.Root.transform.position + Vector3.up * (2.05f * scale),
+                    World = enemy.Root.transform.position + Vector3.up * (enemy.NameplateLift * scale),
                     Hostile = hostile,
                     IsPlayer = false,
                     NameOnly = !string.IsNullOrEmpty(enemy.Snapshot["stationObjectId"]?.ToString())
                 };
                 if (!hostile) plateEntry.Name = RoaInteraction.DisplayNpcName(enemy.Snapshot);
+                // Городская живность не враг, но её можно бить: табличка так и говорит.
+                if (ReadBoolean(enemy.Snapshot["prey"]))
+                    plateEntry.Faction = (enemy.Snapshot["aiState"]?.ToString() == "flee" ? "УДИРАЕТ" : "ДОБЫЧА")
+                        + " · Городская живность";
                 rows.Add(plateEntry);
             }
         }

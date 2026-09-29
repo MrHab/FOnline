@@ -270,6 +270,8 @@ const { entryKeyForDirection: dangerEntryKeyForDirection } = require('./src/serv
 const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
 const { createZoneRuntime } = require('./src/server/zone-runtime');
 const { TILES: CITY_TILES, WALL_HALF: CITY_WALL_HALF } = require('./src/server/city-builder');
+// Город — внутри стены (клетки CENTRE ± WALL_HALF), с запасом на её толщину.
+const CITY_INNER_TILE_MARGIN = CITY_TILES / 2 - CITY_WALL_HALF + 3;
 const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
 const { PLACES_REVISION, migrateSaveStateToZones } = require('./src/server/zone-migration');
 const { zoneAtPoint, zoneById, zoneLocationId, zoneOfLocation, zoneOfPlace, zoneRecipe } = require('./src/server/zone-graph');
@@ -529,6 +531,7 @@ const {
 const { buildTutorialStartingLoadout, buildTutorialSupplies } = require('./src/server/starting-loadout');
 const { harvestBonusChance } = require('./src/server/harvest-bonus');
 const gathering = require('./src/server/gathering');
+const cityCritters = require('./src/server/city-critters');
 const zoneGrounds = require('./src/server/zone-grounds');
 const { planFailedPlayerActivities } = require('./src/server/player-activity-recovery');
 const {
@@ -849,6 +852,10 @@ const FAST_TRAVEL_RULES = normalizeFastTravelRules(readJson(process.env.KROMKA_E
 const DANGER_ECOLOGY = normalizeEcologyConfig(readJson(
   process.env.KROMKA_DANGER_ECOLOGY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'danger-ecology.json'), {}));
 const DANGER_ECOLOGY_STATE_FILE = path.join(DATA_DIR, 'danger-ecology.json');
+// Городская живность: мирные зверьки в стенах городов, шкура с их туш.
+// KROMKA_CITY_CRITTERS_FILE подменяет её в сетевых проверках.
+const CITY_CRITTERS = cityCritters.normalizeCityCritters(readJson(
+  process.env.KROMKA_CITY_CRITTERS_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'city-critters.json'), {}));
 
 // Прогрессия добычу не создаёт вовсе: перки поиска только усиливают останки,
 // трофеи и авторские тайники (src/server/loot-perks.js).
@@ -4763,7 +4770,7 @@ function kromkaPublicWastelandSnapshot(raw = {}) {
   return snapshot;
 }
 const KROMKA_MUTANT_TYPE_ORDER = Object.freeze([
-  'burned', 'fold', 'gari', 'rykhlyak', 'dustling', 'listener', 'mourner', 'lantern'
+  'burned', 'fold', 'gari', 'rykhlyak', 'dustling', 'listener', 'mourner', 'lantern', 'rat'
 ]);
 const KROMKA_MUTANT_BY_ID = Object.freeze(Object.fromEntries(
   (Array.isArray(KROMKA_MUTANT_CATALOG.types) ? KROMKA_MUTANT_CATALOG.types : [])
@@ -4813,6 +4820,11 @@ const SERVER_ENEMY_TYPES = [
     visionRange: 10.0, hearingShotRange: 12.5, hearingHarvestRange: 5.5, memoryMs: 3400, investigateMs: 4200, senseIntervalMs: 340, noiseReaction: 0.72, noiseScatter: 1.2, separationRadius: 1.15 },
   ...KROMKA_MUTANT_TYPE_ORDER.map(serverEnemyTypeFromKromkaCreature)
 ];
+// Вид для обычного случайного спавна: городская живность живёт только в своих
+// местах внутри городов и в пустошь не заводится.
+const SERVER_RANDOM_ENEMY_TYPE_INDICES = Object.freeze(SERVER_ENEMY_TYPES
+  .map((type, index) => (type.creatureTypeId === CITY_CRITTERS.species ? -1 : index))
+  .filter(index => index >= 0));
 const SERVER_ENEMY_MODEL_KEY_BY_VISUAL = {
   raider: 'enemyRaider',
   enemyraider: 'enemyRaider',
@@ -4825,6 +4837,7 @@ const SERVER_ENEMY_MODEL_KEY_BY_VISUAL = {
   listener: 'kromkaListener',
   mourner: 'kromkaMourner',
   lantern: 'kromkaLantern',
+  rat: 'kromkaRat',
   // Legacy aliases are accepted only when old saves and old world contacts migrate.
   ghoul: 'kromkaBurned',
   enemyghoul: 'kromkaBurned',
@@ -4894,6 +4907,7 @@ const SERVER_MODEL_FILE_BY_KEY = Object.freeze({
   ,kromkaListener: 'npc_gecko.glb'
   ,kromkaMourner: 'npc_fire_gecko.glb'
   ,kromkaLantern: 'npc_lantern_stag.glb'
+  ,kromkaRat: 'npc_rat.glb'
 });
 const SERVER_MODEL_KEY_BY_FILE = Object.freeze(Object.fromEntries(
   Object.entries(SERVER_MODEL_FILE_BY_KEY)
@@ -4922,6 +4936,7 @@ const SERVER_APPROVED_ACTOR_MODEL_KEYS = new Set([
   ,'kromkaListener'
   ,'kromkaMourner'
   ,'kromkaLantern'
+  ,'kromkaRat'
 ]);
 
 function serverApprovedActorModelKey(modelKey = '') {
@@ -5272,6 +5287,8 @@ function serverPlayersAllied(attacker = {}, target = {}) {
 }
 
 function serverPlayerCanDamageNpc(player, enemy, room) {
+  // Городская живность — добыча: её бьют и в мирном городе, где прочих трогать нельзя.
+  if (enemy?.cityCritter === true) return !enemy.dead;
   // Мастер мастерской участка — служащий у станка, а не боец.
   if (!enemy || enemy.dead || !roomAllowsNpcCombat(room) || enemy.service === 'stationMaster'
     || serverNpcIsKromkaOnboardingProtected(enemy)
@@ -13974,6 +13991,11 @@ function weaponNoiseShouldTriggerChase(enemy, sourcePlayer, noiseType) {
 
 function aggroEnemyFromHit(room, enemy, player, now = Date.now()) {
   if (!room || !enemy || !player || enemy.dead || player.dead) return;
+  // Зверёк не отвечает на удар и не поднимает свою сторону против игрока: он удирает.
+  if (enemy.cityCritter === true) {
+    startleCityCritter(room, enemy, player, now);
+    return;
+  }
   if (enemy.hostileToPlayer === false) setEncounterFactionHostileToPlayer(room, enemy.faction, player, now);
   const canSee = enemyCanSeePlayer(room, enemy, player, now);
   enemy.noiseCooldownUntil = 0;
@@ -15479,11 +15501,15 @@ function serverEndGather(p) {
 function serverSpawnCarcass(room, enemy, now = Date.now()) {
   if (!room || !(room.resources instanceof Map) || !enemy || enemy.carcassSpawned) return null;
   if (!serverNpcIsNaturalCreature(enemy, enemy)) return null;
-  if (!KROMKA_TIER_CONFIG.hideDrops.species.includes(String(enemy.creatureTypeId || ''))) return null;
+  // Городской зверёк — не зверь логова, но шкуру с него снимают так же: тира города.
+  const critter = enemy.cityCritter === true;
+  if (!critter && !KROMKA_TIER_CONFIG.hideDrops.species.includes(String(enemy.creatureTypeId || ''))) return null;
   enemy.carcassSpawned = true;
   const rng = room.rng || Math.random;
   const [min, max] = KROMKA_TIER_CONFIG.hideDrops.qty;
-  const charges = min + Math.floor(rng() * (Math.max(min, max) - min + 1));
+  const charges = critter
+    ? cityCritters.hideCharges(CITY_CRITTERS, rng())
+    : min + Math.floor(rng() * (Math.max(min, max) - min + 1));
   if (charges <= 0) return null;
   const x = Number(enemy.x || 0), z = Number(enemy.z || 0);
   const tile = worldToTile(x, z, roomTileDims(room));
@@ -17369,8 +17395,7 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
   let minZ = Math.max(3, bounds.minZ + 3), maxZ = Math.min(dims.h - 4, bounds.maxZ - 3);
   const city = !!(loc?.cityZone || ZONE_RUNTIME.cityOf(locationId));
   if (city && dims.w === CITY_TILES && dims.h === CITY_TILES) {
-    // Город — внутри стены (клетки CENTRE ± WALL_HALF), с запасом на её толщину.
-    const inner = CITY_TILES / 2 - CITY_WALL_HALF + 3;
+    const inner = CITY_INNER_TILE_MARGIN;
     minX = Math.max(minX, inner); minZ = Math.max(minZ, inner);
     maxX = Math.min(maxX, CITY_TILES - 1 - inner); maxZ = Math.min(maxZ, CITY_TILES - 1 - inner);
   }
@@ -17385,11 +17410,7 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
   const centreX = (minX + maxX) / 2, centreZ = (minZ + maxZ) / 2;
   const halfSize = Math.max(1, Math.min(maxX - minX, maxZ - minZ) / 2);
   const keepClear = serverResourceKeepClearTiles(room, loc);
-  // Обход — от точки появления и входов (не от выходов: они у края, за стеной).
-  const starts = [loc.spawn, loc.respawn, ...Object.keys(loc).filter(key => key.startsWith('entry')).map(key => loc[key])]
-    .filter(point => point && Number.isFinite(Number(point.tx)) && Number.isFinite(Number(point.tz)))
-    .map(point => ({ tx: Number(point.tx), tz: Number(point.tz) }));
-  const reachable = serverReachableTiles(room, loc, starts);
+  const reachable = serverReachableTilesFromEntries(room, loc);
   const nearest = (tx, tz) => {
     let best = Infinity;
     for (const other of room.resources.values()) best = Math.min(best, Math.hypot(other.tx - tx, other.tz - tz));
@@ -17433,6 +17454,163 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
     room.staticCollisionObjects = null;
   }
   return changed;
+}
+
+/** Клетки, до которых доходят от точки появления и входов (не от выходов: они у края, за стеной). */
+function serverReachableTilesFromEntries(room, loc = {}) {
+  const starts = [loc.spawn, loc.respawn, ...Object.keys(loc).filter(key => key.startsWith('entry')).map(key => loc[key])]
+    .filter(point => point && Number.isFinite(Number(point.tx)) && Number.isFinite(Number(point.tz)))
+    .map(point => ({ tx: Number(point.tx), tz: Number(point.tz) }));
+  return serverReachableTiles(room, loc, starts);
+}
+
+// --- городская живность ------------------------------------------------------
+
+function serverRoomHostsCityCritters(room, loc = roomLocation(room)) {
+  if (!room || !Array.isArray(room.map) || CITY_CRITTERS.perCity <= 0 || room.locationWorldEvent) return false;
+  const locationId = String(loc?.id || room.locationId || '');
+  if (!(loc?.cityZone || ZONE_RUNTIME.cityOf(locationId))) return false;
+  const dims = roomTileDims(room);
+  return dims.w === CITY_TILES && dims.h === CITY_TILES;
+}
+
+/** Места зверьков: двор внутри стен, куда можно дойти от входа, вдали от служб и узлов. */
+function serverCityCritterCandidates(room, loc = roomLocation(room)) {
+  const dims = roomTileDims(room);
+  const keepClear = serverResourceKeepClearTiles(room, loc);
+  const reachable = serverReachableTilesFromEntries(room, loc);
+  const last = CITY_TILES - 1 - CITY_INNER_TILE_MARGIN;
+  const tiles = [];
+  for (let tz = CITY_INNER_TILE_MARGIN; tz <= last; tz++) {
+    for (let tx = CITY_INNER_TILE_MARGIN; tx <= last; tx++) {
+      const tile = room.map?.[tz]?.[tx];
+      if (tile !== TILE_TYPES.GRASS && tile !== TILE_TYPES.DARK && tile !== TILE_TYPES.PATH) continue;
+      if (reachable && !reachable.has(tz * dims.w + tx)) continue;
+      if (roomTileHasResource(room, tx, tz, 2) || roomTileHasContainer(room, tx, tz, 2)) continue;
+      if (keepClear.some(point => Math.hypot(point.tx - tx, point.tz - tz) < CITY_CRITTERS.keepClearTiles)) continue;
+      const pos = tileToWorld(tx, tz, dims);
+      if (!isRoomWalkableWorld(room, pos.x, pos.z, 0.9)) continue;
+      tiles.push({ tx, tz });
+    }
+  }
+  return tiles;
+}
+
+/**
+ * Живность городской комнаты: места считаются раз на карту города, пустое место
+ * заселяется сразу, место погибшего зверька — через respawnMs после его смерти.
+ * Если у места стоит игрок, зверёк появится на одном из следующих тиков.
+ */
+function updateCityCritterSlots(room, loc = roomLocation(room), now = Date.now()) {
+  if (!serverRoomHostsCityCritters(room, loc)) return false;
+  if (room.cityCritterMap !== room.map || !Array.isArray(room.cityCritterSlots)) {
+    room.cityCritterMap = room.map;
+    room.cityCritterSlots = cityCritters.planSlots(CITY_CRITTERS, String(loc?.id || room.locationId || ''),
+      serverCityCritterCandidates(room, loc));
+  }
+  const due = cityCritters.dueSlots(CITY_CRITTERS, room.cityCritterSlots, enemyId => {
+    const enemy = room.enemies.get(enemyId);
+    return enemy ? { alive: !enemy.dead, diedAt: Number(enemy.diedAt || 0) } : null;
+  }, now);
+  let spawned = false;
+  for (const slot of due) {
+    const enemy = spawnServerEnemy(room, {
+      force: true,
+      allowSafeLocation: true,
+      creatureTypeId: CITY_CRITTERS.species,
+      tx: slot.tx,
+      tz: slot.tz,
+      maxSpawnSearchRadius: 3,
+      requirePreferredSpawn: true,
+      minPlayerDistance: CITY_CRITTERS.minPlayerDistance,
+      hostileToPlayer: false,
+      canDialogue: false
+    });
+    if (!enemy) continue;
+    enemy.cityCritter = true;
+    enemy.cityCritterSlotId = slot.id;
+    slot.enemyId = enemy.id;
+    slot.respawnAt = 0;
+    spawned = true;
+  }
+  return spawned;
+}
+
+/**
+ * Удар или взрыв: зверёк бежит прочь от обидчика — в первую проходимую точку
+ * из нескольких направлений и дальностей, чтобы не упереться в стену дома.
+ */
+function startleCityCritter(room, enemy, threat, now = Date.now()) {
+  const first = Math.random();
+  const turns = [first, 0.5, 0.15, 0.85, 0, 0.999];
+  let point = null;
+  for (const scale of [1, 0.6]) {
+    for (const turn of turns) {
+      const candidate = cityCritters.fleePoint(enemy, threat, CITY_CRITTERS.fleeDistance * scale, turn);
+      if (isRoomWalkableWorld(room, candidate.x, candidate.z, 0.5)) { point = candidate; break; }
+    }
+    if (point) break;
+  }
+  if (!point) point = cityCritters.fleePoint(enemy, threat, CITY_CRITTERS.fleeDistance, first);
+  enemy.critterFleeX = point.x;
+  enemy.critterFleeZ = point.z;
+  enemy.critterFleeUntil = now + CITY_CRITTERS.fleeMs;
+  invalidateEnemyPath(enemy);
+}
+
+/** Зверёк удирает, пока не прошёл испуг; отбежав далеко, возвращается к месту, иначе пасётся. */
+function updateCityCritter(room, enemy, dt, now = Date.now(), rng = Math.random) {
+  clearEnemyLook(enemy);
+  if (Number(enemy.critterFleeUntil || 0) > now) {
+    enemy.aiState = 'flee';
+    const left = moveEnemyTowards(room, enemy, Number(enemy.critterFleeX), Number(enemy.critterFleeZ), enemy.speed, dt);
+    if (left < 0.8) enemy.critterFleeUntil = 0;
+    return;
+  }
+  const home = ensureEnemyHome(enemy);
+  const homeDist = Math.hypot(home.x - Number(enemy.x || 0), home.z - Number(enemy.z || 0));
+  if (enemy.aiState === 'return' || homeDist > CITY_CRITTERS.wanderRadius * 2) {
+    if (enemy.aiState !== 'return') {
+      enemy.critterReturnBest = homeDist;
+      enemy.critterReturnCheckAt = now + 2000;
+    }
+    enemy.aiState = 'return';
+    const left = moveEnemyTowards(room, enemy, home.x, home.z, enemy.speed * 0.62, dt);
+    // Домой — это в свой двор, а не в точку: на ней может стоять игрок. Если
+    // путь закрыт и за две секунды зверёк не продвинулся, он пасётся, где стоит.
+    const stuck = now >= Number(enemy.critterReturnCheckAt || 0) && left > Number(enemy.critterReturnBest) - 0.2;
+    if (left <= CITY_CRITTERS.wanderRadius || stuck) {
+      enemy.aiState = 'idle';
+      enemy.wanderTimer = 0;
+      invalidateEnemyPath(enemy);
+    } else if (now >= Number(enemy.critterReturnCheckAt || 0)) {
+      enemy.critterReturnBest = left;
+      enemy.critterReturnCheckAt = now + 2000;
+    }
+    return;
+  }
+  enemy.aiState = 'idle';
+  enemy.wanderTimer = Number(enemy.wanderTimer || 0) - dt;
+  if (enemy.wanderTimer <= 0) {
+    // Короткие перебежки с остановками: то принюхивается на месте, то семенит дальше.
+    enemy.wanderTimer = 1.2 + rng() * 2.4;
+    const pause = rng() < 0.45;
+    const angle = rng() * Math.PI * 2;
+    enemy.vx = pause ? 0 : Math.cos(angle);
+    enemy.vz = pause ? 0 : Math.sin(angle);
+  }
+  let vx = Number(enemy.vx || 0), vz = Number(enemy.vz || 0);
+  if (!vx && !vz) return;
+  const step = enemy.speed * 0.28 * dt;
+  if (Math.hypot(enemy.x + vx * step - home.x, enemy.z + vz * step - home.z) > CITY_CRITTERS.wanderRadius) {
+    const dx = home.x - enemy.x, dz = home.z - enemy.z;
+    const length = Math.hypot(dx, dz);
+    if (length > 0.001) { vx = dx / length; vz = dz / length; enemy.vx = vx; enemy.vz = vz; }
+  }
+  let moved = false;
+  if (isEnemyStepOpen(room, enemy, enemy.x + vx * step, enemy.z, 0.32)) { enemy.x += vx * step; moved = true; }
+  if (isEnemyStepOpen(room, enemy, enemy.x, enemy.z + vz * step, 0.32)) { enemy.z += vz * step; moved = true; }
+  if (!moved) enemy.wanderTimer = 0;
 }
 
 function updateRoomResourceRespawns(room, now = Date.now()) {
@@ -19669,6 +19847,8 @@ function publicEnemy(e, viewer = null) {
     kromkaOnboardingNpcId: naturalCreature ? '' : String(e.kromkaOnboardingNpcId || '').slice(0, 96),
     kromkaOnboardingProtected: !naturalCreature && serverNpcIsKromkaOnboardingProtected(e),
     trainingTarget: e.trainingTarget === true,
+    // Мирная добыча: не враг, но её можно бить (городская живность).
+    prey: e.cityCritter === true,
     kromkaProjection: !naturalCreature && e.kromkaProjection === true,
     kromkaRoleDescription: naturalCreature ? '' : String(e.kromkaRoleDescription || '').slice(0, 140),
     kromkaQuestIds: naturalCreature ? [] : (Array.isArray(e.kromkaQuestIds)
@@ -24646,7 +24826,8 @@ function spawnServerEnemy(room, opts = {}) {
     ? explicitCreatureTypeIndex
     : Number.isInteger(opts.typeIndex)
     ? clamp(opts.typeIndex, 0, SERVER_ENEMY_TYPES.length - 1)
-    : (opts.typeName ? serverEnemyTypeIndexByName(opts.typeName) : Math.floor(rng() * SERVER_ENEMY_TYPES.length));
+    : (opts.typeName ? serverEnemyTypeIndexByName(opts.typeName)
+      : SERVER_RANDOM_ENEMY_TYPE_INDICES[Math.floor(rng() * SERVER_RANDOM_ENEMY_TYPE_INDICES.length)]);
   const baseType = SERVER_ENEMY_TYPES[typeIndex] || SERVER_ENEMY_TYPES[0];
   const variantType = forced ? { ...baseType } : applyServerEnemyVariant(baseType, rollServerEnemyVariant(rng));
   // Тир зоны усиливает зверей и налётчиков относительно базового тира вида.
@@ -26175,6 +26356,7 @@ function updateServerEnemies(room, dt, opts = {}) {
   }
   const rng = room.rng || Math.random;
   const now = Date.now();
+  if (updateCityCritterSlots(room, loc, now)) enemyStructureChanged = true;
   for (const enemy of [...room.enemies.values()]) {
     if (enemy.dead) {
       if (serverShouldRemoveCorpse(enemy, now)) {
@@ -26189,6 +26371,12 @@ function updateServerEnemies(room, dt, opts = {}) {
       continue;
     }
     ensureEnemyHome(enemy);
+    // Городской зверёк не дерётся и не живёт по расписанию: пасётся у своего
+    // места и удирает от удара.
+    if (enemy.cityCritter === true) {
+      updateCityCritter(room, enemy, dt, now, rng);
+      continue;
+    }
     // Отступающая группа A-Life уходит за край и из стычки с другими NPC.
     if (enemy.ecologyPhase === 'leaving' && updateEcologyActorLifecycle(room, enemy, dt)) continue;
     // Стационарные торговцы и служебные NPC просто стоят и торгуют.

@@ -110,6 +110,10 @@
       { "id": "chemicals", "min": 1, "max": 2, "chance": 0.3 },
       { "id": "spectrumSample", "min": 1, "max": 1, "chance": 0.12 }
     ],
+    "rat": [
+      { "id": "food", "min": 1, "max": 1, "chance": 0.5 },
+      { "id": "scrap", "min": 1, "max": 1, "chance": 0.15 }
+    ],
     "basic": [
       { "oneOf": ["ammo9", "ammo556"], "min": 1, "max": 5, "chance": 0.3 },
       { "oneOf": ["stim", "water"], "min": 1, "max": 1, "chance": 0.2 },

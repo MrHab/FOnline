@@ -11,7 +11,9 @@
 process.env.DEV_API_MODE = 'local';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const http = require('node:http');
+const path = require('node:path');
 const h = require('./check-combat-runtime');
 const zoneWalk = require('./lib/zone-walk');
 const { groundMudFactor, WEATHER_EFFECT_LIMITS } = require('../src/server/weather');
@@ -19,7 +21,8 @@ const { groundMudFactor, WEATHER_EFFECT_LIMITS } = require('../src/server/weathe
 const accounts = {};
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const LOAM_ZONE = 'z_08_11';
-const LOAM_ENTRY = { tx: 81, tz: 9 };
+// Точка входа с севера: у ворот свободно по построению зоны.
+const LOAM_ENTRY = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'zones', 'authored', `${LOAM_ZONE}.json`), 'utf8')).entryFromNorth;
 // Пауза между пакетами длиннее потолка сервера (0,75 с): бюджет шага точно известен.
 const STEP_PAUSE_MS = 820;
 const walkBudget = multiplier => 7 * multiplier * 0.75 * 1.35 + 0.22;
@@ -79,7 +82,7 @@ async function stepToward(account, from, direction, meters = 12) {
 (async () => {
   await h.bootstrapCharacters(accounts);
   zoneWalk.placeInZone(h, accounts, 'untargeted', LOAM_ZONE, zoneWalk.world(LOAM_ENTRY));
-  zoneWalk.placeInZone(h, accounts, 'harvest', 'settlement', { x: 0, z: -22 });
+  zoneWalk.placeInZone(h, accounts, 'harvest', 'settlement', zoneWalk.cityWorld('settlement', zoneWalk.cityDefinition('settlement').spawn));
   await h.startServer();
   const loamPlayer = accounts.untargeted;
   const cityPlayer = accounts.harvest;

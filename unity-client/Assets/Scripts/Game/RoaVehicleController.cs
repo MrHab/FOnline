@@ -103,7 +103,7 @@ namespace RealmOfAshes.Game
             if (!riding || _movementFx == null) return;
             Vector3 observer = _camera != null ? _camera.transform.position : ground;
             _movementFx.TrackWheels(ref _wheelDust, ground, velocity, _player.Moving,
-                !RoaGameBootstrap.BlocksWorldHud, observer);
+                !RoaGameBootstrap.BlocksWorldHud, observer, RoaGroundPrints.TwinTrack(_player.VehicleItemId));
         }
 
         /// <summary>Сесть на транспорт или слезть с него. Ответ сервера применяется целиком.</summary>

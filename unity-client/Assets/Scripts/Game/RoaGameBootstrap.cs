@@ -78,6 +78,7 @@ namespace RealmOfAshes.Game
         public RoaRadio Radio;
         public RoaMovementFx MovementFx;
         public RoaWeather Weather;
+        public RoaGroundPrints GroundPrints;
         public RoaAnomalyFieldRenderer Anomalies;
         public RoaSettlementLifePresentation SettlementLifePresentation;
         public RoaBoltThrower BoltThrower;
@@ -236,6 +237,13 @@ namespace RealmOfAshes.Game
             Weather.MovementFx = MovementFx;
             Weather.Combat = Combat;
             Weather.ViewCamera = CameraRig != null ? CameraRig.GetComponent<Camera>() : Camera.main;
+
+            // Следы на земле зоны: шаги и колёса всех видимых актёров, глубина — по грунту и погоде.
+            if (GroundPrints == null) GroundPrints = GetComponent<RoaGroundPrints>();
+            if (GroundPrints == null) GroundPrints = gameObject.AddComponent<RoaGroundPrints>();
+            GroundPrints.ViewCamera = Weather.ViewCamera;
+            MovementFx.Prints = GroundPrints;
+            Weather.Prints = GroundPrints;
 
             if (Minimap == null) Minimap = GetComponent<RoaMinimap>();
             if (Minimap == null) Minimap = gameObject.AddComponent<RoaMinimap>();
@@ -1607,6 +1615,7 @@ namespace RealmOfAshes.Game
                 Lighting.SetLocation(null, null);
             }
             Weather?.SetActive(false);
+            GroundPrints?.SetLocation(null, null);
             SettlementLifePresentation?.SetLocalWorldActive(false);
             Anomalies?.SetLocalWorldActive(false);
             if (Minimap != null)
@@ -1810,6 +1819,7 @@ namespace RealmOfAshes.Game
                 Lighting.SetLocation(location, Loader.CurrentGroundRenderer);
                 Lighting.SetLocalWorldActive(true);
             }
+            GroundPrints?.SetLocation(ack.LocationId, location?.Ground?.Preset);
             // Новая комната — сразу её погода, без перетекания из прошлой.
             Weather?.SetActive(true);
             Weather?.ApplyWorldState(ack.WorldState);
@@ -1989,6 +1999,7 @@ namespace RealmOfAshes.Game
             if (Pipboy != null) Pipboy.SetPlayer(_controller);
             if (ActorNameplates != null) ActorNameplates.SetPlayer(_controller);
             if (Minimap != null) Minimap.SetPlayer(_controller);
+            if (GroundPrints != null) GroundPrints.Player = _controller;
             if (Enemies != null) Enemies.SetLocalPlayer(_controller);
             if (Vehicles != null)
             {

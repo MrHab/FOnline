@@ -43,12 +43,16 @@ function presetsInData() {
   assert(ids.length >= 8, 'every zone ground needs its own set');
   assert.equal(sources.license, 'CC0-1.0');
   for (const id of [sources.defaultSet, sources.pathSet, sources.mudSet]) assert(sources.sets[id], `${id} is a set`);
+  assert.equal(sources.sets[sources.mudSet].prints, Math.max(...ids.map(id => sources.sets[id].prints)),
+    'mud keeps the deepest prints');
 
   for (const [id, set] of Object.entries(sources.sets)) {
     assert.equal(set.license, 'CC0-1.0', `${id} is CC0`);
     assert.match(set.page, /^https:\/\/polyhaven\.com\/a\//, `${id} names its Poly Haven page`);
     assert(Array.isArray(set.authors) && set.authors.length, `${id} credits its authors`);
     assert(set.tilingMeters >= 1 && set.tilingMeters <= 8, `${id} repeats every 1–8 m`);
+    // Насколько грунт держит следы: 0 — бетон, 1 — грязь.
+    assert(Number.isFinite(set.prints) && set.prints >= 0 && set.prints <= 1, `${id} says how deep prints go (0..1)`);
     for (const role of ['diff', 'nor', 'arm', 'disp']) {
       assert.match(set.maps[role]?.md5 || '', /^[0-9a-f]{32}$/, `${id}/${role} is pinned by md5`);
       assert.match(set.maps[role]?.url || '', /^https:\/\/dl\.polyhaven\.org\//, `${id}/${role} comes from Poly Haven`);

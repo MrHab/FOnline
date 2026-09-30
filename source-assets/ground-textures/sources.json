@@ -45,7 +45,8 @@
           "bytes": 389673
         }
       },
-      "saturation": 0.86
+      "saturation": 0.86,
+      "prints": 0.6
     },
     "dirt": {
       "title": "Речной суглинок: плотная бурая почва",
@@ -87,7 +88,8 @@
           "bytes": 418669
         }
       },
-      "saturation": 0.95
+      "saturation": 0.95,
+      "prints": 0.75
     },
     "dry_ground_01": {
       "title": "Мел: бледная растрескавшаяся земля",
@@ -129,7 +131,8 @@
           "bytes": 153656
         }
       },
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.5
     },
     "burned_ground_01": {
       "title": "Нулевая котловина: пепел и гарь",
@@ -171,7 +174,8 @@
           "bytes": 220448
         }
       },
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.85
     },
     "red_laterite_soil_stones": {
       "title": "Железная осыпь: латерит с камнями",
@@ -213,7 +217,8 @@
           "bytes": 686915
         }
       },
-      "saturation": 0.78
+      "saturation": 0.78,
+      "prints": 0.3
     },
     "mud_cracked_dry_riverbed_002": {
       "title": "Спёкшееся стекло: тёмная корка в трещинах",
@@ -256,7 +261,8 @@
           "bytes": 505185
         }
       },
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.25
     },
     "dirty_concrete": {
       "title": "Бетон шлюзов: грязный бетон",
@@ -298,7 +304,8 @@
           "bytes": 251781
         }
       },
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.05
     },
     "moon_01": {
       "title": "Тихое кольцо: мёртвый серый грунт",
@@ -343,7 +350,8 @@
           "bytes": 412021
         }
       },
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.9
     },
     "rocky_trail": {
       "title": "Тропы: каменистая колея",
@@ -385,7 +393,8 @@
           "bytes": 418491
         }
       },
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.3
     },
     "muddy_tracks": {
       "title": "Грязь после дождя",
@@ -427,7 +436,8 @@
           "bytes": 481010
         }
       },
-      "saturation": 1
+      "saturation": 1,
+      "prints": 1
     }
   },
   "presets": {

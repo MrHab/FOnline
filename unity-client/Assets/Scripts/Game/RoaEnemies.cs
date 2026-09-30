@@ -1866,8 +1866,11 @@ namespace RealmOfAshes.Game
                         enemy.CharacterView.PresentationTier));
                 if (_movementFx != null)
                 {
+                    // Люди оставляют подошвы, звери — лапы по размеру тела.
                     _movementFx.TrackActor(ref enemy.StepFx, t.position, enemy.PresentationVelocity,
-                        enemy.PresentationMoving, presentationVisible, false, observer);
+                        enemy.PresentationMoving, presentationVisible, false, observer, 1f,
+                        enemy.UnifiedHumanoid ? RoaGroundPrints.Kind.Boot : RoaGroundPrints.Kind.Paw,
+                        enemy.UnifiedHumanoid ? 1f : Mathf.Clamp(enemy.BodyRadius / 0.38f, 0.35f, 2f));
                 }
             }
         }

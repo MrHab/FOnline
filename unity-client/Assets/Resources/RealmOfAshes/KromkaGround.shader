@@ -8,6 +8,8 @@
 // После дождя (погода сервера через RoaWorldLighting): грязь (_Mud) проступает на тропах
 // и в низинах, лужи (_Puddles) стоят там же и растут с уровнем воды, по воде в дождь
 // (_Rain) расходятся круги. Вода с карты сервера — тёмная мутная гладь с рябью.
+// Следы (RoaGroundPrints, глобальная карта _KromkaPrintMap вокруг камеры): отпечаток
+// опускает грунт, стенки лепит наклон нормали, в мокрую погоду следы набирают воду.
 // Освещение — полный PBR URP (UniversalFragmentPBR): солнце с тенями, допсвета (луна,
 // контровой, молния), отражения проб и туман.
 Shader "Realm of Ashes/Kromka Ground"
@@ -43,6 +45,9 @@ Shader "Realm of Ashes/Kromka Ground"
         _MudSaturation ("Mud saturation", Range(0, 1.5)) = 1
         _MudGroundColour ("Mud takes ground colour", Range(0, 1)) = 0.45
         _WaterColour ("Water colour", Color) = (0.07, 0.085, 0.075, 1)
+        _GroundPrints ("Ground keeps prints", Range(0, 1)) = 0.5
+        _PathPrints ("Path keeps prints", Range(0, 1)) = 0.3
+        _MudPrints ("Mud keeps prints", Range(0, 1)) = 1
 
         _NormalStrength ("Normal strength", Range(0, 2)) = 1
         _DrySmoothness ("Dry smoothness", Range(0, 1)) = 0.3
@@ -88,6 +93,12 @@ Shader "Realm of Ashes/Kromka Ground"
             TEXTURE2D(_MudNormal);    SAMPLER(sampler_MudNormal);
             TEXTURE2D(_MudMask);      SAMPLER(sampler_MudMask);
 
+            // Карта следов (RoaGroundPrints) — глобальная: xy окна — центр, z — 1/сторона в
+            // метрах, w — 1/тексели; сила 0 — следов нет (вне мира, пробы).
+            TEXTURE2D(_KromkaPrintMap); SAMPLER(sampler_KromkaPrintMap);
+            float4 _KromkaPrintWindow;
+            half _KromkaPrintStrength;
+
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseMap_ST;
                 half4 _BaseColor;
@@ -105,6 +116,9 @@ Shader "Realm of Ashes/Kromka Ground"
                 half _MudSaturation;
                 half _MudGroundColour;
                 half4 _WaterColour;
+                half _GroundPrints;
+                half _PathPrints;
+                half _MudPrints;
                 half _NormalStrength;
                 half _DrySmoothness;
                 half _Wetness;
@@ -318,6 +332,7 @@ Shader "Realm of Ashes/Kromka Ground"
                 half basin = ValueNoise(worldXZ * 0.085 + 3.7) * 0.65 + ValueNoise(worldXZ * 0.21 - 5.1) * 0.35;
 
                 // Грязь после дождя: проступает на тропах и в низинах, бугры гравия остаются сверху.
+                half mudWeight = 0;
                 UNITY_BRANCH
                 if (_Mud > 0.01)
                 {
@@ -329,7 +344,7 @@ Shader "Realm of Ashes/Kromka Ground"
                     mud.normalXY = half2(mc * mud.normalXY.x - ms * mud.normalXY.y, ms * mud.normalXY.x + mc * mud.normalXY.y);
                     // Тропы раскисают целиком, открытый грунт — только в самых низких местах.
                     half affinity = surface.r * 0.6 + (1.0 - basin) * 0.55;
-                    half mudWeight = saturate((_Mud * affinity - layer.height * 0.35 - 0.2) * 3.5);
+                    mudWeight = saturate((_Mud * affinity - layer.height * 0.35 - 0.2) * 3.5);
                     half3 mudMean = SAMPLE_TEXTURE2D_LOD(_MudAlbedo, sampler_MudAlbedo, float2(0.5, 0.5), 12).rgb * _MudTint.rgb;
                     half3 mudAlbedo = Saturate(mud.albedo * _MudTint.rgb, _MudSaturation)
                         * lerp(half3(1, 1, 1), groundMean / max(mudMean, half3(0.05, 0.05, 0.05)), _MudGroundColour);
@@ -338,6 +353,39 @@ Shader "Realm of Ashes/Kromka Ground"
                     layer.height = lerp(layer.height, mud.height * 0.6, mudWeight);
                     layer.roughness = lerp(layer.roughness, mud.roughness * 0.75, mudWeight);
                     layer.occlusion = lerp(layer.occlusion, mud.occlusion, mudWeight);
+                }
+
+                // Следы: глубину отпечатка на момент шага пишет RoaGroundPrints; здесь — только
+                // местная поправка (тропа держит след хуже грунта, свежая грязь лучше, в воде
+                // следов нет). Отпечаток опускает грунт — вода и темнота сначала в нём, стенки
+                // лепит наклон нормали по соседним текселям карты (на телефоне без него).
+                half printDepth = 0;
+                half2 printSlope = half2(0, 0);
+                UNITY_BRANCH
+                if (_KromkaPrintStrength > 0.001)
+                {
+                    float2 printUV = (worldXZ - _KromkaPrintWindow.xy) * _KromkaPrintWindow.z + 0.5;
+                    float2 edge = abs(printUV - 0.5);
+                    half inWindow = saturate((0.5 - max(edge.x, edge.y)) * 30.0);
+                    // Под грязью твёрдость тропы уже не важна: след держит сама грязь.
+                    half keep = lerp(1.0, _PathPrints / max(_GroundPrints, 0.05), surface.r);
+                    keep = min(lerp(keep, max(keep, _MudPrints / max(_GroundPrints, 0.05)), mudWeight), 1.5);
+                    half scale = inWindow * keep * (1.0 - surface.b) * _KromkaPrintStrength;
+                    half p0 = SAMPLE_TEXTURE2D_LOD(_KromkaPrintMap, sampler_KromkaPrintMap, printUV, 0).r;
+                    printDepth = saturate(p0 * scale);
+                #if !defined(_KROMKA_GROUND_LITE)
+                    float texel = _KromkaPrintWindow.w;
+                    half px = SAMPLE_TEXTURE2D_LOD(_KromkaPrintMap, sampler_KromkaPrintMap, printUV + float2(texel, 0), 0).r;
+                    half pz = SAMPLE_TEXTURE2D_LOD(_KromkaPrintMap, sampler_KromkaPrintMap, printUV + float2(0, texel), 0).r;
+                    // Полная глубина отпечатка — 3,5 см; наклон стенки — разница глубин на тексель.
+                    half metresPerTexel = _KromkaPrintWindow.w / _KromkaPrintWindow.z;
+                    printSlope = half2(px - p0, pz - p0) * (0.035 / metresPerTexel) * scale;
+                #endif
+                    // Подошва уплотняет и приглаживает грунт: внутри следа темнее и ровнее.
+                    albedo *= 1.0 - printDepth * (0.2 + 0.1 * _Wetness);
+                    layer.normalXY *= 1.0 - printDepth * 0.7;
+                    layer.height = saturate(layer.height - printDepth * 0.55);
+                    layer.roughness = lerp(layer.roughness, layer.roughness * 0.75, printDepth * 0.5);
                 }
 
                 half2 normalXY = layer.normalXY * _NormalStrength;
@@ -349,6 +397,7 @@ Shader "Realm of Ashes/Kromka Ground"
                 albedo *= 1.0 - wet * (0.4 - 0.12 * layer.height);
                 smoothness = lerp(smoothness, lerp(0.74, 0.46, layer.height), sqrt(wet));
                 normalXY *= 1.0 - wet * 0.45;
+                normalXY += printSlope;
 
                 // Лужи: вода стоит в низинах и в колеях троп, сначала во впадинах текстуры; у
                 // края — мелко (видно дно), к середине — тёмная гладь, отражающая небо.
@@ -366,6 +415,10 @@ Shader "Realm of Ashes/Kromka Ground"
                     smoothness = lerp(smoothness, max(smoothness, 0.8), soaked);
                     puddle = saturate((level - floorHeight) / 0.012);
                     half depth = saturate((level - floorHeight) / 0.05);
+                    // Глубокие следы (в грязи) набирают воду раньше луж.
+                    half printFill = saturate((printDepth - 0.3) * 2.5) * saturate(_Puddles * 3.0);
+                    puddle = max(puddle, printFill);
+                    depth = max(depth, printFill * 0.3);
                     half3 murky = albedo * 0.3 + _WaterColour.rgb * 0.5;
                     albedo = lerp(albedo, lerp(albedo * 0.72, murky, depth), puddle);
                     smoothness = lerp(smoothness, 0.965, puddle);

@@ -749,7 +749,8 @@ namespace RealmOfAshes.Game
                 if (_movementFx != null && riding)
                 {
                     _movementFx.TrackWheels(ref remote.StepFx, t.position, remote.PresentationVelocity,
-                        remote.PresentationMoving, presentationVisible, observer);
+                        remote.PresentationMoving, presentationVisible, observer,
+                        RoaGroundPrints.TwinTrack(RemoteVehicleItemId(remote)));
                 }
                 else if (_movementFx != null)
                 {

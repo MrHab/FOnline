@@ -40,7 +40,8 @@
         1,
         1
       ],
-      "saturation": 0.86
+      "saturation": 0.86,
+      "prints": 0.6
     },
     "dirt": {
       "tilingMeters": 3,
@@ -49,7 +50,8 @@
         1,
         1
       ],
-      "saturation": 0.95
+      "saturation": 0.95,
+      "prints": 0.75
     },
     "dry_ground_01": {
       "tilingMeters": 3.6,
@@ -58,7 +60,8 @@
         1,
         1
       ],
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.5
     },
     "burned_ground_01": {
       "tilingMeters": 3.2,
@@ -67,7 +70,8 @@
         1,
         1
       ],
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.85
     },
     "red_laterite_soil_stones": {
       "tilingMeters": 3,
@@ -76,7 +80,8 @@
         1,
         1
       ],
-      "saturation": 0.78
+      "saturation": 0.78,
+      "prints": 0.3
     },
     "mud_cracked_dry_riverbed_002": {
       "tilingMeters": 3.4,
@@ -85,7 +90,8 @@
         1,
         1
       ],
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.25
     },
     "dirty_concrete": {
       "tilingMeters": 4,
@@ -94,7 +100,8 @@
         1,
         1
       ],
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.05
     },
     "moon_01": {
       "tilingMeters": 4,
@@ -103,7 +110,8 @@
         1,
         1
       ],
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.9
     },
     "rocky_trail": {
       "tilingMeters": 2.6,
@@ -112,7 +120,8 @@
         1,
         1
       ],
-      "saturation": 1
+      "saturation": 1,
+      "prints": 0.3
     },
     "muddy_tracks": {
       "tilingMeters": 3,
@@ -121,7 +130,8 @@
         1,
         1
       ],
-      "saturation": 1
+      "saturation": 1,
+      "prints": 1
     }
   }
 }

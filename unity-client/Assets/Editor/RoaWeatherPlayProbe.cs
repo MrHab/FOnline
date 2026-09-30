@@ -23,6 +23,8 @@ namespace RealmOfAshes.EditorTools
     /// /api/dev/weather ясно → дождь → ливень → мокро после дождя и в каждом состоянии
     /// проверяет, что видит игрок: струи и круги дождя, шум, чип под картой, мокрую
     /// землю (темнее и глаже), молнии в ливень и множитель шага из снимка сервера.
+    /// В конце игрок проходит петлю после дождя (следы в грязи набирают воду) и ещё одну,
+    /// когда земля высохла: новые сухие следы ложатся рядом со старыми из грязи.
     /// Кадры камеры — 1600×900 и 844×390 (телефон в ландшафте) — в той же папке.
     /// </summary>
     [InitializeOnLoad]
@@ -160,6 +162,25 @@ namespace RealmOfAshes.EditorTools
                 Require(groundRenderer.bounds.center.y < RoaWorldLighting.WetReflectionTop - 0.01f,
                     "центр земли выше коробки отражения мокрой земли");
                 StateReport wet = await Settle(baseUrl, "wet", weather, bootstrap, camera);
+
+                // Следы живого игрока: петля по грязи после дождя, затем по высохшей земле.
+                RoaGroundPrints prints = bootstrap.GroundPrints;
+                RoaPlayerController player = prints != null ? prints.Player : null;
+                Require(prints != null && prints.Active && player != null && !string.IsNullOrEmpty(prints.LocationId),
+                    "следы не подключены к игроку и локации");
+                (int wetPrints, Vector3 wetMiddle) = await WalkLoop(player, prints, 1f);
+                float wetDepth = prints.DepthNear(wetMiddle, 1.4f);
+                Save(Capture(camera, 1600, 900), "wet-prints-desktop.png");
+                Save(Capture(camera, 844, 390), "wet-prints-mobile.png");
+                await Settle(baseUrl, "clear", weather, bootstrap, camera, "dried");
+                (int dryPrints, Vector3 dryMiddle) = await WalkLoop(player, prints, -1f);
+                float dryDepth = prints.DepthNear(dryMiddle, 1.4f);
+                float keptDepth = prints.DepthNear(wetMiddle, 1.4f);
+                Save(Capture(camera, 1600, 900), "dried-prints-desktop.png");
+                Save(Capture(camera, 844, 390), "dried-prints-mobile.png");
+                lines.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "prints {0}: ground softness {1:0.00}, after rain {2} (depth {3:0.00}), dried {4} (depth {5:0.00}), mud prints kept {6:0.00}, map draws {7}",
+                    prints.LocationId, prints.Softness, wetPrints, wetDepth, dryPrints, dryDepth, keptDepth, prints.DrawCount));
                 await Post(baseUrl, "/api/dev/weather", "{\"override\":null}");
 
                 foreach (StateReport row in new[] { clear, rain, storm, wet })
@@ -205,6 +226,10 @@ namespace RealmOfAshes.EditorTools
                     Require(wet.GroundTint.grayscale < clear.GroundTint.grayscale * 0.8f, "мокрая земля не темнее сухой");
                 }
                 Require(wet.GroundLuminance < clear.GroundLuminance, "в кадре мокрая земля не темнее сухой");
+                Require(wetPrints >= 6 && wetDepth > 0.3f, "после дождя игрок не оставляет глубоких следов: " + wetPrints + ", " + wetDepth);
+                Require(keptDepth > wetDepth * 0.95f, "следы в грязи пропали, когда земля высохла");
+                if (prints.Softness >= 0.2f)
+                    Require(dryPrints >= 4 && dryDepth > 0.1f && dryDepth < wetDepth, "в сухом грунте следы не мельче, чем в грязи: " + dryDepth);
                 verdict = "PASS: " + string.Join(" | ", lines);
                 Debug.Log(Tag + " " + verdict);
             }
@@ -218,8 +243,24 @@ namespace RealmOfAshes.EditorTools
             EditorApplication.isPlaying = false;
         }
 
+        /// <summary>Петля шагом: вбок, вперёд и назад; сколько следов прибавилось и точка на середине пути.</summary>
+        private static async Task<(int, Vector3)> WalkLoop(RoaPlayerController player, RoaGroundPrints prints, float side)
+        {
+            int before = prints.PrintCount;
+            player.SetVirtualMove(new Vector2(side, 0f));
+            await Seconds(2.5f);
+            Vector3 middle = player.View != null ? player.View.transform.position : player.transform.position;
+            player.SetVirtualMove(new Vector2(0f, 1f));
+            await Seconds(1f);
+            player.SetVirtualMove(new Vector2(-side, 0f));
+            await Seconds(2.5f);
+            player.SetVirtualMove(Vector2.zero);
+            await Seconds(2f);
+            return (prints.PrintCount - before, middle);
+        }
+
         private static async Task<StateReport> Settle(string baseUrl, string state, RoaWeather weather,
-                                                       RoaGameBootstrap bootstrap, Camera camera)
+                                                       RoaGameBootstrap bootstrap, Camera camera, string label = null)
         {
             string response = await Post(baseUrl, "/api/dev/weather", "{\"override\":\"" + state + "\"}");
             Require(response.Contains("\"ok\":true"), "dev API не закрепил погоду " + state + ": " + response);
@@ -253,8 +294,8 @@ namespace RealmOfAshes.EditorTools
             report.GroundTint = block.GetColor("_BaseColor");
             Texture2D desktop = Capture(camera, 1600, 900);
             report.GroundLuminance = LowerLuminance(desktop);
-            Save(desktop, state + "-desktop.png");
-            Save(Capture(camera, 844, 390), state + "-mobile.png");
+            Save(desktop, (label ?? state) + "-desktop.png");
+            Save(Capture(camera, 844, 390), (label ?? state) + "-mobile.png");
             return report;
         }
 

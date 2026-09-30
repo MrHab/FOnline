@@ -91,7 +91,7 @@ namespace RealmOfAshes.EditorTools
             EditorApplication.Exit(code);
         }
 
-        private struct Shot
+        internal struct Shot
         {
             public Color32[] Pixels;
             public float Luminance;
@@ -141,7 +141,7 @@ namespace RealmOfAshes.EditorTools
             }
         }
 
-        private static LocationDefinition Location(string id, int width, int depth, long seed, string preset)
+        internal static LocationDefinition Location(string id, int width, int depth, long seed, string preset)
         {
             return new LocationDefinition
             {
@@ -165,7 +165,7 @@ namespace RealmOfAshes.EditorTools
         }
 
         /// <summary>Тропа наискосок через центр, озерцо слева и пятна гари справа.</summary>
-        private static JArray Map(int width, int depth)
+        internal static JArray Map(int width, int depth)
         {
             var map = new JArray();
             for (int z = 0; z < depth; z++)
@@ -188,6 +188,12 @@ namespace RealmOfAshes.EditorTools
         }
 
         private static Shot Render(GameObject host, string name)
+        {
+            return Render(host, name, Output, 11.5f, Width, Height);
+        }
+
+        /// <summary>Кадр клочка земли игровой камерой (55°, дистанция distance) в папку output.</summary>
+        internal static Shot Render(GameObject host, string name, string output, float distance, int width, int height)
         {
             foreach (Transform part in host.GetComponentsInChildren<Transform>(true))
                 part.gameObject.layer = CaptureLayer;
@@ -234,9 +240,9 @@ namespace RealmOfAshes.EditorTools
                 camera.farClipPlane = 120f;
                 Quaternion orbit = Quaternion.Euler(55f, 45f, 0f);
                 cameraObject.transform.rotation = orbit;
-                cameraObject.transform.position = new Vector3(0f, 0f, 0f) - orbit * Vector3.forward * 11.5f;
+                cameraObject.transform.position = new Vector3(0f, 0f, 0f) - orbit * Vector3.forward * distance;
 
-                target = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
+                target = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
                 target.Create();
                 camera.targetTexture = target;
                 for (int warmup = 0; warmup < 6; warmup++)
@@ -247,11 +253,11 @@ namespace RealmOfAshes.EditorTools
                 }
                 RenderCapture(camera, target);
                 RenderTexture.active = target;
-                readback = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-                readback.ReadPixels(new Rect(0, 0, Width, Height), 0, 0);
+                readback = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                readback.ReadPixels(new Rect(0, 0, width, height), 0, 0);
                 readback.Apply(false, false);
-                File.WriteAllBytes(Path.Combine(Output, name + ".png"), readback.EncodeToPNG());
-                return Measure(readback.GetPixels32());
+                File.WriteAllBytes(Path.Combine(output, name + ".png"), readback.EncodeToPNG());
+                return Measure(readback.GetPixels32(), width, height);
             }
             finally
             {
@@ -276,20 +282,20 @@ namespace RealmOfAshes.EditorTools
         }
 
         /// <summary>Средняя яркость, «деталь» — средний перепад яркости соседних пикселей, доля пурпура.</summary>
-        private static Shot Measure(Color32[] pixels)
+        private static Shot Measure(Color32[] pixels, int width, int height)
         {
             double sum = 0, detail = 0;
             int magenta = 0, pairs = 0;
-            for (int y = 0; y < Height; y++)
-            for (int x = 0; x < Width; x++)
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
             {
-                Color32 c = pixels[y * Width + x];
+                Color32 c = pixels[y * width + x];
                 float lum = (0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b) / 255f;
                 sum += lum;
                 if (c.r > 200 && c.b > 200 && c.g < 60) magenta++;
-                if (x + 1 < Width)
+                if (x + 1 < width)
                 {
-                    Color32 n = pixels[y * Width + x + 1];
+                    Color32 n = pixels[y * width + x + 1];
                     detail += Mathf.Abs(lum - (0.2126f * n.r + 0.7152f * n.g + 0.0722f * n.b) / 255f);
                     pairs++;
                 }
@@ -304,7 +310,7 @@ namespace RealmOfAshes.EditorTools
         }
 
         /// <summary>Доля пикселей, у которых яркость ушла больше чем на 0,06 между двумя кадрами.</summary>
-        private static float ChangedFraction(Shot a, Shot b)
+        internal static float ChangedFraction(Shot a, Shot b)
         {
             int changed = 0;
             for (int i = 0; i < a.Pixels.Length; i++)
@@ -317,7 +323,7 @@ namespace RealmOfAshes.EditorTools
             return changed / (float)a.Pixels.Length;
         }
 
-        private static void Require(bool condition, string message)
+        internal static void Require(bool condition, string message)
         {
             if (!condition) throw new InvalidOperationException(message);
         }

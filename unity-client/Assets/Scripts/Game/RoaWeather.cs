@@ -41,6 +41,7 @@ namespace RealmOfAshes.Game
         public RoaWorldLighting Lighting;
         public RoaAudio Audio;
         public RoaMovementFx MovementFx;
+        public RoaGroundPrints Prints;
         public RoaCombat Combat;
         public Camera ViewCamera;
 
@@ -226,6 +227,7 @@ namespace RealmOfAshes.Game
             Lighting?.SetRain(Cloud, Rain, Wetness, Puddles, Mud);
             Audio?.SetRain(_target.Valid ? _target.Rain : 0f, _target.Sheltered);
             MovementFx?.SetGround(Wetness, Mud);
+            Prints?.SetConditions(Wetness, Mud, Rain);
             EnsureRainFx();
             if (ViewCamera == null) ViewCamera = Camera.main;
             _rainFx.SetWeather(Rain, Wetness, _target.Wind, _target.WindSpeed, ViewCamera);

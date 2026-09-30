@@ -38,6 +38,8 @@ namespace RealmOfAshes.Game
             public float NextStepAt;
             public bool Initialized;
             public bool RightFoot;
+            public RoaGroundPrints.Track PrintFeet;
+            public RoaGroundPrints.WheelTrack PrintWheels;
         }
 
         private const int PuffCapacityValue = 96;
@@ -45,6 +47,9 @@ namespace RealmOfAshes.Game
         private const int DustTextureSizeValue = 64;
         private const float PuffLiftMin = 0.16f;
         private const float PuffLiftMax = 0.58f;
+
+        /// <summary>Следы на земле (RoaGroundPrints): шаги и колёса чужих актёров идут туда же.</summary>
+        public RoaGroundPrints Prints;
 
         private RoaAudio _audio;
         private ParticleSystem _puffs;
@@ -187,9 +192,11 @@ namespace RealmOfAshes.Game
         }
 
         public bool TrackActor(ref ActorStepState state, Vector3 position, Vector3 velocity,
-                               bool moving, bool visible, bool crouching, Vector3 observerPosition, float noiseMultiplier = 1f)
+                               bool moving, bool visible, bool crouching, Vector3 observerPosition, float noiseMultiplier = 1f,
+                               RoaGroundPrints.Kind printKind = RoaGroundPrints.Kind.Boot, float printScale = 1f)
         {
             bool active = visible && IsActorFxInRange(position, observerPosition, Application.isMobilePlatform);
+            Prints?.TrackFeet(ref state.PrintFeet, position, velocity, active && moving, printKind, printScale);
             if (!TryPlanActorStep(ref state, position, velocity, moving, active, crouching,
                                   Time.unscaledTime, out RoaAudio.FootstepCue cue)) return false;
             cue.NoiseMultiplier = noiseMultiplier;
@@ -205,13 +212,14 @@ namespace RealmOfAshes.Game
         /// звука шагов. position — земля под седоком. true — пыль выпущена.
         /// </summary>
         public bool TrackWheels(ref ActorStepState state, Vector3 position, Vector3 velocity,
-                                bool moving, bool visible, Vector3 observerPosition)
+                                bool moving, bool visible, Vector3 observerPosition, bool twinTrack = false)
         {
             velocity.y = 0f;
             float speed = velocity.magnitude;
             float now = Time.unscaledTime;
-            bool active = visible && moving && speed > 1.2f
-                && IsActorFxInRange(position, observerPosition, Application.isMobilePlatform);
+            bool inRange = visible && moving && IsActorFxInRange(position, observerPosition, Application.isMobilePlatform);
+            Prints?.TrackWheels(ref state.PrintWheels, position, velocity, inRange, twinTrack);
+            bool active = inRange && speed > 1.2f;
             if (!active || now < state.NextStepAt) return false;
             state.NextStepAt = now + Mathf.Lerp(0.16f, 0.07f, Mathf.InverseLerp(1.2f, 11f, speed));
             EmitWheelDust(position, velocity);

@@ -97,7 +97,8 @@ function runtimeCatalog(sources) {
     sets: Object.fromEntries(Object.entries(sources.sets).map(([id, set]) => [id, {
       tilingMeters: set.tilingMeters,
       tint: set.tint,
-      saturation: set.saturation ?? 1
+      saturation: set.saturation ?? 1,
+      prints: set.prints
     }]))
   };
 }

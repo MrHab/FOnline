@@ -124,7 +124,7 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 `RoaWorldLighting` (день/ночь, авторские профили, погода и мокрая земля; `.Weather` —
 буря выброса поверх света часа), `RoaWeather` (снимок погоды сервера), `RoaRainFx`
 (струи, круги, молнии), `RoaGroundTextures` (наборы земли по пресету грунта для шейдера
-`Kromka Ground`), `RoaFogOfWar`,
+`Kromka Ground`), `RoaGroundPrints` (следы шагов и колёс на карте вокруг камеры), `RoaFogOfWar`,
 `RoaAuthoredVision`, `RoaVisibilityGate`, `RoaRoofCutaway`, `RoaMinimap`.
 Подробнее: [камера и видимость](CAMERA_AND_VISION.md).
 

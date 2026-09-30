@@ -23,6 +23,8 @@ namespace RealmOfAshes.World
             public float TilingMeters;
             public Color Tint;
             public float Saturation;
+            /// <summary>Насколько грунт держит следы: 0 — бетон, 1 — грязь.</summary>
+            public float Prints;
         }
 
         private static JObject _catalog;
@@ -74,11 +76,12 @@ namespace RealmOfAshes.World
 
         public static SetInfo Info(string id)
         {
-            var info = new SetInfo { Id = id, TilingMeters = 3f, Tint = Color.white, Saturation = 1f };
+            var info = new SetInfo { Id = id, TilingMeters = 3f, Tint = Color.white, Saturation = 1f, Prints = 0.5f };
             JObject set = Catalog?["sets"]?[id ?? string.Empty] as JObject;
             if (set == null) return info;
             info.TilingMeters = Mathf.Clamp(set["tilingMeters"]?.Value<float>() ?? 3f, 0.5f, 12f);
             info.Saturation = Mathf.Clamp(set["saturation"]?.Value<float>() ?? 1f, 0f, 1.5f);
+            info.Prints = Mathf.Clamp01(set["prints"]?.Value<float>() ?? 0.5f);
             if (set["tint"] is JArray tint && tint.Count >= 3)
                 info.Tint = new Color(tint[0].Value<float>(), tint[1].Value<float>(), tint[2].Value<float>(), 1f);
             return info;
@@ -123,6 +126,7 @@ namespace RealmOfAshes.World
             material.SetFloat(prefix + "Tiling", info.TilingMeters);
             material.SetColor(prefix + "Tint", info.Tint);
             material.SetFloat(prefix + "Saturation", info.Saturation);
+            material.SetFloat(prefix + "Prints", info.Prints);
             return true;
         }
 

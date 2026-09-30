@@ -24,7 +24,7 @@ namespace RealmOfAshes.Game
     /// Сцена стоит в начале координат, как и локальный мир, поэтому её коллайдеры
     /// выключаются, а выбор точки считается по рельефу, без физики.
     /// </summary>
-    public sealed class RoaWorldMap3D : MonoBehaviour
+    public sealed partial class RoaWorldMap3D : MonoBehaviour
     {
         public const int MapLayer = 30;
         public const float WorldScale = 0.1f;
@@ -476,8 +476,11 @@ namespace RealmOfAshes.Game
             _previewCamera.transform.SetPositionAndRotation(centre + _root.up * (50f * scale), _root.rotation * Quaternion.Euler(90f, 0f, 0f));
             bool player = _playerMarker != null && _playerMarker.gameObject.activeSelf;
             bool selection = _selectionMarker != null && _selectionMarker.gameObject.activeSelf;
+            // Буря в кадр местности не попадает: окно зоны кладёт её своим слоем.
+            bool storm = _stormView != null && _stormView.activeSelf;
             if (player) _playerMarker.gameObject.SetActive(false);
             if (selection) _selectionMarker.gameObject.SetActive(false);
+            if (storm) _stormView.SetActive(false);
             // В URP прямой Camera.Render() не поддержан: сперва запрос рендера конвейера.
             var request = new UniversalRenderPipeline.SingleCameraRequest { destination = target };
             if (RenderPipeline.SupportsRenderRequest(_previewCamera, request))
@@ -492,6 +495,7 @@ namespace RealmOfAshes.Game
             }
             if (player) _playerMarker.gameObject.SetActive(true);
             if (selection) _selectionMarker.gameObject.SetActive(true);
+            if (storm) _stormView.SetActive(true);
             return true;
         }
 
@@ -818,6 +822,7 @@ namespace RealmOfAshes.Game
 
         private void ReleaseOverlays()
         {
+            ReleaseStorm();
             if (_zonesView != null) Destroy(_zonesView);
             if (_routeView != null) Destroy(_routeView);
             _zonesView = _routeView = null;

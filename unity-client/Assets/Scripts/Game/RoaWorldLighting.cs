@@ -16,7 +16,7 @@ namespace RealmOfAshes.Game
     /// Server time can be enabled for diagnostics or a future live cycle without
     /// changing the authoritative Node simulation.
     /// </summary>
-    public sealed class RoaWorldLighting : MonoBehaviour
+    public sealed partial class RoaWorldLighting : MonoBehaviour
     {
         public const float WebFixedWorldHour = 16.2f;
         private const float GameDayRealSeconds = 60f * 60f;
@@ -166,6 +166,8 @@ namespace RealmOfAshes.Game
             RestoreSceneState();
             if (_postVolume != null) DestroyRuntime(_postVolume.gameObject);
             if (_runtimeVolumeProfile != null) DestroyRuntime(_runtimeVolumeProfile);
+            if (_stormVolume != null) DestroyRuntime(_stormVolume.gameObject);
+            if (_stormProfile != null) DestroyRuntime(_stormProfile);
             if (_ownsSun && Sun != null) DestroyRuntime(Sun.gameObject);
             if (_wetReflection != null) DestroyRuntime(_wetReflection.gameObject);
             if (_skyCube != null) DestroyRuntime(_skyCube);
@@ -214,11 +216,13 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Погода поверх часа (RoaWeather): облака гасят солнце и тени, дождь
-        /// сгущает дымку, мокрая земля темнеет и блестит. Вызывается каждый кадр
-        /// сглаженными числами; свет пересчитывается не чаще четырёх раз в секунду.
+        /// Дождь поверх часа (RoaWeather): облака гасят солнце и тени, дождь
+        /// сгущает дымку, мокрая земля темнеет и блестит. Входит в CurrentSample,
+        /// поэтому буря выброса (SetWeather, .Weather) ложится уже поверх дождя.
+        /// Вызывается каждый кадр сглаженными числами; свет пересчитывается не чаще
+        /// четырёх раз в секунду.
         /// </summary>
-        public void SetWeather(float cloud, float rain, float wetness)
+        public void SetRain(float cloud, float rain, float wetness)
         {
             cloud = Mathf.Clamp01(cloud);
             rain = Mathf.Clamp01(rain);

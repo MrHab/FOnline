@@ -223,7 +223,7 @@ namespace RealmOfAshes.Game
 
         private void Push(float dt)
         {
-            Lighting?.SetWeather(Cloud, Rain, Wetness);
+            Lighting?.SetRain(Cloud, Rain, Wetness);
             Audio?.SetRain(_target.Valid ? _target.Rain : 0f, _target.Sheltered);
             MovementFx?.SetGround(Wetness, Mud);
             EnsureRainFx();

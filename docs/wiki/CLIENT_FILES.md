@@ -121,8 +121,9 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 зону с потерями показывает её правила и пропускает только со второго шага.
 
 **Камера, свет и видимость** — `RoaCameraRig` (+`.Presentation`),
-`RoaWorldLighting` (день/ночь, авторские профили, погода и мокрая земля),
-`RoaWeather` (снимок погоды сервера), `RoaRainFx` (струи, круги, молнии), `RoaFogOfWar`,
+`RoaWorldLighting` (день/ночь, авторские профили, погода и мокрая земля; `.Weather` —
+буря выброса поверх света часа), `RoaWeather` (снимок погоды сервера), `RoaRainFx`
+(струи, круги, молнии), `RoaFogOfWar`,
 `RoaAuthoredVision`, `RoaVisibilityGate`, `RoaRoofCutaway`, `RoaMinimap`.
 Подробнее: [камера и видимость](CAMERA_AND_VISION.md).
 
@@ -144,6 +145,11 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 `RoaEconomyFeedback`, `RoaPersonalBaseCanvas` (личная база и режим
 строительства), `RoaAnomalyFieldRenderer` (+`.Presentation`),
 `RoaKromkaShiftAndDetector` (Сдвиг, детектор, подбор артефакта),
+`RoaRadiationStorm` (+`.Visuals`, `.Screen`, `.Audio`: буря выброса в сцене —
+стены пыли на кромках, песок, молнии, экранная муть и свечение края, ветер,
+гром, дозиметр), `RoaRadiationStormPath` (путь бури и рамка сцены — та же
+формула, что у сервера), `RoaStormMapOverlay` (буря на миникарте, карте
+локации и местности зоны),
 `RoaKromkaSiegePresentation`, `RoaWorldEventsPresentation` (панель мировых
 событий HUD).
 
@@ -158,7 +164,9 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 запасной вид; partial `.ZoneWindow` — окно зоны в духе Albion и компас),
 `RoaWorldMap3D` (3D-вид: сцена `KromkaGlobalMap` поверх зоны в
 своём слое и своей камерой, сетка зон по `GET /api/world-map` на рельефе,
-флажок, выбор, путь и снимок местности зоны сверху для окна), `RoaWorldMapRoute` (путь по зонам через открытые ворота),
+флажок, выбор, путь и снимок местности зоны сверху для окна; `.Storm` —
+полоса бури выброса на рельефе), partial `RoaWorldOverviewCanvas.Storm`
+(полоса и подпись бури в окне), `RoaWorldMapRoute` (путь по зонам через открытые ворота),
 `RoaMapWindowCanvas` (карта локации), `RoaWorldActivityCanvas`
 (+`.Feedback` и partial-файл `RoaWorldActivityNavigation.cs`),
 `RoaActivityBeacon`, `RoaActivityZoneMarker`, `RoaActivityFeedback`,

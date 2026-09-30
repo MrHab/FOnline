@@ -564,6 +564,8 @@ namespace RealmOfAshes.Game
             _mapImage = map.gameObject.AddComponent<RawImage>();
             _mapImage.color = Color.white;
             _mapImage.raycastTarget = false;
+            // Буря выброса поверх снимка локации, под метками: фронт там же, где стена в сцене.
+            RoaStormMapOverlay.Attach(map).ShowScene();
             _markerLayer = Rect("Markers", map, Vector2.zero, Vector2.one,
                                 new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             BuildGrid(map);

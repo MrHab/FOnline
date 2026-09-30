@@ -204,6 +204,13 @@ const {
   weatherShelteredLocation
 } = require('./src/server/weather');
 const {
+  createRadiationStorm,
+  placeFrame: radiationStormPlaceFrame,
+  publicStorm: publicRadiationStorm,
+  sampleStorm: sampleRadiationStorm,
+  sectorFrame: radiationStormSectorFrame
+} = require('./src/server/radiation-storm');
+const {
   mergeBirthArtifacts,
   pickupArtifact: serverPickupArtifact,
   publicArtifactsForPlayer,
@@ -4509,7 +4516,18 @@ savesDb.accounts = normalizeAccountStore(savesDb.accounts, WORLD_ECONOMY.account
 savesDb.sinExchange = normalizeMarketStore(savesDb.sinExchange);
 const KROMKA_AUCTION_RULES = normalizeMarketRules(KROMKA_TERRITORY_CATALOG.rules?.auction || {});
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
-const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
+// KROMKA_TEST_SHIFT_EPOCH_MS сдвигает начало циклов сдвига: локальная
+// проверка бури без ожидания чётного часа UTC. На проде не задаётся.
+const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {}, {
+  epochMs: Number(process.env.KROMKA_TEST_SHIFT_EPOCH_MS || 0) || 0
+});
+// Буря выброса идёт по прямоугольнику графа зон (км карты, y — на юг).
+const KROMKA_RADIATION_STORM = createRadiationStorm(KROMKA_SHIFT_CYCLE, KROMKA_ARTIFACT_CATALOG.shift?.storm || {}, {
+  minX: 0,
+  minY: 0,
+  maxX: ZONE_RUNTIME.graph.grid.cols * ZONE_RUNTIME.graph.grid.zoneKm,
+  maxY: ZONE_RUNTIME.graph.grid.rows * ZONE_RUNTIME.graph.grid.zoneKm
+});
 // Погода — одно поле облаков и дождя над картой мира (src/server/weather.js).
 // KROMKA_WEATHER (clear | overcast | wet | rain | storm) закрепляет её: проверки
 // идут в ясную погоду, а локальный сервер можно запустить сразу в ливень.
@@ -20312,6 +20330,73 @@ function serverRoomWeather(room, now = Date.now()) {
   return room.weather;
 }
 
+// Рамка сцены для бури выброса: как точка сцены ложится на карту мира. Сектор
+// (зона, город) — своя клетка графа, место — его точка на карте (как её рисует
+// карта мира: зона + u, v), комната встречи — точка встречи.
+function serverStormFrameForLocation(locationId = '', fallbackPoint = null) {
+  const id = normalizeLocationId(locationId);
+  const grid = ZONE_RUNTIME.graph.grid;
+  if (ZONE_RUNTIME.isSector(id)) {
+    const zone = zoneOfLocation(ZONE_RUNTIME.graph, id);
+    const map = LOCATIONS[id]?.map || {};
+    if (zone) return radiationStormSectorFrame(zone.col, zone.row, grid.zoneKm, map.width, map.depth);
+  }
+  const parent = zoneOfPlace(ZONE_RUNTIME.graph, id);
+  const place = parent?.places?.find(row => row.locationId === id);
+  if (place) return radiationStormPlaceFrame((parent.col + Number(place.u ?? 0.5)) * grid.zoneKm, (parent.row + Number(place.v ?? 0.5)) * grid.zoneKm);
+  const point = fallbackPoint || serverGlobalMapPointForLocation(id);
+  return point ? radiationStormPlaceFrame(point.x, point.y) : null;
+}
+
+function serverStormFrameForPlayer(p = {}) {
+  const room = rooms.get(p.roomId || '');
+  if (room?.encounterWorldPoint) return radiationStormPlaceFrame(room.encounterWorldPoint.x, room.encounterWorldPoint.y);
+  const frame = serverStormFrameForLocation(String(p.locationId || room?.locationId || ''), null);
+  if (frame) return frame;
+  const point = serverGlobalPointForPlayer(p);
+  return point ? radiationStormPlaceFrame(point.x, point.y) : null;
+}
+
+/** Буря над точкой сцены игрока: рамка его локации и его x, z. */
+function serverStormAtPlayer(storm, p = {}, now = Date.now()) {
+  const frame = storm ? serverStormFrameForPlayer(p) : null;
+  if (!frame) return { frame: null, here: null };
+  const x = frame.ox + Number(p.x || 0) * frame.kx;
+  const y = frame.oy + Number(p.z || 0) * frame.kz;
+  return { frame, here: sampleRadiationStorm(storm, x, y, now) };
+}
+
+// Точка локации на карте для бури: начало её рамки.
+function serverStormPointForLocation(locationId = '') {
+  const frame = serverStormFrameForLocation(locationId, null);
+  return frame ? { x: frame.ox, y: frame.oy } : null;
+}
+
+// Конец выброса для полей локации — когда задняя кромка бури ушла с её точки.
+// Пока буря этого цикла сюда не дошла, в силе проход прошлой бури.
+function serverStormEmissionEndAt(locationId = '', globalEndAt = 0, now = Date.now()) {
+  const point = locationId && globalEndAt > 0 ? serverStormPointForLocation(locationId) : null;
+  if (!point) return globalEndAt;
+  const current = KROMKA_RADIATION_STORM.at(now);
+  if (current?.phase === 'active') {
+    const passedAt = sampleRadiationStorm(current, point.x, point.y, now).passedAt;
+    if (passedAt <= now) return passedAt;
+  }
+  const last = KROMKA_RADIATION_STORM.at(globalEndAt - 1);
+  if (!last) return globalEndAt;
+  return Math.min(globalEndAt, Math.max(last.activeStartAt, sampleRadiationStorm(last, point.x, point.y, globalEndAt - 1).passedAt));
+}
+
+// Выброс приходит в локацию вместе с передней кромкой бури: тогда он и
+// обновляет неподобранные находки её полей.
+function serverStormEmissionId(locationId = '', globalId = '', now = Date.now()) {
+  if (!globalId || !locationId) return globalId;
+  const storm = KROMKA_RADIATION_STORM.at(now);
+  const point = storm?.phase === 'active' ? serverStormPointForLocation(locationId) : null;
+  if (!point) return globalId;
+  return sampleRadiationStorm(storm, point.x, point.y, now).reachedAt <= now ? globalId : '';
+}
+
 function serverCurrentShiftState(now = Date.now(), player = null) {
   const shift = KROMKA_SHIFT_CYCLE.state(now);
   const locationId = String(player?.locationId || '');
@@ -20323,11 +20408,16 @@ function serverCurrentShiftState(now = Date.now(), player = null) {
     Math.max(0, Math.floor(Number(clanBenefits.earlyShiftForecastMinutes || 0) * 60))
   );
   const earlyWarningAt = Number(shift.nextShiftAt || 0) - Number(KROMKA_SHIFT_CYCLE.warningMs || 0) - warningLeadSeconds * 1000;
+  const earlyWarning = warningLeadSeconds > 0 && shift.phase === 'calm' && now >= earlyWarningAt;
+  // Буря выброса: путь по карте, рамка сцены игрока и что над ним сейчас.
+  // Ранний прогноз (жители, клан) показывает бурю ещё в спокойную фазу.
+  const storm = KROMKA_RADIATION_STORM.fromShift(shift, { forecast: earlyWarning });
+  const stormHere = player && storm ? serverStormAtPlayer(storm, player, now) : { frame: null, here: null };
   // Окно повышенного рождения после выброса: поля «разбужены», пока шанс выше
   // базового. Раньше это окно жило только на сервере, и игрок не знал, что
   // именно сейчас стоит обходить аномалии с детектором.
   const birthRules = KROMKA_ARTIFACT_CATALOG.births || {};
-  const emissionEndAt = artifactEmissionEndAt(KROMKA_SHIFT_CYCLE, now);
+  const emissionEndAt = serverStormEmissionEndAt(locationId, artifactEmissionEndAt(KROMKA_SHIFT_CYCLE, now), now);
   const birthDecayMs = Math.max(0, Math.floor(Number(birthRules.decayMs || 1800000)));
   const excitedUntil = emissionEndAt > 0 ? emissionEndAt + birthDecayMs : 0;
   const fieldsExcited = excitedUntil > 0 && now < excitedUntil;
@@ -20341,9 +20431,10 @@ function serverCurrentShiftState(now = Date.now(), player = null) {
     fieldsExcited,
     fieldsExcitedSeconds: fieldsExcited ? Math.max(0, Math.round((excitedUntil - now) / 1000)) : 0,
     fieldsChanceMultiplier: baseChance > 0 ? Number((chance / baseChance).toFixed(2)) : 1,
-    earlyWarning: warningLeadSeconds > 0 && shift.phase === 'calm' && now >= earlyWarningAt,
+    earlyWarning,
     clanEventDetectionPct: clamp(Number(clanBenefits.eventDetectionPct || 0), 0, 1),
-    sheltered: !!player && (safeShelters.has(locationId) || roomLocation(rooms.get(player.roomId))?.safe === true)
+    sheltered: !!player && (safeShelters.has(locationId) || roomLocation(rooms.get(player.roomId))?.safe === true),
+    storm: publicRadiationStorm(storm, stormHere.frame, stormHere.here)
   };
 }
 
@@ -20374,7 +20465,7 @@ function scheduleServerArtifactBirthPersist() {
 }
 
 // Одна проверка в минуту на свободное поле каждой локации с аномалиями.
-// Шанс растёт после активной фазы выброса и затухает за 30 реальных минут.
+// Шанс растёт, когда буря выброса прошла над локацией, и затухает за 30 реальных минут.
 function serverTickAnomalyBirths(now = Date.now(), options = {}) {
   const store = serverArtifactBirthStore();
   const emissionEndAt = artifactEmissionEndAt(KROMKA_SHIFT_CYCLE, now);
@@ -20384,9 +20475,10 @@ function serverTickAnomalyBirths(now = Date.now(), options = {}) {
   for (const locationId of Object.keys(LOCATIONS)) {
     const fields = serverLocationAnomalyFields(locationId);
     if (!fields.length) continue;
+    // Буря идёт по карте: поля локации «просыпаются», когда буря прошла именно её.
     const result = tickArtifactBirths(store, locationId, fields, KROMKA_ARTIFACT_CATALOG, now, {
-      emissionEndAt,
-      emissionId,
+      emissionEndAt: serverStormEmissionEndAt(locationId, emissionEndAt, now),
+      emissionId: serverStormEmissionId(locationId, emissionId, now),
       random: options.random,
       // Приватная соль экземпляра: свойства находки нельзя вычислить по её
       // публичному id, пока артефакт не стабилизирован.
@@ -33818,9 +33910,12 @@ setInterval(() => {
   for (const p of players.values()) {
     if (!p || !p.roomId || p.onGlobalMap || p.dead) continue;
     const shift = serverCurrentShiftState(now, p);
-    if (shift.phase === 'active' && !shift.sheltered && now - Number(p.lastShiftDamageAt || 0) >= 3000) {
+    // Выброс бьёт того, над кем сейчас идёт буря: у передней кромки слабее, в
+    // глубине полосы в полную силу. Укрытие (город, база) защищает целиком.
+    const stormHere = shift.storm?.here;
+    if (stormHere?.inside && !shift.sheltered && now - Number(p.lastShiftDamageAt || 0) >= 3000) {
       p.lastShiftDamageAt = now;
-      const rawDamage = 4 + Number(shift.strength || 1) * 2;
+      const rawDamage = Math.max(1, Math.round((4 + Number(shift.strength || 1) * 2) * Math.max(0.5, Number(stormHere.intensity || 0))));
       const mitigation = serverMitigateDamage(rawDamage, p, 'anomalous');
       p.hp = Math.max(0, Number(p.hp || p.maxHp || 1) - mitigation.damage);
       const newInjuries = serverApplyInjuriesFromHit(

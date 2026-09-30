@@ -353,8 +353,9 @@ namespace RealmOfAshes.Game
             for (int tz = 0; tz < MapDepth; tz++)
             for (int tx = 0; tx < MapWidth; tx++)
             {
+                // Север — старшие tz (+z), как у компаса.
                 int edge = Mathf.Min(Mathf.Min(west ? tx : closed, east ? MapWidth - 1 - tx : closed),
-                    Mathf.Min(north ? tz : closed, south ? MapDepth - 1 - tz : closed));
+                    Mathf.Min(south ? tz : closed, north ? MapDepth - 1 - tz : closed));
                 if (edge >= band) continue;
                 int index = tz * MapWidth + tx;
                 float strength = edge == 0 ? 0.82f : 0.48f;

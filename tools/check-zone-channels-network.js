@@ -103,7 +103,7 @@ async function rejoin(role) {
   for (const [index, role] of ['untargeted', 'harvest', 'trade'].entries()) placeInZone(role, home.id, { x: hub.x + index * 2, z: hub.z + 4 });
   // Север открыт в соседнюю зону: переход — вся полоса у края, игрок стоит в ней.
   const gatePoint = world(northGate);
-  placeInZone('target', home.id, { x: gatePoint.x, z: -homeDef.map.depth / 2 + 3 });
+  placeInZone('target', home.id, { x: gatePoint.x, z: homeDef.map.depth / 2 - 3 });
   placeInZone('progression', quiet.id, world(cache));
 
   await h.startServer();

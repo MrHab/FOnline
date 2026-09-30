@@ -14,6 +14,11 @@ const { zoneAtPoint, zoneLocationId, zoneOfPlace } = require('./zone-graph');
 // каждое сохранение, поэтому зашедший в бывший город уже после перемены там и
 // останется, а сохранённый в нём раньше проснётся в безопасной зоне.
 const PLACES_REVISION = 1;
+// Ревизия раскладки зон: с 1 север зон и городов — +Z, как у компаса (прежде
+// содержимое зон было зеркалом карты мира, tools/mirror-zones-north-up.js).
+// Сохранённый в зоне или городе раньше отражается вместе с ними и просыпается
+// на том же месте, а не в чужой стене.
+const ZONE_FRAME_REVISION = 1;
 
 const SAFE_MODES = Object.freeze(['peaceful', 'pve']);
 const HARSH_MODES = Object.freeze(['pvpFullDrop', 'pvpBlack']);
@@ -93,6 +98,15 @@ function migrateSaveStateToZones(state, graph) {
     state.placesRevision = PLACES_REVISION;
     result.changed = true;
   }
+  if ((Number(state.zoneFrameRevision) || 0) < ZONE_FRAME_REVISION) {
+    const home = String(state.currentLocationId || '');
+    const zone = result.reason ? null : graph.zones.find(row => zoneLocationId(row) === home);
+    const z = Number(state.player?.z);
+    // Сектор отражён вокруг своей середины, город — вокруг центра плана (z = +1 м).
+    if (zone && Number.isFinite(z)) state.player = { ...state.player, z: Math.round(((zone.city ? 2 : 0) - z) * 1000) / 1000 };
+    state.zoneFrameRevision = ZONE_FRAME_REVISION;
+    result.changed = true;
+  }
   // Следы путешествия по карте больше ничего не значат.
   for (const key of ['globalMap', 'pendingWorldDrop', 'attachedPartyId']) {
     if (key in state) {
@@ -103,4 +117,4 @@ function migrateSaveStateToZones(state, graph) {
   return result;
 }
 
-module.exports = { PLACES_REVISION, migrateSaveStateToZones, nearestSafeZone, zoneForMigration };
+module.exports = { PLACES_REVISION, ZONE_FRAME_REVISION, migrateSaveStateToZones, nearestSafeZone, zoneForMigration };

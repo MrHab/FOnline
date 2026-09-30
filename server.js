@@ -287,7 +287,7 @@ const { TILES: CITY_TILES, WALL_HALF: CITY_WALL_HALF } = require('./src/server/c
 // Город — внутри стены (клетки CENTRE ± WALL_HALF), с запасом на её толщину.
 const CITY_INNER_TILE_MARGIN = CITY_TILES / 2 - CITY_WALL_HALF + 3;
 const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
-const { PLACES_REVISION, migrateSaveStateToZones } = require('./src/server/zone-migration');
+const { PLACES_REVISION, ZONE_FRAME_REVISION, migrateSaveStateToZones } = require('./src/server/zone-migration');
 const { zoneAtPoint, zoneById, zoneLocationId, zoneOfLocation, zoneOfPlace, zoneRecipe } = require('./src/server/zone-graph');
 const { portalSignature, zonePortals } = require('./src/server/zone-portals');
 const { normalizeRecipe: normalizeZoneRecipe } = require('./src/server/zone-builder');
@@ -9782,6 +9782,7 @@ function initialServerCharacterState(data = {}, characterId = '', options = {}) 
   return {
     version: 4,
     worldRevision: 'kromka-1',
+    zoneFrameRevision: ZONE_FRAME_REVISION,
     savedAt: now,
     characterProfile: {
       name: safeName(data.name || 'Странник'),
@@ -10826,6 +10827,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   );
   next.worldRevision = 'kromka-1';
   next.placesRevision = PLACES_REVISION;
+  next.zoneFrameRevision = ZONE_FRAME_REVISION;
   next.skillRanks = sanitizeSkillRanks(player.skillRanks || {});
   next.talentRanks = sanitizeTalentRanks(player.talentRanks || {});
   next.progressionLedger = sanitizeServerProgressionLedger(player.progressionLedger || {}, player);
@@ -28665,8 +28667,8 @@ function serverClosedLocationMovementBounds(p = {}, room = null, radius = PLAYER
   const edges = serverZoneEdgeSides(loc);
   const minTileX = edges.has('west') ? bounds.minX : Math.min(bounds.maxX, bounds.minX + inset);
   const maxTileX = edges.has('east') ? bounds.maxX : Math.max(bounds.minX, bounds.maxX - inset);
-  const minTileZ = edges.has('north') ? bounds.minZ : Math.min(bounds.maxZ, bounds.minZ + inset);
-  const maxTileZ = edges.has('south') ? bounds.maxZ : Math.max(bounds.minZ, bounds.maxZ - inset);
+  const minTileZ = edges.has('south') ? bounds.minZ : Math.min(bounds.maxZ, bounds.minZ + inset);
+  const maxTileZ = edges.has('north') ? bounds.maxZ : Math.max(bounds.minZ, bounds.maxZ - inset);
   const safeRadius = clamp(Number(radius || 0), 0, TILE * 0.45);
   const epsilon = 0.001;
   const boundsDims = roomTileDims(room);
@@ -28704,14 +28706,14 @@ function serverZoneEdgeSides(loc = {}) {
     .map(row => String(row.direction || '')));
 }
 
-/** Игрок в полосе перехода на стороне `side` зоны: крайние клетки и клетка запаса. */
+/** Игрок в полосе перехода на стороне `side` зоны: крайние клетки и клетка запаса. Север — +Z. */
 function serverPlayerAtZoneEdge(p = {}, loc = {}, side = '') {
   if (!p?.roomId || !serverZoneEdgeSides(loc).has(side)) return false;
   const dims = locationTileDims(loc);
   const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), dims);
   const band = WORLD_MAP_EXIT_BAND_TILES;
-  if (side === 'north') return tile.tz <= band;
-  if (side === 'south') return tile.tz >= dims.h - 1 - band;
+  if (side === 'north') return tile.tz >= dims.h - 1 - band;
+  if (side === 'south') return tile.tz <= band;
   if (side === 'west') return tile.tx <= band;
   if (side === 'east') return tile.tx >= dims.w - 1 - band;
   return false;
@@ -28728,8 +28730,8 @@ function serverZoneEdgeArrival(target = {}, side = '', crossedAt = null) {
   const halfH = dims.h * TILE / 2;
   const depth = (ZONE_EDGE_ARRIVAL_INSET_TILES + 0.5) * TILE;
   const along = (value, half) => clamp(Number(value), -half + depth, half - depth);
-  if (side === 'north') return { x: along(crossedAt.x, halfW), z: halfH - depth };
-  if (side === 'south') return { x: along(crossedAt.x, halfW), z: -halfH + depth };
+  if (side === 'north') return { x: along(crossedAt.x, halfW), z: -halfH + depth };
+  if (side === 'south') return { x: along(crossedAt.x, halfW), z: halfH - depth };
   if (side === 'west') return { x: halfW - depth, z: along(crossedAt.z, halfH) };
   if (side === 'east') return { x: -halfW + depth, z: along(crossedAt.z, halfH) };
   return null;
@@ -28740,7 +28742,7 @@ function serverCityGatePortal(loc = {}, side = '') {
   const gate = (loc.cityPlan?.gates || []).find(row => row?.dir === side);
   const centre = CITY_TILES / 2;
   const fallback = {
-    north: { tx: centre, tz: centre - CITY_WALL_HALF }, south: { tx: centre, tz: centre + CITY_WALL_HALF },
+    north: { tx: centre, tz: centre + CITY_WALL_HALF }, south: { tx: centre, tz: centre - CITY_WALL_HALF },
     west: { tx: centre - CITY_WALL_HALF, tz: centre }, east: { tx: centre + CITY_WALL_HALF, tz: centre }
   }[side] || { tx: centre, tz: centre };
   const tx = Number.isFinite(Number(gate?.tx)) ? Number(gate.tx) : fallback.tx;

@@ -558,16 +558,14 @@ namespace RealmOfAshes.Game
             float u = 0.5f, v = 0.5f;
             if (!string.IsNullOrEmpty(zoneId) && _zonesById.TryGetValue(zoneId, out zone))
             {
-                // В зоне: центр зоны — 0,0. Север сектора — малые tz, то есть −z: там
-                // северные ворота, туда же сервер переводит через северный край и так
-                // ложится на карту буря выброса (radiation-storm.js, sectorFrame). Поэтому
-                // v (на карте растёт к югу) растёт вместе с z. Компас сцены пока считает
-                // севером +z — это старое зеркало зон, не этой формулы.
+                // В зоне: центр зоны — 0,0, север — +z (там северные ворота и туда смотрит
+                // компас; так же ложится на карту буря выброса, radiation-storm.js), а v
+                // на карте растёт к югу.
                 LocationDefinition current = Loader != null ? Loader.Current : null;
                 float width = current != null && current.WorldWidth > 0 ? current.WorldWidth : 320f;
                 float depth = current != null && current.WorldDepth > 0 ? current.WorldDepth : 320f;
                 u = Mathf.Clamp01((self["x"]?.ToObject<float>() ?? 0f) / width + 0.5f);
-                v = Mathf.Clamp01(0.5f + (self["z"]?.ToObject<float>() ?? 0f) / depth);
+                v = Mathf.Clamp01(0.5f - (self["z"]?.ToObject<float>() ?? 0f) / depth);
             }
             else
             {

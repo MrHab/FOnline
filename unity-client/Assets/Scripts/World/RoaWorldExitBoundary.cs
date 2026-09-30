@@ -45,7 +45,7 @@ namespace RealmOfAshes.World
         private float _nextPlayerLookupAt;
         private bool _exitAllowed = true;
 
-        // Стороны: 0 — север (малые tz, мировая −z), 1 — восток (+x), 2 — юг (+z), 3 — запад (−x).
+        // Стороны: 0 — север (+z, старшие tz), 1 — восток (+x), 2 — юг (−z), 3 — запад (−x), как у компаса.
         private static readonly string[] SideNames = { "north", "east", "south", "west" };
         private readonly bool[] _open = { true, true, true, true };
         private readonly string[] _labels = new string[4];
@@ -121,7 +121,7 @@ namespace RealmOfAshes.World
         }
 
         /// <summary>
-        /// Игрок в полосе перехода стороны `side` («north» — малые tz). Та же ширина,
+        /// Игрок в полосе перехода стороны `side` («north» — старшие tz, +z). Та же ширина,
         /// что у края места: крайняя клетка и клетка запаса.
         /// </summary>
         public static bool IsInSideBand(Vector3 worldPosition, int mapWidth, int mapDepth, string side)
@@ -131,8 +131,8 @@ namespace RealmOfAshes.World
             int innerOffset = ExitBandTileCount - 1;
             switch (side)
             {
-                case "north": return tz <= innerOffset;
-                case "south": return tz >= mapDepth - 1 - innerOffset;
+                case "north": return tz >= mapDepth - 1 - innerOffset;
+                case "south": return tz <= innerOffset;
                 case "west": return tx <= innerOffset;
                 case "east": return tx >= mapWidth - 1 - innerOffset;
                 default: return false;
@@ -142,7 +142,7 @@ namespace RealmOfAshes.World
         // Наружная нормаль стороны, её ось вдоль и расстояние от центра до края.
         private Vector3 Outward(int side)
         {
-            return side == 0 ? Vector3.back : side == 1 ? Vector3.right : side == 2 ? Vector3.forward : Vector3.left;
+            return side == 0 ? Vector3.forward : side == 1 ? Vector3.right : side == 2 ? Vector3.back : Vector3.left;
         }
 
         private Vector3 Along(int side) { return side == 0 || side == 2 ? Vector3.right : Vector3.forward; }
@@ -161,9 +161,9 @@ namespace RealmOfAshes.World
         {
             switch (side)
             {
-                case 0: return position.z + _halfDepth;
+                case 0: return _halfDepth - position.z;
                 case 1: return _halfWidth - position.x;
-                case 2: return _halfDepth - position.z;
+                case 2: return position.z + _halfDepth;
                 default: return position.x + _halfWidth;
             }
         }
@@ -271,9 +271,9 @@ namespace RealmOfAshes.World
                 Vector3.forward, innerDepth * 2f);
             if (StripSide(1)) AddArrowRow(vertices, triangles, new Vector3(x, 0f, 0f), Vector3.right,
                 Vector3.forward, innerDepth * 2f);
-            if (StripSide(0)) AddArrowRow(vertices, triangles, new Vector3(0f, 0f, -z), Vector3.back,
+            if (StripSide(0)) AddArrowRow(vertices, triangles, new Vector3(0f, 0f, z), Vector3.forward,
                 Vector3.right, innerWidth * 2f);
-            if (StripSide(2)) AddArrowRow(vertices, triangles, new Vector3(0f, 0f, z), Vector3.forward,
+            if (StripSide(2)) AddArrowRow(vertices, triangles, new Vector3(0f, 0f, -z), Vector3.back,
                 Vector3.right, innerWidth * 2f);
 
             _arrowMesh = new Mesh { name = "PlaceExitArrowMesh" };
@@ -313,8 +313,8 @@ namespace RealmOfAshes.World
             float innerDepth = Mathf.Max(0.1f, _halfDepth - ExitBandWidth);
             if (StripSide(3)) AddBeaconRow(new Vector3(-innerWidth, 0f, 0f), Vector3.forward, innerDepth * 2f);
             if (StripSide(1)) AddBeaconRow(new Vector3(innerWidth, 0f, 0f), Vector3.forward, innerDepth * 2f);
-            if (StripSide(0)) AddBeaconRow(new Vector3(0f, 0f, -innerDepth), Vector3.right, innerWidth * 2f);
-            if (StripSide(2)) AddBeaconRow(new Vector3(0f, 0f, innerDepth), Vector3.right, innerWidth * 2f);
+            if (StripSide(0)) AddBeaconRow(new Vector3(0f, 0f, innerDepth), Vector3.right, innerWidth * 2f);
+            if (StripSide(2)) AddBeaconRow(new Vector3(0f, 0f, -innerDepth), Vector3.right, innerWidth * 2f);
         }
 
         private void BuildLockedBoundary()
@@ -332,9 +332,9 @@ namespace RealmOfAshes.World
                 Vector3.forward, innerDepth * 2f);
             if (LockedSide(1)) AddDashedRow(vertices, triangles, new Vector3(innerWidth, 0.16f, 0f),
                 Vector3.forward, innerDepth * 2f);
-            if (LockedSide(0)) AddDashedRow(vertices, triangles, new Vector3(0f, 0.16f, -innerDepth),
+            if (LockedSide(0)) AddDashedRow(vertices, triangles, new Vector3(0f, 0.16f, innerDepth),
                 Vector3.right, innerWidth * 2f);
-            if (LockedSide(2)) AddDashedRow(vertices, triangles, new Vector3(0f, 0.16f, innerDepth),
+            if (LockedSide(2)) AddDashedRow(vertices, triangles, new Vector3(0f, 0.16f, -innerDepth),
                 Vector3.right, innerWidth * 2f);
 
             _lockedDashMesh = new Mesh { name = "ClosedLocationDashedPerimeterMesh" };
@@ -349,9 +349,9 @@ namespace RealmOfAshes.World
                 new Vector3(0.32f, 4f, innerDepth * 2f + 0.32f));
             if (LockedSide(1)) AddLockedCollider(_lockedRoot, "ClosedBoundaryEast", new Vector3(innerWidth, 2f, 0f),
                 new Vector3(0.32f, 4f, innerDepth * 2f + 0.32f));
-            if (LockedSide(0)) AddLockedCollider(_lockedRoot, "ClosedBoundarySouth", new Vector3(0f, 2f, -innerDepth),
+            if (LockedSide(0)) AddLockedCollider(_lockedRoot, "ClosedBoundaryNorth", new Vector3(0f, 2f, innerDepth),
                 new Vector3(innerWidth * 2f + 0.32f, 4f, 0.32f));
-            if (LockedSide(2)) AddLockedCollider(_lockedRoot, "ClosedBoundaryNorth", new Vector3(0f, 2f, innerDepth),
+            if (LockedSide(2)) AddLockedCollider(_lockedRoot, "ClosedBoundarySouth", new Vector3(0f, 2f, -innerDepth),
                 new Vector3(innerWidth * 2f + 0.32f, 4f, 0.32f));
             // У зоны закрытые стороны закрыты всегда, у места — пока сюжет держит.
             _lockedRoot.SetActive(_sidesDriven);

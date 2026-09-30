@@ -177,7 +177,7 @@ namespace RealmOfAshes.EditorTools
                 if (kind == null || File.Exists(Path.Combine(outDir, "zone-play-" + kind + ".png"))) continue;
                 float sx = -zone.WorldWidth / 2f + ((int)row["slot"][0] + 0.5f) * 40f;
                 float sz = -zone.WorldDepth / 2f + ((int)row["slot"][1] + 0.5f) * 40f;
-                Vector3 target = new Vector3(sx, 0f, -sz);
+                Vector3 target = new Vector3(sx, 0f, sz);
                 Quaternion orbit = Quaternion.Euler(55f, 45f, 0f);
                 Capture(Path.Combine(outDir, "zone-play-" + kind + ".png"), target - orbit * Vector3.forward * 11.5f, orbit, false, 0f, 1024, cover, 52f);
                 report.AppendLine("gameplay shot over " + chunk + ": " + cover.ActivePieces + " cover pieces in " + cover.ShownSlots + " slots around the camera");

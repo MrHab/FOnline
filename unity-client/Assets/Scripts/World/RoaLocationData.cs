@@ -75,8 +75,8 @@ namespace RealmOfAshes.World
         [JsonProperty("cityZone")] public bool CityZone;
 
         /// <summary>
-        /// Полоса перехода зоны на стороне `side` («north» — малые tz, «west» — малые
-        /// tx): ворота этой стороны ведут в соседнюю зону сплошным краем. null — нет.
+        /// Полоса перехода зоны на стороне `side` («north» — старшие tz, +z; «west» —
+        /// малые tx): ворота этой стороны ведут в соседнюю зону сплошным краем. null — нет.
         /// </summary>
         public LocationTransition EdgeStrip(string side)
         {

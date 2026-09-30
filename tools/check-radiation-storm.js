@@ -82,7 +82,8 @@ function checkModule() {
   const east = storms.sectorFrame(9, 6, grid.zoneKm, 320, 320);
   const city = storms.sectorFrame(8, 6, grid.zoneKm, 160, 160);
   const same = (p, q) => Math.hypot(p.x - q.x, p.y - q.y) < 1e-6;
-  assert(same(storms.localToGlobal(a, 37, -160), storms.localToGlobal(north, 37, 160)), 'the north edge of a zone must meet the south edge of its north neighbour');
+  // Север сцены — +Z: северный край зоны (z = +160) — южный край её северного соседа (z = −160).
+  assert(same(storms.localToGlobal(a, 37, 160), storms.localToGlobal(north, 37, -160)), 'the north edge of a zone must meet the south edge of its north neighbour');
   assert(same(storms.localToGlobal(a, 160, 12), storms.localToGlobal(east, -160, 12)), 'the east edge of a zone must meet the west edge of its east neighbour');
   assert(same(storms.localToGlobal(a, 160, 160), storms.localToGlobal(city, 80, 80)), 'a city covers the same 20 km sector as a zone');
   assert(same(storms.localToGlobal(storms.placeFrame(100, 50), 0, 16), { x: 100, y: 49 }), 'a place scene keeps north at +Z at zone scale');
@@ -165,7 +166,7 @@ async function checkServer() {
       assert(frame, `${where}: the storm carries no frame of the player's scene`);
       assert.equal(frame.ox, (zone.col + 0.5) * grid.zoneKm, `${where}: frame origin x`);
       assert.equal(frame.oy, (zone.row + 0.5) * grid.zoneKm, `${where}: frame origin y`);
-      assert(frame.kz > 0, `${where}: north of a sector is −Z (small tz), the frame must grow y with z`);
+      assert(frame.kz < 0, `${where}: north of a sector is +Z like its compass, the frame must shrink y as z grows`);
     };
 
     // 1. Под бурей в опасной зоне: буря, рамка, «над игроком» и урон.

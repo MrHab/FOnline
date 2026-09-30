@@ -883,32 +883,16 @@ namespace RealmOfAshes.Game
             return fallback;
         }
 
-        private static JObject ResolveVisualProfile(LocationDefinition location)
+        /// <summary>
+        /// Базовый профиль по типу локации и поверх него авторский visualProfile.
+        /// Открыт для редакторской пробы: она проверяет им реальные локации.
+        /// </summary>
+        public static JObject ResolveVisualProfile(LocationDefinition location)
         {
             string kind = (location?.Kind ?? string.Empty).Trim().ToLowerInvariant();
+            bool inhabited = kind == "settlement" || kind == "production";
             JObject profile;
-            if (kind == "settlement" || kind == "production")
-            {
-                profile = new JObject
-                {
-                    ["id"] = "settlement_warm",
-                    ["skyDay"] = "#5b5146",
-                    ["fogDay"] = "#625548",
-                    ["fogDensityDay"] = 0.0020f,
-                    ["exposureDay"] = 1.04f,
-                    ["sunDawn"] = "#ff9b58",
-                    ["fillDay"] = "#e7d0b0",
-                    ["groundDay"] = "#b29370",
-                    ["groundDayMix"] = 0.10f,
-                    ["groundNight"] = "#8e735a",
-                    ["postTint"] = "#f4f1ea",
-                    ["postContrast"] = 13f,
-                    ["postSaturation"] = -2f,
-                    ["vignette"] = 0.14f,
-                    ["bloom"] = 0.16f
-                };
-            }
-            else if (kind == "resource")
+            if (kind == "resource")
             {
                 profile = new JObject
                 {
@@ -929,7 +913,7 @@ namespace RealmOfAshes.Game
                     ["bloom"] = 0.10f
                 };
             }
-            else if (kind == "lair" || location?.EncounterOnly == true || location?.Safe == false)
+            else if (!inhabited && (kind == "lair" || location?.EncounterOnly == true || location?.Safe == false))
             {
                 profile = new JObject
                 {
@@ -956,28 +940,28 @@ namespace RealmOfAshes.Game
             }
             else
             {
+                // Посёлки и производства, а с ними всё остальное безопасное: учебный двор
+                // каравана, рынок территории, личная база. Отдельного «нейтрального»
+                // профиля больше нет: он был синим (земля на 65 % #0033ff, голубое
+                // солнце) под открытую пустошь, а пустошь теперь вся опасная и берёт
+                // hostile_cold — синева доставалась только обжитым местам.
                 profile = new JObject
                 {
-                    ["id"] = "wasteland_neutral",
-                    ["skyDay"] = "#4e5961",
-                    ["fogDay"] = "#5f5b55",
-                    ["fogDensityDay"] = 0.00205f,
-                    ["exposureDay"] = 0.82f,
-                    ["hemiSkyDay"] = "#76aad0",
-                    ["hemiGroundDay"] = "#365b78",
-                    ["fillDay"] = "#8ebbd2",
-                    ["sunDay"] = "#90cff7",
-                    ["sunDawn"] = "#c3c4bd",
-                    ["sunIntensityScale"] = 0.72f,
-                    ["hemiIntensityScale"] = 0.75f,
-                    ["fillIntensityScale"] = 0.82f,
-                    ["groundDay"] = "#0033ff",
-                    ["groundDayMix"] = 0.65f,
-                    ["postTint"] = "#7fc4ff",
-                    ["postContrast"] = 16f,
-                    ["postSaturation"] = -28f,
+                    ["id"] = "settlement_warm",
+                    ["skyDay"] = "#5b5146",
+                    ["fogDay"] = "#625548",
+                    ["fogDensityDay"] = 0.0020f,
+                    ["exposureDay"] = 1.04f,
+                    ["sunDawn"] = "#ff9b58",
+                    ["fillDay"] = "#e7d0b0",
+                    ["groundDay"] = "#b29370",
+                    ["groundDayMix"] = 0.10f,
+                    ["groundNight"] = "#8e735a",
+                    ["postTint"] = "#f4f1ea",
+                    ["postContrast"] = 13f,
+                    ["postSaturation"] = -2f,
                     ["vignette"] = 0.14f,
-                    ["bloom"] = 0.12f
+                    ["bloom"] = 0.16f
                 };
             }
 

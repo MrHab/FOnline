@@ -7,6 +7,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { createZoneRuntime } = require('../src/server/zone-runtime');
 
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
@@ -35,6 +36,21 @@ function functionSource(name) {
   throw new Error(`unterminated function ${name}`);
 }
 
+// `const NAME = ...;` верхнего уровня: инициализатор может занимать несколько
+// строк, поэтому режем до `;` вне скобок.
+function constSource(name) {
+  const start = source.indexOf(`\nconst ${name} =`) + 1;
+  assert(start > 0, `server.js must define const ${name}`);
+  let depth = 0;
+  for (let i = start; i < source.length; i++) {
+    const ch = source[i];
+    if ('([{'.includes(ch)) depth++;
+    if (')]}'.includes(ch)) depth--;
+    if (ch === ';' && depth === 0) return source.slice(start, i + 1);
+  }
+  throw new Error(`unterminated const ${name}`);
+}
+
 const LOCATIONS = {
   settlement: { id: 'settlement' },
   vectorLab: { id: 'vectorLab', map: { width: 72, depth: 72, origin: 'center' } },
@@ -49,8 +65,11 @@ const rooms = new Map([
 const context = vm.createContext({
   LOCATIONS,
   rooms,
+  fs,
+  path,
+  __dirname: root,
+  createZoneRuntime,
   clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
-  normalizeLocationId: id => String(id || 'settlement'),
   WORLD_MAP_EXIT_BAND_TILES: 2,
   PLAYER_COLLISION_RADIUS: 0.48,
   serverPlayerCanLeaveByEdge: () => false,
@@ -59,16 +78,22 @@ const context = vm.createContext({
 vm.runInContext('const TILE = 2.0; const MAP_W = 38; const MAP_H = 38;', context);
 vm.runInContext(source.slice(source.indexOf('const DEFAULT_TILE_DIMS ='), source.indexOf('function locationTileDims(')), context);
 for (const name of [
+  'normalizeLocationId', 'readJson', 'validateZoneLocationDefinition',
   'locationTileDims', 'roomTileDims', 'roomWorldExtent', 'playerWorldExtent',
   'tileToWorld', 'worldToTile', 'inBounds', 'locationWorldToTilePoint',
-  'normalizedLocationPlayableBounds', 'serverClosedLocationMovementBounds'
+  'normalizedLocationPlayableBounds', 'serverClosedLocationMovementBounds',
+  'serverZoneGateCrossing', 'serverZoneEdgeSides'
 ]) vm.runInContext(functionSource(name), context);
+// Граф зон — тот же, что сервер читает на старте: какие локации зоны, какие города.
+for (const name of ['BUNDLED_DATA_DIR', 'ZONE_RUNTIME']) vm.runInContext(constSource(name), context);
 
 const {
   locationTileDims, roomTileDims, roomWorldExtent, playerWorldExtent,
   tileToWorld, worldToTile, inBounds, locationWorldToTilePoint,
-  normalizedLocationPlayableBounds, serverClosedLocationMovementBounds
+  normalizedLocationPlayableBounds, serverClosedLocationMovementBounds, serverZoneEdgeSides
 } = context;
+const TILE = vm.runInContext('TILE', context);
+const ZONE_RUNTIME = vm.runInContext('ZONE_RUNTIME', context);
 
 // Без карты — прежняя сетка 38×38 и прежние координаты.
 same({ ...locationTileDims(LOCATIONS.settlement) }, { w: 38, h: 38 });
@@ -109,13 +134,39 @@ const bounds = normalizedLocationPlayableBounds(LOCATIONS.coreZone);
 same(bounds, { minX: 0, minZ: 0, maxX: 159, maxZ: 159, width: 160, height: 160 });
 const closed = serverClosedLocationMovementBounds({}, rooms.get('coreZone'));
 assert(closed.minX < -150 && closed.maxX > 150, 'closed bounds must span the large scene');
+same([...serverZoneEdgeSides(LOCATIONS.coreZone)], [], 'a location outside the zone graph has no edge strip');
 
-// Серверные привязки: билдеры комнаты и предел координат используют сетку комнаты.
-assert(!/\bMAP_SIZE\b/.test(source), 'the global MAP_SIZE constant must be gone');
-assert(source.includes('const authoredDims = roomTileDims(room);'));
-assert(source.includes('const genDims = roomTileDims(room);'));
-assert(source.includes('const worldExtent = playerWorldExtent(player);'));
-assert(source.includes('const locDims = locationTileDims(loc);'));
-assert(!source.includes('function tileToWorld(tx, tz) {'));
+// Зона: сторона в соседнюю зону — полоса перехода, к ней подходят вплотную;
+// сторона к городу (там портал) и закрытая сторона держат игрока за полосой
+// выхода. Берём авторскую зону, у которой есть все три вида сторон.
+const authoredZonesDir = path.join(root, 'data', 'zones', 'authored');
+const sideKinds = zone => Object.fromEntries(['north', 'south', 'west', 'east'].map(side => {
+  const edge = zone.edges?.[side];
+  if (!edge?.open) return [side, 'closed'];
+  return [side, ZONE_RUNTIME.graph.zones.find(row => row.id === edge.to)?.city ? 'city' : 'zone'];
+}));
+const borderZone = ZONE_RUNTIME.graph.zones.find(zone => ZONE_RUNTIME.isZone(zone.id)
+  && fs.existsSync(path.join(authoredZonesDir, `${zone.id}.json`))
+  && ['zone', 'city', 'closed'].every(kind => Object.values(sideKinds(zone)).includes(kind)));
+assert(borderZone, 'the zone graph must have an authored zone with a zone side, a city side and a closed side');
+const kinds = sideKinds(borderZone);
+const zoneLoc = JSON.parse(fs.readFileSync(path.join(authoredZonesDir, `${borderZone.id}.json`), 'utf8'));
+LOCATIONS[zoneLoc.id] = zoneLoc;
+same([...serverZoneEdgeSides(zoneLoc)].sort(), Object.keys(kinds).filter(side => kinds[side] === 'zone').sort(),
+  `${zoneLoc.id}: only the sides toward zones are edge strips (${JSON.stringify(kinds)})`);
 
-console.log('Location tile dims OK: per-location grids, unlimited authored scene size, room extents and playable bounds.');
+const zoneDims = locationTileDims(zoneLoc);
+const zoneBounds = serverClosedLocationMovementBounds({}, { id: zoneLoc.id, locationId: zoneLoc.id });
+const gapToEdge = {
+  west: zoneBounds.minX + zoneDims.w * TILE / 2,
+  east: zoneDims.w * TILE / 2 - zoneBounds.maxX,
+  south: zoneBounds.minZ + zoneDims.h * TILE / 2,
+  north: zoneDims.h * TILE / 2 - zoneBounds.maxZ
+};
+for (const [side, kind] of Object.entries(kinds)) {
+  const gap = gapToEdge[side];
+  if (kind === 'zone') assert(gap < TILE / 2, `${zoneLoc.id}: the ${side} strip toward a zone must be walkable to the edge (${gap} m short)`);
+  else assert(gap >= context.WORLD_MAP_EXIT_BAND_TILES * TILE, `${zoneLoc.id}: the ${kind} ${side} side must stop the player before the exit band (${gap} m short)`);
+}
+
+console.log(`Location tile dims OK: per-location grids, unlimited authored scene size, room extents, playable bounds and ${zoneLoc.id} edge strips.`);

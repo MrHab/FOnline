@@ -221,6 +221,7 @@ namespace RealmOfAshes.Game
         private void LateUpdate()
         {
             if (!IsOpen || !Uses3D) return;
+            UpdateStormView();
             LayoutViewLabels();
             UpdateCompass();
         }
@@ -462,6 +463,7 @@ namespace RealmOfAshes.Game
             if (_map3D == null || !_map3D.IsOpen) return;
             int used = 0;
             LayoutEdgeLetters(ref used);
+            LayoutStormLabel(ref used);
             float distance = _map3D.Distance;
             foreach (JObject zone in _zonesById.Values)
             {
@@ -556,12 +558,16 @@ namespace RealmOfAshes.Game
             float u = 0.5f, v = 0.5f;
             if (!string.IsNullOrEmpty(zoneId) && _zonesById.TryGetValue(zoneId, out zone))
             {
-                // В зоне: центр зоны — 0,0, север — +z (RoaCoords), а v на карте растёт к югу.
+                // В зоне: центр зоны — 0,0. Север сектора — малые tz, то есть −z: там
+                // северные ворота, туда же сервер переводит через северный край и так
+                // ложится на карту буря выброса (radiation-storm.js, sectorFrame). Поэтому
+                // v (на карте растёт к югу) растёт вместе с z. Компас сцены пока считает
+                // севером +z — это старое зеркало зон, не этой формулы.
                 LocationDefinition current = Loader != null ? Loader.Current : null;
                 float width = current != null && current.WorldWidth > 0 ? current.WorldWidth : 320f;
                 float depth = current != null && current.WorldDepth > 0 ? current.WorldDepth : 320f;
                 u = Mathf.Clamp01((self["x"]?.ToObject<float>() ?? 0f) / width + 0.5f);
-                v = Mathf.Clamp01(0.5f - (self["z"]?.ToObject<float>() ?? 0f) / depth);
+                v = Mathf.Clamp01(0.5f + (self["z"]?.ToObject<float>() ?? 0f) / depth);
             }
             else
             {

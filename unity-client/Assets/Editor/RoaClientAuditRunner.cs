@@ -74,6 +74,7 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaBarterProbe),
             typeof(RoaGroundDressingProbe),
             typeof(RoaWorldZonesUiProbe),
+            typeof(RoaRadiationStormProbe),
             typeof(RoaSocialRoutingProbe),
             typeof(RoaPipboyClanStatusProbe),
             typeof(RoaKromkaSiegeUiProbe),

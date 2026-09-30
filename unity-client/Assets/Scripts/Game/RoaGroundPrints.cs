@@ -217,14 +217,15 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Колея: отрезок шины на каждые 35 см пути. Мотоцикл — одна колея за задним колесом,
-        /// машина (twin) — две колеи по бокам.
+        /// Колея: отрезок шины на каждые 35 см пути. Мотоцикл — одна колея за задним колесом
+        /// (rearOffset м назад от седока), машина (twin) — две колеи по бокам.
         /// </summary>
-        public bool TrackWheels(ref WheelTrack track, Vector3 position, Vector3 velocity, bool active, bool twin)
+        public bool TrackWheels(ref WheelTrack track, Vector3 position, Vector3 velocity, bool active, bool twin,
+                                float rearOffset = RoaMovementFx.RearWheelOffset)
         {
             velocity.y = 0f;
             Vector3 forward = velocity.sqrMagnitude > 0.01f ? velocity.normalized : Vector3.zero;
-            Vector3 axle = twin || forward == Vector3.zero ? position : position - forward * RoaMovementFx.RearWheelOffset;
+            Vector3 axle = twin || forward == Vector3.zero ? position : position - forward * rearOffset;
             if (_ring == null || !active || !track.Initialized)
             {
                 track.Last = axle;

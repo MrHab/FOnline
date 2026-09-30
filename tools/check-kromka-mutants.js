@@ -10,12 +10,14 @@ const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const readJson = relative => JSON.parse(read(relative));
 const catalog = readJson('data/mutants.json');
 const encounters = readJson('data/encounters.json');
+const cityCritters = require('../src/server/city-critters')
+  .normalizeCityCritters(readJson('data/kromka/city-critters.json'));
 const server = read('server.js');
 
 assert.strictEqual(catalog.schema, 'kromka.mutants.v1');
-const required = ['burned', 'fold', 'gari', 'rykhlyak', 'listener', 'mourner', 'lantern', 'dustling'];
+const required = ['burned', 'fold', 'gari', 'rykhlyak', 'listener', 'mourner', 'lantern', 'dustling', 'rat'];
 assert.deepStrictEqual(catalog.types.map(row => row.id).sort(), required.slice().sort(),
-  'Kromka needs exactly its eight canonical creature types');
+  'Kromka needs exactly its nine canonical creature types');
 assert.deepStrictEqual(catalog.legacyAliases, {
   ghoul: 'burned',
   superMutant: 'fold',
@@ -51,8 +53,12 @@ assert.strictEqual(catalog.types.find(row => row.id === 'lantern').hostileByDefa
 assert(catalog.types.find(row => row.id === 'listener').senses.hearingShotRange >= 20
   && catalog.types.find(row => row.id === 'listener').senses.visionRange <= 3,
   'Слухачи must be blind and hearing-driven');
+const critter = catalog.types.find(row => row.id === cityCritters.species);
+assert(critter && critter.hostileByDefault === false && critter.faction === 'neutral',
+  'City critters must be a peaceful neutral species of the catalogue');
 
-const used = new Set();
+// Городская живность живёт не во встречах, а в своих местах внутри городов.
+const used = new Set([cityCritters.species]);
 const obsoleteNames = /гул|супермутант|радскорпион|мутировавш(?:ий|ие) мурав|геккон|пепельн(?:ый|ые) волк/i;
 for (const encounter of Object.values(encounters.encounters || {})) {
   assert(!obsoleteNames.test(encounter.name || ''), `Released encounter retains an obsolete creature name: ${encounter.name}`);
@@ -123,7 +129,7 @@ assert(server.includes('SERVER_ENEMY_LOOT_TABLES[creatureId]'),
 assert(!server.includes('if (trophyQty <= 0) return [];'),
   'Ранний выход по trophyQty обнулял добычу вида с нулевым трофеем');
 
-console.log('Kromka mutants OK: eight explicit species, encounters, combat profiles and migration aliases; '
+console.log('Kromka mutants OK: nine explicit species, encounters and city critters, combat profiles and migration aliases; '
   + 'authored attacks rotate, telegraphs up to ' + maxTelegraph + ' ms survive, '
   + (effects.length - [...effects].filter(e => AI_ONLY_EFFECTS.has(e)).length) + ' attack effects are executed '
   + 'and every species has its own loot table');

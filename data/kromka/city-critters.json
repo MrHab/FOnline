@@ -1,0 +1,14 @@
+{
+  "schema": "kromka.cityCritters.v1",
+  "note": "Городская живность: мирные крысюки внутри стен каждого города. В мирном городе бить можно только их; с туши снимают шкуру тира города (Т1), как с любого зверя. Крысюк не отвечает на удар, а убегает на fleeDistance метров. Убитый возвращается на своё место через respawnSeconds. Места — годные клетки двора не ближе spacingTiles друг к другу и keepClearTiles от входов, служб и торговцев.",
+  "species": "rat",
+  "perCity": 6,
+  "respawnSeconds": 180,
+  "hideQty": [1, 2],
+  "spacingTiles": 7,
+  "keepClearTiles": 6,
+  "wanderRadius": 3.5,
+  "fleeSeconds": 3.5,
+  "fleeDistance": 9,
+  "minPlayerDistance": 6
+}

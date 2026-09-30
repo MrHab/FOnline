@@ -257,9 +257,24 @@ namespace RealmOfAshes.Game
             Show("Получено: " + (string.IsNullOrEmpty(itemId) ? "ресурс" : RoaItemData.Name(itemId))
                 + " x" + (item?["qty"]?.ToObject<int>() ?? 1)
                 + " · " + FormatCharges(_gatherCharges, _gatherMaxCharges)
-                + (profession != null ? " · " + profession["name"] + " +" + profession["gained"]
-                    + (profession["leveledUp"]?.ToObject<bool>() == true ? " — уровень " + profession["level"] + "!" : string.Empty)
-                    : string.Empty), 2.5f);
+                + ProfessionYieldLine(profession), 2.5f);
+        }
+
+        /// <summary>
+        /// Хвост строки добычи про профессию: «Рудокоп +20», новый уровень — или
+        /// «T1 больше не учит, дальше — T2», когда опыт этого тира упёрся в потолок
+        /// (работа тира N учит только до уровня, открывающего тир N+1).
+        /// </summary>
+        public static string ProfessionYieldLine(JObject profession)
+        {
+            if (profession == null) return string.Empty;
+            string name = profession["name"]?.ToString() ?? string.Empty;
+            int gained = profession["gained"]?.ToObject<int?>() ?? 0;
+            int capTier = profession["capTier"]?.ToObject<int?>() ?? 0;
+            if (gained <= 0 && profession["capped"]?.ToObject<bool>() == true && capTier > 1)
+                return " · " + name + ": T" + (capTier - 1) + " больше не учит, дальше — T" + capTier;
+            return " · " + name + " +" + gained
+                + (profession["leveledUp"]?.ToObject<bool>() == true ? " — уровень " + profession["level"] + "!" : string.Empty);
         }
 
         /// <summary>

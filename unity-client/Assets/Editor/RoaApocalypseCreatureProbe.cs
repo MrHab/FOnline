@@ -17,7 +17,7 @@ namespace RealmOfAshes.EditorTools
         private static readonly string[] Models =
         {
             "kromkaBurned", "kromkaBurned", "kromkaBurned", "kromkaBurned",
-            "kromkaGari", "kromkaDustling", "kromkaRykhlyak", "kromkaLantern", "friendlyBrahmin"
+            "kromkaGari", "kromkaDustling", "kromkaRykhlyak", "kromkaLantern", "kromkaRat", "friendlyBrahmin"
         };
 
         /// <summary>

@@ -359,19 +359,28 @@ namespace RealmOfAshes.EditorTools
             finally { UnityEngine.Object.DestroyImmediate(go); }
 
             // Баннер сдвига: вложенный шрифт и строка целиком. Строка Noto Sans
-            // выше, чем у LegacyRuntime, и в прежней рамке пропадала вся.
+            // выше, чем у LegacyRuntime: в прежней рамке она пропадала вся, а
+            // с подгонкой размера ужималась даже короткая.
             var shiftHost = new GameObject("ShiftBannerProbe");
             try
             {
                 shiftHost.AddComponent<RoaKromkaShiftAndDetector>().Configure(null, null);
                 Text shiftText = shiftHost.GetComponentInChildren<Canvas>(true).transform.Find("ShiftWarning/ShiftText").GetComponent<Text>();
                 Require(shiftText.font == RoaUiFont.Default, "The shift banner is drawn with the bundled Cyrillic font");
-                float box = shiftText.rectTransform.rect.height;
+                Vector2 box = shiftText.rectTransform.rect.size;
                 foreach (string line in new[] { activeLine, earlyLine, excitedLine })
                 {
-                    shiftText.text = line;
-                    Require(shiftText.preferredHeight <= box,
-                        "The shift banner cuts its line — " + Mathf.CeilToInt(shiftText.preferredHeight) + " px in a " + box + " px box: " + line);
+                    var inBox = new TextGenerator();
+                    TextGenerationSettings settings = shiftText.GetGenerationSettings(box);
+                    inBox.Populate(line, settings);
+                    var unbounded = new TextGenerator();
+                    unbounded.Populate(line, shiftText.GetGenerationSettings(new Vector2(box.x, 4000f)));
+                    Require(inBox.characterCountVisible == unbounded.characterCountVisible,
+                        "The shift banner cuts its line — " + inBox.characterCountVisible + " of " + unbounded.characterCountVisible
+                        + " characters in a " + box + " box: " + line);
+                    if (line == earlyLine)
+                        Require(!settings.resizeTextForBestFit || inBox.fontSizeUsedForBestFit == settings.resizeTextMaxSize,
+                            "A short shift line keeps its full size, not " + inBox.fontSizeUsedForBestFit + ": " + line);
                 }
             }
             finally { UnityEngine.Object.DestroyImmediate(shiftHost); }

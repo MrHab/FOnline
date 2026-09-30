@@ -67,6 +67,12 @@ namespace RealmOfAshes.Game
         private AudioSource _engine;
         private AudioClip _wind;
         private AudioClip _engineLoop;
+        private AudioSource _rain;
+        private AudioSource _thunderSource;
+        private AudioClip _rainLoop;
+        private AudioClip _thunder;
+        private float _rainIntensity;
+        private bool _rainSheltered;
         private bool _engineRunning;
         private float _engineLoad;
         private float _engineStartedAt = -100f;
@@ -197,6 +203,47 @@ namespace RealmOfAshes.Game
             PollUiClick();
             UpdateFootsteps(inGame && !panelOpen);
             UpdateEngine(dt, inGame);
+            UpdateRain(dt, inGame, panelOpen);
+        }
+
+        public bool RainCueReady { get { return _rainLoop != null && _rain != null && _thunder != null; } }
+        public float RainVolume { get { return _rain != null ? _rain.volume : 0f; } }
+
+        /// <summary>
+        /// Шум дождя по снимку погоды (RoaWeather). Под крышей ливень слышен
+        /// глуше, но не пропадает: снаружи он всё ещё идёт.
+        /// </summary>
+        public void SetRain(float intensity, bool sheltered)
+        {
+            _rainIntensity = Mathf.Clamp01(intensity);
+            _rainSheltered = sheltered;
+        }
+
+        /// <summary>Раскат грома; distance 0 — близкий удар с треском, 1 — дальний гул.</summary>
+        public void PlayThunder(float distance)
+        {
+            if (_thunderSource == null || _thunder == null) return;
+            distance = Mathf.Clamp01(distance);
+            _thunderSource.pitch = Mathf.Lerp(1.08f, 0.74f, distance) * Pitch(0.95f, 1.05f);
+            _thunderSource.PlayOneShot(_thunder, Mathf.Lerp(0.62f, 0.26f, distance) * (_rainSheltered ? 0.6f : 1f));
+        }
+
+        private void UpdateRain(float dt, bool inGame, bool panelOpen)
+        {
+            if (_rain == null || _rainLoop == null) return;
+            float target = inGame ? Mathf.Pow(_rainIntensity, 0.8f) * (_rainSheltered ? 0.11f : 0.3f) : 0f;
+            if (panelOpen) target *= 0.6f;
+            _rain.volume = Mathf.MoveTowards(_rain.volume, target, dt * 0.1f);
+            if (_rain.volume > 0.001f && !_rain.isPlaying)
+            {
+                _rain.clip = _rainLoop;
+                _rain.loop = true;
+                _rain.Play();
+            }
+            else if (_rain.volume <= 0.001f && _rain.isPlaying && target <= 0f)
+            {
+                _rain.Stop();
+            }
         }
 
         public bool EngineCueReady { get { return _engineLoop != null && _engine != null; } }
@@ -592,6 +639,10 @@ namespace RealmOfAshes.Game
             _engine.maxDistance = 28f;
             _engine.rolloffMode = AudioRolloffMode.Linear;
             _engine.volume = 0f;
+            _rain = Source("RainAmbience", 0f);
+            _rain.ignoreListenerPause = true;
+            _rain.volume = 0f;
+            _thunderSource = Source("Thunder", 0f);
             for (int i = 0; i < WorldVoiceCount; i++)
             {
                 AudioSource source = Source("WorldVoice" + i, 0.78f);
@@ -617,6 +668,8 @@ namespace RealmOfAshes.Game
         {
             _wind = BuildWind();
             _engineLoop = BuildEngineLoop();
+            _rainLoop = BuildRainLoop();
+            _thunder = BuildThunder();
             _pistol = BuildGunshot("Pistol", 0.18f, 105f, 0.72f, 0.44f, 0x1173u);
             _rifle = BuildGunshot("Rifle", 0.24f, 78f, 0.88f, 0.56f, 0x23a9u);
             _shotgun = BuildGunshot("Shotgun", 0.34f, 54f, 1f, 0.72f, 0x918bu);
@@ -726,6 +779,79 @@ namespace RealmOfAshes.Game
                 data[tail * 2 + 1] = Mathf.Lerp(data[tail * 2 + 1], data[i * 2 + 1], mix);
             }
             return Store(AudioClip.Create("WastelandWind", frames, 2, SampleRate, false), data);
+        }
+
+        /// <summary>
+        /// Дождь: шипение мелких капель (белый шум без его медленной части), глухой
+        /// фон ливня и отдельные звонкие капли по земле и железу. Шесть секунд со
+        /// сшитым хвостом, как у ветра, чтобы цикл не щёлкал.
+        /// </summary>
+        private AudioClip BuildRainLoop()
+        {
+            const float seconds = 6f;
+            int frames = Mathf.RoundToInt(seconds * SampleRate);
+            var data = new float[frames * 2];
+            uint state = 0x5a17c3e9u;
+            var slow = new float[2];
+            var body = new float[2];
+            var dropEnvelope = new float[2];
+            var dropPhase = new float[2];
+            var dropHz = new float[] { 3000f, 3400f };
+            for (int i = 0; i < frames; i++)
+            {
+                float t = i / (float)SampleRate;
+                float swell = 0.86f + 0.14f * Mathf.Sin(Mathf.PI * 2f * t / seconds * 2f);
+                for (int channel = 0; channel < 2; channel++)
+                {
+                    float white = Noise(ref state);
+                    slow[channel] = Mathf.Lerp(slow[channel], white, 0.06f);
+                    body[channel] = Mathf.Lerp(body[channel], white, 0.012f);
+                    if (Noise(ref state) > 0.9965f)
+                    {
+                        dropEnvelope[channel] = 0.35f + 0.65f * Mathf.Abs(Noise(ref state));
+                        dropHz[channel] = 1800f + 4200f * Mathf.Abs(Noise(ref state));
+                    }
+                    dropPhase[channel] += Mathf.PI * 2f * dropHz[channel] / SampleRate;
+                    dropEnvelope[channel] *= 0.9935f;
+                    float hiss = (white - slow[channel]) * 0.2f * swell;
+                    float drop = Mathf.Sin(dropPhase[channel]) * dropEnvelope[channel] * 0.16f;
+                    data[i * 2 + channel] = Mathf.Clamp(hiss + body[channel] * 0.9f + drop, -0.5f, 0.5f);
+                }
+            }
+            int crossFrames = SampleRate / 2;
+            for (int i = 0; i < crossFrames; i++)
+            {
+                float mix = i / (float)crossFrames;
+                int tail = frames - crossFrames + i;
+                data[tail * 2] = Mathf.Lerp(data[tail * 2], data[i * 2], mix);
+                data[tail * 2 + 1] = Mathf.Lerp(data[tail * 2 + 1], data[i * 2 + 1], mix);
+            }
+            return Store(AudioClip.Create("Rain", frames, 2, SampleRate, false), data);
+        }
+
+        /// <summary>
+        /// Гром: короткий треск разряда и долгий перекатывающийся гул из
+        /// коричневого шума. Дальность задаёт pitch и громкость при проигрывании.
+        /// </summary>
+        private AudioClip BuildThunder()
+        {
+            uint state = 0x3c6ef372u;
+            float brown = 0f;
+            float low = 0f;
+            float crack = 0f;
+            return Mono("Thunder", 5.5f, (sample, time, progress) =>
+            {
+                float white = Noise(ref state);
+                brown = Mathf.Clamp(brown * 0.9985f + white * 0.045f, -1f, 1f);
+                low = Mathf.Lerp(low, brown, 0.08f);
+                crack = Mathf.Lerp(crack, white, 0.35f);
+                float attack = Mathf.Clamp01(time / 0.04f);
+                float crackEnvelope = Mathf.Exp(-time * 9f);
+                float roll = Mathf.Exp(-time * 0.72f)
+                    * (0.62f + 0.38f * Mathf.Sin(time * 5.3f) * Mathf.Sin(time * 2.1f + 0.7f));
+                float tail = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.82f, 1f, progress));
+                return Mathf.Clamp((crack * crackEnvelope * 0.5f + low * roll * 2.4f) * attack * tail, -0.9f, 0.9f);
+            });
         }
 
         /// <summary>

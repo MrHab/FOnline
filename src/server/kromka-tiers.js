@@ -159,6 +159,7 @@ function normalizeTierConfig(raw = {}) {
       toolSpeed: finite(gathering.toolSpeed, 0.6, 0.1, 1),
       charges: tierArray(gathering.charges, 5, 1, 100),
       moveToleranceM: finite(gathering.moveToleranceM, 0.9, 0.1, 5),
+      toolFreeTier: Math.floor(finite(gathering.toolFreeTier, 1, 0, TIER_COUNT)),
       carcassMs: Math.floor(finite(gathering.carcassMs, 180000, 10000, 3600000))
     })
   });
@@ -531,17 +532,40 @@ function professionXpForWork(config, tier = 1, units = 1) {
   return Math.max(0, Math.round(tierRow(config, tier).xp * Math.max(0, Number(units) || 0)));
 }
 
-/** Начисляет опыт профессии в словарь xp; возвращает сводку для ответа клиенту. */
-function grantProfessionXp(config, xpMap, skillId, amount) {
+/**
+ * Потолок опыта от работы тира: тир N учит профессию до уровня, открывающего
+ * тир N+1 (T1 — до 10), последний тир — до предела профессии. Дальше расти
+ * можно только работой следующего тира.
+ */
+function professionXpCapForTier(config, tier = 1) {
+  const n = clampTier(tier);
+  const level = n >= TIER_COUNT ? config.professions.maxLevel : tierRow(config, n + 1).level;
+  return professionXpForLevel(config, level);
+}
+
+/**
+ * Начисляет опыт профессии в словарь xp; возвращает сводку для ответа клиенту.
+ * С tier опыт не поднимается выше потолка этого тира (professionXpCapForTier):
+ * capped — работа тира упёрлась в него, capTier — тир, который учит дальше.
+ */
+function grantProfessionXp(config, xpMap, skillId, amount, { tier = 0 } = {}) {
   const skill = config.professions.skills.find(row => row.id === skillId);
   if (!skill || !xpMap || typeof xpMap !== 'object') return null;
   const before = Math.max(0, Math.floor(Number(xpMap[skillId] || 0)));
-  const cap = professionXpForLevel(config, config.professions.maxLevel);
-  const after = Math.min(cap, before + Math.max(0, Math.floor(Number(amount) || 0)));
+  const cap = Number(tier) >= 1
+    ? professionXpCapForTier(config, tier)
+    : professionXpForLevel(config, config.professions.maxLevel);
+  const wanted = before + Math.max(0, Math.floor(Number(amount) || 0));
+  const after = Math.max(before, Math.min(cap, wanted));
   xpMap[skillId] = after;
   const levelBefore = professionLevel(config, before);
   const level = professionLevel(config, after);
-  return { id: skillId, name: skill.name, gained: after - before, xp: after, level, leveledUp: level > levelBefore };
+  const summary = { id: skillId, name: skill.name, gained: after - before, xp: after, level, leveledUp: level > levelBefore };
+  if (Number(tier) >= 1 && wanted > after && clampTier(tier) < TIER_COUNT) {
+    summary.capped = true;
+    summary.capTier = clampTier(tier) + 1;
+  }
+  return summary;
 }
 
 /** Шанс лишней единицы добычи от уровня профессии. */
@@ -635,6 +659,7 @@ module.exports = {
   professionMaxTier,
   professionAllowsTier,
   professionXpForWork,
+  professionXpCapForTier,
   grantProfessionXp,
   professionGatherBonus,
   publicProfessions,

@@ -56,6 +56,10 @@ namespace RealmOfAshes.Game
         private LineRenderer _shiftWave;
         private float _shiftWaveStartedAt = -10f;
         private Material _artifactRingMaterial;
+        private RoaRadiationStorm _storm;
+
+        /// <summary>Буря выброса: путь, рамка сцены, свет, звук и стены в зоне.</summary>
+        public RoaRadiationStorm Storm { get { return _storm; } }
 
         public void Configure(RoaGameBootstrap bootstrap, RoaSocketClient socket)
         {
@@ -64,12 +68,22 @@ namespace RealmOfAshes.Game
             _socket = socket;
             BuildAudio();
             BuildUi();
+            if (_storm == null)
+            {
+                _storm = GetComponent<RoaRadiationStorm>();
+                if (_storm == null) _storm = gameObject.AddComponent<RoaRadiationStorm>();
+                // Кольцо волны — когда до игрока дошла стена бури, а не когда буря
+                // вошла в мир где-то за сотни километров.
+                _storm.StormReachedPlayer += StartShiftWave;
+            }
+            _storm.Configure(bootstrap);
             Subscribe();
         }
 
         private void OnDestroy()
         {
             Unsubscribe();
+            if (_storm != null) _storm.StormReachedPlayer -= StartShiftWave;
             foreach (ArtifactView view in _views.Values) if (view.Root != null) Destroy(view.Root);
             _views.Clear();
             if (_artifactRingMaterial != null) Destroy(_artifactRingMaterial);
@@ -96,7 +110,7 @@ namespace RealmOfAshes.Game
             _roomId = ack?.RoomId ?? string.Empty;
             ClearViews();
             if (ack?.Self != null) ApplySelf(ack.Self);
-            ApplyShift(ack?.WorldState?["shift"] as JObject);
+            ApplyShift(ack?.WorldState?["shift"] as JObject, null);
             RequestState();
         }
 
@@ -132,7 +146,7 @@ namespace RealmOfAshes.Game
             if (!string.IsNullOrEmpty(_roomId) && roomId != _roomId) return;
             _roomId = roomId;
             _hasDetector = state["detector"] is JObject;
-            ApplyShift(state["shift"] as JObject);
+            ApplyShift(state["shift"] as JObject, state["locationId"]?.ToString());
 
             var present = new HashSet<string>();
             _strongestSignal = 0f;
@@ -206,8 +220,13 @@ namespace RealmOfAshes.Game
                 sb.Append("СДВИГ СКОРО  •  через ").Append(Mathf.Max(1, Mathf.CeilToInt(untilShift / 60000f)))
                   .Append(" мин  •  ранний прогноз");
             }
-            if (phase != "calm")
+            JObject storm = shift["storm"] as JObject;
+            JObject here = storm?["here"] as JObject;
+            if (phase == "calm" && early && storm != null) sb.Append("  •  буря ").Append(StormSide(storm));
+            if (phase != "calm" && storm != null) AppendStormLine(sb, phase, strength, sheltered, storm, here);
+            else if (phase != "calm")
             {
+                // Без бури в ответе (старый сервер, состояние без игрока) — прежняя строка фазы.
                 string title = phase == "warning" ? "СДВИГ ПРИБЛИЖАЕТСЯ"
                     : phase == "active" ? "СДВИГ ИДЁТ"
                     : "СВЕЖИЕ ПЯТНА";
@@ -227,12 +246,60 @@ namespace RealmOfAshes.Game
             return sb.ToString();
         }
 
-        private void ApplyShift(JObject shift)
+        /// <summary>
+        /// Строка бури для точки игрока: над ним — «ищите укрытие» (или «укрытие»),
+        /// впереди — откуда идёт, сколько километров карты до стены и через сколько
+        /// она будет здесь, позади — «прошла».
+        /// </summary>
+        private static void AppendStormLine(StringBuilder sb, string phase, int strength, bool sheltered, JObject storm, JObject here)
+        {
+            if (here == null)
+            {
+                // Состояние без игрока (снимок мира при входе): где буря — придёт следующим пакетом.
+                if (phase == "afterglow") sb.Append("БУРЯ ПРОШЛА  •  сила ").Append(strength);
+                else sb.Append(phase == "warning" ? "БУРЯ ИДЁТ " : "БУРЯ ").Append(StormSide(storm).ToUpperInvariant())
+                    .Append("  •  сила ").Append(strength);
+                return;
+            }
+            bool inside = here["inside"]?.Value<bool>() == true;
+            bool passed = here["passed"]?.Value<bool>() == true;
+            if (inside)
+            {
+                sb.Append(sheltered ? "БУРЯ НАД УКРЫТИЕМ" : "РАДИАЦИОННАЯ БУРЯ").Append("  •  сила ").Append(strength)
+                  .Append(sheltered ? "  •  УКРЫТИЕ" : "  •  ИЩИТЕ УКРЫТИЕ");
+                return;
+            }
+            if (passed || phase == "afterglow")
+            {
+                sb.Append("БУРЯ ПРОШЛА  •  сила ").Append(strength);
+                return;
+            }
+            sb.Append(phase == "warning" ? "БУРЯ ИДЁТ " : "БУРЯ ").Append(StormSide(storm).ToUpperInvariant())
+              .Append("  •  сила ").Append(strength);
+            float aheadKm = here["aheadKm"]?.Value<float>() ?? -1f;
+            int eta = here["etaSeconds"]?.Value<int>() ?? -1;
+            if (aheadKm >= 0f) sb.Append("  •  ").Append(Mathf.Max(1, Mathf.RoundToInt(aheadKm))).Append(" км");
+            if (eta >= 0) sb.Append("  •  через ").Append(RoaRadiationStorm.EtaText(eta));
+            if (sheltered) sb.Append("  •  УКРЫТИЕ");
+        }
+
+        /// <summary>«с запада» — откуда идёт буря (по её направлению на карте).</summary>
+        private static string StormSide(JObject storm)
+        {
+            double dirX = storm?["dirX"]?.Value<double>() ?? 1d;
+            double dirY = storm?["dirY"]?.Value<double>() ?? 0d;
+            float bearing = (float)(System.Math.Atan2(-dirX, dirY) * 180d / System.Math.PI);
+            return RoaRadiationStormPath.FromSideText(bearing);
+        }
+
+        private void ApplyShift(JObject shift, string locationId)
         {
             if (shift == null) return;
             string previous = _shiftPhase;
             _shiftPhase = shift["phase"]?.ToString() ?? "calm";
-            _sheltered = shift["sheltered"]?.Value<bool>() == true;
+            if (!string.IsNullOrEmpty(locationId)) _sheltered = shift["sheltered"]?.Value<bool>() == true;
+            if (_storm != null) _storm.ApplyShift(shift, locationId);
+            JObject here = (shift["storm"] as JObject)?["here"] as JObject;
             if (_shiftPanel != null)
             {
                 string line = ShiftLine(shift);
@@ -241,12 +308,17 @@ namespace RealmOfAshes.Game
                 if (visible)
                 {
                     _shiftText.text = line;
-                    _shiftPanel.color = _shiftPhase == "active"
+                    // Красная — когда бьёт: буря над игроком вне укрытия (без бури в
+                    // ответе — активная фаза, как раньше).
+                    bool danger = here != null
+                        ? here["inside"]?.Value<bool>() == true && !_sheltered
+                        : _shiftPhase == "active" && shift["storm"] == null;
+                    _shiftPanel.color = danger
                         ? new Color(0.48f, 0.08f, 0.12f, 0.92f)
                         : new Color(0.42f, 0.28f, 0.08f, 0.9f);
                 }
             }
-            if (previous != "active" && _shiftPhase == "active") StartShiftWave();
+            if (shift["storm"] == null && previous != "active" && _shiftPhase == "active") StartShiftWave();
         }
 
         private void Update()
@@ -483,13 +555,18 @@ namespace RealmOfAshes.Game
             scaler.referenceResolution = new Vector2(1600f, 900f);
             scaler.matchWidthOrHeight = 0.5f;
 
-            _shiftPanel = Panel(canvasObject.transform, "ShiftWarning", new Vector2(0.5f, 1f), new Vector2(0f, -18f), new Vector2(620f, 48f), new Color(0.42f, 0.28f, 0.08f, 0.9f));
+            _shiftPanel = Panel(canvasObject.transform, "ShiftWarning", new Vector2(0.5f, 1f), new Vector2(0f, -18f), new Vector2(760f, 48f), new Color(0.42f, 0.28f, 0.08f, 0.9f));
             _shiftText = Label(_shiftPanel.transform, "ShiftText", 20, TextAnchor.MiddleCenter, Color.white);
             Stretch(_shiftText.rectTransform, 12f);
-            // Строка Noto Sans в 20 пт — 27 ед.: рамка 48 − 2 × 12 = 24 ед. её
-            // обрезала (Truncate), и баннер сдвига выходил пустым.
+            // Строка Noto Sans в 20 пт — 27 ед.: в рамке 48 − 2 × 12 = 24 ед. она
+            // не помещалась, и подгонка ужимала до 17 пт даже короткую строку.
             _shiftText.rectTransform.offsetMin = new Vector2(12f, 6f);
             _shiftText.rectTransform.offsetMax = new Vector2(-12f, -6f);
+            // Строка бури длиннее прежней (откуда, сколько км, через сколько):
+            // лучше чуть мельче, чем обрезанный хвост.
+            _shiftText.resizeTextForBestFit = true;
+            _shiftText.resizeTextMinSize = 15;
+            _shiftText.resizeTextMaxSize = 20;
             _shiftPanel.gameObject.SetActive(false);
 
             // Detector signal is communicated by sound and the revealed object in
@@ -525,6 +602,7 @@ namespace RealmOfAshes.Game
             GameObject go = new GameObject(name, typeof(RectTransform), typeof(Text));
             go.transform.SetParent(parent, false);
             Text text = go.GetComponent<Text>();
+            // В WebGL у встроенного шрифта нет кириллицы: панель сдвига показывала одни цифры.
             text.font = RoaUiFont.Default;
             text.fontSize = size;
             text.alignment = alignment;

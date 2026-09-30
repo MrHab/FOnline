@@ -176,6 +176,8 @@ async function mapFileAfterServerStart(label, mapText) {
     cwd: ROOT,
     env: {
       ...process.env,
+      // Живая погода меняет скорость и меткость; проверки идут в ясную, если не просят иной.
+      KROMKA_WEATHER: process.env.KROMKA_WEATHER || 'clear',
       PORT: '0',
       DATA_DIR: dataDir,
       NODE_ENV: 'test',

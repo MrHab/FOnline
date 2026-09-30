@@ -217,6 +217,17 @@ namespace RealmOfAshes.Game
                 Float(text, Player.transform.position + Vector3.up * 0.6f, new Color(0.97f, 0.72f, 0.3f));
         }
 
+        /// <summary>
+        /// Событие мира (смена погоды): строка в журнал HUD и надпись над персонажем —
+        /// на телефоне журнала нет.
+        /// </summary>
+        public void AnnounceWorld(string text, Color color)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            AddLog(text);
+            if (Player != null) Float(text, Player.transform.position + Vector3.up * 0.6f, color);
+        }
+
         private void HandleEnemyAttack(JObject payload)
         {
             if (payload == null || Player == null) return;

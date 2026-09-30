@@ -315,6 +315,7 @@ const {
   ecologySummary,
   cellKey: ecologyCellKey,
   directionBetweenCells: ecologyDirectionBetweenCells,
+  canEnter: ecologyCanEnter,
   hash01: ecologyHash01,
   STEPS: ECOLOGY_STEPS,
   LIVING_MODES: ECOLOGY_LIVING_MODES
@@ -2229,6 +2230,17 @@ let dangerEcologySavedAt = 0;
 const ECOLOGY_SIDE_FROM = Object.freeze({ north: 'С юга', south: 'С севера', east: 'С запада', west: 'С востока' });
 // Край сцены в сторону света: точка входа с той же стороны.
 const ECOLOGY_EXIT_KEYS = Object.freeze({ north: 'entryFromNorth', south: 'entryFromSouth', west: 'entryFromWest', east: 'entryFromEast' });
+const ECOLOGY_SIDE_TO = Object.freeze({ north: 'На север', south: 'На юг', east: 'На восток', west: 'На запад' });
+// Ближе этого к игроку особь у него на виду: туман клиента прячет существ
+// дальше 9 клеток (18 м), здесь — с запасом.
+const ECOLOGY_LEAVE_SIGHT_M = 24;
+// Беглец уходит, дойдя до ворот (их круг перехода — 5 м).
+const ECOLOGY_LEAVE_GATE_M = 3;
+// Столько без продвижения к воротам — застрял.
+const ECOLOGY_LEAVE_STALL_MS = 8000;
+// Отступающая особь, которую всё ещё видят через столько, загнана и дерётся
+// (проверки ставят срок короче).
+const ECOLOGY_LEAVE_CORNERED_MS = Math.max(1000, Number(process.env.KROMKA_ECOLOGY_CORNERED_MS) || 30000);
 
 function serverEcologyActive() {
   return WORLD_ECONOMY.worldModel.dangerEcology === true && DANGER_ECOLOGY.species.length > 0;
@@ -2296,6 +2308,16 @@ function serverEcologyCanStep(fromSx, fromSy, sx, sy) {
   const edge = from && to && direction ? from.edges?.[direction] : null;
   // В город группа не заходит: сектор города — жилое место, а не пустошь.
   return !!edge && edge.open !== false && edge.to === to.id && !to.city;
+}
+
+/** Может ли группа уйти из своей зоны в эту сторону: те же правила, что у её шагов по миру. */
+function serverEcologyCanLeave(group, species, direction) {
+  const step = ECOLOGY_STEPS[direction];
+  return !!step && !!species && ecologyCanEnter(species, {
+    modeAt: serverEcologyModeAt,
+    canStep: serverEcologyCanStep,
+    speciesAllowedAt: serverEcologySpeciesAllowedAt
+  }, group.sx + step.dx, group.sy + step.dy, group);
 }
 
 /** Клетка комнаты: зона, чей это канал; прочие комнаты вне экологии. */
@@ -2433,6 +2455,8 @@ function serverEcologyMaterialize(room, group, options = {}) {
   if (!room || !group || !species || !cell) return 0;
   // Группа стоит в одной зоне; в каждом её занятом канале — свои особи.
   if (group.online && group.online !== cell.zoneId) return 0;
+  // Бегущая группа в новые каналы не встаёт: она уходит из зоны.
+  if (group.state === 'flee') return 0;
   if (room.ecologyGroupIds instanceof Set && room.ecologyGroupIds.has(group.id)) return 0;
   const loc = roomLocation(room);
   const dims = roomTileDims(room);
@@ -2563,44 +2587,86 @@ function serverEcologyNoteDeath(room, enemy) {
     return;
   }
   if (result.fleeing) {
-    for (const where of [room, ...elsewhere]) if (where) serverEcologyStartLeaving(where, result.group);
+    // Ворота одни на всю группу: их выбирают по игрокам канала, где она понесла потери.
+    const direction = serverEcologyPickExit(room || elsewhere[0], result.group);
+    if (direction) for (const where of [room, ...elsewhere]) if (where) serverEcologyStartLeaving(where, result.group, direction);
   }
 }
 
-/** Бегство: уцелевшие идут к краю сцены, дальнему от игроков, и уходят в соседнюю клетку. */
-function serverEcologyStartLeaving(room, group) {
-  if (!room || !group) return false;
+/** Куда уходит группа в эту сторону: в ворота зоны, как игрок; без ворот — к краю входа. */
+function serverEcologyExitPoint(loc, dims, direction) {
+  const gate = (Array.isArray(loc?.transitions) ? loc.transitions : []).find(row => row?.type === 'zoneGate'
+    && row.direction === direction && Number.isFinite(Number(row.tx)) && Number.isFinite(Number(row.tz)));
+  const point = gate || loc?.[ECOLOGY_EXIT_KEYS[direction]];
+  if (!point || !Number.isFinite(Number(point.tx)) || !Number.isFinite(Number(point.tz))) return null;
+  return tileToWorld(Number(point.tx), Number(point.tz), dims);
+}
+
+/**
+ * Ворота бегства: из тех, которыми группа может уйти по миру, — те, до которых
+ * уцелевшие доберутся раньше игроков канала, чтобы не бежать сквозь них. Уйти
+ * некуда (кругом города и чужие угодья) — пусто, группа дерётся дальше.
+ */
+function serverEcologyPickExit(room, group) {
+  if (!room || !group) return '';
+  const species = DANGER_ECOLOGY.speciesById[group.speciesId];
+  const actors = [...(room.enemies instanceof Map ? room.enemies.values() : [])]
+    .filter(enemy => enemy && !enemy.dead && enemy.ecologyGroupId === group.id);
+  if (!actors.length) return '';
   const loc = roomLocation(room);
   const dims = roomTileDims(room);
   const livePlayers = livePlayersInRoom(room);
+  const fromX = actors.reduce((sum, enemy) => sum + Number(enemy.x || 0), 0) / actors.length;
+  const fromZ = actors.reduce((sum, enemy) => sum + Number(enemy.z || 0), 0) / actors.length;
   const exits = Object.keys(ECOLOGY_STEPS).map(direction => {
-    const point = loc[ECOLOGY_EXIT_KEYS[direction]];
-    if (!point || !Number.isFinite(Number(point.tx)) || !Number.isFinite(Number(point.tz))) return null;
-    const world = tileToWorld(Number(point.tx), Number(point.tz), dims);
-    const nearest = livePlayers.length
-      ? Math.min(...livePlayers.map(player => Math.hypot(Number(player.x || 0) - world.x, Number(player.z || 0) - world.z)))
-      : 999;
-    return { direction, world, nearest };
-  }).filter(Boolean).sort((a, b) => b.nearest - a.nearest);
-  if (!exits.length) return false;
-  const exit = exits[0];
-  for (const enemy of room.enemies instanceof Map ? room.enemies.values() : []) {
-    if (!enemy || enemy.dead || enemy.ecologyGroupId !== group.id) continue;
+    if (!serverEcologyCanLeave(group, species, direction)) return null;
+    const world = serverEcologyExitPoint(loc, dims, direction);
+    if (!world) return null;
+    const own = Math.hypot(world.x - fromX, world.z - fromZ);
+    // Запас: насколько группа ближе к воротам, чем ближайший к ним игрок.
+    const lead = livePlayers.length
+      ? Math.min(...livePlayers.map(player => Math.hypot(Number(player.x || 0) - world.x, Number(player.z || 0) - world.z))) - own
+      : -own;
+    return { direction, lead };
+  }).filter(Boolean).sort((a, b) => b.lead - a.lead);
+  return exits.length ? exits[0].direction : '';
+}
+
+/** Бегство в канале: уцелевшие идут к воротам direction и уходят в них. */
+function serverEcologyStartLeaving(room, group, direction) {
+  if (!room || !group) return false;
+  const actors = [...(room.enemies instanceof Map ? room.enemies.values() : [])]
+    .filter(enemy => enemy && !enemy.dead && enemy.ecologyGroupId === group.id);
+  const exit = actors.length ? serverEcologyExitPoint(roomLocation(room), roomTileDims(room), direction) : null;
+  if (!exit) return false;
+  const now = Date.now();
+  for (const enemy of actors) {
     enemy.ecologyPhase = 'leaving';
-    enemy.ecologyPhaseSince = Date.now();
-    enemy.ecologyTargetX = exit.world.x;
-    enemy.ecologyTargetZ = exit.world.z;
-    enemy.ecologyExitDirection = exit.direction;
+    enemy.ecologyPhaseSince = now;
+    enemy.ecologyProgressAt = now;
+    enemy.ecologyBestDistance = Infinity;
+    enemy.ecologyTargetX = exit.x;
+    enemy.ecologyTargetZ = exit.z;
+    enemy.ecologyExitDirection = direction;
     clearEnemyTarget(enemy);
     enemy.factionTargetId = '';
     enemy.stationary = false;
   }
   const species = DANGER_ECOLOGY.speciesById[group.speciesId];
-  if (species?.hostile) serverEcologyNotice(room, `${species.name} отступают.`);
+  if (species?.hostile) serverEcologyNotice(room, `${ECOLOGY_SIDE_TO[direction]} отступает: ${species.name.toLowerCase()}.`);
   return true;
 }
 
-/** Особь ушла за край: когда уйдут все, группа — в соседней клетке, вне сцены. */
+/** Видит ли особь кто-то из игроков канала: ближе, чем туман клиента прячет существ. */
+function serverEcologyActorWatched(room, enemy) {
+  return livePlayersInRoom(room)
+    .some(player => Math.hypot(Number(player.x || 0) - enemy.x, Number(player.z || 0) - enemy.z) < ECOLOGY_LEAVE_SIGHT_M);
+}
+
+/**
+ * Особь ушла за край или из виду. Когда уйдут все копии группы во всех каналах,
+ * группа — в соседней клетке, вне сцены.
+ */
 function serverEcologyActorLeft(room, enemy, now = Date.now()) {
   const state = dangerEcologyState;
   const group = state?.groups.get(enemy.ecologyGroupId) || null;
@@ -2616,17 +2682,16 @@ function serverEcologyActorLeft(room, enemy, now = Date.now()) {
   if (stillHere) return;
   room.ecologyLeaving.delete(group.id);
   if (room.ecologyGroupIds instanceof Set) room.ecologyGroupIds.delete(group.id);
-  // Группа ушла воротами: в остальных каналах этой зоны её больше нет.
-  for (const other of serverEcologyRoomsHolding(group.id)) serverEcologyDespawn(other, group.id);
+  // Копии в других каналах ещё уходят (на глазах у своих игроков) или дерутся,
+  // загнанные: группа покинет зону с последней из них.
+  if (serverEcologyRoomsHolding(group.id).length) {
+    emitEnemySnapshot(room, true);
+    return;
+  }
   const step = ECOLOGY_STEPS[leaving.direction];
   const species = DANGER_ECOLOGY.speciesById[group.speciesId];
-  if (step && species) {
-    const sx = group.sx + step.dx;
-    const sy = group.sy + step.dy;
-    const mode = serverEcologyModeAt(sx, sy);
-    if (ECOLOGY_LIVING_MODES.includes(mode) && species.habitat[mode] > 0 && serverEcologyCanStep(group.sx, group.sy, sx, sy)) {
-      ecologyMoveGroup(state, group, sx, sy);
-    }
+  if (step && serverEcologyCanLeave(group, species, leaving.direction)) {
+    ecologyMoveGroup(state, group, group.sx + step.dx, group.sy + step.dy);
   }
   ecologySetGroupOffline(state, group, leaving.hp, now, DANGER_ECOLOGY);
   emitEnemySnapshot(room, true);
@@ -2681,10 +2746,29 @@ function updateEcologyActorLifecycle(room = null, enemy = null, dt = 0) {
     enemy.aiState = 'return';
     enemy.targetId = '';
     const distance = moveEnemyTowards(room, enemy, tx, tz, Math.max(1.35, Number(enemy.speed || 1.8)), dt, { separationWeight: 0.3 });
-    // Точка края бывает на непроходимой клетке: у края застрял — тоже ушёл;
-    // и никто не отступает дольше 30 с.
-    const stuckAtEdge = distance <= 6 && Number(enemy.pathStuckSince || 0) > 0 && now - Number(enemy.pathStuckSince) > 800;
-    if (distance <= 1.4 || stuckAtEdge || now - Number(enemy.ecologyPhaseSince) > 30000) serverEcologyActorLeft(room, enemy, now);
+    if (distance < Number(enemy.ecologyBestDistance ?? Infinity) - 1) {
+      enemy.ecologyBestDistance = distance;
+      enemy.ecologyProgressAt = now;
+    }
+    const stalled = now - Number(enemy.ecologyProgressAt || enemy.ecologyPhaseSince) > ECOLOGY_LEAVE_STALL_MS;
+    // Особь исчезает только в воротах, у края зоны. Ворота бывают на непроходимой
+    // клетке: застрявшая у самых ворот тоже ушла.
+    const stuckAtGate = distance <= 6 && (stalled
+      || (Number(enemy.pathStuckSince || 0) > 0 && now - Number(enemy.pathStuckSince) > 800));
+    if (distance <= ECOLOGY_LEAVE_GATE_M || stuckAtGate) {
+      serverEcologyActorLeft(room, enemy, now);
+      return true;
+    }
+    // Застряла посреди зоны или игрок от неё не отстаёт: бегство кончилось,
+    // особь остаётся и дерётся.
+    if (stalled || (now - Number(enemy.ecologyPhaseSince) > ECOLOGY_LEAVE_CORNERED_MS && serverEcologyActorWatched(room, enemy))) {
+      enemy.ecologyPhase = '';
+      enemy.ecologyPhaseSince = 0;
+      enemy.aiState = 'idle';
+      enemy.homeX = enemy.x;
+      enemy.homeZ = enemy.z;
+      invalidateEnemyPath(enemy);
+    }
     return true;
   }
   return false;

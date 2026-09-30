@@ -9,8 +9,10 @@
 //  - группа из соседней зоны чует игроков и входит воротами с той стороны,
 //    откуда шла, — в оба канала, игроки видят предупреждение;
 //  - погибшая особь исчезает во всех каналах сразу, большие потери уводят
-//    группу воротами в соседнюю зону;
-//  - синяя зона тоже живая;
+//    группу воротами в соседнюю зону — не в город и не сквозь игрока; беглец
+//    исчезает только в воротах, группа уходит с последней копией и не
+//    возвращается;
+//  - синяя зона тоже живая; беглец, от которого игрок не отстаёт, загнан и остаётся;
 //  - опустевшая зона отпускает группы в мир с ранами.
 
 const fs = require('node:fs');
@@ -23,11 +25,13 @@ const DEV_TOKEN = 'danger-ecology-network-check-0123456789abcdef';
 process.env.DEV_API_MODE = 'token';
 process.env.DEV_ADMIN_TOKEN = DEV_TOKEN;
 process.env.KROMKA_ZONE_CHANNEL_CAP = '1';
+process.env.KROMKA_ECOLOGY_CORNERED_MS = '8000';
 const h = require('./check-combat-runtime');
 const { zoneOfPlace, zoneById } = require('../src/server/zone-graph');
-const { loadZoneCatalog } = require('../src/server/zone-chunks');
-const { buildZone, normalizeRecipe } = require('../src/server/zone-builder');
+const { normalizeRecipe } = require('../src/server/zone-builder');
 const { zoneRecipe } = require('../src/server/zone-graph');
+const { hash01 } = require('../src/server/danger-ecology');
+const { createZoneRuntime } = require('../src/server/zone-runtime');
 const accounts = {};
 const zoneWalk = require('./lib/zone-walk');
 const { world } = zoneWalk;
@@ -35,7 +39,6 @@ const placeInZone = (role, locationId, point) => zoneWalk.placeInZone(h, account
 
 const root = path.resolve(__dirname, '..');
 const graph = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
-const catalog = loadZoneCatalog(path.join(root, 'data', 'zones'));
 const economy = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'economy.json'), 'utf8'));
 economy.worldModel.dangerEcology = true;
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-danger-ecology-'));
@@ -63,14 +66,25 @@ process.env.KROMKA_DANGER_ECOLOGY_FILE = path.join(scratch, 'danger-ecology.json
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 // Город — не зона пустоши: за домашнюю берём соседнюю с Ключами зону.
 const home = graph.zones.find(zone => zone.id === zoneOfPlace(graph, 'settlement').edges.north.to);
-const homeDef = buildZone(zoneRecipe(graph, home.id), catalog);
+// Зона такая, какой её отдаёт сервер: авторский файл, если он есть, иначе конструктор.
+const zoneRuntime = createZoneRuntime({ graph, zonesDir: path.join(root, 'data', 'zones'), normalize: row => row });
+const servedZone = id => zoneRuntime.ensure({}, id);
+const homeDef = servedZone(home.id);
 // Сосед с открытыми воротами, откуда придёт охотник: он идёт на юг и входит с севера.
 const north = zoneById(graph, home.edges.north.to);
 assert(home.edges.north.open !== false && north && north.mode !== 'peaceful', 'the home zone has an open gate to a live zone in the north');
 // Синяя зона без игроков в соседях: живая, в ней своя группа.
 const blue = graph.zones.find(zone => zone.mode === 'pve' && Math.abs(zone.col - home.col) + Math.abs(zone.row - home.row) > 3);
 assert(blue, 'the world has a blue zone away from Keys');
-const blueDef = buildZone(zoneRecipe(graph, blue.id), catalog);
+const blueDef = servedZone(blue.id);
+// Где встанет группа без логова в зоне: её точка появления (serverEcologyZoneAnchor).
+const anchorOf = (def, groupId) => {
+  const pool = def.zone.spawnAreas?.length ? def.zone.spawnAreas : def.zone.lairs;
+  return world(pool[Math.floor(hash01(`${groupId}:anchor`) * pool.length)]);
+};
+// Наблюдатель в 15 м от группы — ближе, чем туман клиента прячет существ.
+const residentAnchor = anchorOf(homeDef, 'resident');
+const blueAnchor = anchorOf(blueDef, 'bluebirds');
 
 const devGet = route => new Promise((resolve, reject) => {
   http.get(h.baseUrl() + route, { headers: { 'x-dev-token': DEV_TOKEN } }, res => {
@@ -117,8 +131,8 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
   await h.bootstrapCharacters(accounts);
   const hub = world(homeDef.spawn);
   placeInZone('untargeted', home.id, hub);
-  placeInZone('harvest', home.id, { x: hub.x + 2, z: hub.z });
-  placeInZone('trade', blue.id, world(blueDef.spawn));
+  placeInZone('harvest', home.id, { x: residentAnchor.x + 15, z: residentAnchor.z });
+  placeInZone('trade', blue.id, { x: blueAnchor.x + 15, z: blueAnchor.z });
 
   const far = Date.now() + 3600000;
   const members = () => [1, 2, 3].map(n => ({ id: `m${n}`, type: 'gari', spec: 0, name: 'Гарь', hp: 39, maxHp: 39 }));
@@ -179,28 +193,82 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
     console.log(`PASS a group from ${north.title} senses the players, walks in by the north gate and stands in both channels`);
 
     // --- гибель во всех каналах, бегство в соседнюю зону ---------------------------------------
-    const killed = await devPost('/api/dev/danger-ecology/kill', { groupId: 'resident', roomId: home.id, count: 2 });
+    // Потери — в канале наблюдателя: ворота бегства выбирают по его игрокам.
+    const killed = await devPost('/api/dev/danger-ecology/kill', { groupId: 'resident', roomId: channels[1], count: 2 });
     assert.equal(killed.killed, 2);
     assert.equal(killed.members, 1, 'the dead do not come back');
     assert.equal(killed.state, 'flee', 'two of three dead: the group flees');
     const after = await group('resident', home, 0);
-    assert.equal(actorsIn(after, `${home.id}#ch2`).length, 1, 'a creature killed in one channel is gone from the other too');
+    const watcher = { x: Number(accounts.harvest.join.self.x), z: Number(accounts.harvest.join.self.z) };
+    const [runner] = actorsIn(after, channels[1]);
+    assert.equal(actorsIn(after, channels[0]).length, 1, 'a creature killed in one channel is gone from the other too');
+    assert.equal(actorsIn(after, channels[1]).length, 1, 'one survivor runs');
+    const startDistance = Math.hypot(runner.x - watcher.x, runner.z - watcher.z);
+    assert(startDistance < 22, `the watcher stands by the group: ${Math.round(startDistance)} m`);
+    // Беглец в каждом канале бежит до самых ворот и исчезает только в них; всё это
+    // время группа в зоне, а наблюдателя он обходит стороной.
+    const gates = (homeDef.transitions || []).filter(row => row.type === 'zoneGate').map(row => ({ direction: row.direction, ...world(row) }));
+    const lastSeen = new Map();
+    let closest = startDistance;
+    await waitFor('every copy of the survivor walks out through a gate', async () => {
+      const row = await group('resident', home, 1);
+      const running = channels.map(roomId => actorsIn(row, roomId)[0]).filter(Boolean);
+      if (!running.length) return true;
+      assert(row.sx === home.col && row.sy === home.row, 'the group stays in the zone while a copy is still running');
+      for (const actor of running) {
+        assert.equal(actor.phase, 'leaving', 'the survivor keeps running');
+        lastSeen.set(actor.roomId, actor);
+        if (actor.roomId === channels[1]) closest = Math.min(closest, Math.hypot(actor.x - watcher.x, actor.z - watcher.z));
+      }
+      return null;
+    }, 150000);
+    const exits = [...lastSeen.values()].map(actor => gates
+      .map(gate => ({ direction: gate.direction, distance: Math.hypot(actor.x - gate.x, actor.z - gate.z) }))
+      .sort((a, b) => a.distance - b.distance)[0]);
+    assert.equal(exits.length, 2, 'the survivor ran in both channels');
+    for (const exit of exits) assert(exit.distance <= 8, `a survivor vanishes only in a zone gate: last seen ${exit.distance.toFixed(1)} m from the ${exit.direction} gate`);
+    assert.equal(exits[0].direction, exits[1].direction, 'every copy leaves by the same gate');
+    assert(closest >= startDistance - 3, `the survivor runs away from the watcher, not past them: ${Math.round(startDistance)} → ${Math.round(closest)} m`);
     const fled = await waitFor('the broken group leaves through a gate', async () => {
       const row = await group('resident', home, 1);
       return row && (row.sx !== home.col || row.sy !== home.row) ? row : null;
-    }, 45000);
+    }, 5000);
     const direction = Object.entries(home.edges).find(([, edge]) => edge.to === zoneById(graph, graph.zones.find(z => z.col === fled.sx && z.row === fled.sy).id)?.id);
     assert(direction && direction[1].open !== false, 'the group left through an open gate');
+    assert.equal(direction[0], exits[0].direction, 'the group is beyond the gate its survivors walked out of');
+    assert(!zoneById(graph, direction[1].to).city, 'a broken group does not run into a city');
     assert.equal(fled.online, '', 'the group left the scenes');
-    const leftover = await group('resident', home, 1);
-    assert(!(leftover.actors || []).length, 'no copies of the fled group stay in the other channel');
-    console.log(`PASS a creature dies in every channel at once and the broken group leaves by the ${direction[0]} gate`);
+    for (let probe = 0; probe < 6; probe += 1) {
+      assert(!((await group('resident', home, 1)).actors || []).length, 'the fled group does not come back into the zone');
+      await delay(500);
+    }
+    console.log(`PASS a creature dies in every channel at once; the survivor runs away from the watcher (${Math.round(startDistance)} → ${Math.round(closest)} m closest) all the way out through the ${direction[0]} gate, in both channels, and the group does not come back`);
 
     // --- синяя зона живая ------------------------------------------------------------------------
     await h.connectAndJoin(accounts.trade);
     assert.equal(accounts.trade.join.roomId, blue.id);
     await waitFor('the blue zone group stands in its scene', async () => actorsIn(await group('bluebirds', blue, 0), blue.id).length === 3);
     console.log(`PASS the blue zone ${blue.title} is alive too`);
+
+    // --- загнанный беглец ---------------------------------------------------------------------------
+    // Игрок не отстаёт от беглеца: тот не исчезает у него на глазах, а, загнанный,
+    // перестаёт бежать и остаётся в сцене.
+    assert.equal((await devPost('/api/dev/danger-ecology/kill', { groupId: 'bluebirds', roomId: blue.id, count: 2 })).state, 'flee');
+    const chaser = { x: Number(accounts.trade.join.self.x), z: Number(accounts.trade.join.self.z) };
+    const chaseStart = Date.now();
+    let cornered = null;
+    while (!cornered && Date.now() - chaseStart < 20000) {
+      const [actor] = actorsIn(await group('bluebirds', blue, 0), blue.id);
+      assert(actor, `a chased survivor does not vanish before the chaser (${((Date.now() - chaseStart) / 1000).toFixed(1)} s)`);
+      if (!actor.phase) cornered = actor;
+      else await zoneWalk.driveTo(h, accounts.trade, chaser, actor.x, actor.z, 4);
+    }
+    assert(cornered, 'a survivor the player keeps up with is cornered');
+    const chaseSeconds = (Date.now() - chaseStart) / 1000;
+    assert(chaseSeconds >= 7, `it runs for the whole flight first: ${chaseSeconds.toFixed(1)} s`);
+    await delay(1500);
+    assert.equal(actorsIn(await group('bluebirds', blue, 0), blue.id).length, 1, 'the cornered survivor stays in the scene');
+    console.log(`PASS a survivor the player keeps up with is cornered after ${chaseSeconds.toFixed(1)} s and stays`);
 
     // --- опустевшая зона отпускает группы ------------------------------------------------------------
     const woundedBefore = await group('hunter', home, 1);
@@ -219,7 +287,7 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
     h.cleanupSync();
     fs.rmSync(scratch, { recursive: true, force: true });
   }
-  console.log('Danger ecology network OK: groups live on the zone grid, stand in every channel, hunt through open gates, die in every channel at once, flee through gates, live in blue zones and are released with their wounds.');
+  console.log('Danger ecology network OK: groups live on the zone grid, stand in every channel, hunt through open gates, die in every channel at once, walk out through gates and never into cities, fight when cornered, live in blue zones and are released with their wounds.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

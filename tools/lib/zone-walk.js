@@ -59,16 +59,19 @@ function placeInZone(h, accounts, role, locationId, point) {
   fs.writeFileSync(savesPath, JSON.stringify(saves));
 }
 
-/** Довести персонажа до точки пакетами движения; state {x, z} обновляется по ответам сервера. */
+/**
+ * Довести персонажа до точки пакетами движения; state {x, z} обновляется по ответам сервера.
+ * Номер пакета живёт на аккаунте: сервер отбрасывает пакеты не новее принятого,
+ * и повторный вызов с номерами от 1 стоял бы на месте.
+ */
 async function driveTo(h, account, state, x, z, maxFrames = 160) {
-  let seq = 1;
   for (let frame = 0; frame < maxFrames; frame += 1) {
     const dx = x - state.x;
     const dz = z - state.z;
     const length = Math.hypot(dx, dz);
     if (length <= 0.4) return true;
     const result = await h.socketAck(account.socket, 'state', {
-      seq: seq++, x, z, angle: Math.atan2(dx, dz), moving: true, turning: false, crouching: false,
+      seq: account.movementSeq = (account.movementSeq || 0) + 1, x, z, angle: Math.atan2(dx, dz), moving: true, turning: false, crouching: false,
       vx: 5.5 * dx / Math.max(0.001, length), vz: 5.5 * dz / Math.max(0.001, length)
     });
     const self = result?.self || result || {};

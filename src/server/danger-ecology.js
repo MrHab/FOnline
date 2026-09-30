@@ -727,6 +727,7 @@ module.exports = {
   groupStrength,
   groupSighting,
   directionBetweenCells,
+  canEnter,
   ecologySummary,
   cellKey,
   hash01

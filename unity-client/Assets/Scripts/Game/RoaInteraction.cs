@@ -1885,6 +1885,13 @@ namespace RealmOfAshes.Game
 
         private static GameObject CreateContainerPlaceholder(Transform parent, JObject row)
         {
+            // Тайник площадки места выглядит как ящик её сцены: второй ящик-маркер встал бы в него.
+            if (row?["sceneVisual"]?.ToObject<bool>() == true)
+            {
+                var anchor = new GameObject("SceneVisualContainer");
+                anchor.transform.SetParent(parent, false);
+                return anchor;
+            }
             // Мешок убитого NPC и рюкзак погибшего игрока — предметы каталога, не ящик.
             GameObject prefab = IsLootBag(row) ? RoaApocalypseModels.Item(LootBagModelItem(row["kind"]?.ToString())) : null;
             if (prefab != null)

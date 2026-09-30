@@ -290,6 +290,7 @@ const { CONDUCTOR_ONLY_IN_CITIES, fastTravelDestinations, fastTravelReadiness, f
 const { PLACES_REVISION, ZONE_FRAME_REVISION, migrateSaveStateToZones } = require('./src/server/zone-migration');
 const { zoneAtPoint, zoneById, zoneLocationId, zoneOfLocation, zoneOfPlace, zoneRecipe } = require('./src/server/zone-graph');
 const { portalSignature, zonePortals } = require('./src/server/zone-portals');
+const { normalizeSites, siteAt: zoneSiteAt, safeSiteAt: zoneSafeSiteAt, publicSite: zonePublicSite } = require('./src/server/zone-sites');
 const { normalizeRecipe: normalizeZoneRecipe } = require('./src/server/zone-builder');
 const {
   ZONE_CHANNEL_SOFT_CAP,
@@ -1386,6 +1387,9 @@ function normalizeLocationDefinition(raw, fallback = null) {
   loc.fullDrop = zoneModeDropsInventory(loc.pvpMode);
   loc.lossPolicy = deathLootPolicy(loc.pvpMode).loss;
   loc.territoryId = String(loc.territoryId || base.territoryId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32);
+  // Площадки мест, стоящих прямо в зоне (zone-sites.js).
+  if (Array.isArray(loc.sites) && loc.sites.length) loc.sites = normalizeSites(loc.sites);
+  else delete loc.sites;
   const explicitSettlement = loc.kind === 'settlement' || loc.city === true || loc.settlement === true || loc.respawnAllowed === true;
   loc.kind = explicitSettlement ? 'settlement' : String(loc.kind || base.kind || 'location').slice(0, 32);
   loc.city = !!explicitSettlement;
@@ -5298,6 +5302,8 @@ function serverFactionRelation(a = '', b = '') {
 function serverActorHostileToPlayer(actor = null, player = null) {
   if (!actor || !player || actor.dead || player.dead || Number(player.hp || 0) <= 0) return false;
   if (locationIsFactionCapital(player.locationId || player.currentLocationId || '')) return false;
+  // На безопасном островке места никто не враждебен стоящему внутри.
+  if (serverPlayerSafeSite(player)) return false;
   // Гарнизон и охрана Сердцевины: враждебны игрокам других фракций территории
   // и дружественны своим независимо от канонических отношений сторон.
   const actorTerritoryFaction = String(actor.territoryFactionId || '');
@@ -5381,6 +5387,59 @@ function serverTerritoryPlatformZoneAt(room = null, x = 0, z = 0) {
     if (Math.hypot(Number(x || 0) - center.x, Number(z || 0) - center.z) <= Number(zone.radius || 0)) return zone;
   }
   return null;
+}
+
+// Площадки мест, перенесённых в сектор (zone-sites.js): аванпост, точка добычи, кланбаза.
+function serverRoomSites(room = null) {
+  const sites = roomLocation(room)?.sites;
+  return Array.isArray(sites) ? sites : [];
+}
+
+/** Площадка под игроком — по месту, где он стоит сейчас, а не по запомненному. */
+function serverPlayerSite(player = {}, room = rooms.get(player?.roomId)) {
+  const sites = serverRoomSites(room);
+  return sites.length ? zoneSiteAt(sites, Number(player?.x || 0), Number(player?.z || 0)) : null;
+}
+
+/** Безопасный островок под игроком: там не стреляют ни он, ни по нему. */
+function serverPlayerSafeSite(player = {}, room = rooms.get(player?.roomId)) {
+  const sites = serverRoomSites(room);
+  return sites.length ? zoneSafeSiteAt(sites, Number(player?.x || 0), Number(player?.z || 0)) : null;
+}
+
+function serverSafeSiteBlockLabel(site = null) {
+  return site ? `«${site.name}» — безопасная зона: здесь не стреляют.` : '';
+}
+
+// Враждебные существа не заходят на безопасный островок. Оказавшийся внутри
+// (прибежал до постройки, родился там) выходит свободно.
+function serverEnemyStepEntersSafeSite(room, enemy, x, z) {
+  const sites = serverRoomSites(room);
+  if (!sites.length || !serverActorDefaultHostileToPlayer(enemy)) return false;
+  return !!zoneSafeSiteAt(sites, x, z) && !zoneSafeSiteAt(sites, Number(enemy?.x || 0), Number(enemy?.z || 0));
+}
+
+/**
+ * Вход на площадку места и выход с неё. Вход засчитывается квестам как прибытие в
+ * место (цели type: "location" знают его по прежнему id), клиент узнаёт о смене
+ * из self.zone.site.
+ */
+function serverUpdatePlayerSite(p = {}, room = rooms.get(p?.roomId)) {
+  const site = serverPlayerSite(p, room);
+  const siteId = site ? site.id : '';
+  const siteRoom = site ? String(room?.id || '') : '';
+  if (siteId === String(p.siteId || '') && siteRoom === String(p.siteRoomId || '')) return false;
+  const left = String(p.siteRoomId || '') === String(room?.id || '')
+    ? serverRoomSites(room).find(row => row.id === String(p.siteId || '')) : null;
+  p.siteId = siteId;
+  p.siteRoomId = siteRoom;
+  const text = site
+    ? (site.safe ? `«${site.name}» — безопасная зона: здесь не стреляют.` : `«${site.name}».`)
+    : left?.safe ? `Вы вышли за черту «${left.name}»: здесь действуют правила зоны.` : '';
+  if (text) io.to(p.id).emit('dangerCellNotice', { text: text.slice(0, 160), t: Date.now() });
+  const questProgress = site ? serverRecordKromkaLocationArrival(p, site.id) : [];
+  emitAuthoritativePlayerState(p, { reason: 'site', ...(questProgress.length ? { questProgress } : {}) });
+  return true;
 }
 
 function serverTerritoryPlayerInCombat(player = {}, now = Date.now(), graceMs = KROMKA_TERRITORY_COMBAT_GRACE_MS) {
@@ -5604,6 +5663,8 @@ function serverNotePvpExchange(attacker, target, now = Date.now()) {
 
 function serverPlayerCanDamagePlayer(attacker, target, room, now = Date.now()) {
   return locationAllowsPvp(roomLocation(room))
+    && !serverPlayerSafeSite(attacker, room)
+    && !serverPlayerSafeSite(target, room)
     && !serverZoneArrivalShielded(target, now)
     && !serverPlayersAllied(attacker, target)
     && !serverPlayerHasProtectedClanRally(target, room, now)
@@ -5617,6 +5678,8 @@ function serverPlayerCanDamagePlayer(attacker, target, room, now = Date.now()) {
  */
 function serverPvpBlockLabel(attacker = {}, target = {}, room = null, now = Date.now()) {
   if (!locationAllowsPvp(roomLocation(room))) return 'Здесь по игрокам не стреляют: мирная зона.';
+  const safeSite = serverPlayerSafeSite(attacker, room) || serverPlayerSafeSite(target, room);
+  if (safeSite) return serverSafeSiteBlockLabel(safeSite);
   if (serverZoneArrivalShielded(target, now)) return 'Игрок только что вошёл в зону: несколько секунд его не задеть.';
   if (serverPlayersAllied(attacker, target)) return 'Это свой: по союзникам огонь не ведётся.';
   if (serverPlayerHasProtectedClanRally(target, room, now)) return 'Цель под защитой сбора клана.';
@@ -5632,6 +5695,8 @@ function serverPvpBlockLabel(attacker = {}, target = {}, room = null, now = Date
 function serverNpcBlockLabel(player = {}, enemy = null, room = null) {
   if (!enemy || enemy.dead) return '';
   if (!roomAllowsNpcCombat(room)) return 'Здесь драться нельзя.';
+  const safeSite = serverPlayerSafeSite(player, room);
+  if (safeSite) return serverSafeSiteBlockLabel(safeSite);
   if (serverNpcIsKromkaOnboardingProtected(enemy)) return 'Этого трогать нельзя: он под защитой Кромки.';
   if (!serverActorHostileToPlayer(enemy, player)) return 'Это не враг: он не станет отвечать.';
   if (serverCombatFactionsAllied(
@@ -14705,7 +14770,8 @@ function isEnemyBodyBlockedAt(room, enemy, x, z) {
 function isEnemyStepOpen(room, enemy, x, z, radius = 0.32) {
   return isRoomWalkableWorld(room, x, z, radius)
     && !isEnemyBodyBlockedAt(room, enemy, x, z)
-    && roomPlayerCollisionMoveAllowed(room, enemy, x, z);
+    && roomPlayerCollisionMoveAllowed(room, enemy, x, z)
+    && !serverEnemyStepEntersSafeSite(room, enemy, x, z);
 }
 function stableEnemyUnit(id = '') {
   let h = 2166136261;
@@ -15787,7 +15853,9 @@ function spawnRoomWorldContainers(room, opts = {}) {
   for (const def of defs) {
     if (!def || !inBounds(def.tx, def.tz, roomTileDims(room))) continue;
     clearSpawnArea(room, { tx: def.tx, tz: def.tz });
-    const pos = tileToWorld(def.tx, def.tz, roomTileDims(room));
+    // Тайник со своим видом в сцене (ящик площадки места) стоит точно под ним, а не в центре клетки.
+    const sceneVisual = def.sceneVisual === true && Number.isFinite(Number(def.x)) && Number.isFinite(Number(def.z));
+    const pos = sceneVisual ? { x: Number(def.x), z: Number(def.z) } : tileToWorld(def.tx, def.tz, roomTileDims(room));
     const defId = String(def.id || `${def.tx}_${def.tz}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
     const id = `ctr_${room.id.replace(/[^a-zA-Z0-9_-]/g, '_')}_${defId}`.slice(0, 96);
     const lockInfo = securityDifficultyInfo(def.lockDifficultyTier || def.lockDifficulty, def.locked ? 'medium' : 'veryEasy');
@@ -15813,6 +15881,7 @@ function spawnRoomWorldContainers(room, opts = {}) {
       terminalRequiredSkill: terminalInfo.required,
       terminalUnlocksLock: !!def.terminalUnlocksLock,
       terminalName: safeName(def.terminalName || 'Терминал'),
+      ...(sceneVisual ? { sceneVisual: true } : {}),
       lockCooldownUntil: 0,
       terminalCooldownUntil: 0,
       factionWarehouseSiteId: String(def.factionWarehouseSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
@@ -18170,8 +18239,11 @@ function ensureKromkaNamedLocationActors(room, loc) {
   const guestNpcIds = String(loc.id || '') === 'cascadeRegenerator'
     ? new Set(['nikolai_severov'])
     : new Set();
+  // Дом НПС может быть местом, которое стоит площадкой в этой зоне: Карцев живёт на
+  // Заставе 17 и после её переноса в сектор. Место ему даёт строка площадки в objects.
+  const homeIds = new Set([String(loc.id || ''), ...(Array.isArray(loc.sites) ? loc.sites.map(site => String(site.id || '')) : [])]);
   const residents = (KROMKA_NPC_CATALOG.npcs || [])
-    .filter(npc => String(npc?.homeLocationId || '') === String(loc.id || '') || guestNpcIds.has(String(npc?.id || '')));
+    .filter(npc => homeIds.has(String(npc?.homeLocationId || '')) || guestNpcIds.has(String(npc?.id || '')));
   let created = 0;
   residents.forEach((npc, index) => {
     const npcId = String(npc.id || '').slice(0, 96);
@@ -20403,6 +20475,7 @@ function publicWorldContainer(c) {
     terminalRequiredSkill: terminalInfo.required,
     terminalUnlocksLock: !!c.terminalUnlocksLock,
     terminalName: c.terminalName || '',
+    ...(c.sceneVisual ? { sceneVisual: true } : {}),
     factionWarehouse: !!c.factionWarehouseSiteId,
     factionWarehouseSiteId: c.factionWarehouseSiteId || '',
     factionWarehouseOwner: c.factionWarehouseOwner || '',
@@ -20796,7 +20869,8 @@ function serverCurrentShiftState(now = Date.now(), player = null) {
     fieldsChanceMultiplier: baseChance > 0 ? Number((chance / baseChance).toFixed(2)) : 1,
     earlyWarning,
     clanEventDetectionPct: clamp(Number(clanBenefits.eventDetectionPct || 0), 0, 1),
-    sheltered: !!player && (safeShelters.has(locationId) || roomLocation(rooms.get(player.roomId))?.safe === true),
+    sheltered: !!player && (safeShelters.has(locationId) || roomLocation(rooms.get(player.roomId))?.safe === true
+      || !!serverPlayerSafeSite(player)),
     storm: publicRadiationStorm(storm, stormHere.frame, stormHere.here)
   };
 }
@@ -28501,7 +28575,9 @@ function serverZoneSelfView(p = {}) {
     ...view,
     channel: zoneChannelOf(p.roomId, p.locationId) || 1,
     arrivalShieldMs: Math.max(0, Number(p.zoneArrivalShieldUntil || 0) - now),
-    gatePauseMs: serverZoneGatePvpPauseLeft(p, now)
+    gatePauseMs: serverZoneGatePvpPauseLeft(p, now),
+    // Площадка места, на которой игрок стоит (zone-sites.js); вне площадок — null.
+    site: (site => site ? { id: site.id, name: site.name, kind: site.kind, safe: site.safe } : null)(serverPlayerSite(p))
   };
 }
 
@@ -29538,7 +29614,10 @@ io.on('connection', (socket) => {
         realtimeNetworkMetrics.movementProposalMaxMs,
         movementProposalMs
       );
-      if (movementResult.accepted) realtimeNetworkMetrics.movementPacketsAccepted++;
+      if (movementResult.accepted) {
+        realtimeNetworkMetrics.movementPacketsAccepted++;
+        serverUpdatePlayerSite(p);
+      }
       if (movementResult.corrected) realtimeNetworkMetrics.movementPacketsCorrected++;
       hardMovementApplied = true;
       p.angle = Number.isFinite(Number(data.angle)) ? Number(data.angle) : p.angle;
@@ -30944,7 +31023,8 @@ io.on('connection', (socket) => {
     const source = serverKromkaQuestObject(p, String(data.objectId || ''));
     if (!source.ok) return fail(source.error);
     const questProgress = serverRecordKromkaQuestEvent(p, source.objective, {
-      locationId: p.locationId,
+      // Объект задания на площадке места в зоне засчитывается месту, а не сектору.
+      locationId: serverPlayerSite(p)?.id || p.locationId,
       objectId: String(source.row.id || ''),
       source: 'quest_object'
     });

@@ -54,6 +54,11 @@ namespace RealmOfAshes.World
         [JsonProperty("revision")] public string Revision;
         /// <summary>Блок зоны мира: ворота, куски, граф троп nav {nodes, links}.</summary>
         [JsonProperty("zone")] public JObject Zone;
+        /// <summary>
+        /// Площадки мест, стоящих прямо в зоне (src/server/zone-sites.js): {id, name, kind,
+        /// safe, x, z, halfX, halfZ, rotationY}. Безопасный островок — safe.
+        /// </summary>
+        [JsonProperty("sites")] public JArray Sites;
 
         /// <summary>Место внутри зоны мира: куда выводит его край.</summary>
         [JsonProperty("parentZone")] public ParentZoneInfo ParentZone;

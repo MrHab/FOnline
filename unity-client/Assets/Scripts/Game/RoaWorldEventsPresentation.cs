@@ -643,8 +643,8 @@ namespace RealmOfAshes.Game
             button.GetComponent<Image>().color = new Color(0.16f, 0.28f, 0.12f, 0.95f);
             _tracksButton = button.GetComponent<Button>();
             _tracksButton.onClick.AddListener(SearchTracks);
-            _tracksLabel = CreateText("Label", br, mobile ? 12 : 14, TextAnchor.MiddleCenter, Calm);
-            Stretch(_tracksLabel.rectTransform, 4);
+            _tracksLabel = CreateText("Label", br, ButtonFontSize(mobile), TextAnchor.MiddleCenter, Calm);
+            Stretch(_tracksLabel.rectTransform, ButtonLabelInset);
             _tracksButton.gameObject.SetActive(false);
 
             // Вскрытие тайника события: канал держится, пока игрок стоит у сундука.
@@ -659,8 +659,8 @@ namespace RealmOfAshes.Game
             chestButton.GetComponent<Image>().color = new Color(0.3f, 0.22f, 0.08f, 0.95f);
             _openChestButton = chestButton.GetComponent<Button>();
             _openChestButton.onClick.AddListener(OpenEventChest);
-            _openChestLabel = CreateText("Label", cr, mobile ? 12 : 14, TextAnchor.MiddleCenter, Calm);
-            Stretch(_openChestLabel.rectTransform, 4);
+            _openChestLabel = CreateText("Label", cr, ButtonFontSize(mobile), TextAnchor.MiddleCenter, Calm);
+            Stretch(_openChestLabel.rectTransform, ButtonLabelInset);
             _openChestButton.gameObject.SetActive(false);
             _panel.SetActive(false);
         }
@@ -689,10 +689,25 @@ namespace RealmOfAshes.Game
             return mobile ? 288f : 324f;
         }
 
+        /// <summary>
+        /// Кнопки под панелью шириной с саму панель. В прежние 220/180 ед. не
+        /// влезала подпись «ВСКРЫТИЕ 100% · ОСПАРИВАЕТСЯ» (около 233/200 ед.
+        /// вложенным шрифтом): она переносилась, и обрезание съедало вторую
+        /// строку. Высота прежняя, так что стопка под панелью не выросла.
+        /// </summary>
         public static Vector2 ButtonSize(bool mobile)
         {
-            return mobile ? new Vector2(180f, 30f) : new Vector2(220f, 34f);
+            return new Vector2(PanelSize(mobile).x, mobile ? 30f : 34f);
         }
+
+        /// <summary>Кегль подписей кнопок «Искать следы» и вскрытия тайника.</summary>
+        public static int ButtonFontSize(bool mobile)
+        {
+            return mobile ? 12 : 14;
+        }
+
+        /// <summary>Отступ подписи от краёв кнопки.</summary>
+        public const float ButtonLabelInset = 4f;
 
         private static Text CreateText(string name, RectTransform parent, int size, TextAnchor anchor, Color color)
         {

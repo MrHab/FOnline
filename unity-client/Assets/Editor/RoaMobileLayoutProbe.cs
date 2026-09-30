@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Reflection;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEditor;
@@ -144,8 +145,17 @@ namespace RealmOfAshes.EditorTools
                         + Mathf.CeilToInt(stack) + " px on a " + Mathf.FloorToInt(canvas.y) + " px canvas");
                 }
 
+                // --- подписи кнопок под панелью ----------------------------------------
+                // Самая длинная подпись — оспариваемое вскрытие. У подписи обрезание,
+                // и перенос на вторую строку оставлял на кнопке «ВСКРЫТИЕ 100% ·».
+                var contested = JObject.Parse(@"{'characterId':'me','channelMs':8000,'progressMs':8000,'contested':true}");
+                CheckWorldEventsButtons(RoaWorldEventsPresentation.ChestButtonLabel(contested));
+
+                // --- баннер Сдвига ---------------------------------------------------------
+                CheckShiftBanner();
+
                 Finish();
-                Debug.Log("[MOBILE LAYOUT] OK: world events panel, container security row, siege score and item tooltip keep their text on desktop and on a landscape phone.");
+                Debug.Log("[MOBILE LAYOUT] OK: world events panel and its buttons, shift banner, container security row, siege score and item tooltip keep their text on desktop and on a landscape phone.");
             }
             finally
             {
@@ -212,6 +222,171 @@ namespace RealmOfAshes.EditorTools
                 ["мировой босс"] = RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0),
                 ["зал лаборатории"] = RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit")
             };
+        }
+
+        /// <summary>
+        /// Подписи кнопок «Искать следы» и вскрытия тайника меряются на настоящих
+        /// кнопках панели, вложенным шрифтом (другого в WebGL нет) и на канве
+        /// нужного экрана: от её масштаба зависит, где перенесётся строка.
+        /// Редактор строит настольную раскладку, мобильные размер и кегль
+        /// ставятся из тех же функций, что читает BuildUi.
+        /// </summary>
+        private static void CheckWorldEventsButtons(string chestLabel)
+        {
+            foreach (bool mobile in new[] { false, true })
+            {
+                string screenName = mobile ? "mobile" : "desktop";
+                var host = new GameObject("WorldEventsButtonsProbe");
+                var trash = new System.Collections.Generic.List<UnityEngine.Object> { host };
+                try
+                {
+                    host.AddComponent<RoaWorldEventsPresentation>().Configure(null);
+                    Canvas canvas = host.GetComponentInChildren<Canvas>(true);
+                    PutOnScreen(canvas, mobile ? MobileScreen : DesktopScreen, trash);
+                    var labels = new System.Collections.Generic.Dictionary<string, string>
+                    {
+                        ["OpenChest"] = chestLabel,
+                        ["SearchTracks"] = "ИСКАТЬ СЛЕДЫ · 120 с"
+                    };
+                    foreach (var pair in labels)
+                    {
+                        var button = (RectTransform)canvas.transform.Find(pair.Key);
+                        Text label = button.Find("Label").GetComponent<Text>();
+                        if (!mobile)
+                        {
+                            Require(button.sizeDelta == RoaWorldEventsPresentation.ButtonSize(false)
+                                && label.fontSize == RoaWorldEventsPresentation.ButtonFontSize(false),
+                                "the " + pair.Key + " button is not built from ButtonSize/ButtonFontSize");
+                        }
+                        button.gameObject.SetActive(true);
+                        button.sizeDelta = RoaWorldEventsPresentation.ButtonSize(mobile);
+                        label.fontSize = RoaWorldEventsPresentation.ButtonFontSize(mobile);
+                        label.font = RoaUiFont.Default;
+                        label.text = pair.Value;
+                        Canvas.ForceUpdateCanvases();
+                        float needed = label.preferredHeight;
+                        float box = label.rectTransform.rect.height;
+                        Debug.Log("[MOBILE LAYOUT] " + screenName + " button «" + pair.Value + "»: "
+                            + needed.ToString("0.#") + " / " + box.ToString("0.#") + " units at canvas scale "
+                            + canvas.scaleFactor.ToString("0.###"));
+                        Require(needed <= box,
+                            screenName + ": the world events button cuts «" + pair.Value + "» — "
+                            + needed.ToString("0.#") + " units of text in a " + box.ToString("0.#") + " unit label");
+                    }
+                }
+                finally { DestroyAll(trash); }
+            }
+        }
+
+        /// <summary>
+        /// Баннер Сдвига вверху по центру. Сдвиг с разбуженными полями даёт строку
+        /// в две строки: баннер обязан показать её целиком (у подписи обрезание)
+        /// и не наехать на баннер режима зоны HUD под собой. Канвы у них разные
+        /// (баннер — 1600×900, HUD — RoaUiScale), поэтому сверяются пиксели экрана.
+        /// </summary>
+        private static void CheckShiftBanner()
+        {
+            const float MinGapPixels = 6f;
+            var shifts = new[]
+            {
+                JObject.Parse(@"{'phase':'warning','remainingMs':300000,'strength':2,'fieldsExcited':false}"),
+                JObject.Parse(@"{'phase':'aftermath','remainingMs':1200000,'strength':2,
+                    'fieldsExcited':true,'fieldsExcitedSeconds':1800,'fieldsChanceMultiplier':10}"),
+                JObject.Parse(@"{'phase':'active','remainingMs':1200000,'strength':3,'sheltered':false,
+                    'fieldsExcited':true,'fieldsExcitedSeconds':1800,'fieldsChanceMultiplier':10}")
+            };
+            MethodInfo applyShift = typeof(RoaKromkaShiftAndDetector).GetMethod("ApplyShift",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo waveField = typeof(RoaKromkaShiftAndDetector).GetField("_shiftWave",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            if (applyShift == null || waveField == null)
+                throw new InvalidOperationException("[MOBILE LAYOUT] RoaKromkaShiftAndDetector.ApplyShift/_shiftWave not found");
+            foreach (bool mobile in new[] { false, true })
+            {
+                string screenName = mobile ? "mobile" : "desktop";
+                Vector2 screen = mobile ? MobileScreen : DesktopScreen;
+                var host = new GameObject("ShiftBannerProbe");
+                var trash = new System.Collections.Generic.List<UnityEngine.Object> { host };
+                try
+                {
+                    var view = host.AddComponent<RoaKromkaShiftAndDetector>();
+                    view.Configure(null, null);
+                    Canvas canvas = host.GetComponentInChildren<Canvas>(true);
+                    PutOnScreen(canvas, screen, trash);
+                    var panel = (RectTransform)canvas.transform.Find("ShiftWarning");
+                    Text text = panel.Find("ShiftText").GetComponent<Text>();
+                    text.font = RoaUiFont.Default;
+                    // Баннер режима зоны стоит в HUD под безопасной областью; на
+                    // альбомном телефоне она начинается у верхнего края экрана.
+                    float hudScale = screen.y / CanvasSize(screen, RoaUiScale.ReferenceFor(mobile)).y;
+                    float zoneTop = RoaHudCanvas.ZoneBannerTop * hudScale;
+                    float tallest = (RoaKromkaShiftAndDetector.ShiftBannerTop + RoaKromkaShiftAndDetector.ShiftBannerMaxHeight)
+                        * canvas.scaleFactor;
+                    Require(tallest + MinGapPixels <= zoneTop,
+                        screenName + ": the shift banner at its full height reaches the HUD zone banner — bottom "
+                        + tallest.ToString("0.#") + " px, zone banner top " + zoneTop.ToString("0.#") + " px");
+                    foreach (JObject shift in shifts)
+                    {
+                        applyShift.Invoke(view, new object[] { shift });
+                        var wave = waveField.GetValue(view) as LineRenderer;
+                        if (wave != null && !trash.Contains(wave.gameObject)) { trash.Add(wave.sharedMaterial); trash.Add(wave.gameObject); }
+                        Canvas.ForceUpdateCanvases();
+                        float needed = text.preferredHeight;
+                        float box = text.rectTransform.rect.height;
+                        float bottom = (-panel.anchoredPosition.y + panel.rect.height) * canvas.scaleFactor;
+                        Debug.Log("[MOBILE LAYOUT] " + screenName + " shift banner: " + needed.ToString("0.#") + " / "
+                            + box.ToString("0.#") + " units, bottom " + bottom.ToString("0.#") + " px above the zone banner at "
+                            + zoneTop.ToString("0.#") + " px: " + text.text);
+                        Require(needed <= box,
+                            screenName + ": the shift banner cuts its line — " + needed.ToString("0.#") + " units of text in a "
+                            + box.ToString("0.#") + " unit box: " + text.text);
+                        Require(bottom + MinGapPixels <= zoneTop,
+                            screenName + ": the shift banner reaches the HUD zone banner — bottom " + bottom.ToString("0.#")
+                            + " px, zone banner top " + zoneTop.ToString("0.#") + " px: " + text.text);
+                    }
+                }
+                finally { DestroyAll(trash); }
+            }
+        }
+
+        /// <summary>
+        /// Переводит канву на выключенную камеру с текстурой размера экрана: в
+        /// пакетном режиме ScreenSpaceOverlay экрана не знает, а масштаб канвы
+        /// решает, во сколько пикселей ляжет кегль и где перенесётся строка.
+        /// </summary>
+        private static void PutOnScreen(Canvas canvas, Vector2 screen, System.Collections.Generic.List<UnityEngine.Object> trash)
+        {
+            // Уборка идёт с конца списка: камера уходит раньше своей текстуры.
+            var target = new RenderTexture((int)screen.x, (int)screen.y, 24, RenderTextureFormat.ARGB32);
+            target.Create();
+            trash.Add(target);
+            var cameraObject = new GameObject("MobileLayoutCamera");
+            trash.Add(cameraObject);
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+            camera.targetTexture = target;
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = camera;
+            canvas.planeDistance = 1f;
+            // Масштаб CanvasScaler пересчитывает в OnEnable.
+            CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+            scaler.enabled = false;
+            scaler.enabled = true;
+            Canvas.ForceUpdateCanvases();
+            float expected = Mathf.Pow(2f, Mathf.Lerp(Mathf.Log(screen.x / scaler.referenceResolution.x, 2f),
+                Mathf.Log(screen.y / scaler.referenceResolution.y, 2f), scaler.matchWidthOrHeight));
+            if (Mathf.Abs(canvas.scaleFactor - expected) > 0.001f)
+                throw new InvalidOperationException("[MOBILE LAYOUT] " + canvas.name + " on " + screen.x + "×" + screen.y
+                    + " has scale " + canvas.scaleFactor + " instead of " + expected + " — the text would be measured at the wrong scale");
+        }
+
+        private static void DestroyAll(System.Collections.Generic.List<UnityEngine.Object> trash)
+        {
+            for (int i = trash.Count - 1; i >= 0; i--)
+            {
+                if (trash[i] is RenderTexture texture) texture.Release();
+                if (trash[i] != null) UnityEngine.Object.DestroyImmediate(trash[i]);
+            }
         }
 
         private static readonly System.Collections.Generic.List<string> Problems = new System.Collections.Generic.List<string>();

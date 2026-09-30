@@ -241,12 +241,34 @@ namespace RealmOfAshes.Game
                 if (visible)
                 {
                     _shiftText.text = line;
+                    ResizeShiftBanner();
                     _shiftPanel.color = _shiftPhase == "active"
                         ? new Color(0.48f, 0.08f, 0.12f, 0.92f)
                         : new Color(0.42f, 0.28f, 0.08f, 0.9f);
                 }
             }
             if (previous != "active" && _shiftPhase == "active") StartShiftWave();
+        }
+
+        /// <summary>
+        /// Баннер Сдвига вверху по центру, в единицах своей канвы 1600×900. Сдвиг
+        /// вместе с разбуженными полями не помещается в одну строку, а у подписи
+        /// обрезание, и хвост «ПОЛЯ АКТИВНЫ: …» пропадал. Поэтому баннер растёт
+        /// до двух строк (около 55 ед. Noto Sans в 20 пт). Верх поднят с 18 до 10:
+        /// выросший баннер обязан кончиться выше баннера режима зоны HUD
+        /// (RoaHudCanvas.ZoneBannerTop) — это меряет RoaMobileLayoutProbe.
+        /// </summary>
+        public const float ShiftBannerTop = 10f;
+        public const float ShiftBannerMinHeight = 48f;
+        public const float ShiftBannerMaxHeight = 70f;
+        private const float ShiftTextInsetX = 12f;
+        private const float ShiftTextInsetY = 5f;
+
+        private void ResizeShiftBanner()
+        {
+            RectTransform panel = _shiftPanel.rectTransform;
+            float needed = Mathf.Ceil(_shiftText.preferredHeight) + ShiftTextInsetY * 2f;
+            panel.sizeDelta = new Vector2(panel.sizeDelta.x, Mathf.Clamp(needed, ShiftBannerMinHeight, ShiftBannerMaxHeight));
         }
 
         private void Update()
@@ -483,9 +505,11 @@ namespace RealmOfAshes.Game
             scaler.referenceResolution = new Vector2(1600f, 900f);
             scaler.matchWidthOrHeight = 0.5f;
 
-            _shiftPanel = Panel(canvasObject.transform, "ShiftWarning", new Vector2(0.5f, 1f), new Vector2(0f, -18f), new Vector2(620f, 48f), new Color(0.42f, 0.28f, 0.08f, 0.9f));
+            _shiftPanel = Panel(canvasObject.transform, "ShiftWarning", new Vector2(0.5f, 1f), new Vector2(0f, -ShiftBannerTop), new Vector2(620f, ShiftBannerMinHeight), new Color(0.42f, 0.28f, 0.08f, 0.9f));
             _shiftText = Label(_shiftPanel.transform, "ShiftText", 20, TextAnchor.MiddleCenter, Color.white);
-            Stretch(_shiftText.rectTransform, 12f);
+            // Строка Noto Sans в 20 пт — 27–28 ед.: прежний отступ 12 со всех
+            // сторон оставлял ей 24 ед., и обрезание гасило её целиком.
+            Stretch(_shiftText.rectTransform, ShiftTextInsetX, ShiftTextInsetY);
             _shiftPanel.gameObject.SetActive(false);
 
             // Detector signal is communicated by sound and the revealed object in
@@ -541,8 +565,13 @@ namespace RealmOfAshes.Game
 
         private static void Stretch(RectTransform rect, float inset)
         {
+            Stretch(rect, inset, inset);
+        }
+
+        private static void Stretch(RectTransform rect, float insetX, float insetY)
+        {
             rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
-            rect.offsetMin = new Vector2(inset, inset); rect.offsetMax = new Vector2(-inset, -inset);
+            rect.offsetMin = new Vector2(insetX, insetY); rect.offsetMax = new Vector2(-insetX, -insetY);
         }
     }
 }

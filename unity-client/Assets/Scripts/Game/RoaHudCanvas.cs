@@ -1132,10 +1132,16 @@ namespace RealmOfAshes.Game
             _connectionPanel.SetActive(false);
         }
 
+        /// <summary>
+        /// Верх баннера режима зоны от верха безопасной области, в единицах HUD
+        /// (RoaUiScale). Над ним висит баннер Сдвига, под ним — счёт осады.
+        /// </summary>
+        public const float ZoneBannerTop = 78f;
+
         private void BuildPvpStatus()
         {
             RectTransform panel = PanelRect("PvpStatus", _safeRoot, new Vector2(0.5f, 1f),
-                                            new Vector2(0.5f, 1f), new Vector2(0f, -78f),
+                                            new Vector2(0.5f, 1f), new Vector2(0f, -ZoneBannerTop),
                                             new Vector2(440f, 32f));
             _pvpPanel = panel.gameObject;
             panel.GetComponent<Image>().color = new Color(0.22f, 0.035f, 0.025f, 0.92f);

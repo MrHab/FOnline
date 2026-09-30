@@ -19,6 +19,7 @@ const {
   trashScrapQty
 } = require('../src/server/kromka-death-loot');
 const { loadWorldEconomy, normalizeWorldEconomy, zoneDeathWear } = require('../src/server/world-economy');
+const lootBags = require('../src/server/loot-bags');
 
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
@@ -109,6 +110,11 @@ function sandbox(trashChance) {
     isRoomWalkableWorld: () => true,
     makeServerEntityId: prefix => `${prefix}-${Math.floor(Math.random() * 1e9)}-${finalized.length}`,
     publicGroundItem: item => ({ ...item }),
+    // Выпавшее — один рюкзак: сама раскладка контейнера по комнате здесь не нужна.
+    lootBags,
+    worldToTile: () => ({ tx: 0, tz: 0 }),
+    roomTileDims: () => ({ w: 80, h: 80 }),
+    serverPlaceLootBag: (room, bag) => { room.lootBags.set(bag.id, bag); return bag; },
     refreshRoomWorldState: () => {},
     io: { to: () => ({ emit: () => {} }) },
     serverSyncRoomGroundDrops: () => {},
@@ -140,10 +146,15 @@ function victim() {
 function die(mode, trashChance = economy.zones.blackDrop.trashChance) {
   const { context, finalized } = sandbox(trashChance);
   const target = victim();
-  const room = { id: 'room', locationId: 'loc', groundItems: new Map() };
+  const room = { id: 'room', locationId: 'loc', groundItems: new Map(), lootBags: new Map() };
   const drops = context.serverDropPvpLootForMode(room, target, null, { pvpMode: mode }, target.diedAt);
   const replay = context.serverDropPvpLootForMode(room, target, null, { pvpMode: mode }, target.diedAt);
-  return { target, drops, replay, finalized, ground: [...room.groundItems.values()] };
+  const bags = [...room.lootBags.values()];
+  // Строки рюкзака в виде «предмет — количество — его экземпляры».
+  const ground = bags.flatMap(bag => bag.loot.map(row => ({
+    itemId: row.id, qty: row.qty, itemRuntimeRecords: bag.itemRuntimeRecords[row.id] || []
+  })));
+  return { target, drops, replay, finalized, bags, ground, loose: [...room.groundItems.values()] };
 }
 
 const byItem = rows => Object.fromEntries(rows.map(row => [row.itemId, row.qty]));
@@ -170,7 +181,12 @@ for (const mode of ['pve', 'pvp']) {
 // --- красная: выпадает рюкзак, экипировка цела и теряет 20% -------------------------
 {
   const world = die('pvpFullDrop');
+  assert.equal(world.bags.length, 1, 'the red zone drops one backpack');
+  assert.equal(world.bags[0].kind, 'backpack');
+  assert.equal(world.loose.length, 0, 'nothing is scattered on the ground');
   assert.deepEqual(byItem(world.ground), { medkit: 2 }, 'the red zone drops the bag, the installed artifact stays');
+  assert.deepEqual(plain(world.drops).map(row => [row.bagId, row.itemId, row.qty]), [[world.bags[0].id, 'medkit', 2]],
+    'the respawn screen counts the positions left in the backpack');
   assert.deepEqual(plain(world.target.inventory), [{ id: 'silver', qty: 50 }, { id: 'artifactSpring', qty: 1 }]);
   assert.equal(world.target.equipment.armor, 'leather', 'worn armour stays in the red zone');
   assert.equal(world.target.itemConditions.leather, 80, 'the red zone wears the equipment by 20%');
@@ -182,6 +198,7 @@ for (const mode of ['pve', 'pvp']) {
 // --- чёрная без лома: выпадает всё, экипировка снята, магазин и износ в записи -------
 {
   const world = die('pvpBlack', 0);
+  assert.equal(world.bags.length, 1, 'the black zone drops one backpack too');
   assert.deepEqual(byItem(world.ground), { medkit: 2, artifactSpring: 1, pistol: 1, leather: 1, artifactBelt2: 1 },
     'the black zone drops the bag, the equipment and the installed artifact');
   assert.deepEqual(plain(world.target.inventory), [{ id: 'silver', qty: 50 }], 'only the marks stay');
@@ -208,4 +225,4 @@ for (const mode of ['pve', 'pvp']) {
   assert.deepEqual(plain(world.ground.find(row => row.itemId === 'scrap').itemRuntimeRecords), [], 'scrap carries no instance');
 }
 
-console.log('Zone ladder runtime OK: peaceful keeps everything, blue and yellow wear the equipment, red drops the bag and wears harder, black strips everything and turns part of it into scrap.');
+console.log('Zone ladder runtime OK: peaceful keeps everything, blue and yellow wear the equipment, red drops a backpack and wears harder, black strips everything into the backpack and turns part of it into scrap.');

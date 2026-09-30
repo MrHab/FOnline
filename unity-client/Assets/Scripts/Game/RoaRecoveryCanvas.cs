@@ -142,7 +142,7 @@ namespace RealmOfAshes.Game
                 // Чёрная зона: выпало всё, и часть выпавшего стала ломом.
                 int dropped = cause["droppedItems"] is JArray rows ? rows.Count : 0;
                 string loss = dropped > 0
-                    ? "Снаряжение и инвентарь остались на месте гибели: " + dropped + " поз., часть стала ломом."
+                    ? "Снаряжение и инвентарь остались в рюкзаке на месте гибели: " + dropped + " поз., часть стала ломом."
                     : "При вас не было ничего, что могло выпасть.";
                 return "Здоровье восстановлено до " + percent + "%. " + loss;
             }
@@ -150,7 +150,7 @@ namespace RealmOfAshes.Game
             {
                 int dropped = cause["droppedItems"] is JArray rows ? rows.Count : 0;
                 string loss = dropped > 0
-                    ? "Инвентарь остался на месте гибели: " + dropped + " поз. Экипировка сохранена."
+                    ? "Инвентарь остался в рюкзаке на месте гибели: " + dropped + " поз. Экипировка сохранена."
                     : "Инвентарь был пуст. Экипировка сохранена.";
                 return "Здоровье восстановлено до " + percent + "%. " + loss;
             }

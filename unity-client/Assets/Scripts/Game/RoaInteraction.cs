@@ -316,7 +316,7 @@ namespace RealmOfAshes.Game
                 else if (_candidateKind == TargetKind.QuestObject) action = "исследовать";
                 else if (_candidateKind == TargetKind.Transition) action = "перейти";
                 else if (_candidateKind == TargetKind.Storage) action = "открыть хранилище";
-                else if (_candidateKind == TargetKind.Container) action = "открыть";
+                else if (_candidateKind == TargetKind.Container) action = IsLootBag(_candidate) ? "обыскать" : "открыть";
                 else if (_candidate["dead"]?.ToObject<bool>() == true)
                     return InteractKey + " — обыскать: " + name + (CorpseHasCarcass(_candidate) ? " · ЛКМ — свежевать" : string.Empty);
                 else if (!string.IsNullOrEmpty(_candidate["stationObjectId"]?.ToString())) action = "заказать работу";
@@ -1885,8 +1885,23 @@ namespace RealmOfAshes.Game
 
         private static GameObject CreateContainerPlaceholder(Transform parent, JObject row)
         {
+            // Мешок убитого NPC и рюкзак погибшего игрока — предметы каталога, не ящик.
+            GameObject prefab = IsLootBag(row) ? RoaApocalypseModels.Item(LootBagModelItem(row["kind"]?.ToString())) : null;
+            if (prefab != null)
+            {
+                var root = new GameObject("LootBag");
+                root.transform.SetParent(parent, false);
+                if (RoaApocalypseVisuals.CreateGrounded(root.transform, prefab) != null) return root;
+                Destroy(root);
+            }
             return RoaTutorialProps.Build("crate", parent);
         }
+
+        /// <summary>Мешок или рюкзак с добычей убитого: его обыскивают, а не открывают.</summary>
+        public static bool IsLootBag(JObject row) => row?["lootBag"]?.ToObject<bool>() == true;
+
+        /// <summary>Модель контейнера добычи: рюкзак — рюкзак из каталога, мешок — вещмешок.</summary>
+        public static string LootBagModelItem(string kind) => kind == "backpack" ? "backpack" : "doctorBag";
 
         // Плата арендатора и сама аренда меняются без участия игрока: снимок
         // участков локации обновляется сам, чтобы и Пип-Бой присылал верную плату.
@@ -2986,7 +3001,11 @@ namespace RealmOfAshes.Game
                 Show(count > 0 ? "Получено предметов: " + count : "Нечего забирать.");
 
                 if (ack["removed"]?.ToObject<bool>() == true)
+                {
+                    // Опустевший мешок исчезает сразу, не дожидаясь снимка контейнеров.
+                    if (_panel == PanelKind.Container) RemoveContainer(id);
                     ClosePanel(false);
+                }
             });
         }
 
@@ -3312,7 +3331,7 @@ namespace RealmOfAshes.Game
             if (_panel == PanelKind.Crafting) return "Крафт: " + name;
             if (_panel == PanelKind.JobBoard) return name;
             if (_panel == PanelKind.Corpse) return "Обыск: " + name;
-            if (_panel == PanelKind.Container) return "Контейнер: " + name;
+            if (_panel == PanelKind.Container) return (IsLootBag(_active) ? "Обыск: " : "Контейнер: ") + name;
             return name;
         }
 

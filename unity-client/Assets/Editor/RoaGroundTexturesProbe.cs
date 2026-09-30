@@ -25,6 +25,9 @@ namespace RealmOfAshes.EditorTools
         private const int Width = 640;
         private const int Height = 400;
         private static readonly int WetnessId = Shader.PropertyToID("_Wetness");
+        private static readonly int PuddlesId = Shader.PropertyToID("_Puddles");
+        private static readonly int MudId = Shader.PropertyToID("_Mud");
+        private static readonly int RainId = Shader.PropertyToID("_Rain");
 
         public static readonly string[] ZonePresets =
         {
@@ -56,9 +59,15 @@ namespace RealmOfAshes.EditorTools
                 {
                     Shot dry = Capture(preset, preset, 0f, false);
                     Shot wet = Capture(preset + "-wet", preset, 1f, false);
+                    Shot storm = Capture(preset + "-storm", preset, 1f, false, false, true);
+                    float changed = ChangedFraction(wet, storm);
                     lines.Add(preset + ": " + RoaGroundTextures.SetForPreset(preset)
                         + " lum " + dry.Luminance.ToString("0.000") + "/" + wet.Luminance.ToString("0.000")
-                        + " detail " + dry.Detail.ToString("0.000"));
+                        + " detail " + dry.Detail.ToString("0.000") + " puddles+mud " + changed.ToString("0.00"));
+                    // Лужи и грязь меняют заметную часть кадра, но не заливают его целиком.
+                    Require(changed > 0.06f && changed < 0.85f,
+                        preset + ": лужи и грязь не проявились или залили всё: " + changed.ToString("0.00"));
+                    Require(storm.Magenta < 0.0001f, preset + ": шейдер луж не собран (пурпур)");
                     Require(dry.Magenta < 0.0001f && wet.Magenta < 0.0001f, preset + ": шейдер земли не собран (пурпур)");
                     Require(dry.Detail > legacy.Detail * 1.25f,
                         preset + ": набор не даёт детали: " + dry.Detail.ToString("0.000") + " против " + legacy.Detail.ToString("0.000"));
@@ -84,12 +93,14 @@ namespace RealmOfAshes.EditorTools
 
         private struct Shot
         {
+            public Color32[] Pixels;
             public float Luminance;
             public float Detail;
             public float Magenta;
         }
 
-        private static Shot Capture(string name, string preset, float wetness, bool legacy, bool lite = false)
+        private static Shot Capture(string name, string preset, float wetness, bool legacy, bool lite = false,
+                                    bool storm = false)
         {
             GameObject host = new GameObject("GroundTexturesProbe_" + name);
             try
@@ -115,6 +126,10 @@ namespace RealmOfAshes.EditorTools
                     var block = new MaterialPropertyBlock();
                     terrain.GroundRenderer.GetPropertyBlock(block);
                     block.SetFloat(WetnessId, wetness);
+                    // Ливень: полные лужи и грязь, круги от капель.
+                    block.SetFloat(PuddlesId, storm ? 1f : 0f);
+                    block.SetFloat(MudId, storm ? 1f : 0f);
+                    block.SetFloat(RainId, storm ? 1f : 0f);
                     terrain.GroundRenderer.SetPropertyBlock(block);
                 }
                 return Render(host, name);
@@ -281,10 +296,25 @@ namespace RealmOfAshes.EditorTools
             }
             return new Shot
             {
+                Pixels = pixels,
                 Luminance = (float)(sum / pixels.Length),
                 Detail = (float)(detail / Math.Max(1, pairs)) * 100f,
                 Magenta = magenta / (float)pixels.Length
             };
+        }
+
+        /// <summary>Доля пикселей, у которых яркость ушла больше чем на 0,06 между двумя кадрами.</summary>
+        private static float ChangedFraction(Shot a, Shot b)
+        {
+            int changed = 0;
+            for (int i = 0; i < a.Pixels.Length; i++)
+            {
+                Color32 x = a.Pixels[i], y = b.Pixels[i];
+                float lx = (0.2126f * x.r + 0.7152f * x.g + 0.0722f * x.b) / 255f;
+                float ly = (0.2126f * y.r + 0.7152f * y.g + 0.0722f * y.b) / 255f;
+                if (Mathf.Abs(lx - ly) > 0.06f) changed++;
+            }
+            return changed / (float)a.Pixels.Length;
         }
 
         private static void Require(bool condition, string message)

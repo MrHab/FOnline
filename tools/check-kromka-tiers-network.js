@@ -2,8 +2,8 @@
 'use strict';
 
 // Тиры на настоящем сервере: в локации тира 3 рудная жила даёт только руду
-// тира 3, навык «Рудокоп» ниже 30 получает отказ, без кирки тира узла (кирка T1)
-// сбор не начинается, а кирка тира узла ускоряет его, добыча идёт циклами (как в
+// тира 3, навык «Рудокоп» ниже 30 получает отказ, кирка T1 сбор не начинает,
+// кирка T2 (тир ниже) добывает с базовым циклом, а кирка T3 ускоряет его, добыча идёт циклами (как в
 // Albion) и начисляет опыт профессии по тиру. Жилу T1 берут голыми руками, и её
 // опыт идёт только до уровня, открывающего T2. А враждебный
 // налётчик этой локации сильнее своего базового тира и одет в снаряжение T3.
@@ -75,7 +75,8 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   const saves = JSON.parse(fs.readFileSync(savesPath, 'utf8'));
   const stateFor = role => saves.characters[users.users[accounts[role].login].id][accounts[role].characterId].state;
   const miner = tiers.professionXpForLevel(config, tiers.tierRow(config, TIER).level);
-  seed(stateFor('target'), 'pickaxe', { gatherMetal: miner });
+  seed(stateFor('target'), 'pickaxeT1', { gatherMetal: miner });
+  seed(stateFor('legacyMix'), 'pickaxe', { gatherMetal: miner });
   seed(stateFor('harvest'), 'pickaxeT3');
   seed(stateFor('trade'), 'pickaxeT3', { gatherMetal: miner });
   const t2Unlock = tiers.professionXpForLevel(config, tiers.tierRow(config, 2).level);
@@ -89,7 +90,7 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   await h.startServer();
   try {
-    for (const role of ['target', 'harvest', 'trade']) {
+    for (const role of ['target', 'harvest', 'trade', 'legacyMix']) {
       await h.connectAndJoin(accounts[role]);
       assert.equal(accounts[role].join.roomId, LOCATION, `${role} did not join the tier arena`);
     }
@@ -163,14 +164,20 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     assert.deepEqual(outside, [], 'every city node stands inside the city wall');
     console.log(`PASS the city holds tier 1 nodes of its grounds' families (${cityGround.id}: ${cityNodes.length})`);
 
-    // Выше T1 нужен инструмент тира узла: кирка ниже T3 на жиле T3 сбор не начинает.
+    // Жиле T3 нужна кирка T2 или выше: кирка T1 сбор не начинает.
     const lowTool = await startGather(accounts.target);
-    assert(itemTier('pickaxe') < TIER, 'the target pickaxe is below the vein tier');
-    assert(!lowTool.ok && lowTool.error === `Для добычи руды нужна кирка тира ${TIER} или выше. У вас — тира ${itemTier('pickaxe')}.`,
-      'a T3 vein needs a T3 pickaxe: ' + JSON.stringify(lowTool).slice(0, 200));
+    assert.equal(itemTier('pickaxeT1'), 1);
+    assert(!lowTool.ok && lowTool.error === `Для добычи руды нужна кирка тира ${TIER - 1} или выше. У вас — тира 1.`,
+      'a T3 vein needs at least a T2 pickaxe: ' + JSON.stringify(lowTool).slice(0, 200));
     const lowToolCycle = await harvest(accounts.target);
     assert(!lowToolCycle.ok && lowToolCycle.stop, 'no cycle counts without the right tool: ' + JSON.stringify(lowToolCycle).slice(0, 200));
-    console.log('PASS a node above T1 refuses a tool below its tier');
+    // Кирка T2 (тиром ниже жилы) открывает её, но не ускоряет и не изнашивается.
+    assert.equal(itemTier('pickaxe'), TIER - 1);
+    const belowTool = await startGather(accounts.legacyMix);
+    assert(belowTool.ok && belowTool.tool === null && belowTool.cycleMs === gathering.gatherCycleMs(config, TIER, 0),
+      'a T2 pickaxe mines a T3 vein at the base pace: ' + JSON.stringify(belowTool).slice(0, 200));
+    await h.socketAck(accounts.legacyMix.socket, 'stopGather', {});
+    console.log('PASS a T3 vein refuses a T1 pickaxe and takes a T2 one at the base pace');
 
     // Кирка T3 есть, но «Рудокоп» ниже 30.
     const lowSkill = await startGather(accounts.harvest);
@@ -258,7 +265,7 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   const xp = saved.characters[users.users[accounts.trade.login].id][accounts.trade.characterId].state.professionXp;
   assert(Number(xp?.gatherMetal) > miner, 'profession xp survives the save: ' + JSON.stringify(xp));
   h.cleanupSync();
-  console.log('Kromka tiers network OK: node tier from the location, only tiered nodes with every family, tier on the world map and in the room state, profession gate, a tool of the node tier above T1 and bare hands on T1, timed tiered yield and the xp ladder, saved professions, tier-scaled raiders.');
+  console.log('Kromka tiers network OK: node tier from the location, only tiered nodes with every family, tier on the world map and in the room state, profession gate, a tool one tier below the node above T1 and bare hands on T1, timed tiered yield and the xp ladder, saved professions, tier-scaled raiders.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

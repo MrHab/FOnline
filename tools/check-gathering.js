@@ -57,18 +57,24 @@ assert.equal(at(1000 + 2 * session.cycleMs, { roomId: 'other' }).stop, true, 'th
 assert.equal(gathering.checkGatherCycle(config, null, { resourceId: node.id, roomId: 'arena', player, now: 5000 }).stop, true, 'no cycle without a started gathering');
 console.log('PASS moving, damage, another node or room stop gathering');
 
-// T1 берут голыми руками, выше нужен инструмент тира узла; инструмент ниже тира не помогает.
+// T1 берут голыми руками, узлу тира N нужен инструмент тира N−1 или выше, а
+// ускоряет только инструмент тира узла.
 assert.equal(config.gathering.toolFreeTier, 1, 'only T1 is gathered bare-handed');
-assert.equal(gathering.toolRequired(config, 1), false, 'a T1 node needs no tool');
-for (let tier = 2; tier <= 5; tier++) assert.equal(gathering.toolRequired(config, tier), true, `a T${tier} node needs a tool`);
+assert.equal(gathering.requiredToolTier(config, 1), 0, 'a T1 node needs no tool');
+assert.equal(gathering.toolAllowsNode(config, { id: '', tier: 0 }, 1), true, 'bare hands open a T1 node');
+for (let tier = 2; tier <= 5; tier++) {
+  assert.equal(gathering.requiredToolTier(config, tier), tier - 1, `a T${tier} node needs a tool of T${tier - 1} or higher`);
+  assert.equal(gathering.toolAllowsNode(config, { id: '', tier: 0 }, tier), false, `bare hands do not open a T${tier} node`);
+  assert.equal(gathering.toolAllowsNode(config, { id: 'tool', tier: tier - 1 }, tier), true, `a T${tier - 1} tool opens a T${tier} node`);
+  if (tier > 2) assert.equal(gathering.toolAllowsNode(config, { id: 'tool', tier: tier - 2 }, tier), false, `a T${tier - 2} tool does not open a T${tier} node`);
+}
 const bareT1 = gathering.beginGatherSession({ config, resource: { ...node, tier: 1 }, player, roomId: 'arena', tool: { id: '', tier: 0 }, now: 0 });
 assert.equal(bareT1.toolId, '', 'a bare-handed T1 gathering wears no tool');
 assert.equal(bareT1.cycleMs, config.gathering.cycleMs[0], 'bare hands gather T1 at the base pace');
-const bare = gathering.beginGatherSession({ config, resource: node, player, roomId: 'arena', tool: { id: 'pickaxe', tier: 1 }, now: 0 });
-assert.equal(bare.toolId, '', 'a tool below the node tier is not used (and not worn)');
-assert.equal(gathering.toolHelps({ id: 'pickaxe', tier: 1 }, 3), false, 'a T1 pickaxe does not open a T3 node');
-assert.equal(gathering.toolHelps({ id: 'pickaxeT4', tier: 4 }, 3), true, 'a pickaxe above the node tier opens it');
-console.log('PASS T1 needs no tool, T2–T5 need a tool of the node tier or higher');
+const below = gathering.beginGatherSession({ config, resource: node, player, roomId: 'arena', tool: { id: 'pickaxe', tier: 2 }, now: 0 });
+assert.equal(below.toolId, '', 'a tool below the node tier opens it but is not used for speed (and not worn)');
+assert.equal(below.cycleMs, config.gathering.cycleMs[2], 'a tool one tier below gathers at the base pace');
+console.log('PASS T1 needs no tool, a T(N) node needs a T(N−1) tool, only the node-tier tool speeds it');
 
 // Опыт профессии по лестнице тиров: работа тира N учит до уровня, открывающего N+1.
 const t2Xp = tiers.professionXpForLevel(config, tiers.tierRow(config, 2).level);

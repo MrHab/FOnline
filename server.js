@@ -15432,7 +15432,8 @@ function serverBestGatherTool(p = {}, group = '') {
 /**
  * Общие проверки сбора: узел жив, игрок рядом и видит его, навык открыл тир,
  * а для узла выше T1 в сумке или в руках есть инструмент его группы не ниже
- * тира узла. На T1 инструмент не нужен и только ускоряет.
+ * тира на один меньше узла (gathering.requiredToolTier). На T1 инструмент не
+ * нужен; инструмент тира узла на любом тире ускоряет цикл.
  */
 function serverGatherContext(p, data = {}) {
   if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return { error: 'Игрок недоступен.' };
@@ -15466,9 +15467,10 @@ function serverGatherContext(p, data = {}) {
       || (activeActivity.allowedItemIds || []).includes(yieldItemId));
   // Полевой набор экспедиции работает как инструмент любого тира и не изнашивается.
   const tool = activityFieldKit ? { id: '', tier: 5, fieldKit: true } : serverBestGatherTool(p, resourceDef.toolId);
-  if (resourceTier && gathering.toolRequired(KROMKA_TIER_CONFIG, resourceTier) && !gathering.toolHelps(tool, resourceTier)) {
+  if (resourceTier && !gathering.toolAllowsNode(KROMKA_TIER_CONFIG, tool, resourceTier)) {
+    const need = gathering.requiredToolTier(KROMKA_TIER_CONFIG, resourceTier);
     const have = Number(tool.tier || 0) > 0 ? ` У вас — тира ${tool.tier}.` : '';
-    return { error: `${resourceDef.needTool.replace(/\.$/, '')} тира ${resourceTier} или выше.${have}` };
+    return { error: `${resourceDef.needTool.replace(/\.$/, '')} тира ${need} или выше.${have}` };
   }
   return { room, resource, resourceDef, yieldItemId, tierFamily, resourceTier, gatherSkill, tool };
 }

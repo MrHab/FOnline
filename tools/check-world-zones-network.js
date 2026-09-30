@@ -14,7 +14,8 @@ const http = require('node:http');
 const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
 const zoneWalk = require('./lib/zone-walk');
-const { zoneOfPlace, zoneRecipe } = require('../src/server/zone-graph');
+const { zoneById, zoneLocationId, zoneOfPlace, zoneRecipe } = require('../src/server/zone-graph');
+const { zoneRules } = require('../src/server/zone-rules');
 const { loadZoneCatalog } = require('../src/server/zone-chunks');
 const { buildZone } = require('../src/server/zone-builder');
 const { readTieredCatalogs, enemyTierScale } = require('../src/server/kromka-tiers');
@@ -159,12 +160,24 @@ const getJson = route => new Promise((resolve, reject) => {
   const labDoor = (definitions.json.locations.coreZone.transitions || []).find(row => row.id === 'enter_coreLabSprout');
   assert.equal(labDoor.targetZoneRules.mode, 'pvpBlack', 'A laboratory inherits the rules of the territory.');
   // Ключи — город-сектор: его определение сервер отдаёт по одному, как зону.
+  // Из города выходят порталами в проёмах ворот, и каждый несёт правила сектора за ним.
   const keys = (await getJson('/api/locations/settlement')).json.location;
-  const keysGate = (keys.sectorGates || []).find(row => row.targetZoneRules);
-  assert(keysGate, 'The gates of a city carry the rules of the sector behind them.');
-  const peacefulExit = [...(keys.sectorGates || []), ...(keys.transitions || [])]
-    .find(row => row.targetZoneRules && row.targetZoneRules.mode === 'peaceful');
-  if (peacefulExit) assert.equal(peacefulExit.targetZoneRules.confirmBeforeEntry, false, 'A peaceful transition does not ask.');
+  const keysZone = zoneGraph.zones.find(zone => zone.city === 'settlement');
+  const keysGates = (keys.transitions || []).filter(row => row.type === 'zoneGate' && row.crossing === 'portal');
+  assert(keysGates.length > 0, 'The city is left through gate portals.');
+  for (const gate of keysGates) {
+    const sector = zoneById(zoneGraph, keysZone.edges[gate.direction].to);
+    assert.equal(gate.to, zoneLocationId(sector));
+    assert.equal(gate.targetZoneRules?.mode, sector.mode,
+      `The ${gate.direction} gate of a city carries the rules of the sector behind it: ` + JSON.stringify(gate).slice(0, 300));
+    assert.equal(gate.targetZoneRules.confirmBeforeEntry, zoneRules(sector.mode).confirmBeforeEntry,
+      `The ${gate.direction} gate of a city asks before a harsher sector exactly as its rules say.`);
+  }
+  // Обратный путь — из сектора в город — ведёт в мирную зону и не спрашивает.
+  const besideKeys = (await getJson('/api/locations/' + keysGates[0].to)).json.location;
+  const intoKeys = (besideKeys.transitions || []).find(row => row.to === 'settlement');
+  assert.equal(intoKeys?.targetZoneRules?.mode, 'peaceful', 'The gate into a city carries its peaceful rules: ' + JSON.stringify(intoKeys || {}).slice(0, 300));
+  assert.equal(intoKeys.targetZoneRules.confirmBeforeEntry, false, 'A peaceful transition does not ask.');
   console.log('PASS territory membership on reconnect and transitions');
 
   // --- контракт наёмника у ворот Сердцевины -----------------------------------------

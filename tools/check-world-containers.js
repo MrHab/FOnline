@@ -85,6 +85,15 @@ for (const file of fs.readdirSync(locationsDir).filter(name => name.endsWith('.j
     containers.push({ location, row, key: `${location.id}/${row.id}`, loot: Array.isArray(row.loot) ? row.loot : [] });
   }
 }
+// Тайники мест, стоящих площадкой в своей зоне (zone-sites.js), лежат в данных сектора
+// и живут по правилам его цвета: тот же надзор, что у тайников отдельных мест.
+const zonesDir = path.join(root, 'data', 'zones', 'authored');
+for (const file of fs.readdirSync(zonesDir).filter(name => name.endsWith('.json')).sort()) {
+  const zone = JSON.parse(fs.readFileSync(path.join(zonesDir, file), 'utf8'));
+  for (const row of (zone.containers || []).filter(row => row.site)) {
+    containers.push({ location: { id: row.site, pvpMode: zone.pvpMode }, row, key: `${zone.id}/${row.site}/${row.id}`, loot: row.loot || [] });
+  }
+}
 assert(containers.length > 0, 'the world has authored containers');
 
 // Ящик снаряжения учебного двора сервер наполняет сам — личным набором персонажа.

@@ -15881,7 +15881,8 @@ function spawnRoomWorldContainers(room, opts = {}) {
       terminalRequiredSkill: terminalInfo.required,
       terminalUnlocksLock: !!def.terminalUnlocksLock,
       terminalName: safeName(def.terminalName || 'Терминал'),
-      ...(sceneVisual ? { sceneVisual: true } : {}),
+      // Ящик площадки места — модель её сцены: своя коллизия не заслоняет его от игрока.
+      ...(sceneVisual ? { sceneVisual: true, visualObjectId: String(def.visualObjectId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96) } : {}),
       lockCooldownUntil: 0,
       terminalCooldownUntil: 0,
       factionWarehouseSiteId: String(def.factionWarehouseSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
@@ -32034,11 +32035,18 @@ io.on('connection', (socket) => {
       const to = normalizeLocationId(data.to || '');
       const reply = payload => { if (typeof ack === 'function') ack({ ...payload, self: p ? publicAuthoritativePlayerState(p) : null }); };
       if (!p || !p.roomId || !LOCATIONS[to]) return reply({ ok: false, error: 'Нет такого места.' });
-      const room = chooseRoomForLocation(to);
+      // Место, стоящее площадкой в своей зоне (zone-sites.js), — это зона и точка на ней:
+      // перенос ставит на площадку, и вход засчитывается, как если бы игрок пришёл пешком.
+      const siteZone = String(LOCATIONS[to]?.site?.zone || '').replace(/[^a-zA-Z0-9_-]/g, '');
+      const room = chooseRoomForLocation(siteZone || to);
+      const site = siteZone ? serverRoomSites(room).find(row => row.id === to) : null;
+      if (siteZone && !site) return reply({ ok: false, error: 'Площадки места нет в зоне.' });
       // Проверка переходов ставит игрока в точку края или портала: x/z в метрах локации.
-      const point = Number.isFinite(Number(data.x)) && Number.isFinite(Number(data.z)) ? { x: Number(data.x), z: Number(data.z) } : {};
+      const point = site ? { x: site.x, z: site.z }
+        : Number.isFinite(Number(data.x)) && Number.isFinite(Number(data.z)) ? { x: Number(data.x), z: Number(data.z) } : {};
       if (!transferPlayerToServerRoom(p, room, { entryKey: 'entryFromWorld', ...point, reason: 'qaTravel' })) return reply({ ok: false, error: 'Перенос сорвался.' });
-      reply({ ok: true, locationId: to, roomId: room.id, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)) });
+      if (site) serverUpdatePlayerSite(p, room);
+      reply({ ok: true, locationId: room.locationId, ...(site ? { site: site.id } : {}), roomId: room.id, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)) });
     });
   }
 
@@ -33566,7 +33574,7 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Подойдите ближе к замку.' });
       return;
     }
-    if (!serverInteractionHasLineOfSight(room, p, container)) {
+    if (!serverInteractionHasLineOfSight(room, p, container, { ignoreObjectId: container.visualObjectId })) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Замок находится за препятствием.' });
       return;
     }
@@ -33660,7 +33668,7 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Подойдите ближе к терминалу.' });
       return;
     }
-    if (!serverInteractionHasLineOfSight(room, p, container)) {
+    if (!serverInteractionHasLineOfSight(room, p, container, { ignoreObjectId: container.visualObjectId })) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Терминал находится за препятствием.' });
       return;
     }
@@ -33764,7 +33772,7 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Подойдите ближе к контейнеру.' });
       return;
     }
-    if (!serverInteractionHasLineOfSight(room, p, container)) {
+    if (!serverInteractionHasLineOfSight(room, p, container, { ignoreObjectId: container.visualObjectId })) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Контейнер находится за препятствием.' });
       return;
     }
@@ -33809,7 +33817,7 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Подойдите ближе к контейнеру.' });
       return;
     }
-    if (!serverInteractionHasLineOfSight(room, p, container)) {
+    if (!serverInteractionHasLineOfSight(room, p, container, { ignoreObjectId: container.visualObjectId })) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Контейнер находится за препятствием.' });
       return;
     }

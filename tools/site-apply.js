@@ -150,7 +150,16 @@ function main() {
   for (const list of ['spawnAreas', 'lairs', 'eventAnchors']) {
     if (zone.zone && Array.isArray(zone.zone[list])) zone.zone[list] = drop(list, zone.zone[list], tilePoint);
   }
-  zone.objects = (zone.objects || []).filter(row => !ownRow(row));
+  // Геометрию и коллизию своих строк прошлой сборки сохраняем до нового экспорта Unity:
+  // иначе между запуском этого инструмента и сборкой сцены сервер видел бы их без преград.
+  // Безымянные объекты площадки экспорт Unity пишет без поля site, но с тегом site-<id>:
+  // если макет теперь дал такому объекту имя, его строка уходит и пишется заново.
+  const tagged = row => Array.isArray(row?.tags) && row.tags.includes(`site-${siteId}`);
+  const namedIds = new Set((layout.objects || []).filter(row => row.name || row.quest || row.hover)
+    .map(row => safeId(`${siteId}_${row.id}`)));
+  const exported = new Map((zone.objects || []).filter(row => (ownRow(row) || tagged(row)) && row.unityAuthored)
+    .map(row => [row.id, row]));
+  zone.objects = (zone.objects || []).filter(row => !ownRow(row) && !(tagged(row) && namedIds.has(row.id)));
 
   // Тропа зоны к месту кончается у его входа (approach в осях площадки), а не в ограде.
   const navNode = (zone.zone?.nav?.nodes || []).find(node => node.id === `place_${siteId}`);
@@ -181,7 +190,7 @@ function main() {
       rotationY: round(point.yawDeg * Math.PI / 180), locked: row.locked === true,
       ...(row.locked && row.lockDifficulty ? { lockDifficulty: row.lockDifficulty } : {}),
       loot: row.loot.map(item => ({ id: String(item.id), qty: Math.max(1, Math.round(Number(item.qty || 1))) })),
-      ...(row.visual ? { sceneVisual: true } : {}),
+      ...(row.visual ? { sceneVisual: true, visualObjectId: safeId(`${siteId}_${row.visual}`) } : {}),
       site: siteId
     });
   }
@@ -219,14 +228,20 @@ function main() {
     const id = safeId(`${siteId}_${row.id}`);
     claim(id);
     const point = place(row);
-    zone.objects.push({
-      id, name: String(row.name || row.id).slice(0, 64),
-      position: { x: point.x, y: round(row.y || 0), z: point.z },
-      rotation: { x: 0, y: round(point.yawDeg * Math.PI / 180), z: 0 },
+    const previous = exported.get(id);
+    const own = {
+      name: String(row.name || row.id).slice(0, 64),
       ...(row.quest ? { interactive: { questObjective: String(row.quest) }, questObjective: String(row.quest) } : {}),
       ...(row.hover ? { hover: row.hover } : {}),
       tags: [...new Set(['site', `site-${siteId}`, ...(row.quest ? ['quest-object'] : []), ...(row.tags || [])])],
       site: siteId
+    };
+    // Место могло сдвинуться в макете: геометрия прошлой сборки годится, только пока оно то же.
+    const samePlace = previous && Math.hypot(Number(previous.position?.x) - point.x, Number(previous.position?.z) - point.z) < 0.01;
+    zone.objects.push(samePlace ? { ...previous, ...own } : {
+      id, ...own,
+      position: { x: point.x, y: round(row.y || 0), z: point.z },
+      rotation: { x: 0, y: round(point.yawDeg * Math.PI / 180), z: 0 }
     });
   }
 

@@ -564,9 +564,13 @@ async function connect() {
     const from = currentLocationId;
     enemies = [];
     latestWorldTransfer = null;
-    update(assertOk(await ack(socket, 'qaTravel', { to: locationId }), `travel to ${locationId}`));
-    for (let wait = 0; wait < 40 && latestWorldTransfer?.locationId !== locationId; wait++) await delay(50);
-    assert.equal(latestWorldTransfer?.locationId, locationId, `${locationId}: the world transfer did not reach the client.`);
+    const travelled = assertOk(await ack(socket, 'qaTravel', { to: locationId }), `travel to ${locationId}`);
+    update(travelled);
+    // Место, стоящее площадкой в зоне, переносит в её сектор, на саму площадку.
+    const arrived = travelled.locationId;
+    assert(arrived === locationId || travelled.site === locationId, `${locationId}: travel landed in ${arrived}.`);
+    for (let wait = 0; wait < 40 && latestWorldTransfer?.locationId !== arrived; wait++) await delay(50);
+    assert.equal(latestWorldTransfer?.locationId, arrived, `${locationId}: the world transfer did not reach the client.`);
     currentLocationId = locationId;
     console.log(`TRAVEL ${from} -> ${locationId}`);
     await delay(250);

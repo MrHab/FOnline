@@ -221,7 +221,14 @@ namespace Kromka.EditorTools
             if (unresolved.Count > 0)
                 Debug.LogWarning("[KROMKA SITE] Нет префабов пака: " + string.Join(", ", unresolved.Select(v => v.ToString())));
 
-            // Якоря НПС: экспорт ставит по ним живые строки с тем же id (их пишет tools/site-apply.js).
+            // НПС площадки: живые строки пишет tools/site-apply.js, в сцене они — префабы KromkaNpc
+            // (их требует проверка паритета и по ним экспорт ставит строку). Прежние НПС этой
+            // площадки уходят, на местах из макета встают якоря, а KromkaNpcSceneSync
+            // превращает их в префабы с обликом и снаряжением из строк.
+            var npcIds = new HashSet<string>((layout["npcs"] as JArray ?? new JArray()).OfType<JObject>()
+                .Select(npc => Text(npc, "id")).Where(id => !string.IsNullOrWhiteSpace(id)), StringComparer.Ordinal);
+            foreach (KromkaSpawnAuthoring spawn in location.GetComponentsInChildren<KromkaSpawnAuthoring>(true))
+                if (spawn != null && npcIds.Contains(spawn.SpawnId)) UnityEngine.Object.DestroyImmediate(spawn.gameObject);
             foreach (JObject npc in (layout["npcs"] as JArray ?? new JArray()).OfType<JObject>())
             {
                 string npcId = Text(npc, "id");
@@ -233,6 +240,9 @@ namespace Kromka.EditorTools
                     siteRotation * Quaternion.Euler(0f, Num(npc["rotY"]), 0f));
                 anchor.AddComponent<KromkaSpawnAuthoring>().Configure(npcId, KromkaSpawnKind.Npc, string.Empty, 1f);
             }
+            string zoneFile = Path.Combine(ProjectRoot(), "data", "zones", "authored", zoneId + ".json");
+            if (npcIds.Count > 0)
+                RealmOfAshes.EditorTools.KromkaNpcSceneSync.SyncScene(scene, JObject.Parse(File.ReadAllText(zoneFile)));
 
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene)) throw new InvalidOperationException("Не удалось сохранить " + scenePath);
@@ -666,7 +676,10 @@ namespace Kromka.EditorTools
         private static float Num(JToken token, float fallback = 0f)
         {
             if (token == null || token.Type == JTokenType.Null) return fallback;
-            return float.TryParse(token.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+            // Число JSON читается как число: ToString() дробного токена берёт культуру системы
+            // («-22,755» в русской), и разбор по инвариантной культуре тихо давал 0.
+            if (token.Type == JTokenType.Float || token.Type == JTokenType.Integer) return token.Value<float>();
+            return float.TryParse((string)token, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
         }
     }
 }

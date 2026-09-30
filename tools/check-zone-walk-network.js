@@ -8,7 +8,8 @@
 // Ключи, а портал в проёме северных ворот Ключей возвращает в неё же; край
 // города закрыт. Издалека и в несоседний сектор не пускает; реконнект и
 // перезапуск сервера возвращают персонажа туда же. Портал места и его край
-// проверяются на «Заставе 17».
+// проверяются на «Объекте «Вектор»» (аванпосты и точки добычи стоят в своих зонах
+// площадками, zone-sites.js, — у них портала нет).
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -46,8 +47,9 @@ const cityGate = homeDef.transitions.find(row => row.id === 'gate_south');
 // Восточный сосед — обычная зона: туда ведёт полоса края, а не портал.
 const eastGate = homeDef.transitions.find(row => row.id === 'gate_east');
 const eastDef = sectorDefinition(east);
-// Место с порталом: «Застава 17» стоит в секторе южнее города.
-const outpostZone = zoneOfPlace(graph, 'roadOutpost');
+// Место с порталом: закрытый комплекс «Вектор».
+const PORTAL_PLACE = 'vectorLab';
+const outpostZone = zoneOfPlace(graph, PORTAL_PLACE);
 const outpostDef = sectorDefinition(outpostZone.id);
 
 const getJson = route => new Promise((resolve, reject) => {
@@ -64,7 +66,7 @@ const getJson = route => new Promise((resolve, reject) => {
   // Южные ворота — у малых z: шаг внутрь зоны — к +Z.
   placeInZone('untargeted', home.id, { x: gatePoint.x, z: gatePoint.z + 2 });
   placeInZone('harvest', 'settlement', zoneWalk.cityWorld('settlement', zoneWalk.cityDefinition('settlement').spawn));
-  const portal = outpostDef.transitions.find(row => row.to === 'roadOutpost');
+  const portal = outpostDef.transitions.find(row => row.to === PORTAL_PLACE);
   placeInZone('target', outpostZone.id, world(portal));
   // Ходок краем стоит у точки входа восточных ворот: коридор от неё к краю свободен.
   const eastEntry = world(homeDef.entryFromEast);
@@ -98,7 +100,7 @@ const getJson = route => new Promise((resolve, reject) => {
     const all = await getJson('/api/locations');
     assert(!Object.keys(all.json.locations).some(id => /^z_\d\d_\d\d$/.test(id)), 'the full catalogue does not carry zones');
     assert(!all.json.locations.settlement, 'a city sector is as heavy as a zone and is served by id too');
-    assert(all.json.locations.roadOutpost, 'authored places are still listed');
+    assert(all.json.locations[PORTAL_PLACE], 'authored places are still listed');
     console.log('PASS the zone definition is served by id and kept out of the full catalogue');
     const overview = (await getJson('/api/world-map')).json.map;
     assert.equal(overview.zones.length, graph.zones.length, 'the world map lists every zone');
@@ -108,7 +110,7 @@ const getJson = route => new Promise((resolve, reject) => {
     assert(cityRow && cityRow.city === 'settlement' && cityRow.title === city.title && !cityRow.places.length,
       'a city fills its own cell of the world map: ' + JSON.stringify(cityRow));
     const outpostRow = overview.zones.find(row => row.id === outpostZone.id);
-    assert(outpostRow.places.some(place => place.id === 'roadOutpost'), 'places of a wasteland sector are listed');
+    assert(outpostRow.places.some(place => place.id === PORTAL_PLACE), 'places of a wasteland sector are listed');
     assert.equal(overview.capitals.length, 5, 'the five faction cities are marked');
     console.log(`PASS the world map serves ${overview.zones.length} sectors, cities among them, with gates and places`);
 
@@ -227,29 +229,30 @@ const getJson = route => new Promise((resolve, reject) => {
     console.log('PASS the way back by the edge strip lands opposite the crossing as well');
     h.closeSocket(edgeWalker);
 
-    // --- места: портал из зоны на «Заставу 17», её край — обратно в ту же зону ----------------
+    // --- места: портал из зоны в «Вектор», его край — обратно в ту же зону ---------------------
     const settler = accounts.target;
     await h.connectAndJoin(settler);
     assert.equal(settler.join.locationId, outpostZone.id);
-    const into = await h.socketAck(settler.socket, 'changeLocation', { locationId: 'roadOutpost' });
-    assert(into.ok && into.locationId === 'roadOutpost', 'the portal leads from the zone into the outpost: ' + JSON.stringify(into).slice(0, 300));
+    const into = await h.socketAck(settler.socket, 'changeLocation', { locationId: PORTAL_PLACE });
+    assert(into.ok && into.locationId === PORTAL_PLACE, 'the portal leads from the zone into the place: ' + JSON.stringify(into).slice(0, 300));
     assert.equal(into.self.zone, null, 'inside a place there is no zone view');
-    const outpost = (await getJson('/api/locations/roadOutpost')).json.location;
+    const outpost = (await getJson(`/api/locations/${PORTAL_PLACE}`)).json.location;
     assert.equal(outpost.parentZone?.id, outpostZone.id, 'the place names the zone its edge leads to');
-    assert.equal(outpost.parentZone.entryKey, 'entryFromPlace_roadOutpost');
+    assert.equal(outpost.parentZone.entryKey, `entryFromPlace_${PORTAL_PLACE}`.slice(0, 32));
     assert(outpost.parentZone.targetZoneRules?.mode, 'the place carries the rules of the zone behind its edge');
     const inside = { x: into.x, z: into.z };
     const early = await h.socketAck(settler.socket, 'changeLocation', { locationId: outpostZone.id });
     assert.equal(early.ok, false, 'the zone opens only from the edge of the place');
-    // У заставы нет старой дороги «в мир», поэтому нужен сам край: полоса в два тайла.
-    assert(await driveTo(settler, inside, 1, -34), 'walked to the edge of the outpost: ' + JSON.stringify(inside));
+    // У места нет старой дороги «в мир», поэтому нужен сам край: полоса в два тайла у южной кромки.
+    const southEdge = -Number(outpost.map?.depth || 76) / 2 + 2;
+    assert(await driveTo(settler, inside, 1, southEdge), 'walked to the edge of the place: ' + JSON.stringify(inside));
     const out = await h.socketAck(settler.socket, 'changeLocation', { locationId: outpostZone.id });
     assert(out.ok && out.locationId === outpostZone.id, 'the edge of the outpost leads into its zone: ' + JSON.stringify(out).slice(0, 300));
-    const fromOutpost = world(outpostDef.entryFromPlace_roadOutpost);
+    const fromOutpost = world(outpostDef[`entryFromPlace_${PORTAL_PLACE}`.slice(0, 32)]);
     assert(Math.hypot(out.x - fromOutpost.x, out.z - fromOutpost.z) < 3, 'leaving the outpost lands at its entry point in the zone');
     const wrongZone = await h.socketAck(settler.socket, 'changeLocation', { locationId: 'z_03_03' });
     assert.equal(wrongZone.ok, false);
-    console.log(`PASS the portal leads into the outpost and its edge leads back into ${outpostZone.title}`);
+    console.log(`PASS the portal leads into ${PORTAL_PLACE} and its edge leads back into ${outpostZone.title}`);
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();

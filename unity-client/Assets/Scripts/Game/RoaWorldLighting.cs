@@ -25,6 +25,9 @@ namespace RealmOfAshes.Game
         private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
         private static readonly int GlossinessId = Shader.PropertyToID("_Glossiness");
         private static readonly int WetnessId = Shader.PropertyToID("_Wetness");
+        private static readonly int PuddlesId = Shader.PropertyToID("_Puddles");
+        private static readonly int MudId = Shader.PropertyToID("_Mud");
+        private static readonly int RainId = Shader.PropertyToID("_Rain");
 
         /// <summary>Гладкость сухой земли — та же, что ставит ей RoaLocalTerrain.</summary>
         public const float DryGroundSmoothness = 0.015f;
@@ -59,6 +62,8 @@ namespace RealmOfAshes.Game
         public float WeatherCloud { get { return _weatherCloud; } }
         public float WeatherRain { get { return _weatherRain; } }
         public float GroundWetness { get { return _groundWetness; } }
+        public float GroundPuddles { get { return _groundPuddles; } }
+        public float GroundMud { get { return _groundMud; } }
         public float LightningFlash { get { return _lightningFlash; } }
         public Light LightningLight { get { return _lightning; } }
         public ReflectionProbe WetReflection { get { return _wetReflection; } }
@@ -110,6 +115,8 @@ namespace RealmOfAshes.Game
         private float _weatherCloud;
         private float _weatherRain;
         private float _groundWetness;
+        private float _groundPuddles;
+        private float _groundMud;
         private float _lightningFlash;
         private float _lastWeatherApplyRealtime = float.NegativeInfinity;
         private float _appliedExposure = 1f;
@@ -220,21 +227,26 @@ namespace RealmOfAshes.Game
         /// Дождь поверх часа (RoaWeather): облака гасят солнце и тени, дождь
         /// сгущает дымку, мокрая земля темнеет и блестит. Входит в CurrentSample,
         /// поэтому буря выброса (SetWeather, .Weather) ложится уже поверх дождя.
-        /// Вызывается каждый кадр сглаженными числами; свет пересчитывается не чаще
-        /// четырёх раз в секунду.
+        /// Лужи и грязь уходят шейдеру земли (Kromka Ground). Вызывается каждый кадр
+        /// сглаженными числами; свет пересчитывается не чаще четырёх раз в секунду.
         /// </summary>
-        public void SetRain(float cloud, float rain, float wetness)
+        public void SetRain(float cloud, float rain, float wetness, float puddles = 0f, float mud = 0f)
         {
             cloud = Mathf.Clamp01(cloud);
             rain = Mathf.Clamp01(rain);
             wetness = Mathf.Clamp01(wetness);
-            float change = Mathf.Max(Mathf.Abs(cloud - _weatherCloud),
-                Mathf.Max(Mathf.Abs(rain - _weatherRain), Mathf.Abs(wetness - _groundWetness)));
+            puddles = Mathf.Clamp01(puddles);
+            mud = Mathf.Clamp01(mud);
+            float change = Mathf.Max(Mathf.Max(Mathf.Abs(cloud - _weatherCloud), Mathf.Abs(rain - _weatherRain)),
+                Mathf.Max(Mathf.Abs(wetness - _groundWetness),
+                    Mathf.Max(Mathf.Abs(puddles - _groundPuddles), Mathf.Abs(mud - _groundMud))));
             if (change <= 0f) return;
             _weatherCloud = cloud;
             _weatherRain = rain;
             _groundWetness = wetness;
-            bool settled = cloud <= 0f && rain <= 0f && wetness <= 0f;
+            _groundPuddles = puddles;
+            _groundMud = mud;
+            bool settled = cloud <= 0f && rain <= 0f && wetness <= 0f && puddles <= 0f && mud <= 0f;
             if (!settled && change < 0.02f && Time.unscaledTime - _lastWeatherApplyRealtime < 0.25f) return;
             _lastWeatherApplyRealtime = Time.unscaledTime;
             ApplyCurrentHour(true);
@@ -595,6 +607,9 @@ namespace RealmOfAshes.Game
             if (material.HasProperty(SmoothnessId)) _groundTint.SetFloat(SmoothnessId, smoothness);
             if (material.HasProperty(GlossinessId)) _groundTint.SetFloat(GlossinessId, smoothness);
             if (material.HasProperty(WetnessId)) _groundTint.SetFloat(WetnessId, _groundWetness);
+            if (material.HasProperty(PuddlesId)) _groundTint.SetFloat(PuddlesId, _groundPuddles);
+            if (material.HasProperty(MudId)) _groundTint.SetFloat(MudId, _groundMud);
+            if (material.HasProperty(RainId)) _groundTint.SetFloat(RainId, _weatherRain);
             _groundRenderer.SetPropertyBlock(_groundTint, 0);
         }
 

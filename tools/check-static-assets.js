@@ -1,6 +1,9 @@
+const crypto = require('crypto');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('node:assert/strict');
+const { zoneLocationId } = require('../src/server/zone-graph');
 
 const root = path.resolve(__dirname, '..');
 const publicDir = path.join(root, 'public');
@@ -145,7 +148,14 @@ function shouldCheckManifestRef(url) {
   return /\.(?:png|webp|jpe?g|gif|fbx|glb|gltf|json|txt)$/i.test(url);
 }
 
+// Снимки зон (RoaZoneMapBaker): клиент строит адрес из id зоны — <id>.jpg рядом
+// с манифестом, — а значение ключа только добавляет к адресу как ?v=хэш.
+const zoneMapsSchema = 'kromka.zoneMaps.v1';
+
 function collectManifestRefs(node, key = '', sourceProvenance = '') {
+  if (node?.schema === zoneMapsSchema) {
+    return Object.keys(node.zones || {}).map(id => `${id}.jpg`);
+  }
   const refs = [];
   if (['realm.free-equipment-catalog.v2', 'realm.layered-suits.v2', 'realm.vehicle-model-manifest.v1'].includes(node?.schema)) {
     sourceProvenance = node.schema;
@@ -170,6 +180,25 @@ function collectManifestRefs(node, key = '', sourceProvenance = '') {
     }
   }
   return refs.filter(shouldCheckManifestRef);
+}
+
+// Хэш — первые 5 байт SHA-1 снимка (RoaZoneMapBaker.Hash). Если снимок
+// перезапекли без манифеста, игроки получат старую картинку из кэша; снимок
+// зоны, которой нет в мире, клиент не запросит никогда.
+function zoneMapProblems(manifest, dir, worldZoneIds) {
+  const problems = [];
+  for (const [id, hash] of Object.entries(manifest.zones || {})) {
+    if (!worldZoneIds.has(id)) {
+      problems.push(`${id}: not a zone of data/kromka/zone-graph.json`);
+      continue;
+    }
+    const image = path.join(dir, `${id}.jpg`);
+    // Отсутствующий снимок уже отмечен обходом ссылок манифеста.
+    if (!fs.existsSync(image)) continue;
+    const actual = crypto.createHash('sha1').update(fs.readFileSync(image)).digest('hex').slice(0, 10);
+    if (hash !== actual) problems.push(`${id}.jpg: manifest hash ${hash}, file SHA-1 prefix ${actual}`);
+  }
+  return problems;
 }
 
 function manifestFiles() {
@@ -200,8 +229,30 @@ assert.deepEqual(collectManifestRefs({ schema: 'realm.layered-suits.v2', files: 
     retainedReference: { file: 'docs/review.glb' },
     bodyReference: { file: 'public/assets/body.glb' } }
 ] }), ['/assets/suit.glb', 'public/assets/body.glb']);
+assert.deepEqual(collectManifestRefs({ schema: zoneMapsSchema, pixels: 512,
+  zones: { z_01_05: '0000000000', caravanCamp: '0000000000' } }), ['z_01_05.jpg', 'caravanCamp.jpg']);
+{
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-zone-maps-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'fresh.jpg'), 'fresh');
+    fs.writeFileSync(path.join(dir, 'stale.jpg'), 'rebaked');
+    const sha = text => crypto.createHash('sha1').update(text).digest('hex').slice(0, 10);
+    assert.deepEqual(zoneMapProblems({ zones: {
+      fresh: sha('fresh'), stale: sha('before'), absent: sha('absent'), removed: sha('removed')
+    } }, dir, new Set(['fresh', 'stale', 'absent'])), [
+      `stale.jpg: manifest hash ${sha('before')}, file SHA-1 prefix ${sha('rebaked')}`,
+      'removed: not a zone of data/kromka/zone-graph.json'
+    ]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
 
+const worldZoneIds = new Set(JSON.parse(fs.readFileSync(path.join(authoredDataDir, 'kromka', 'zone-graph.json'), 'utf8'))
+  .zones.map(zoneLocationId));
 const missing = [];
+const zoneMapIssues = [];
+let zoneMapCount = 0;
 const referencedAssets = new Set();
 let refCount = 0;
 let manifestRefCount = 0;
@@ -330,6 +381,11 @@ for (const file of manifestFiles()) {
       rememberAssetReference(target);
     }
   }
+  if (manifest?.schema === zoneMapsSchema) {
+    zoneMapCount += Object.keys(manifest.zones || {}).length;
+    zoneMapIssues.push(...zoneMapProblems(manifest, path.dirname(file), worldZoneIds)
+      .map(problem => `${path.relative(root, file)} -> ${problem}`));
+  }
 }
 
 if (missing.length) {
@@ -348,10 +404,14 @@ const orphanedRuntimeAssets = assetFiles
   .filter(file => !referencedAssets.has(path.resolve(file).toLowerCase()))
   .map(file => path.relative(root, file));
 
-if (emptyAssets.length || orphanedRuntimeAssets.length) {
+if (emptyAssets.length || orphanedRuntimeAssets.length || zoneMapIssues.length) {
   const rows = [];
   if (emptyAssets.length) {
     rows.push('Empty asset file(s):', ...emptyAssets.map(file => `- ${file}`));
+  }
+  if (zoneMapIssues.length) {
+    rows.push('Zone map manifest out of date (rebake: Realm of Ashes → Zones → Bake zone maps):',
+      ...zoneMapIssues.map(row => `- ${row}`));
   }
   if (orphanedRuntimeAssets.length) {
     rows.push('Unreferenced runtime asset file(s):', ...orphanedRuntimeAssets.map(file => `- ${file}`));
@@ -363,5 +423,5 @@ console.log(
   `Static asset references OK: ${refCount} public URL(s), ${serverRefCount} server URL(s), `
   + `${unityRefCount} Unity URL(s), `
   + `${authoredRefCount} authored-data reference(s), ${manifestRefCount} manifest reference(s), `
-  + `${referencedAssets.size} runtime asset file(s) checked`
+  + `${zoneMapCount} zone map hash(es), ${referencedAssets.size} runtime asset file(s) checked`
 );

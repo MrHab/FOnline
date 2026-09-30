@@ -870,6 +870,8 @@ namespace RealmOfAshes.Game
                     || !string.IsNullOrEmpty(enemy.Snapshot["stationObjectId"]?.ToString());
 
                 if (!dead && (hostile || (!canDialogue && !hasTrade && !hasServiceMenu))) continue;
+                // Добыча убитого лежит в мешке рядом с телом: пустое тело не обыскивают.
+                if (dead && !(enemy.Snapshot["loot"] is JArray loot && loot.Count > 0)) continue;
 
                 Vector3 delta = enemy.Root.transform.position - origin;
                 delta.y = 0f;

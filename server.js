@@ -546,6 +546,7 @@ const { buildTutorialStartingLoadout, buildTutorialSupplies } = require('./src/s
 const { harvestBonusChance } = require('./src/server/harvest-bonus');
 const gathering = require('./src/server/gathering');
 const cityCritters = require('./src/server/city-critters');
+const lootBags = require('./src/server/loot-bags');
 const zoneGrounds = require('./src/server/zone-grounds');
 const { planFailedPlayerActivities } = require('./src/server/player-activity-recovery');
 const {
@@ -12835,15 +12836,11 @@ function serverDropPvpInventory(room, target, killer, now = Date.now(), options 
   if (scrapQty > 0 && SERVER_ITEM_IDS.has(options.trashItemId)) {
     groundRows.push({ id: options.trashItemId, qty: scrapQty, trash: true });
   }
-  const created = [];
-  let index = 0;
+  // Всё выпавшее — один рюкзак в шаге от тела: его обыскивают как контейнер.
+  const rows = [];
+  const bagRecords = {};
   for (const entry of groundRows) {
     if (!entry || !SERVER_ITEM_IDS.has(entry.id) || entry.id === 'fists' || entry.qty <= 0) continue;
-    const angle = index * 2.399963229728653 + 0.35;
-    const radius = 0.35 + Math.min(1.2, index * 0.055);
-    let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
-    let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
-    if (!isRoomWalkableWorld(room, x, z, 0.25)) { x = Number(target.x || 0); z = Number(target.z || 0); }
     const records = entry.trash ? [] : (runtimeDrops.get(entry.id)?.records || []).slice(0, entry.qty);
     if (wearMax > 0) {
       // Выпавшее оружие побито: у каждого экземпляра своя потеря состояния.
@@ -12853,37 +12850,46 @@ function serverDropPvpInventory(room, target, killer, now = Date.now(), options 
         record.condition = Number(Math.max(1, Number(record.condition) - wear).toFixed(2));
       }
     }
-    const groundItem = {
-      id: makeServerEntityId('pvp_drop'),
-      itemId: entry.id,
-      qty: entry.qty,
-      x,
-      z,
-      droppedBy: target.id,
-      killerId: killer?.id || '',
-      pvpDrop: true,
-      itemRuntimeRecords: records,
-      createdAt: now
-    };
-    room.groundItems.set(groundItem.id, groundItem);
-    created.push(publicGroundItem(groundItem));
-    index++;
+    if (records.length) bagRecords[entry.id] = [...(bagRecords[entry.id] || []), ...records];
+    rows.push({ id: entry.id, qty: entry.qty });
   }
+  const extent = roomWorldExtent(room);
+  const point = lootBags.lootBagPoint(target, Math.random(), (x, z) => isRoomWalkableWorld(room, x, z, 0.25));
+  const x = clamp(point.x, -extent, extent);
+  const z = clamp(point.z, -extent, extent);
+  const tile = worldToTile(x, z, roomTileDims(room));
+  const bag = lootBags.buildLootBag({
+    id: makeServerEntityId('bag'),
+    kind: 'backpack',
+    ownerName: target.name || '',
+    x,
+    z,
+    tx: tile.tx,
+    tz: tile.tz,
+    rows,
+    records: bagRecords,
+    now,
+    source: { type: 'player', id: target.characterId || target.id, killerId: killer?.id || '' },
+    isItem: id => SERVER_ITEM_IDS.has(id)
+  });
   target.inventory = protectedRows;
   target.inventoryUpdatedAt = now;
   for (const removal of runtimeDrops.values()) {
     serverFinalizeWeaponRuntimeRemoval(target, removal.row, removal.validation);
   }
-  if (created.length) {
-    refreshRoomWorldState(room);
-    io.to(room.id).emit('groundItemsSnapshot', {
-      roomId: room.id,
-      locationId: room.locationId,
-      t: now,
-      items: [...room.groundItems.values()].map(publicGroundItem)
-    });
-  }
-  return created;
+  if (!bag) return [];
+  serverPlaceLootBag(room, bag, now);
+  return bag.loot.map(row => ({
+    id: bag.id,
+    bagId: bag.id,
+    itemId: row.id,
+    qty: row.qty,
+    x: bag.x,
+    z: bag.z,
+    droppedBy: target.id,
+    killerId: killer?.id || '',
+    pvpDrop: true
+  }));
 }
 
 /**
@@ -13000,6 +13006,8 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), optio
   applyEnemyProgressionLoot(room, enemy, p);
   const carcass = serverSpawnCarcass(room, enemy, now);
   serverPrepareNpcCorpseLoot(enemy, room);
+  // Добыча — мешок в шаге от тела; само тело больше не обыскивают.
+  serverDropNpcLootBag(room, enemy, now);
   serverGrantXp(p, enemy.xp || 0);
   enemy.attackTimer = 0;
   io.to(room.id).emit('enemyKilled', {
@@ -15595,7 +15603,8 @@ function serverSpawnCarcass(room, enemy, now = Date.now()) {
 // «Нюх на тайники» срабатывает один раз на тайник — у первого открывшего с
 // перком. Награду босса и сундук события перк не трогает: они отмерены под победу.
 function applyContainerProgressionLoot(room, container, p = {}) {
-  if (!container || container.progressionLootApplied || container.bossLoot || container.publicEventId) return false;
+  // Мешок и рюкзак с добычей — не тайник: их содержимое уже решила смерть владельца.
+  if (!container || container.progressionLootApplied || container.bossLoot || container.publicEventId || container.lootBag) return false;
   const cacheSenseRank = serverTalentLevel(p, 'cacheSense');
   if (cacheSenseRank <= 0) return false;
   container.progressionLootApplied = true;
@@ -15819,6 +15828,8 @@ function spawnRoomWorldContainers(room, opts = {}) {
     });
   }
   room.containersRestockDay = restockDay;
+  // Мешки и рюкзаки с добычей не авторские: пересборка ящиков их не трогает.
+  serverAttachLootBags(room);
   if (!opts.silent) refreshRoomWorldState(room);
 }
 
@@ -20181,22 +20192,42 @@ function serverNpcCorpseLootTarget(room, enemy, now = Date.now()) {
     if (distance > radius) continue;
     candidates.push({ corpse, distance, killerBonus: String(corpse.killerId || '') === String(enemy.id || '') ? -4 : 0 });
   }
-  candidates.sort((a, b) => (a.distance + a.killerBonus) - (b.distance + b.killerBonus) || Number(a.corpse.diedAt || 0) - Number(b.corpse.diedAt || 0));
+  // Мешки убитых NPC: мародёр подбирает их, как раньше обирал тело врага.
+  for (const bag of room.lootBags?.values() || []) {
+    if (bag.id === ignoredId || !serverNpcLootBagAvailable(enemy, bag, now)) continue;
+    const distance = Math.hypot(Number(bag.x || 0) - Number(enemy.x || 0), Number(bag.z || 0) - Number(enemy.z || 0));
+    if (distance > radius) continue;
+    candidates.push({ corpse: bag, distance, killerBonus: String(bag.killerId || '') === String(enemy.id || '') ? -4 : 0 });
+  }
+  candidates.sort((a, b) => (a.distance + a.killerBonus) - (b.distance + b.killerBonus)
+    || Number(a.corpse.diedAt || a.corpse.createdAt || 0) - Number(b.corpse.diedAt || b.corpse.createdAt || 0));
   return candidates[0]?.corpse || null;
+}
+
+/** Мешок убитого NPC, который этот мародёр может подобрать сейчас. Рюкзаки игроков NPC не трогают. */
+function serverNpcLootBagAvailable(enemy, bag, now = Date.now()) {
+  if (!bag?.lootBag || bag.sourceType !== 'npc') return false;
+  if (!serverFactionsHostile(enemy, bag.sourceFaction)) return false;
+  if (!lootBags.mergeLootRows(bag.loot).length || Number(bag.npcLootProtectedUntil || 0) > now) return false;
+  const claimedBy = String(bag.npcLootClaimedBy || '');
+  return !(claimedBy && claimedBy !== enemy.id && Number(bag.npcLootClaimUntil || 0) > now);
 }
 
 function updateServerNpcCorpseLooting(room, enemy, dt, now = Date.now()) {
   if (!serverNpcCanLootCorpses(enemy) || enemy.targetId || enemy.factionTargetId) return false;
   if (now < Number(enemy.npcLootCooldownUntil || 0)) return false;
-  let corpse = enemy.npcLootTargetId ? room.enemies.get(String(enemy.npcLootTargetId)) : null;
-  const targetInvalid = !corpse
-    || !corpse.dead
-    || corpse.looted
-    || serverCorpseLootIsHeld(corpse, now)
-    || Number(corpse.npcLootProtectedUntil || 0) > now
-    || !serverFactionsHostile(enemy, corpse)
-    || !Array.isArray(corpse.loot)
-    || !corpse.loot.length;
+  const targetId = String(enemy.npcLootTargetId || '');
+  let corpse = targetId ? (room.enemies.get(targetId) || room.lootBags?.get(targetId) || null) : null;
+  const targetInvalid = corpse?.lootBag
+    ? !room.lootBags?.has(corpse.id) || !serverNpcLootBagAvailable(enemy, corpse, now)
+    : !corpse
+      || !corpse.dead
+      || corpse.looted
+      || serverCorpseLootIsHeld(corpse, now)
+      || Number(corpse.npcLootProtectedUntil || 0) > now
+      || !serverFactionsHostile(enemy, corpse)
+      || !Array.isArray(corpse.loot)
+      || !corpse.loot.length;
   if (targetInvalid) {
     if (corpse && String(corpse.npcLootClaimedBy || '') === String(enemy.id || '')) {
       corpse.npcLootClaimedBy = '';
@@ -20246,7 +20277,12 @@ function updateServerNpcCorpseLooting(room, enemy, dt, now = Date.now()) {
   enemy.inventory = sanitizeServerInventorySnapshot(enemy.inventory || [], { includeEquipped: true });
   enemy.inventoryUpdatedAt = now;
   enemy.lastNpcLootAt = now;
-  if (corpse.looted) corpse.diedAt = Math.min(Number(corpse.diedAt || now), now - 1000);
+  if (corpse.lootBag) {
+    // Опустевший мешок исчезает у всех, как после обыска игроком.
+    if (!corpse.loot.length) serverRemoveLootBag(room, corpse);
+    serverSyncRoomGroundDrops(room);
+    emitWorldContainersSnapshot(room, true);
+  } else if (corpse.looted) corpse.diedAt = Math.min(Number(corpse.diedAt || now), now - 1000);
   refreshRoomWorldState(room);
   emitEnemySnapshot(room, true);
   return true;
@@ -20367,6 +20403,13 @@ function publicWorldContainer(c) {
     terminalCooldownUntil: Math.max(0, Number(c.terminalCooldownUntil || 0)),
     loot,
     empty: loot.length === 0,
+    // Мешок или рюкзак с добычей: клиент рисует его своей моделью и обыскивает.
+    lootBag: c.lootBag === true,
+    kind: c.lootBag === true ? String(c.kind || 'sack') : '',
+    itemRuntimeRecords: c.lootBag === true
+      ? Object.values(c.itemRuntimeRecords || {}).flat().map(publicWeaponRuntimeRecord)
+      : [],
+    expiresAt: c.lootBag === true ? Number(c.expiresAt || 0) : 0,
     createdAt: Number(c.createdAt || Date.now()),
     restockDay: Number(c.restockDay || 0)
   };
@@ -20417,8 +20460,102 @@ function cleanupGroundItems(room, now = Date.now()) {
       changed = true;
     }
   }
-  if (changed) serverSyncRoomGroundDrops(room);
-  return changed;
+  // Мешки и рюкзаки с добычей лежат по сроку своего вида.
+  let bagsChanged = false;
+  for (const bag of [...(room.lootBags?.values() || [])]) {
+    if (!lootBags.lootBagSpent(bag, now)) continue;
+    serverRemoveLootBag(room, bag);
+    bagsChanged = true;
+  }
+  if (changed || bagsChanged) serverSyncRoomGroundDrops(room);
+  if (bagsChanged) emitWorldContainersSnapshot(room, true);
+  return changed || bagsChanged;
+}
+
+// --- мешки и рюкзаки с добычей ------------------------------------------------
+
+/** Контейнеры добычи комнаты живут в room.lootBags и вставляются в её контейнеры. */
+function serverAttachLootBags(room) {
+  if (!room || !(room.lootBags instanceof Map) || !room.lootBags.size) return;
+  if (!(room.containers instanceof Map)) room.containers = new Map();
+  for (const bag of room.lootBags.values()) room.containers.set(bag.id, bag);
+}
+
+/** Мешок или рюкзак — открытый контейнер без замка и терминала. */
+function serverDecorateLootBag(bag, now = Date.now()) {
+  const lockInfo = securityDifficultyInfo('veryEasy', 'veryEasy');
+  Object.assign(bag, {
+    lockDifficulty: lockInfo.difficulty,
+    lockDifficultyTier: lockInfo.id,
+    lockDifficultyLabel: lockInfo.label,
+    lockRequiredSkill: lockInfo.required,
+    terminalDifficulty: lockInfo.difficulty,
+    terminalDifficultyTier: lockInfo.id,
+    terminalDifficultyLabel: lockInfo.label,
+    terminalRequiredSkill: lockInfo.required,
+    terminalUnlocksLock: false,
+    terminalName: '',
+    lockCooldownUntil: 0,
+    terminalCooldownUntil: 0,
+    factionWarehouseSiteId: '',
+    restockDay: currentGameDayIndex(now)
+  });
+  return bag;
+}
+
+/** Положить мешок или рюкзак в комнату; он сохраняется вместе с вещами на земле. */
+function serverPlaceLootBag(room, bag, now = Date.now()) {
+  if (!room || !bag) return null;
+  serverDecorateLootBag(bag, now);
+  if (!(room.lootBags instanceof Map)) room.lootBags = new Map();
+  room.lootBags.set(bag.id, bag);
+  serverAttachLootBags(room);
+  serverSyncRoomGroundDrops(room);
+  refreshRoomWorldState(room, { force: true });
+  emitWorldContainersSnapshot(room, true);
+  return bag;
+}
+
+function serverRemoveLootBag(room, bag) {
+  if (!room || !bag) return;
+  room.lootBags?.delete(bag.id);
+  if (room.containers?.get(bag.id) === bag) room.containers.delete(bag.id);
+}
+
+/**
+ * Убитый NPC или зверь: всё, что было на теле, уходит в мешок в шаге от него,
+ * а тело остаётся лежать пустым. Нечего ронять — мешка нет.
+ */
+function serverDropNpcLootBag(room, enemy, now = Date.now()) {
+  if (!room || !enemy || enemy.lootBagId !== undefined) return null;
+  const rows = lootBags.mergeLootRows(enemy.loot, id => SERVER_ITEM_IDS.has(id));
+  const traderBalance = serverNpcHoldsTraderBalance(enemy);
+  const blackMarketLoot = enemy.blackMarketLoot || null;
+  enemy.loot = [];
+  enemy.inventory = [];
+  enemy.blackMarketLoot = null;
+  enemy.lootBagId = '';
+  if (!rows.length) return null;
+  const point = lootBags.lootBagPoint(enemy, (room.rng || Math.random)(), (x, z) => isRoomWalkableWorld(room, x, z, 0.3));
+  const tile = worldToTile(point.x, point.z, roomTileDims(room));
+  const bag = lootBags.buildLootBag({
+    id: `bag_${String(enemy.id || makeServerEntityId('npc')).replace(/[^a-zA-Z0-9_-]/g, '')}`.slice(0, 96),
+    kind: 'sack',
+    ownerName: enemy.name,
+    x: point.x,
+    z: point.z,
+    tx: tile.tx,
+    tz: tile.tz,
+    rows,
+    now,
+    source: { type: 'npc', id: enemy.id, faction: enemy.faction, killerId: enemy.killerId, traderBalance },
+    isItem: id => SERVER_ITEM_IDS.has(id)
+  });
+  if (!bag) return null;
+  bag.blackMarketLoot = blackMarketLoot;
+  bag.npcLootProtectedUntil = Number(enemy.npcLootProtectedUntil || 0);
+  enemy.lootBagId = bag.id;
+  return serverPlaceLootBag(room, bag, now);
 }
 
 // Предметы на земле переживают перезапуск сервера: выпавший при смерти
@@ -20465,6 +20602,15 @@ function scheduleServerGroundDropPersist() {
   if (typeof serverGroundDropPersistTimer.unref === 'function') serverGroundDropPersistTimer.unref();
 }
 
+// Мешки и рюкзаки с добычей сохраняются той же записью, что вещи на земле и
+// инвентарь погибшего: выпавшее не пропадает и не удваивается при перезапуске.
+function serverLootBagStore() {
+  if (!savesDb.lootBags || typeof savesDb.lootBags !== 'object' || Array.isArray(savesDb.lootBags)) {
+    savesDb.lootBags = {};
+  }
+  return savesDb.lootBags;
+}
+
 function serverSyncRoomGroundDrops(room) {
   if (!room?.id || !(room.groundItems instanceof Map)) return;
   const store = serverGroundDropStore();
@@ -20472,6 +20618,10 @@ function serverSyncRoomGroundDrops(room) {
   const rows = [...room.groundItems.values()].map(row => sanitizeServerGroundDropRecord(row, now)).filter(Boolean);
   if (rows.length) store[room.id] = rows;
   else delete store[room.id];
+  const bagStore = serverLootBagStore();
+  const bags = [...(room.lootBags?.values() || [])].filter(bag => !lootBags.lootBagSpent(bag, now)).map(lootBags.persistedLootBag);
+  if (bags.length) bagStore[room.id] = bags;
+  else delete bagStore[room.id];
   scheduleServerGroundDropPersist();
 }
 
@@ -20479,7 +20629,8 @@ function serverRestoreRoomGroundDrops(room) {
   if (!room?.id || !(room.groundItems instanceof Map)) return 0;
   const store = serverGroundDropStore();
   const rows = Array.isArray(store[room.id]) ? store[room.id] : [];
-  if (!rows.length) return 0;
+  const bagRows = Array.isArray(serverLootBagStore()[room.id]) ? serverLootBagStore()[room.id] : [];
+  if (!rows.length && !bagRows.length) return 0;
   const now = Date.now();
   let restored = 0;
   for (const raw of rows) {
@@ -20488,8 +20639,21 @@ function serverRestoreRoomGroundDrops(room) {
     room.groundItems.set(item.id, item);
     restored++;
   }
-  if (restored !== rows.length) serverSyncRoomGroundDrops(room);
-  return restored;
+  if (!(room.lootBags instanceof Map)) room.lootBags = new Map();
+  let restoredBags = 0;
+  for (const raw of bagRows) {
+    const bag = lootBags.restoreLootBag(raw, {
+      now,
+      isItem: id => SERVER_ITEM_IDS.has(id),
+      sanitizeRecord: (record, itemId) => sanitizeServerWeaponRuntimeRecord(record, itemId)
+    });
+    if (!bag || room.lootBags.has(bag.id)) continue;
+    room.lootBags.set(bag.id, serverDecorateLootBag(bag, bag.createdAt));
+    restoredBags++;
+  }
+  serverAttachLootBags(room);
+  if (restored !== rows.length || restoredBags !== bagRows.length) serverSyncRoomGroundDrops(room);
+  return restored + restoredBags;
 }
 
 /** Зона, над которой считается погода места: сама зона, сектор города или зона, куда выводит край места. */
@@ -26340,6 +26504,7 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
       finalizeNpcDeathState(foe, now);
       foe.killerId = actor.id;
       serverPrepareNpcCorpseLoot(foe, room);
+      serverDropNpcLootBag(room, foe, now);
       clearEnemyTacticalGoal(foe);
       invalidateEnemyPath(foe);
       recordServerWorldActivityEnemyKill(room, foe, null, now);
@@ -33608,22 +33773,43 @@ io.on('connection', (socket) => {
       container.loot = (container.loot || []).filter(x => x.qty > 0);
     }
     const finalCarry = serverLimitItemsByCarry(p, data, finalTaken).carry;
+    const blackMarketHeld = container.blackMarketLoot ? serverOwnedItemQty(p, container.blackMarketLoot.itemId) : 0;
     finalTaken.forEach(row => serverInventoryAdd(p, row.id, row.qty));
     serverTakeTutorialSupplies(p, container, finalTaken);
     serverNoteBossRewardTaken(room, container);
+    let removed = false;
+    if (container.lootBag) {
+      // Мешок или рюкзак: оружие уходит со своим магазином и модулями, марки
+      // с NPC получают премиум, как с трупа, опустевший контейнер исчезает.
+      for (const row of finalTaken) {
+        serverRestoreWeaponRuntimeRecords(p, lootBags.takeLootBagRecords(container, row.id, row.qty));
+      }
+      if (container.sourceType === 'npc') {
+        const premiumMarks = container.traderBalance ? 1 : serverPremiumMultiplier(p, 'npcMarksMultiplier');
+        const takenMarks = finalTaken.filter(row => row.id === 'silver').reduce((sum, row) => sum + Number(row.qty || 0), 0);
+        if (premiumMarks > 1 && takenMarks > 0) serverInventoryAdd(p, 'silver', rollQuantity(takenMarks * (premiumMarks - 1), Math.random));
+        serverApplyBlackMarketLootCondition(p, container, finalTaken, blackMarketHeld);
+      }
+      removed = !container.loot.length;
+      if (removed) serverRemoveLootBag(room, container);
+      serverSyncRoomGroundDrops(room);
+      persistActivePlayerState(p);
+    }
     refreshRoomWorldState(room);
     const pub = publicWorldContainer(container);
-    if (typeof ack === 'function') ack({ ok: true, items: finalTaken, container: pub, empty: pub.empty, partial: !!carryCheck.blocked, carry: finalCarry, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
-    io.to(room.id).emit('worldContainerUpdated', {
-      roomId: room.id,
-      locationId: room.locationId,
-      containerId: container.id,
-      container: pub,
-      empty: pub.empty,
-      taken: finalTaken,
-      takenBy: socket.id,
-      t: Date.now()
-    });
+    if (typeof ack === 'function') ack({ ok: true, items: finalTaken, container: pub, empty: pub.empty, removed, partial: !!carryCheck.blocked, carry: finalCarry, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
+    if (!removed) {
+      io.to(room.id).emit('worldContainerUpdated', {
+        roomId: room.id,
+        locationId: room.locationId,
+        containerId: container.id,
+        container: pub,
+        empty: pub.empty,
+        taken: finalTaken,
+        takenBy: socket.id,
+        t: Date.now()
+      });
+    }
     emitWorldContainersSnapshot(room, true);
   });
 

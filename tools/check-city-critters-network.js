@@ -4,8 +4,9 @@
 // Городская живность на настоящем сервере. В мирном городе живут крысюки:
 // мирные, не собеседники, внутри стен. Удар кулаком не злит зверька — он
 // удирает и не кусает в ответ, а потом возвращается к своему месту. Кирка
-// убивает его, с туши снимают шкуру тира города (Т1), а на место убитого
-// через срок возрождения приходит новый крысюк.
+// убивает его: добычи у крысюка нет, так что ни мешка, ни обыска — только туша,
+// с которой снимают шкуру тира города (Т1). На место убитого через срок
+// возрождения приходит новый крысюк.
 // Сначала сервер показывает места зверьков, потом охотники встают у одного из
 // них: так проверка не угадывает, где в городе открытый двор.
 
@@ -70,6 +71,14 @@ function watchEnemies(account) {
   });
   account.socket.on('enemyKilled', payload => view.killed.push(payload));
   view.rats = () => [...view.rows.values()].filter(row => row.creatureTypeId === config.species && !row.dead);
+  // Контейнеры комнаты: снимок заменяет список, обновление правит один.
+  view.containers = new Map((account.join.worldState?.containers || []).map(row => [row.id, row]));
+  account.socket.on('worldContainersSnapshot', payload => {
+    view.containers = new Map((payload?.containers || []).map(row => [row.id, row]));
+  });
+  account.socket.on('worldContainerUpdated', payload => {
+    if (payload?.container?.id) view.containers.set(payload.container.id, payload.container);
+  });
   return view;
 }
 
@@ -226,6 +235,16 @@ async function standStill(account, state) {
     assert(killed.carcassId, 'a slain city rat leaves a carcass: ' + JSON.stringify(killed));
     const diedAt = Date.now();
     console.log('PASS a pickaxe kills the rat and leaves a carcass');
+
+    // Добычи у крысюка нет: тело пустое, мешок не падает — обыскивать нечего.
+    const body = await until('the rat body shows up dead', () => {
+      const row = view.rows.get(rat.id);
+      return row && row.dead ? row : null;
+    }, 3000);
+    assert.deepEqual(body.loot, [], 'the rat body holds nothing to search');
+    await wait(400);
+    assert(!view.containers.has(`bag_${rat.id}`), 'a rat with no loot drops no sack');
+    console.log('PASS a slain rat leaves only its body and carcass, nothing to search');
 
     // Туша: узел «шкура» тира города, свежуется как любой ресурс.
     const started = await h.socketAck(accounts.trade.socket, 'startGather', { id: killed.carcassId });

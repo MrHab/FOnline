@@ -177,7 +177,7 @@ assert(server.includes('selectBagDropRows(inventory, {'));
 assert(server.includes('installedCounts: options.all ? new Map() : serverInstalledArtifactCounts(target)'),
   'the black zone must drop installed artifacts too');
 assert(server.includes("if (!SERVER_WEAPONS[entry.id]?.ammoType && !KROMKA_ARTIFACT_INDEXES.byItem[entry.id]) continue;"));
-assert(server.includes('itemRuntimeRecords: records,'), 'dropped weapons must carry their runtime records');
+// Что выпавшее оружие уносит свои записи экземпляров в рюкзак, проверяет check-zone-ladder-runtime.js.
 assert(server.includes('resolveDeathLootTransaction(target, mode, now'));
 assert(server.includes("policy.loss === 'inventory'"));
 assert(!server.includes("policy.loss === 'consumables'") && !server.includes('consumableDrop:'),

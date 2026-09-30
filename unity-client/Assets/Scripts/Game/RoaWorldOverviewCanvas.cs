@@ -17,7 +17,8 @@ namespace RealmOfAshes.Game
     /// карточку; «Проложить путь» подсвечивает цепочку зон через открытые ворота, а строка
     /// под миникартой ведёт по ней: в какие ворота идти дальше. Других игроков, групп A-Life
     /// и событий на карте нет. Если сцена не загрузилась, окно рисует плоскую сетку зон.
-    /// Открывается кнопкой «КАРТА МИРА» у миникарты и в окне локальной карты.
+    /// Открывается кнопкой «КАРТА МИРА» у миникарты и в окне локальной карты, а у проводника —
+    /// в режиме выбора города (RoaWorldOverviewCanvas.Travel.cs).
     /// </summary>
     public sealed partial class RoaWorldOverviewCanvas : MonoBehaviour
     {
@@ -50,6 +51,7 @@ namespace RealmOfAshes.Game
         private GameObject _root;
         private Image _backdrop;
         private RectTransform _panel;
+        private Text _flatTitle;
         private Text _subtitle;
         private Text _status;
         private RectTransform _map;
@@ -60,6 +62,7 @@ namespace RealmOfAshes.Game
         private Texture2D _texture;
 
         private RectTransform _view;
+        private Text _viewTitle;
         private Text _viewSubtitle;
         private Text _viewStatus;
         private RectTransform _viewLabels;
@@ -223,6 +226,7 @@ namespace RealmOfAshes.Game
             if (!IsOpen || !Uses3D) return;
             UpdateStormView();
             LayoutViewLabels();
+            LayoutTravelButtons();
             UpdateCompass();
         }
 
@@ -239,6 +243,7 @@ namespace RealmOfAshes.Game
 
         public void Open()
         {
+            EndTravel();
             OpenFor(CurrentSelf);
         }
 
@@ -261,6 +266,7 @@ namespace RealmOfAshes.Game
 
         public void Close()
         {
+            EndTravel();
             if (_map3D != null) _map3D.Close();
             if (_root != null) _root.SetActive(false);
         }
@@ -344,10 +350,13 @@ namespace RealmOfAshes.Game
             _viewStatus.text = string.Empty;
             if (!_map3D.HasZones) _map3D.ShowZones(_zonesById.Values, _zoneKm, DangerZoneColor);
             RefreshRouteView();
+            ApplyTravelView();
             Vector2? player = PlayerPoint(self, out JObject zone);
             _map3D.SetPlayer(player);
             _viewSubtitle.text = zone != null ? "Вы здесь: " + ZoneCaption(zone) : "Где вы — не видно: вы не в зоне мира.";
-            _map3D.FocusOn(player ?? new Vector2(_cols * _zoneKm * 0.5f, _rows * _zoneKm * 0.5f), 14f);
+            // У проводника в кадре все города: они разбросаны по всему миру.
+            if (TravelMode) FitTravelView();
+            else _map3D.FocusOn(player ?? new Vector2(_cols * _zoneKm * 0.5f, _rows * _zoneKm * 0.5f), 14f);
             if (_selectedZone != null) ShowCard();
         }
 
@@ -360,6 +369,7 @@ namespace RealmOfAshes.Game
             {
                 if (RoaWorldMapRoute.Col(candidate) == col && RoaWorldMapRoute.Row(candidate) == row) { zone = candidate; break; }
             }
+            if (TravelPick(zone)) return;
             _selectedZone = zone;
             _selectedPlace = null;
             if (zone == null)
@@ -481,6 +491,8 @@ namespace RealmOfAshes.Game
                 }
                 // Город занял сектор целиком: его имя стоит в центре сектора и видно всегда.
                 string city = zone["city"]?.ToString() ?? string.Empty;
+                // Имя города назначения несёт кнопка проводника над ним.
+                if (IsTravelTarget(city)) city = string.Empty;
                 if (!string.IsNullOrEmpty(city) && _map3D.PointToScreen(ZoneCentre(zone), 0.35f, out Vector2 cityAt))
                 {
                     bool capital = _capitals.Contains(city);
@@ -495,6 +507,7 @@ namespace RealmOfAshes.Game
                     if (!(token is JObject place)) continue;
                     bool capital = _capitals.Contains(place["id"]?.ToString() ?? string.Empty);
                     if (!capital && distance > PlaceNamesDistance) continue;
+                    if (IsTravelTarget(place["id"]?.ToString())) continue;
                     if (!_map3D.PointToScreen(PlacePoint(zone, place), 0.35f, out Vector2 at)) continue;
                     Text name = TakeViewLabel(ref used);
                     name.fontSize = capital ? 14 : 11;
@@ -523,8 +536,14 @@ namespace RealmOfAshes.Game
 
         private void PlaceViewLabel(Text label, Vector2 screen)
         {
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_viewLabels, screen, null, out Vector2 local))
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_viewLabels, screen, CanvasCamera, out Vector2 local))
                 label.rectTransform.anchoredPosition = local;
+        }
+
+        /// <summary>Камера канвы для экранных точек: у окна в игре (overlay) её нет, снимки проб ставят свою.</summary>
+        private Camera CanvasCamera
+        {
+            get { return _canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay ? _canvas.worldCamera : null; }
         }
 
         private void FocusPlayer()
@@ -599,6 +618,7 @@ namespace RealmOfAshes.Game
         {
             ShowMode(false);
             Rebuild(self);
+            ApplyTravelView();
         }
 
         private void ShowMode(bool threeD)
@@ -620,6 +640,7 @@ namespace RealmOfAshes.Game
             _map.sizeDelta = new Vector2(_cols * scale, _rows * scale);
             LayoutLabels(scale);
             PlaceFlag(self, scale);
+            LayoutTravelButtonsFlat(scale);
         }
 
         private void BuildTexture()
@@ -840,9 +861,9 @@ namespace RealmOfAshes.Game
             outline.effectColor = PanelBorder;
             outline.effectDistance = new Vector2(1.5f, -1.5f);
 
-            Text title = Label("Title", _panel, 20, TextAnchor.MiddleLeft, Accent, FontStyle.Bold);
-            title.text = "КАРТА МИРА";
-            Place(title.rectTransform, 0f, 1f, 1f, 1f, new Vector2(16f, -44f), new Vector2(-60f, -8f));
+            _flatTitle = Label("Title", _panel, 20, TextAnchor.MiddleLeft, Accent, FontStyle.Bold);
+            _flatTitle.text = "КАРТА МИРА";
+            Place(_flatTitle.rectTransform, 0f, 1f, 1f, 1f, new Vector2(16f, -44f), new Vector2(-60f, -8f));
             _subtitle = Label("Subtitle", _panel, 13, TextAnchor.MiddleLeft, Ink);
             Place(_subtitle.rectTransform, 0f, 1f, 1f, 1f, new Vector2(16f, -70f), new Vector2(-16f, -44f));
 
@@ -888,9 +909,9 @@ namespace RealmOfAshes.Game
             RectTransform top = Child("Top", _view);
             Place(top, 0f, 1f, 1f, 1f, new Vector2(0f, -62f), Vector2.zero);
             top.gameObject.AddComponent<Image>().color = PanelBg;
-            Text title = Label("Title", top, 20, TextAnchor.MiddleLeft, Accent, FontStyle.Bold);
-            title.text = "КАРТА МИРА";
-            Place(title.rectTransform, 0f, 0f, 0.4f, 1f, new Vector2(16f, 22f), new Vector2(0f, -6f));
+            _viewTitle = Label("Title", top, 20, TextAnchor.MiddleLeft, Accent, FontStyle.Bold);
+            _viewTitle.text = "КАРТА МИРА";
+            Place(_viewTitle.rectTransform, 0f, 0f, 0.4f, 1f, new Vector2(16f, 22f), new Vector2(0f, -6f));
             _viewSubtitle = Label("Subtitle", top, 13, TextAnchor.MiddleLeft, Ink);
             Place(_viewSubtitle.rectTransform, 0f, 0f, 0.7f, 0f, new Vector2(16f, 4f), new Vector2(0f, 26f));
             // Правый угол (60 px) занят шестерёнкой меню: её канва лежит выше карты.
@@ -901,6 +922,7 @@ namespace RealmOfAshes.Game
 
             BuildCompass(_view);
             BuildZoneWindow(_view);
+            BuildTravelBanner(_view);
 
             RectTransform bottom = Child("Bottom", _view);
             Place(bottom, 0f, 0f, 1f, 0f, Vector2.zero, new Vector2(0f, 48f));

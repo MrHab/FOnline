@@ -44,6 +44,8 @@ namespace RealmOfAshes.Game
         private static readonly Color LineColor = new Color(0.03f, 0.03f, 0.02f, 0.62f);
         private static readonly Color RouteColor = new Color(1f, 0.78f, 0.25f, 0.95f);
         private static readonly Color RouteFill = new Color(1f, 0.78f, 0.25f, 0.24f);
+        private static readonly Color HighlightColor = new Color(1f, 0.88f, 0.4f, 0.95f);
+        private static readonly Color HighlightFill = new Color(1f, 0.86f, 0.35f, 0.32f);
         private static readonly Color PlayerColor = new Color(0.96f, 0.27f, 0.2f, 1f);
         private static readonly Color SelectionColor = new Color(1f, 0.9f, 0.55f, 1f);
 
@@ -75,6 +77,7 @@ namespace RealmOfAshes.Game
         private float _heightKm = 300f;
         private GameObject _zonesView;
         private GameObject _routeView;
+        private GameObject _highlightView;
         private Transform _playerMarker;
         private Transform _selectionMarker;
         private Material _overlayMaterial;
@@ -339,7 +342,8 @@ namespace RealmOfAshes.Game
             Vector3 at = _camera.WorldToScreenPoint(PointToWorld(point, lift));
             if (at.z <= 0f) return false;
             screen = new Vector2(at.x, at.y);
-            return at.x >= -40f && at.y >= -40f && at.x <= Screen.width + 40f && at.y <= Screen.height + 40f;
+            // Кадр камеры, а не экран: снимок проб рисует карту в свою текстуру другого размера.
+            return at.x >= -40f && at.y >= -40f && at.x <= _camera.pixelWidth + 40f && at.y <= _camera.pixelHeight + 40f;
         }
 
         /// <summary>Точка карты под экранной точкой: луч идёт шагами до рельефа.</summary>
@@ -421,6 +425,37 @@ namespace RealmOfAshes.Game
             }
             AddMesh(_routeView.transform, "RouteFill", fill, 3003);
             AddMesh(_routeView.transform, "RouteLine", line, 3004);
+        }
+
+        /// <summary>
+        /// Подсвеченные зоны — города, куда ведёт проводник: светлая заливка сектора и
+        /// яркая рамка чуть внутри его границы, чтобы её не закрыла граница соседа.
+        /// Пустой список гасит подсветку.
+        /// </summary>
+        public void ShowHighlights(IReadOnlyList<JObject> zones, float zoneKm)
+        {
+            if (_highlightView != null) Discard(_highlightView);
+            _highlightView = null;
+            if (_root == null || zones == null || zones.Count == 0) return;
+            _highlightView = new GameObject("WorldMapHighlights");
+            _highlightView.layer = MapLayer;
+            _highlightView.transform.SetParent(_root, false);
+            var fill = new MeshBuilder();
+            var frame = new MeshBuilder();
+            const float width = 0.9f;
+            foreach (JObject zone in zones)
+            {
+                Vector2 corner = new Vector2(RoaWorldMapRoute.Col(zone) * zoneKm, RoaWorldMapRoute.Row(zone) * zoneKm);
+                AddDrapedCell(fill, corner, zoneKm, HighlightFill, RouteLift - 0.01f);
+                // Стороны рамки заходят друг на друга на полширины: углы без щелей.
+                float inset = width * 0.5f, far = zoneKm - width * 0.5f;
+                AddDrapedRibbon(frame, corner + new Vector2(0f, inset), corner + new Vector2(zoneKm, inset), width, HighlightColor, RouteLift);
+                AddDrapedRibbon(frame, corner + new Vector2(0f, far), corner + new Vector2(zoneKm, far), width, HighlightColor, RouteLift);
+                AddDrapedRibbon(frame, corner + new Vector2(inset, 0f), corner + new Vector2(inset, zoneKm), width, HighlightColor, RouteLift);
+                AddDrapedRibbon(frame, corner + new Vector2(far, 0f), corner + new Vector2(far, zoneKm), width, HighlightColor, RouteLift);
+            }
+            AddMesh(_highlightView.transform, "HighlightFill", fill, 3003);
+            AddMesh(_highlightView.transform, "HighlightFrame", frame, 3004);
         }
 
         public void SetPlayer(Vector2? point)
@@ -825,7 +860,8 @@ namespace RealmOfAshes.Game
             ReleaseStorm();
             if (_zonesView != null) Destroy(_zonesView);
             if (_routeView != null) Destroy(_routeView);
-            _zonesView = _routeView = null;
+            if (_highlightView != null) Destroy(_highlightView);
+            _zonesView = _routeView = _highlightView = null;
             foreach (Mesh mesh in _meshes) if (mesh != null) Destroy(mesh);
             _meshes.Clear();
             foreach (Material material in _materials) if (material != null) Destroy(material);

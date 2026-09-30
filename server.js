@@ -289,7 +289,6 @@ const CITY_INNER_TILE_MARGIN = CITY_TILES / 2 - CITY_WALL_HALF + 3;
 const { CONDUCTOR_ONLY_IN_CITIES, fastTravelDestinations, fastTravelReadiness, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
 const { PLACES_REVISION, ZONE_FRAME_REVISION, migrateSaveStateToZones } = require('./src/server/zone-migration');
 const { zoneAtPoint, zoneById, zoneLocationId, zoneOfLocation, zoneOfPlace, zoneRecipe } = require('./src/server/zone-graph');
-const { portalSignature, zonePortals } = require('./src/server/zone-portals');
 const { normalizeRecipe: normalizeZoneRecipe } = require('./src/server/zone-builder');
 const {
   ZONE_CHANNEL_SOFT_CAP,
@@ -321,6 +320,8 @@ const {
   travellerCameFrom: ecologyTravellerCameFrom,
   travellerStep: ecologyTravellerStep,
   travellerTurnBack: ecologyTravellerTurnBack,
+  followTraveller: ecologyFollowTraveller,
+  retireFollowers: ecologyRetireFollowers,
   aftermathAt: ecologyAftermathAt,
   AFTERMATH_TTL_MS: ECOLOGY_AFTERMATH_TTL_MS,
   hash01: ecologyHash01,
@@ -389,11 +390,9 @@ const {
   publicEventBossDefeated,
   tickChestOpening,
   publicEventChestOpen,
-  publicEventEntryError,
   publicEventZone,
   publicEvents: publicPublicEvents,
   purgeExpiredPublicEvents,
-  recordPublicEventDeath,
   spawnDuePublicEvents,
   tickPublicEvent
 } = require('./src/server/public-events');
@@ -835,7 +834,8 @@ const KROMKA_SAVE_MIGRATION_FILE = path.join(BUNDLED_DATA_DIR, 'generated', 'kro
 const KROMKA_FACTIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'factions.json');
 const KROMKA_LOCATIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'locations.json');
 const KROMKA_TERRITORY_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'territory.json');
-const KROMKA_PVE_AREAS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'pve-areas.json');
+// Проверки подкладывают свои правила угодий (частые встречи в зоне).
+const KROMKA_PVE_AREAS_FILE = process.env.KROMKA_PVE_AREAS_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'pve-areas.json');
 const KROMKA_PUBLIC_EVENTS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'public-events.json');
 const KROMKA_NPCS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'npcs.json');
 // Угодья (библия, 4.5): какие семейства ресурсов растут в зоне и что перерабатывает город.
@@ -2358,6 +2358,50 @@ function serverEcologySpeciesHostile(a, b) {
   return serverFactionsHostile(a?.faction || '', b?.faction || '');
 }
 
+/**
+ * Патрули мира симуляции (Старый Клим, Свалочный пост, Ретранслятор) —
+ * путники A-Life: группа идёт по зонам к месту, куда идёт или где стоит её
+ * отряд, и стоит у входа в него. Отряда нет — группа уходит из мира.
+ */
+function serverEcologySyncSimPatrols(state, ctx, now = Date.now()) {
+  const species = DANGER_ECOLOGY.species.find(row => row.kind === 'traveller' && row.travel?.mode === 'follow');
+  const sim = typeof WASTELAND_SIM?.state === 'function' ? WASTELAND_SIM.state() : null;
+  if (!species || !sim) return [];
+  const parties = Array.isArray(sim.parties) ? sim.parties : Object.values(sim.parties || {});
+  const sites = Array.isArray(sim.sites) ? sim.sites : Object.values(sim.sites || {});
+  const siteById = new Map(sites.map(site => [site?.id, site]));
+  const alive = new Set();
+  const replanned = [];
+  for (const party of parties) {
+    if (!party || party.kind !== 'patrol' || party.state === 'destroyed' || !Number.isFinite(Number(party.x))) continue;
+    const here = zoneAtPoint(ZONE_RUNTIME.graph, Number(party.x), Number(party.y));
+    const site = siteById.get(party.state === 'onsite' ? (party.onsiteSiteId || party.destinationSiteId) : party.destinationSiteId) || null;
+    const place = site?.locationId ? normalizeLocationId(site.locationId) : '';
+    const goal = (place && zoneById(ZONE_RUNTIME.graph, ZONE_RUNTIME.parentZoneOf(place)))
+      || (site ? zoneAtPoint(ZONE_RUNTIME.graph, Number(site.x), Number(site.y)) : null) || here;
+    if (!here || !goal) continue;
+    const key = `sim_${party.id}`.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+    alive.add(key);
+    const result = ecologyFollowTraveller(state, DANGER_ECOLOGY, {
+      key, speciesId: species.id, faction: party.faction, title: party.name,
+      cell: { sx: here.col, sy: here.row }, goal: { sx: goal.col, sy: goal.row }, place: goal.city ? '' : place
+    }, ctx, now);
+    if (result.replanned && result.group?.online) replanned.push(result.group);
+  }
+  ecologyRetireFollowers(state, DANGER_ECOLOGY, key => alive.has(key));
+  // Отряд пошёл дальше, пока его группа стоит в сцене: копии идут к воротам нового пути.
+  for (const group of replanned) {
+    const direction = ecologyTravellerNextDirection(group);
+    if (!direction) continue;
+    for (const room of serverEcologyRoomsHolding(group.id)) {
+      for (const enemy of room.enemies.values()) {
+        if (enemy && !enemy.dead && enemy.ecologyGroupId === group.id && enemy.ecologyPhase !== 'leaving') serverEcologyStartTransit(room, enemy, direction, now);
+      }
+    }
+  }
+  return replanned;
+}
+
 /** Клетка комнаты: зона, чей это канал; прочие комнаты вне экологии. */
 function serverEcologyRoomCell(room) {
   // Город стоит в секторе целиком, но A-Life в него не заходит: группа ждёт у ворот.
@@ -2449,7 +2493,7 @@ function serverEcologyMemberStats(type = '') {
 }
 
 /** Параметры спавна особи: вид бестиария, фракция группы, снаряжение налётчиков. */
-function serverEcologySpawnOptions(species, member) {
+function serverEcologySpawnOptions(species, member, group = null) {
   const spec = species.members[member.spec] || species.members.find(row => row.type === member.type) || {};
   const human = ECOLOGY_HUMAN_TYPES.has(member.type);
   const equipment = {};
@@ -2463,7 +2507,8 @@ function serverEcologySpawnOptions(species, member) {
     const traveller = {
       typeIndex: 0,
       name: member.name || spec.name || undefined,
-      faction: species.faction || 'tract_league',
+      // Патруль фракции носит фракцию своего отряда, путники Лиги — свою.
+      faction: group?.faction || species.faction || 'tract_league',
       role,
       hostileToPlayer: false,
       canDialogue: false,
@@ -2504,7 +2549,19 @@ function serverEcologyNotice(room, text = '') {
  * Где стоит группа, уже бывшая в зоне: у своего логова, если оно в этой зоне,
  * иначе в одной из зон появления — они по построению не ближе 40 м к воротам.
  */
+/** Вход в место зоны (шахта, форпост): портал места в этой зоне. */
+function serverEcologyPlacePortal(loc, placeId = '') {
+  const id = String(placeId || '');
+  if (!id) return null;
+  const portal = (Array.isArray(loc?.transitions) ? loc.transitions : [])
+    .find(row => row?.type === 'location' && normalizeLocationId(row.to || '') === normalizeLocationId(id));
+  return portal && Number.isFinite(Number(portal.tx)) ? { tx: Number(portal.tx), tz: Number(portal.tz) } : null;
+}
+
 function serverEcologyZoneAnchor(loc, group, state) {
+  // Патруль, дошедший до места своего отряда, стоит у его входа.
+  const placePortal = group?.dest && !group.route ? serverEcologyPlacePortal(loc, group.dest) : null;
+  if (placePortal) return placePortal;
   const zone = loc?.zone || {};
   const lairs = Array.isArray(zone.lairs) ? zone.lairs : [];
   const areas = Array.isArray(zone.spawnAreas) ? zone.spawnAreas : [];
@@ -2541,7 +2598,7 @@ function serverEcologyMaterialize(room, group, options = {}) {
   let spawned = 0;
   for (const member of group.members) {
     const enemy = spawnServerEnemy(room, {
-      ...serverEcologySpawnOptions(species, member),
+      ...serverEcologySpawnOptions(species, member, group),
       tx: anchor.tx,
       tz: anchor.tz,
       force: true,
@@ -2553,8 +2610,15 @@ function serverEcologyMaterialize(room, group, options = {}) {
     enemy.hp = Math.max(1, Math.round(Number(enemy.maxHp || member.maxHp || 1) * ratio));
     enemy.ecologyGroupId = group.id;
     enemy.ecologyMemberId = member.id;
+    const placePortal = !travelling && entry && group.dest ? serverEcologyPlacePortal(loc, group.dest) : null;
     if (travelling) {
       serverEcologyStartTransit(room, enemy, travelling);
+    } else if (placePortal) {
+      // Дошёл до места своего отряда: встаёт у входа в него.
+      const point = tileToWorld(placePortal.tx, placePortal.tz, dims);
+      enemy.ecologyPhase = 'entering';
+      enemy.ecologyTargetX = point.x;
+      enemy.ecologyTargetZ = point.z;
     } else if (entry) {
       enemy.ecologyPhase = 'entering';
       enemy.ecologyTargetX = center.x;
@@ -2569,7 +2633,7 @@ function serverEcologyMaterialize(room, group, options = {}) {
   refreshRoomWorldState(room);
   emitEnemySnapshot(room, true);
   if (entry && species.kind === 'traveller') {
-    serverEcologyNotice(room, `${ECOLOGY_SIDE_FROM[direction] || 'С края'} идёт: ${species.name.toLowerCase()}.`);
+    serverEcologyNotice(room, `${ECOLOGY_SIDE_FROM[direction] || 'С края'} идёт: ${group.title || species.name.toLowerCase()}.`);
   } else if (entry) {
     serverEcologyNotice(room, `${ECOLOGY_SIDE_FROM[direction] || 'С края'} подходит: ${species.name.toLowerCase()}.`);
   }
@@ -3088,7 +3152,7 @@ function serverTickEcology(now = Date.now()) {
       serverEcologyReleaseRoom(room, now);
     }
   }
-  const events = tickEcology(state, DANGER_ECOLOGY, {
+  const ctx = {
     modeAt: serverEcologyModeAt,
     canStep: serverEcologyCanStep,
     speciesAllowedAt: serverEcologySpeciesAllowedAt,
@@ -3099,7 +3163,9 @@ function serverTickEcology(now = Date.now()) {
     neighbors: serverEcologyNeighbors,
     through: serverEcologyPassable,
     hostile: serverEcologySpeciesHostile
-  }, now);
+  };
+  serverEcologySyncSimPatrols(state, ctx, now);
+  const events = tickEcology(state, DANGER_ECOLOGY, ctx, now);
   let arrivals = 0;
   for (const event of events) {
     if (event.type !== 'arrive') continue;
@@ -3219,6 +3285,8 @@ app.get('/api/dev/danger-ecology', (req, res) => {
         sy: group.sy,
         state: group.state,
         online: group.online,
+        // Путник: чей он (город, отряд), куда идёт и как зовётся.
+        ...(group.home !== undefined ? { home: group.home, dest: group.dest || '', title: group.title || '', faction: group.faction || '', goal: group.goal || null } : {}),
         members: group.members.map(member => ({ id: member.id, type: member.type, hp: member.hp, maxHp: member.maxHp })),
         // Особи группы в каналах зоны: канал, фаза (вход, отступление) и место.
         actors: serverEcologyRoomsHolding(group.id).flatMap(room => [...room.enemies.values()]
@@ -22745,11 +22813,7 @@ function serverPublicEventById(eventId = '') {
   return id ? serverPublicEventStore().events[id] || null : null;
 }
 
-function serverPublicEventForZone(zone = null) {
-  if (!zone || zone.details?.publicEvent !== true) return null;
-  return serverPublicEventById(zone.details.eventId || zone.id);
-}
-
+/** Первое событие в комнате зоны (для снимка мира и HUD). */
 function serverPublicEventForRoom(room = null) {
   if (!room) return null;
   for (const event of Object.values(serverPublicEventStore().events)) {
@@ -22758,23 +22822,74 @@ function serverPublicEventForRoom(room = null) {
   return null;
 }
 
-// Точка события: клетка рядом с проходимым узлом карты, не столица и не
-// закрытая локация; выбор детерминирован инжектированным генератором.
+/** События в комнате зоны; ближайшее к игроку — для тайника и гибели у события. */
+function serverPublicEventsInRoom(room = null) {
+  if (!room) return [];
+  return Object.values(serverPublicEventStore().events).filter(event => event.status !== 'expired' && event.roomId === room.id);
+}
+
+function serverPublicEventNear(room, player, maxDistance = Infinity) {
+  let best = null;
+  for (const event of serverPublicEventsInRoom(room)) {
+    const point = serverPublicEventAnchorWorld(room, event);
+    const distance = Math.hypot(Number(player?.x || 0) - point.x, Number(player?.z || 0) - point.z);
+    if (distance <= maxDistance && (!best || distance < best.distance)) best = { event, distance };
+  }
+  return best ? best.event : null;
+}
+
+/**
+ * Событие стоит в зоне: живой (не мирной, не город) с точками событий. Его
+ * комната — первый канал зоны: награда одна на мир, а не на каждый канал.
+ */
+function serverPublicEventZoneEligible(zone) {
+  if (!zone || zone.city || !['pvp', 'pvpFullDrop', 'pvpBlack'].includes(zone.mode)) return false;
+  const loc = ensureZoneLocation(zone.id) || LOCATIONS[zone.id];
+  return Array.isArray(loc?.zone?.eventAnchors) && loc.zone.eventAnchors.length > 0;
+}
+
+/** Точка события в зоне: одна из её точек событий, по id события. */
+function serverPublicEventAnchor(event) {
+  const loc = ensureZoneLocation(String(event?.roomId || '')) || LOCATIONS[String(event?.roomId || '')] || null;
+  const anchors = Array.isArray(loc?.zone?.eventAnchors) ? loc.zone.eventAnchors : [];
+  const anchor = anchors.length ? anchors[Math.floor(ecologyHash01(`${event.id}:anchor`) * anchors.length)] : null;
+  if (anchor && Number.isFinite(Number(anchor.tx))) return { tx: Number(anchor.tx), tz: Number(anchor.tz) };
+  const spawn = loc?.spawn;
+  return spawn && Number.isFinite(Number(spawn.tx)) ? { tx: Number(spawn.tx), tz: Number(spawn.tz) } : { tx: 80, tz: 80 };
+}
+
+function serverPublicEventAnchorWorld(room, event) {
+  const anchor = serverPublicEventAnchor(event);
+  return tileToWorld(anchor.tx, anchor.tz, roomTileDims(room));
+}
+
+// Точка события — середина живой зоны с точками событий, где ещё нет
+// события; выбор детерминирован инжектированным генератором.
 function serverPickPublicEventPoint(random = Math.random) {
-  const nodes = (Array.isArray(GLOBAL_MAP?.nodes) ? GLOBAL_MAP.nodes : []).filter(node => node
-    && Number.isFinite(Number(node.x)) && Number.isFinite(Number(node.y))
-    && node.capital !== true && node.roadAccess !== false
-    && LOCATIONS[normalizeLocationId(node.locationId || node.id || '')]?.noGlobalMapEntry !== true);
-  const cellPoints = Math.max(1, Number(GLOBAL_MAP?.grid?.cellPoints || 10));
-  const cols = Math.max(1, Number(GLOBAL_MAP?.grid?.cols || 38));
-  const rows = Math.max(1, Number(GLOBAL_MAP?.grid?.rows || 30));
-  if (!nodes.length) return { x: cellPoints * 1.5, y: cellPoints * 1.5 };
-  const node = nodes[Math.floor(random() * nodes.length) % nodes.length];
-  const directions = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1]];
-  const [dx, dy] = directions[Math.floor(random() * directions.length) % directions.length];
-  const col = clamp(Math.floor(Number(node.x) / cellPoints) + dx, 0, cols - 1);
-  const row = clamp(Math.floor(Number(node.y) / cellPoints) + dy, 0, rows - 1);
-  return { x: Number(((col + 0.5) * cellPoints).toFixed(2)), y: Number(((row + 0.5) * cellPoints).toFixed(2)) };
+  const busy = new Set(Object.values(serverPublicEventStore().events).filter(event => event.status !== 'expired').map(event => event.roomId));
+  const zones = ZONE_RUNTIME.graph.zones.filter(zone => !zone.city && !busy.has(zone.id) && ['pvp', 'pvpFullDrop', 'pvpBlack'].includes(zone.mode));
+  for (let attempt = 0; attempt < 24 && zones.length; attempt += 1) {
+    const zone = zones.splice(Math.floor(random() * zones.length) % zones.length, 1)[0];
+    if (serverPublicEventZoneEligible(zone)) return serverZoneCentrePoint(zone);
+  }
+  return serverZoneCentrePoint(ZONE_RUNTIME.graph.zones.find(zone => serverPublicEventZoneEligible(zone)) || ZONE_RUNTIME.graph.zones[0]);
+}
+
+/**
+ * Дом события — первый канал зоны его точки. Событие прежнего устройства
+ * (своя комната шаблона) переезжает в свою зону; без годной зоны — истекает.
+ */
+function serverHomePublicEvent(event, now = Date.now()) {
+  if (!event || event.status === 'expired') return false;
+  if (ZONE_RUNTIME.isZone(event.roomId)) return false;
+  const zone = zoneAtPoint(ZONE_RUNTIME.graph, Number(event.x || 0), Number(event.y || 0));
+  if (serverPublicEventZoneEligible(zone)) {
+    event.roomId = zone.id;
+  } else {
+    event.status = 'expired';
+    event.expiredAt = now;
+  }
+  return true;
 }
 
 function serverSyncPublicEventZone(event) {
@@ -22811,11 +22926,14 @@ function serverEmitPublicEventState(event, extra = {}, now = Date.now()) {
   return payload;
 }
 
+function serverPublicEventChestId(event) {
+  return `ctr_${String(event?.id || '').replace(/[^a-zA-Z0-9_-]/g, '_')}_chest`.slice(0, 96);
+}
+
 function serverPublicEventChestContainer(room, event) {
   if (!room || !event) return null;
   if (!(room.containers instanceof Map)) room.containers = new Map();
-  const id = `ctr_${room.id.replace(/[^a-zA-Z0-9_-]/g, '_')}_event_chest`.slice(0, 96);
-  return room.containers.get(id) || null;
+  return room.containers.get(serverPublicEventChestId(event)) || null;
 }
 
 /**
@@ -22863,10 +22981,10 @@ function serverSpawnPublicEventChest(room, event, now = Date.now()) {
   if (!template) return null;
   ensureRoomWorld(room);
   const dims = roomTileDims(room);
-  const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const center = serverPublicEventAnchor(event);
   const safe = findRoomSafeSpawnTile(room, center.tx, center.tz, { maxRadius: 10, radius: 0.6, minEnemyDistance: 1, minPlayerDistance: 0 }) || center;
   const pos = tileToWorld(safe.tx, safe.tz, dims);
-  const id = `ctr_${room.id.replace(/[^a-zA-Z0-9_-]/g, '_')}_event_chest`.slice(0, 96);
+  const id = serverPublicEventChestId(event);
   const lockInfo = securityDifficultyInfo('veryEasy', 'veryEasy');
   const container = {
     id,
@@ -22936,15 +23054,14 @@ function serverEnsurePublicEventBoss(room, event, now = Date.now()) {
   // труп уже убран: обыск удаляет тело сразу, а этот опрос идёт раз в 5 с. Раньше
   // такое событие навсегда оставалось «босс появился, не убит» — зачистка не
   // засчитывалась, тайник не открывался.
-  if (String(room.publicEventBossSpawnedFor || '') === String(event.id || '')) {
+  if (room.publicEventBossesPlaced instanceof Set && room.publicEventBossesPlaced.has(event.id)) {
     return notePublicEventBoss(event, { killedAt: now });
   }
   // Иначе комната собрана заново (перезапуск сервера): встречу возвращает
   // serverEnsurePublicEventEncounter, и босс обязан вернуться вместе с ней —
   // отметка spawned в сохранённом событии говорит о прошлой комнате, не об этой.
   ensureRoomWorld(room);
-  const dims = roomTileDims(room);
-  const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const center = serverPublicEventAnchor(event);
   const spot = findRoomSafeSpawnTile(room, center.tx, center.tz,
     { maxRadius: 8, radius: 0.8, minEnemyDistance: 1.2, minPlayerDistance: 10 }) || center;
   const boss = spawnEncounterActor(room, spot.tx, spot.tz, {
@@ -22958,13 +23075,15 @@ function serverEnsurePublicEventBoss(room, event, now = Date.now()) {
   });
   if (!boss) return false;
   boss.publicEventBossId = event.id;
+  boss.publicEventId = event.id;
   boss.eliteRank = 'boss';
   const multiplier = Math.max(1, Number(template.boss.hpMultiplier || 2));
   boss.maxHp = Math.round(Number(boss.maxHp || boss.hp || 60) * multiplier);
   boss.hp = boss.maxHp;
   boss.atk = Math.round(Number(boss.atk || 8) * Math.min(2, multiplier));
   room.structureDirty = true;
-  room.publicEventBossSpawnedFor = String(event.id || '').slice(0, 64);
+  if (!(room.publicEventBossesPlaced instanceof Set)) room.publicEventBossesPlaced = new Set();
+  room.publicEventBossesPlaced.add(event.id);
   notePublicEventBoss(event, { spawned: true });
   return true;
 }
@@ -23013,7 +23132,7 @@ function serverEnsurePublicEventSupports(room, event, now = Date.now()) {
     // 5 с): без этой отметки гнездо вечно слало подкрепления, а главарь под
     // генератором оставался неуязвимым. Если комната новая (перезапуск), опора
     // возвращается вместе со встречей, как и босс.
-    if (String(room.publicEventSupportsSpawnedFor || '') === String(event.id || '')) {
+    if (room.publicEventSupportsPlaced instanceof Set && room.publicEventSupportsPlaced.has(event.id)) {
       if (noteScenarioSupportDestroyed(event.scenario, support.id)) {
         changed = true;
         serverEmitPublicEventState(event, { supportDestroyed: support.id }, now);
@@ -23021,8 +23140,7 @@ function serverEnsurePublicEventSupports(room, event, now = Date.now()) {
       continue;
     }
     const dims = roomTileDims(room);
-    const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
-    const world = tileToWorld(center.tx, center.tz, dims);
+    const world = serverPublicEventAnchorWorld(room, event);
     const tile = worldToTile(world.x + Number(support.x || 0), world.z + Number(support.z || 0), dims);
     const spot = findRoomSafeSpawnTile(room, clamp(tile.tx, 1, dims.w - 2), clamp(tile.tz, 1, dims.h - 2),
       { maxRadius: 6, radius: 0.7, minEnemyDistance: 0.8, minPlayerDistance: 6 })
@@ -23049,9 +23167,10 @@ function serverEnsurePublicEventSupports(room, event, now = Date.now()) {
     event.scenario.spawned = true;
     room.structureDirty = true;
   }
-  // Отметка живёт на комнате, а не на событии: после перезапуска комната новая,
-  // и опоры в ней нужно ставить заново.
-  room.publicEventSupportsSpawnedFor = String(event.id || '').slice(0, 64);
+  // Отметка живёт на комнате, а не на событии: после перезапуска или сна зоны
+  // комната новая, и опоры в ней нужно ставить заново.
+  if (!(room.publicEventSupportsPlaced instanceof Set)) room.publicEventSupportsPlaced = new Set();
+  room.publicEventSupportsPlaced.add(event.id);
   return changed;
 }
 
@@ -23063,10 +23182,13 @@ function serverAdvancePublicEventScenario(room, event, now = Date.now()) {
   const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event?.templateId];
   if (!room || !event || !template?.mechanics) return false;
   const boss = [...(room.enemies?.values?.() || [])].find(enemy => enemy?.publicEventBossId === event.id);
-  const players = [...livePlayersInRoom(room)].filter(row => row && !row.dead && Number(row.hp || 0) > 0);
+  // Удары летят в тех, кто у события, а не по всей зоне.
+  const site = serverPublicEventAnchorWorld(room, event);
+  const players = [...livePlayersInRoom(room)].filter(row => row && !row.dead && Number(row.hp || 0) > 0
+    && Math.hypot(Number(row.x || 0) - site.x, Number(row.z || 0) - site.z) <= PUBLIC_EVENT_SITE_RADIUS_M);
   const events = tickScenario(event.scenario, template.mechanics, {
     bossAlive: !!boss && !boss.dead,
-    hostilesAlive: serverPublicEventHostilesAlive(room),
+    hostilesAlive: serverPublicEventHostilesAlive(room, event),
     pickTarget: () => {
       if (!players.length) return null;
       const pick = players[Math.floor((room.rng || Math.random)() * players.length) % players.length];
@@ -23132,8 +23254,7 @@ function serverSpawnPublicEventReinforcement(room, event, row, now = Date.now())
   const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event?.templateId];
   if (!template) return 0;
   const dims = roomTileDims(room);
-  const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
-  const world = tileToWorld(center.tx, center.tz, dims);
+  const world = serverPublicEventAnchorWorld(room, event);
   const tile = worldToTile(world.x + Number(row.x || 0), world.z + Number(row.z || 0), dims);
   let spawned = 0;
   for (let i = 0; i < Math.max(1, Number(row.squad || 1)); i += 1) {
@@ -23329,73 +23450,74 @@ function serverLabDamageModifier(room, enemy, damage = 0) {
  * и тайник не открывался никогда. Здесь встреча восстанавливается по самому
  * событию: тому же encounterId и режиму зоны.
  */
-function serverEnsurePublicEventEncounter(room, now = Date.now()) {
-  const event = room ? serverPublicEventForRoom(room) : null;
-  if (!event || event.status === 'expired' || event.cleared) return false;
-  // Ровно один раз на комнату: иначе перебитое игроками логово наполнялось бы
-  // снова и снова, и зачистить событие стало бы невозможно.
-  if (String(room.publicEventEncounterId || '') === String(event.id || '')) return false;
-  room.locationWorldEvent = true;
-  room.encounterId = String(event.encounterId || room.encounterId || '').slice(0, 40);
-  if (!room.encounterId) return false;
-  room.pvpModeOverride = normalizeLocationPvpMode(event.pvpMode || 'pvpEvent', false);
-  // Зона события назначается после расстановки: с уже проставленным worldZoneId
-  // комната считалась бы отданной боевой зоне симуляции и осталась бы пустой.
-  // Отметка о прошлой расстановке тоже снимается — иначе setup выйдет сразу.
-  room.worldZoneId = '';
-  room.serverRealTimeBattleZoneId = '';
-  room.encounterSetupDone = false;
-  setupRandomEncounterRoom(room, room.encounterId, {
-    force: true,
-    preserveExisting: true,
-    pvpMode: room.pvpModeOverride
+// У события — те, кто стоит у его точки: удары, опоры и тайник не касаются всей зоны.
+const PUBLIC_EVENT_SITE_RADIUS_M = 45;
+
+/**
+ * Встреча события встаёт в зоне у его точки один раз на комнату: перебитое
+ * логово не наполняется снова. Комната зоны новая (перезапуск, сон зоны) —
+ * незачищенное событие встаёт в ней заново.
+ */
+function serverEnsurePublicEventEncounter(room, event, now = Date.now()) {
+  if (!room || !event || event.status === 'expired' || event.cleared || event.roomId !== room.id) return false;
+  if (!(room.publicEventsPlaced instanceof Set)) room.publicEventsPlaced = new Set();
+  if (room.publicEventsPlaced.has(event.id)) return false;
+  ensureRoomWorld(room);
+  // Встреча не вырастает у игрока под ногами: пока кто-то стоит у точки, ждём.
+  const site = serverPublicEventAnchorWorld(room, event);
+  if (livePlayersInRoom(room).some(p => Math.hypot(Number(p.x || 0) - site.x, Number(p.z || 0) - site.z) < 25)) return false;
+  room.publicEventsPlaced.add(event.id);
+  setupDataDrivenEncounterRoom(room, event.encounterId, {
+    anchor: serverPublicEventAnchor(event),
+    onSpawn: actor => { actor.publicEventId = event.id; }
   });
-  room.worldZoneId = String(event.id || '').slice(0, 64);
-  room.publicEventEncounterId = String(event.id || '').slice(0, 64);
-  void now;
+  room.structureDirty = true;
+  // Событие стоит в зоне: игроки у точки видят его сразу, без портала.
+  serverEmitPublicEventState(event, { placed: true }, now);
   return true;
 }
 
-function serverPublicEventHostilesAlive(room) {
+/** Живые враги события: его встреча, главарь и подкрепления — не вся зона. */
+function serverPublicEventHostilesAlive(room, event) {
   let count = 0;
   for (const enemy of room?.enemies?.values?.() || []) {
-    if (enemy && !enemy.dead && enemy.hostileToPlayer !== false) count += 1;
+    if (!enemy || enemy.dead || enemy.hostileToPlayer === false) continue;
+    if (enemy.publicEventId === event?.id || enemy.publicEventBossId === event?.id) count += 1;
   }
   return count;
 }
 
-// Смерть внутри события: возврат только через 60–90 с (единая воронка смерти).
+// Гибель у события обрывает вскрытие тайника: довести его после смерти нельзя.
 function serverNotePublicEventDeath(room, player, now = Date.now()) {
-  const event = serverPublicEventForRoom(room);
-  if (!event || !player?.characterId) return 0;
-  // Смерть обрывает вскрытие: спецификация прямо запрещает довести текущее
-  // вскрытие после гибели.
-  if (cancelChestOpening(event, player.characterId, 'death')) {
+  if (!player?.characterId) return 0;
+  let cancelled = 0;
+  for (const event of serverPublicEventsInRoom(room)) {
+    if (!cancelChestOpening(event, player.characterId, 'death')) continue;
+    cancelled += 1;
     serverEmitPublicEventState(event, {
       chestOpening: { characterId: '', progressMs: 0, channelMs: Number(KROMKA_PUBLIC_EVENT_CATALOG.rules.chestChannelMs || 0) }
     }, now);
   }
-  const until = recordPublicEventDeath(event, player.characterId, KROMKA_PUBLIC_EVENT_CATALOG.rules, now, room?.rng || Math.random);
-  scheduleServerPublicEventPersist();
-  io.to(player.id).emit('publicEventState', serverPublicEventPayload(event, now, { death: true, rejoinInSeconds: Math.ceil((until - now) / 1000) }));
-  return until;
+  if (cancelled) scheduleServerPublicEventPersist();
+  return cancelled;
 }
 
-// Истечение: все игроки комнаты выходят в зону мира, где было событие.
-function serverEvictPublicEventRoom(event, now = Date.now()) {
+// Конец события: его люди и твари уходят со сцены вместе с тайником, игроки остаются в зоне.
+function serverClearPublicEventFromRoom(event, now = Date.now()) {
   const room = rooms.get(String(event?.roomId || ''));
   if (!room) return 0;
-  const zone = zoneAtPoint(ZONE_RUNTIME.graph, Number(event.x || 0), Number(event.y || 0));
-  let evicted = 0;
-  for (const p of livePlayersInRoom(room)) {
-    p.pendingLocationTransition = null;
-    const target = zone ? chooseRoomForLocation(zone.id) : chooseRoomForLocation(normalizeRespawnSettlementId(p.lastVisitedSettlementId || 'settlement'));
-    if (!transferPlayerToServerRoom(p, target, { entryKey: 'entryFromWorld', reason: 'publicEventExpired', message: 'Событие закончилось.' })) continue;
-    io.to(p.id).emit('publicEventState', serverPublicEventPayload(event, now, { expired: true, evicted: true }));
-    evicted += 1;
+  let removed = 0;
+  for (const enemy of [...room.enemies.values()]) {
+    if (!enemy || (enemy.publicEventId !== event.id && enemy.publicEventBossId !== event.id)) continue;
+    roomEnemyDelete(room, enemy.id);
+    removed += 1;
   }
   for (const [id, container] of [...room.containers.entries()]) if (container?.publicEventId === event.id) room.containers.delete(id);
-  return evicted;
+  room.publicEventsPlaced?.delete(event.id);
+  if (removed) emitEnemySnapshot(room, true);
+  emitWorldContainersSnapshot(room, true);
+  io.to(room.id).emit('publicEventState', serverPublicEventPayload(event, now, { expired: true }));
+  return removed;
 }
 
 function serverTickPublicEvents(now = Date.now(), options = {}) {
@@ -23407,23 +23529,26 @@ function serverTickPublicEvents(now = Date.now(), options = {}) {
     random, pickPoint: rnd => serverPickPublicEventPoint(rnd)
   });
   for (const event of created) {
+    serverHomePublicEvent(event, now);
     serverSyncPublicEventZone(event);
     changed = true;
   }
   for (const event of Object.values(store.events)) {
     if (event.status === 'expired') continue;
+    // Первый канал зоны события — пока в нём есть игроки или он не уснул.
     const room = rooms.get(String(event.roomId || ''));
     const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event.templateId];
-    // Комната могла быть создана заново после перезапуска: восстановить встречу
-    // до всех остальных шагов, иначе зачищать нечего.
-    if (room && serverEnsurePublicEventEncounter(room, now)) changed = true;
-    if (room && room.encounterSetupDone && !event.cleared) {
+    // Комната могла быть создана заново (перезапуск, сон зоны): восстановить
+    // встречу до всех остальных шагов, иначе зачищать нечего.
+    if (room && serverEnsurePublicEventEncounter(room, event, now)) changed = true;
+    const placed = !!room && room.publicEventsPlaced instanceof Set && room.publicEventsPlaced.has(event.id);
+    if (placed && !event.cleared) {
       if (serverEnsurePublicEventBoss(room, event, now)) changed = true;
       if (serverEnsurePublicEventSupports(room, event, now)) changed = true;
       if (serverAdvancePublicEventScenario(room, event, now)) changed = true;
     }
-    if (room && room.encounterSetupDone && !event.cleared
-      && serverPublicEventHostilesAlive(room) === 0 && publicEventBossDefeated(event, template)) {
+    if (placed && !event.cleared
+      && serverPublicEventHostilesAlive(room, event) === 0 && publicEventBossDefeated(event, template)) {
       if (notePublicEventCleared(event, rules, now, room.rng || random)) {
         serverSpawnPublicEventChest(room, event, now);
         serverEmitPublicEventState(event, { cleared: true }, now);
@@ -23445,7 +23570,7 @@ function serverTickPublicEvents(now = Date.now(), options = {}) {
       changed = true;
     }
     if (transition.expired) {
-      serverEvictPublicEventRoom(event, now);
+      serverClearPublicEventFromRoom(event, now);
       serverSyncPublicEventZone(event);
       changed = true;
     }
@@ -23458,47 +23583,30 @@ function serverTickPublicEvents(now = Date.now(), options = {}) {
   return { created: created.length, changed };
 }
 
-// Публичные события восстанавливают свои зоны на карте после перезапуска.
+// Публичные события восстанавливают свои зоны на карте после перезапуска;
+// события прежнего устройства (своя комната) переезжают в свою зону.
 function serverRestorePublicEventZones() {
-  for (const event of Object.values(serverPublicEventStore().events)) serverSyncPublicEventZone(event);
+  let moved = false;
+  for (const event of Object.values(serverPublicEventStore().events)) {
+    if (serverHomePublicEvent(event)) moved = true;
+    serverSyncPublicEventZone(event);
+  }
+  if (moved) scheduleServerPublicEventPersist();
 }
 
 // ---------------------------------------------------------------------------
-// Порталы зон (src/server/zone-portals.js): точки мира симуляции — публичное
-// событие, бой отрядов, угодья — стоят в своей зоне порталом у якоря событий.
-// Вход через портал выдаёт тот же билет, что раньше выдавало путешествие, а
-// край комнаты точки выводит обратно к её порталу.
+// Точки мира в зонах: у зон порталов к ним нет — публичное событие, встреча
+// угодий и патруль стоят в самой зоне. Комната встречи (вступление, место) своим
+// краем выводит в зону своей точки.
 // ---------------------------------------------------------------------------
 function serverZoneCentrePoint(zone) {
   const size = ZONE_RUNTIME.graph.grid.zoneKm;
   return { x: (zone.col + 0.5) * size, y: (zone.row + 0.5) * size };
 }
 
-function serverZonePortalsIn(zoneId = '') {
-  const zone = zoneById(ZONE_RUNTIME.graph, zoneId);
-  if (!zone) return [];
-  const loc = ensureZoneLocation(zone.id) || LOCATIONS[zone.id];
-  if (!loc?.zone) return [];
-  return zonePortals(zone.id, WASTELAND_SIM.state()?.worldZones || [], {
-    zoneIdAt: (x, y) => zoneAtPoint(ZONE_RUNTIME.graph, x, y)?.id || '',
-    centre: serverZoneCentrePoint(zone),
-    anchors: loc.zone.eventAnchors,
-    fallback: loc.entryFromWorld || loc.spawn,
-    locationExists: id => !!LOCATIONS[normalizeLocationId(id)]
-  });
-}
-
-function serverPublicZonePortal(row) {
-  return {
-    id: row.id, kind: row.kind, to: row.to, name: row.name, tx: row.tx, tz: row.tz, radius: row.radius,
-    targetZoneRules: zoneRules(row.pvpMode)
-  };
-}
-
 /**
- * Куда выводит край комнаты точки мира (событие, бой, встреча в угодьях):
- * в зону этой точки, к её порталу, пока он стоит, иначе в центр зоны. У мест
- * зон свой выход (parentZoneView), у самих зон края нет.
+ * Куда выводит край комнаты точки мира: в зону этой точки. У мест зон свой
+ * выход (parentZoneView), у самих зон края нет.
  */
 function serverWorldPointRoomExit(room) {
   if (!room?.encounterWorldPoint) return null;
@@ -23506,11 +23614,7 @@ function serverWorldPointRoomExit(room) {
   if (!loc.randomTemplate && !loc.encounterOnly) return null;
   const zone = zoneAtPoint(ZONE_RUNTIME.graph, Number(room.encounterWorldPoint.x), Number(room.encounterWorldPoint.y));
   if (!zone) return null;
-  const portal = room.worldZoneId ? serverZonePortalsIn(zone.id).find(row => row.worldZoneId === room.worldZoneId) : null;
-  return {
-    id: zone.id, n: zone.n, title: zone.title, mode: zone.mode, entryKey: 'entryFromWorld',
-    ...(portal ? { entryTile: { tx: portal.tx, tz: portal.tz } } : {})
-  };
+  return { id: zone.id, n: zone.n, title: zone.title, mode: zone.mode, entryKey: 'entryFromWorld' };
 }
 
 function serverPublicRoomExitZone(room) {
@@ -23522,72 +23626,104 @@ function serverPublicRoomExitZone(room) {
 }
 
 /**
- * Шаг в портал зоны: сервер сверяет, что игрок стоит у портала и точка ещё
- * жива, и выдаёт билет в её комнату. Следы угодий бросают встречу из таблицы
- * области — у каждого входа своя сцена, выход из неё ведёт в ту же зону.
+ * Место для встречи в зоне: точка событий, появления или логова — подальше от
+ * игроков (не ближе 30 м, если можно), чтобы встреча не выросла у них под ногами.
  */
-function serverStageZonePortalTicket(p, portalId = '', now = Date.now()) {
-  const room = rooms.get(String(p?.roomId || ''));
-  if (!room || !ZONE_RUNTIME.isZone(room.locationId)) return { ok: false, error: 'Порталы есть только в зонах мира.' };
-  const portal = serverZonePortalsIn(room.locationId).find(row => row.id === portalId);
-  if (!portal) return { ok: false, error: 'Этой точки здесь больше нет.' };
-  const point = tileToWorld(portal.tx, portal.tz, locationTileDims(roomLocation(room)));
-  if (Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > portal.radius + 1.5) {
-    return { ok: false, error: 'Подойдите к порталу.' };
-  }
-  const worldZone = serverActiveWorldZoneById(portal.worldZoneId);
-  if (!worldZone) return { ok: false, error: 'Эта встреча уже завершилась.' };
-  let ticket;
-  if (portal.kind === 'grounds') {
-    const area = KROMKA_PVE_AREA_CATALOG.areas.find(row => row.id === portal.areaId);
-    const roll = area ? rollAreaEncounter(area) : null;
-    const target = normalizeLocationId(roll?.locationId || '');
-    if (!roll || !LOCATIONS[target]) return { ok: false, error: 'Следы оборвались.' };
-    const owner = pveOwnerKey(p.characterId || p.userId || p.id || '').slice(0, 24);
-    ticket = {
-      targetLocationId: target,
-      roomId: sanitizeEncounterRoomId(`${target}#enc_${owner}_${roll.id}_${Math.floor(now).toString(36).slice(-8)}`, target),
-      encounterId: roll.encounterId,
-      encounter: true,
-      pvpMode: normalizeLocationPvpMode(LOCATIONS[target].pvpMode || 'pve', LOCATIONS[target].safe !== false),
-      // Встреча в угодьях возвращает в ту зону, откуда в неё шагнули.
-      worldPoint: serverZoneCentrePoint(zoneById(ZONE_RUNTIME.graph, room.locationId))
-    };
-  } else {
-    const target = normalizeLocationId(portal.to);
-    const targetLoc = LOCATIONS[target] || {};
-    ticket = {
-      targetLocationId: target,
-      roomId: sanitizeEncounterRoomId(worldZone.roomId || '', target)
-        || (!locationUsesSharedReality(targetLoc) ? `${target}#${portal.worldZoneId}` : ''),
-      worldZoneId: portal.worldZoneId,
-      partyId: String(worldZone.partyId || worldZone.sourceId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80),
-      siteId: String(worldZone.siteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
-      encounterId: String(worldZone.encounterId || '').slice(0, 40),
-      encounter: true,
-      pvpMode: normalizeLocationPvpMode(worldZone.pvpMode || locationPvpMode(targetLoc), targetLoc.safe !== false),
-      worldPoint: portal.point
-    };
-  }
-  p.pendingLocationTransition = sanitizePendingLocationTransition({
-    ...ticket, entryKey: 'entryFromWorld', expiresAt: now + 30 * 1000
-  }, now);
-  if (!p.pendingLocationTransition) return { ok: false, error: 'Портал не открылся.' };
-  return { ok: true, locationId: ticket.targetLocationId };
+function serverZoneEncounterSpot(room, seed = '') {
+  const loc = roomLocation(room);
+  const dims = roomTileDims(room);
+  const pool = [...(loc.zone?.eventAnchors || []), ...(loc.zone?.spawnAreas || []), ...(loc.zone?.lairs || [])]
+    .filter(point => Number.isFinite(Number(point?.tx)) && Number.isFinite(Number(point?.tz)));
+  if (!pool.length) return { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const players = livePlayersInRoom(room);
+  const scored = pool.map(point => {
+    const world = tileToWorld(Number(point.tx), Number(point.tz), dims);
+    const nearest = players.length ? Math.min(...players.map(p => Math.hypot(Number(p.x || 0) - world.x, Number(p.z || 0) - world.z))) : 999;
+    return { tx: Number(point.tx), tz: Number(point.tz), nearest };
+  });
+  const far = scored.filter(row => row.nearest >= 30);
+  const choice = far.length ? far : [scored.sort((a, b) => b.nearest - a.nearest)[0]];
+  return choice[Math.floor(ecologyHash01(seed) * choice.length) % choice.length];
 }
 
-/** Набор точек сменился — занятые каналы зоны получают новое состояние мира. */
-function serverTickZonePortals() {
-  const signatures = new Map();
-  let emitted = 0;
-  for (const room of rooms.values()) {
-    if (!room.sockets?.size || !ZONE_RUNTIME.isZone(room.locationId)) continue;
-    if (!signatures.has(room.locationId)) signatures.set(room.locationId, portalSignature(serverZonePortalsIn(room.locationId)));
-    if (room.zonePortalSignature === signatures.get(room.locationId)) continue;
-    emitServerWorldActivityState(room, 'zonePortals');
-    emitted += 1;
+/** Угодья PvE-области: зоны, чья середина внутри радиуса области. */
+let serverPveAreaZoneIndex = null;
+function serverPveAreaForZone(zoneId = '') {
+  if (!serverPveAreaZoneIndex) {
+    serverPveAreaZoneIndex = new Map();
+    for (const area of KROMKA_PVE_AREA_CATALOG.areas) {
+      const point = serverGlobalMapPointForLocation(area.locationId);
+      if (!point) continue;
+      // Тот же радиус, что у зоны угодий на карте мира (не шире 28 км).
+      const radius = Math.min(28, Number(area.radiusPoints || 0));
+      for (const zone of ZONE_RUNTIME.graph.zones) {
+        if (zone.city || serverPveAreaZoneIndex.has(zone.id)) continue;
+        const centre = serverZoneCentrePoint(zone);
+        if (Math.hypot(centre.x - Number(point.x), centre.y - Number(point.y)) <= radius) serverPveAreaZoneIndex.set(zone.id, area);
+      }
+    }
   }
-  return emitted;
+  return serverPveAreaZoneIndex.get(String(zoneId || '')) || null;
+}
+
+/**
+ * Встречи в зонах. В угодьях PvE-области время от времени сама встаёт встреча
+ * из таблицы области — пыльники против обоза, засада налётчиков, — и игрок
+ * узнаёт о ней; следующая — после того, как эту перебьют, и паузы. Встреча мира
+ * симуляции (бой отрядов) встаёт в зоне своей точки. Всё — в первом канале зоны,
+ * пока в нём есть игроки: встреча одна на мир.
+ */
+function serverTickZoneEncounters(now = Date.now(), random = Math.random) {
+  const rules = KROMKA_PVE_AREA_CATALOG.rules;
+  const worldZones = (WASTELAND_SIM.state()?.worldZones || []).filter(zone => zone && zone.status === 'active'
+    && zone.details?.hidden !== true && zone.details?.visible !== false
+    && zone.details?.publicEvent !== true && zone.details?.pveArea !== true && zone.encounterId);
+  for (const room of rooms.values()) {
+    if (!ZONE_RUNTIME.isZone(room.locationId) || room.id !== room.locationId || !serverLiveSocketCount(room)) continue;
+    let placed = false;
+    for (const zone of worldZones) {
+      if (zoneAtPoint(ZONE_RUNTIME.graph, Number(zone.x || 0), Number(zone.y || 0))?.id !== room.id) continue;
+      if (!(room.worldEncountersPlaced instanceof Set)) room.worldEncountersPlaced = new Set();
+      if (room.worldEncountersPlaced.has(zone.id)) continue;
+      room.worldEncountersPlaced.add(zone.id);
+      setupDataDrivenEncounterRoom(room, zone.encounterId, {
+        anchor: serverZoneEncounterSpot(room, zone.id),
+        onSpawn: actor => { actor.zoneEncounterId = zone.id; placed = true; }
+      });
+      if (zone.title) serverEcologyNotice(room, `Неподалёку: ${zone.title}.`);
+    }
+    const area = serverPveAreaForZone(room.locationId);
+    if (area?.encounters?.length) {
+      const state = room.areaEncounter || (room.areaEncounter = { id: '', nextRollAt: now + Number(rules.calmAfterClearMs || 45000) });
+      if (state.id) {
+        const alive = [...room.enemies.values()].some(enemy => enemy && !enemy.dead && enemy.zoneEncounterId === state.id && enemy.hostileToPlayer !== false);
+        if (!alive) {
+          state.id = '';
+          state.nextRollAt = now + Number(rules.calmAfterClearMs || 45000) + Number(rules.rollIntervalMs || 90000);
+        }
+      } else if (now >= state.nextRollAt) {
+        state.nextRollAt = now + Number(rules.rollIntervalMs || 90000);
+        const row = random() < Number(rules.rollChance ?? 0.35) ? rollAreaEncounter(area, random) : null;
+        if (row) {
+          const id = `ze_${room.id}_${Math.floor(now).toString(36)}`.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+          let count = 0;
+          setupDataDrivenEncounterRoom(room, row.encounterId, {
+            anchor: serverZoneEncounterSpot(room, id),
+            onSpawn: actor => { actor.zoneEncounterId = id; count += 1; }
+          });
+          if (count) {
+            state.id = id;
+            placed = true;
+            serverEcologyNotice(room, `${area.displayName}: неподалёку — ${row.title}.`);
+          }
+        }
+      }
+    }
+    if (placed) {
+      room.structureDirty = true;
+      emitEnemySnapshot(room, true);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -24230,12 +24366,7 @@ function publicWorldState(room, includeMap = true) {
       modules: { ...(clanBaseRuntime?.modules || {}) }
     } : null,
     fullDrop: zoneModeDropsInventory(pvpMode),
-    // Порталы зоны к точкам мира; у комнаты точки — зона, куда выводит её край.
-    portals: (() => {
-      const portals = ZONE_RUNTIME.isZone(room.locationId) ? serverZonePortalsIn(room.locationId) : [];
-      room.zonePortalSignature = portalSignature(portals);
-      return portals.map(serverPublicZonePortal);
-    })(),
+    // У комнаты точки мира — зона, куда выводит её край.
     parentZone: serverPublicRoomExitZone(room),
     activity: publicWorldActivity(room.worldActivity),
     pveArea: room.pveState
@@ -25908,10 +26039,19 @@ function rollServerGuardTradeProfile(faction = 'caravan', rng = Math.random, ind
   return { stock: [], buyInterests, caps };
 }
 
-function setupDataDrivenEncounterRoom(room, encounterId = '') {
+/**
+ * Встреча из data/encounters.json. options.anchor — точка в зоне: клетки встречи
+ * заданы на шаблоне 38×38 вокруг его середины, и в зоне они встают вокруг точки.
+ * options.onSpawn(actor) метит поставленных (событие, встреча угодий).
+ */
+function setupDataDrivenEncounterRoom(room, encounterId = '', options = {}) {
   const encounter = ENCOUNTER_DEFINITIONS[String(encounterId || '')];
   if (!room || !encounter || !Array.isArray(encounter.actors) || !encounter.actors.length) return false;
   const rng = room.rng || Math.random;
+  const anchor = options.anchor && Number.isFinite(Number(options.anchor.tx)) && Number.isFinite(Number(options.anchor.tz))
+    ? { tx: Number(options.anchor.tx), tz: Number(options.anchor.tz) }
+    : null;
+  const center = Math.floor(MAP_W / 2);
   encounter.actors.forEach(actorDef => {
     if (!actorDef || rng() > Number(actorDef.chance ?? 1)) return;
     const trade = actorDef.tradeProfile ? serverTraderProfileById(actorDef.tradeProfile) : null;
@@ -25926,7 +26066,9 @@ function setupDataDrivenEncounterRoom(room, encounterId = '') {
     // Существо бестиария берёт тип, характеристики и облик из своего вида:
     // без creatureTypeId спавн выбирал тип наугад, а облик — по роли.
     const creatureTypeId = actorDef.creatureTypeId || '';
-    spawnEncounterActor(room, actorDef.tx, actorDef.tz, {
+    const tx = anchor ? anchor.tx + Number(actorDef.tx) - center : actorDef.tx;
+    const tz = anchor ? anchor.tz + Number(actorDef.tz) - center : actorDef.tz;
+    const actor = spawnEncounterActor(room, tx, tz, {
       creatureTypeId: creatureTypeId || undefined,
       typeIndex: actorDef.typeIndex,
       typeName: actorDef.typeName,
@@ -25950,6 +26092,7 @@ function setupDataDrivenEncounterRoom(room, encounterId = '') {
       caps: trade ? trade.caps : undefined,
       loot
     });
+    if (actor && typeof options.onSpawn === 'function') options.onSpawn(actor);
   });
   return true;
 }
@@ -29565,6 +29708,15 @@ io.on('connection', (socket) => {
       savedState.currentLocationId = locationId;
     }
     let savedLocationContext = sanitizeServerLocationContext(savedState.serverLocationContext || {}, locationId);
+    // Публичное событие стоит в своей зоне: сохранённый вход в прежнюю комнату
+    // события ведёт в эту зону.
+    const savedPublicEvent = serverPublicEventById(savedLocationContext.worldZoneId);
+    if ((baseLoc.encounterOnly || baseLoc.randomTemplate) && savedPublicEvent && ZONE_RUNTIME.isZone(savedPublicEvent.roomId)) {
+      locationId = savedPublicEvent.roomId;
+      baseLoc = ensureZoneLocation(locationId) || LOCATIONS[locationId] || {};
+      savedState.currentLocationId = locationId;
+      savedLocationContext = sanitizeServerLocationContext({}, locationId);
+    }
     const temporaryLocation = !!(baseLoc.encounterOnly || baseLoc.randomTemplate);
     const savedTemporaryRoomId = savedLocationContext.locationId === locationId
       ? sanitizeEncounterRoomId(savedLocationContext.roomId || '', locationId)
@@ -29793,9 +29945,6 @@ io.on('connection', (socket) => {
           pvpMode: room.pvpModeOverride || ''
         });
       }
-      // Вернувшийся в активное публичное событие видит его обитателей сразу,
-      // а не через тик: комната восстанавливается по самому событию.
-      serverEnsurePublicEventEncounter(room, Date.now());
     }
     {
       const safePos = findRoomSafeSpawnWorld(room, p.x, p.z, {
@@ -30503,7 +30652,8 @@ io.on('connection', (socket) => {
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
     if (!p || !p.roomId || p.dead) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
-    const event = room ? serverPublicEventForRoom(room) : null;
+    // Событие — то, у чьей точки стоит игрок: в зоне их может быть несколько.
+    const event = room ? serverPublicEventNear(room, p, PUBLIC_EVENT_SITE_RADIUS_M) : null;
     if (!room || !event) return fail('Здесь нет публичного события.');
     const now = Date.now();
     const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
@@ -34196,16 +34346,6 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Неизвестная локация.' });
       return;
     }
-    // Портал зоны к точке мира: билет в её комнату выдаёт сам сервер.
-    const portalId = String(data.portalId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 72);
-    if (portalId) {
-      const staged = serverStageZonePortalTicket(p, portalId, Date.now());
-      if (!staged.ok) {
-        if (typeof ack === 'function') ack({ ok: false, error: staged.error });
-        return;
-      }
-      locationId = staged.locationId;
-    }
     // Портал в Сердцевину в её зоне мира — ворота территории: с подписанным
     // контрактом сервер заводит игрока на базу его фракции (в саму Сердцевину —
     // только метро базы), без контракта возвращает предложение фракций.
@@ -34310,19 +34450,6 @@ io.on('connection', (socket) => {
       p.pendingLocationTransition = null;
       if (typeof ack === 'function') ack({ ok: false, error: 'Эта встреча уже завершилась.' });
       return;
-    }
-    // Публичное событие: после гибели вернуться можно только через 60–90 с,
-    // а в истёкшее событие — никогда.
-    const transitionPublicEvent = serverPublicEventForZone(activeTransitionZone);
-    if (transitionPublicEvent) {
-      const eventError = publicEventEntryError(transitionPublicEvent, p.characterId, Date.now());
-      if (eventError) {
-        p.pendingLocationTransition = null;
-        if (typeof ack === 'function') ack({ ok: false, error: eventError, publicEvent: publicPublicEvent(transitionPublicEvent, Date.now()) });
-        return;
-      }
-      transitionPublicEvent.visits = Number(transitionPublicEvent.visits || 0) + 1;
-      scheduleServerPublicEventPersist();
     }
     const effectiveRoomId = transitionTicket?.roomId || '';
     const roomWorldSiteId = String(transitionTicket?.siteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
@@ -34574,7 +34701,7 @@ serverRestorePublicEventZones();
 setInterval(() => {
   try {
     serverTickPublicEvents(Date.now());
-    serverTickZonePortals();
+    serverTickZoneEncounters(Date.now());
   } catch (error) {
     console.error('Public event tick failed:', error);
   }

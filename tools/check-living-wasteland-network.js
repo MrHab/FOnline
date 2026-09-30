@@ -4,6 +4,8 @@
 // Живая пустошь на настоящем сервере: путники A-Life (караваны, дозоры) и
 // стычки групп без игроков.
 //  - у каждого города свой дозор тракта: мир получает их сразу;
+//  - патрули мира симуляции идут по зонам своими группами A-Life — с фракцией
+//    и именем своего отряда;
 //  - караван, идущий через зону с игроком, стоит на своей дороге, идёт шагом к
 //    воротам следующей зоны маршрута и уходит только в них; на игрока не нападает;
 //  - в соседней зоне с игроком караван входит воротами той стороны, откуда шёл,
@@ -62,7 +64,11 @@ fs.writeFileSync(path.join(scratch, 'danger-ecology.json'), JSON.stringify({
     { id: 'test_patrol', name: 'Дозор тракта', kind: 'traveller', faction: 'tract_league',
       members: [{ type: 'patrol_guard', role: 'guard', name: 'Дозорный', min: 3, max: 3 }],
       habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, aggression: 0.8, stepSeconds: [390, 390],
-      travel: { mode: 'patrol', count: 1, restMinutes: [60, 60], respawnMinutes: 60 } }
+      travel: { mode: 'patrol', count: 1, restMinutes: [60, 60], respawnMinutes: 60 } },
+    { id: 'test_follow', name: 'Патруль', kind: 'traveller', faction: 'old_klim',
+      members: [{ type: 'patrol_guard', role: 'guard', name: 'Патрульный', min: 3, max: 3 }],
+      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, aggression: 0.7, stepSeconds: [390, 390],
+      travel: { mode: 'follow', count: 0 } }
   ]
 }));
 process.env.KROMKA_DANGER_ECOLOGY_FILE = path.join(scratch, 'danger-ecology.json');
@@ -159,6 +165,23 @@ function watch(account) {
       return summary.bySpecies.test_patrol?.groups === cities.length;
     });
     console.log(`PASS every one of ${cities.length} cities has its road patrol at once`);
+
+    // --- патрули мира симуляции --------------------------------------------------------------------
+    const wasteland = await devGet('/api/wasteland');
+    const simPatrols = (wasteland.sim?.parties || []).filter(party => party.kind === 'patrol' && party.state !== 'destroyed');
+    const followers = await waitFor('the patrols of world parties walk the zones', async () => {
+      const view = await devGet(`/api/dev/danger-ecology?sx=${road.col}&sy=${road.row}&radius=40`);
+      const rows = view.near.filter(row => row.speciesId === 'test_follow');
+      return rows.length && rows.length === view.summary.bySpecies.test_follow?.groups ? rows : null;
+    });
+    for (const row of followers) {
+      assert(row.home.startsWith('sim_'), 'a patrol belongs to its party: ' + row.home);
+      assert(['old_klim', 'scrap_union', 'relay_order'].includes(row.faction), 'and carries the faction of its party: ' + row.faction);
+      assert(row.title, 'and its name');
+      assert(row.goal, 'and walks where its party goes');
+    }
+    if (simPatrols.length) assert.equal(followers.length, simPatrols.length, 'every living patrol party has its group');
+    console.log(`PASS ${followers.length} patrols of world parties walk the zones: ${followers.map(row => row.title).join(', ')}`);
 
     // --- стычка без игроков -------------------------------------------------------------------------
     const clash = await waitFor('the band and the pack clash in a zone without players', async () => {

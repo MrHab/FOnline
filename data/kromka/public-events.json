@@ -13,7 +13,6 @@
     "chestChannelRangeM": 2.5,
     "chestContestRangeM": 14,
     "chestOpenDelayMs": [45000, 60000],
-    "deathRejoinDelayMs": [60000, 90000],
     "zoneRadius": 9
   },
   "templates": [

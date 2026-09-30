@@ -162,7 +162,9 @@ function normalizeSpecies(row = {}, roam = DEFAULT_CONFIG.roam) {
     combat: finite(row.combat, kind === 'raider' ? 1.3 : kind === 'traveller' ? 1.2 : kind === 'fauna' ? 0.3 : 1, 0, 10),
     // Путники ходят между городами (караван) или обходят зоны у своего города (патруль).
     travel: kind === 'traveller' ? Object.freeze({
-      mode: travel.mode === 'patrol' ? 'patrol' : 'caravan',
+      // follow — путник идёт за отрядом мира симуляции (патруль фракции): куда и
+      // когда, решает сервер, заводить таких сам мир не будет.
+      mode: ['patrol', 'follow'].includes(travel.mode) ? travel.mode : 'caravan',
       // Караванов — столько на весь мир, патрулей — столько у каждого города.
       count: Math.floor(finite(travel.count, 4, 0, 64)),
       restMinutes: range(travel.restMinutes, [20, 60], 0, 1440),
@@ -307,6 +309,12 @@ function normalizeEcologyState(input = {}, config = normalizeEcologyConfig()) {
         .map(cell => ({ sx: Math.floor(Number(cell.sx)), sy: Math.floor(Number(cell.sy)) }));
       group.home = safeId(row.home, 64);
       group.dest = safeId(row.dest, 64);
+      group.faction = safeId(row.faction, 48);
+      group.title = cleanText(row.title, 60);
+      group.goal = row.goal && Number.isFinite(Number(row.goal.sx)) && Number.isFinite(Number(row.goal.sy))
+        ? { sx: Math.floor(Number(row.goal.sx)), sy: Math.floor(Number(row.goal.sy)) }
+        : null;
+      group.goalKey = String(row.goalKey || '').slice(0, 128);
       group.route = route.length >= 2 ? route : null;
       group.routeIndex = group.route ? Math.max(0, Math.min(route.length - 1, Math.floor(Number(row.routeIndex) || 0))) : 0;
       group.fleeing = !!row.fleeing && !!group.route;
@@ -360,7 +368,10 @@ function serializeEcologyState(state) {
         dest: group.dest || '',
         route: group.route ? group.route.map(cell => ({ sx: cell.sx, sy: cell.sy })) : null,
         routeIndex: group.routeIndex || 0,
-        fleeing: !!group.fleeing
+        fleeing: !!group.fleeing,
+        ...(group.faction ? { faction: group.faction } : {}),
+        ...(group.title ? { title: group.title } : {}),
+        ...(group.goal ? { goal: { ...group.goal }, goalKey: group.goalKey || '' } : {})
       } : {})
     })),
     travellerNextAt: { ...(state.travellerNextAt || {}) },
@@ -729,6 +740,77 @@ function travellerPlan(state, config, group, species, ctx, now, random) {
   return true;
 }
 
+/** Путь за отрядом: из своей зоны к зоне-цели; уже на месте — стоит. */
+function replanFollower(state, group, ctx, now = Date.now(), random = Math.random) {
+  const goal = group.goal;
+  if (!goal || (group.sx === goal.sx && group.sy === goal.sy)) {
+    group.state = 'rest';
+    group.route = null;
+    group.routeIndex = 0;
+    return false;
+  }
+  const path = typeof ctx.neighbors === 'function'
+    ? planRoute({ sx: group.sx, sy: group.sy }, goal, ctx.neighbors, random, { through: ctx.through })
+    : null;
+  if (!path || path.length < 2) {
+    group.state = 'rest';
+    group.route = null;
+    group.routeIndex = 0;
+    return false;
+  }
+  group.route = path.map(cell => ({ sx: cell.sx, sy: cell.sy }));
+  group.routeIndex = 0;
+  group.fleeing = false;
+  group.state = 'travel';
+  group.nextStepAt = now;
+  state.dirty = true;
+  return true;
+}
+
+/**
+ * Путник за отрядом мира симуляции. spec: key (отряд), speciesId, cell — где
+ * отряд сейчас (там группа заводится), goal — зона, куда он идёт или где стоит,
+ * place — место в ней, у входа в которое группа встанет, faction, title. Цель
+ * сменилась — новый путь (и в сцене: сервер поведёт копии к воротам).
+ * Возвращает { group, replanned }.
+ */
+function followTraveller(state, config, spec = {}, ctx = {}, now = Date.now(), random = Math.random) {
+  const species = config.speciesById[spec.speciesId];
+  const key = safeId(spec.key, 64);
+  if (!species?.travel || !key || !spec.cell || !spec.goal) return { group: null, replanned: false };
+  let group = [...state.groups.values()].find(row => row.speciesId === species.id && row.home === key) || null;
+  if (!group) {
+    if (state.groups.size >= config.maxGroups) return { group: null, replanned: false };
+    group = spawnTraveller(state, config, species, { id: key, sx: spec.cell.sx, sy: spec.cell.sy }, now, random, ctx.createMember);
+    if (!group) return { group: null, replanned: false };
+    group.restUntil = now;
+    group.nextStepAt = now;
+  }
+  group.faction = safeId(spec.faction, 48);
+  group.title = cleanText(spec.title, 60);
+  const goalKey = `${spec.goal.sx}_${spec.goal.sy}:${safeId(spec.place, 64)}`;
+  if (group.goalKey === goalKey) return { group, replanned: false };
+  group.goalKey = goalKey;
+  group.goal = { sx: Math.floor(spec.goal.sx), sy: Math.floor(spec.goal.sy) };
+  group.dest = safeId(spec.place, 64);
+  state.dirty = true;
+  return { group, replanned: replanFollower(state, group, ctx, now, random) };
+}
+
+/** Путники за отрядами, чьих отрядов больше нет, уходят из мира (вне сцены). */
+function retireFollowers(state, config, alive) {
+  let removed = 0;
+  for (const group of [...state.groups.values()]) {
+    const species = config.speciesById[group.speciesId];
+    if (species?.travel?.mode !== 'follow' || group.online || alive(group.home)) continue;
+    indexRemove(state, group);
+    state.groups.delete(group.id);
+    removed += 1;
+  }
+  if (removed) state.dirty = true;
+  return removed;
+}
+
 /** Путник в городе: членов по составу вида, дом — этот город. */
 function spawnTraveller(state, config, species, city, now, random = Math.random, createMember = null) {
   const members = [];
@@ -814,6 +896,12 @@ function dispatchTravellers(state, config, ctx, now, random, events) {
 }
 
 // --- стычки групп без игроков ---------------------------------------------------------------
+
+/** Вид группы с её собственной фракцией, если она у неё своя (патруль фракции). */
+function groupSpecies(config, group) {
+  const species = config.speciesById[group?.speciesId];
+  return species && group?.faction && group.faction !== species.faction ? { ...species, faction: group.faction } : species;
+}
 
 /** Враждебны ли виды: ctx.hostile(a, b) или разные фракции. Фауна в стычки не тянется. */
 function speciesHostile(ctx, a, b) {
@@ -943,8 +1031,8 @@ function resolveClashes(state, config, ctx, now, random, minutes, events) {
         const b = here[j];
         if (!state.groups.has(a.id) || !state.groups.has(b.id)) continue;
         if (now < Number(a.clashReadyAt || 0) || now < Number(b.clashReadyAt || 0)) continue;
-        const sa = config.speciesById[a.speciesId];
-        const sb = config.speciesById[b.speciesId];
+        const sa = groupSpecies(config, a);
+        const sb = groupSpecies(config, b);
         if (!speciesHostile(ctx, sa, sb)) continue;
         const aggression = Math.max(sa.aggression, sb.aggression);
         if (random() >= 1 - Math.exp(-config.roam.clashPerMinute * aggression * minutes)) continue;
@@ -1018,7 +1106,11 @@ function tickEcology(state, config, ctx = {}, now = Date.now(), random = Math.ra
     if (species.kind === 'traveller') {
       if (!due) continue;
       if (group.state !== 'travel' || !travellerNextCell(group)) {
-        travellerPlan(state, config, group, species, ctx, now, random);
+        if (species.travel.mode === 'follow') {
+          if (group.goal && (group.sx !== group.goal.sx || group.sy !== group.goal.sy)) replanFollower(state, group, ctx, now, random);
+        } else {
+          travellerPlan(state, config, group, species, ctx, now, random);
+        }
         continue;
       }
       const stepped = travellerStep(state, config, group, now, random);
@@ -1252,6 +1344,9 @@ module.exports = {
   travellerCameFrom,
   travellerStep,
   travellerTurnBack,
+  followTraveller,
+  retireFollowers,
+  groupSpecies,
   speciesHostile,
   clashGroups,
   aftermathAt,

@@ -526,8 +526,6 @@ namespace RealmOfAshes.Game
                 else sb.Append("\nТайник откроется через ").Append(Math.Max(0, (payload["chestOpensInSeconds"]?.Value<int>() ?? 0) - elapsedSeconds)).Append(" с · PvP разрешено");
             }
             else sb.Append("\nЗачистите логово, чтобы открыть тайник");
-            int rejoin = payload["rejoinInSeconds"]?.Value<int>() ?? 0;
-            if (rejoin > 0) sb.Append("\nВернуться можно через ").Append(Math.Max(0, rejoin - elapsedSeconds)).Append(" с");
             return sb.ToString();
         }
 

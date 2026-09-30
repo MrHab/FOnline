@@ -475,6 +475,56 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
   console.log(`PASS caravans take ${routes.size} different ways between two cities and travel on, patrols walk around their city, raiders fall on caravans and a beaten one turns back`);
 }
 
+// --- путник за отрядом мира симуляции -----------------------------------------------------------
+{
+  // Патруль фракции идёт по зонам к месту своего отряда и стоит там; отряд
+  // пошёл дальше — новый путь; отряда нет — группа уходит из мира.
+  const inside = (sx, sy) => sx >= 0 && sx < 12 && sy >= 0 && sy < 5;
+  const neighbors = (sx, sy) => Object.values(eco.STEPS)
+    .map(step => ({ sx: sx + step.dx, sy: sy + step.dy }))
+    .filter(cell => inside(cell.sx, cell.sy));
+  const follow = eco.normalizeEcologyConfig({
+    roam: { restMinutes: [30, 30], stepSeconds: [60, 60], radius: 1 },
+    species: [
+      { id: 'patrol', kind: 'traveller', faction: 'old_klim', members: [{ type: 'patrol_guard', min: 3, max: 3 }],
+        habitat: { pvp: 1 }, aggression: 0.7, stepSeconds: [60, 60], travel: { mode: 'follow', count: 0 } },
+      { id: 'raiders', kind: 'raider', faction: 'raiders', members: [{ type: 'raider', min: 2, max: 2 }], habitat: { pvp: 1 }, aggression: 1 }
+    ]
+  });
+  const world = eco.emptyEcologyState('follow');
+  const ctx = { modeAt: (sx, sy) => (inside(sx, sy) ? 'pvp' : ''), neighbors, occupied: () => false, occupiedCells: [], createMember: () => ({ maxHp: 55 }) };
+  const rnd = seeded(41);
+  let t = 50_000_000;
+  eco.tickEcology(world, follow, ctx, t, rnd);
+  assert.equal(world.groups.size, 0, 'the world does not raise patrols of its own');
+  const spec = { key: 'sim_klim', speciesId: 'patrol', faction: 'old_klim', title: 'Патруль Старого Клима', cell: { sx: 1, sy: 2 }, goal: { sx: 8, sy: 3 }, place: 'ironMine' };
+  const first = eco.followTraveller(world, follow, spec, ctx, t, rnd);
+  assert(first.group && first.replanned, 'the party gets its patrol, which sets out for the place of the party');
+  const patrol = first.group;
+  assert.deepEqual([patrol.sx, patrol.sy], [1, 2], 'the patrol appears where its party is');
+  assert.equal(eco.followTraveller(world, follow, spec, ctx, t + 1000, rnd).replanned, false, 'the same goal changes nothing');
+  for (let i = 0; i < 40 && (patrol.sx !== 8 || patrol.sy !== 3); i += 1) {
+    t += 70000;
+    eco.tickEcology(world, follow, ctx, t, rnd);
+  }
+  assert.deepEqual([patrol.sx, patrol.sy], [8, 3], 'the patrol walks zone by zone to the place of its party');
+  assert.equal(patrol.state, 'rest', 'and stands there');
+  assert.equal(patrol.dest, 'ironMine', 'at the place of its party');
+  t += 3600000;
+  eco.tickEcology(world, follow, ctx, t, rnd);
+  assert.deepEqual([patrol.sx, patrol.sy], [8, 3], 'a patrol does not wander off by itself');
+  const moved = eco.followTraveller(world, follow, { ...spec, goal: { sx: 3, sy: 0 }, place: 'farm' }, ctx, t, rnd);
+  assert(moved.replanned && patrol.state === 'travel', 'the party moves on, so does its patrol');
+  // Своя фракция группы — в стычке она дерётся как патруль своей фракции.
+  assert.equal(eco.groupSpecies(follow, patrol).faction, 'old_klim');
+  const copy = eco.normalizeEcologyState(JSON.parse(JSON.stringify(eco.serializeEcologyState(world))), follow);
+  assert.equal(copy.groups.get(patrol.id).title, 'Патруль Старого Клима', 'the name of the party survives a restart');
+  assert.deepEqual(copy.groups.get(patrol.id).goal, { sx: 3, sy: 0 }, 'and so does its goal');
+  assert.equal(eco.retireFollowers(world, follow, key => key !== 'sim_klim'), 1, 'a patrol whose party is gone leaves the world');
+  assert.equal(world.groups.size, 0);
+  console.log('PASS a patrol of a world party walks to the place of its party, stands there and follows it on');
+}
+
 // --- призраки и очередь пополнения ------------------------------------------------------------
 {
   // Группы вне мира (клетки прежней сетки) убираются; под пределом групп

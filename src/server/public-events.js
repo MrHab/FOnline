@@ -21,7 +21,6 @@ const DEFAULT_RULES = Object.freeze({
   maxLifetimeMs: 2700000,
   expiryWarningMs: 300000,
   chestOpenDelayMs: [45000, 60000],
-  deathRejoinDelayMs: [60000, 90000],
   zoneRadius: 9,
   chestChannelMs: 8000,
   chestChannelRangeM: 2.5,
@@ -63,7 +62,6 @@ function normalizePublicEventRules(input = {}) {
     chestChannelMs: Math.max(1000, Math.floor(Number(src.chestChannelMs ?? DEFAULT_RULES.chestChannelMs))),
     chestChannelRangeM: clamp(Number(src.chestChannelRangeM ?? DEFAULT_RULES.chestChannelRangeM), 1, 12),
     chestContestRangeM: clamp(Number(src.chestContestRangeM ?? DEFAULT_RULES.chestContestRangeM), 1, 40),
-    deathRejoinDelayMs: rangeMs(src.deathRejoinDelayMs, DEFAULT_RULES.deathRejoinDelayMs),
     zoneRadius: clamp(Number(src.zoneRadius || DEFAULT_RULES.zoneRadius), 2, 28)
   };
 }
@@ -129,11 +127,6 @@ function sanitizeEvent(input = {}) {
   if (!id || !templateId || !locationId) return null;
   const statusRaw = String(input?.status || 'active');
   const status = ['active', 'warning', 'expired'].includes(statusRaw) ? statusRaw : 'active';
-  const deaths = {};
-  for (const [characterId, until] of Object.entries(input?.deaths && typeof input.deaths === 'object' ? input.deaths : {})) {
-    const key = cleanId(characterId, 96);
-    if (key) deaths[key] = Math.max(0, Math.floor(Number(until || 0)));
-  }
   return {
     id,
     templateId,
@@ -177,7 +170,6 @@ function sanitizeEvent(input = {}) {
         updatedAt: Math.max(0, Math.floor(Number(input?.chest?.opening?.updatedAt || 0)))
       }
     },
-    deaths,
     scenario: normalizeScenarioState(input?.scenario, null),
     visits: Math.max(0, Math.floor(Number(input?.visits || 0)))
   };
@@ -424,28 +416,6 @@ function tickChestOpening(event = {}, options = {}, rules = DEFAULT_RULES, now =
   };
 }
 
-// Смерть внутри события: вернуться можно только через 60–90 с.
-function recordPublicEventDeath(event = {}, characterId = '', rules = DEFAULT_RULES, now = Date.now(), random = Math.random) {
-  const key = cleanId(characterId, 96);
-  if (!event || !key) return 0;
-  const until = Number(now) + rollRange(rules.deathRejoinDelayMs, random);
-  event.deaths[key] = until;
-  return until;
-}
-
-function publicEventRejoinBlockedMs(event = {}, characterId = '', now = Date.now()) {
-  const until = Number(event?.deaths?.[cleanId(characterId, 96)] || 0);
-  return until > Number(now) ? until - Number(now) : 0;
-}
-
-function publicEventEntryError(event = {}, characterId = '', now = Date.now()) {
-  if (!event) return 'Событие не найдено.';
-  if (event.status === 'expired') return 'Событие уже завершилось.';
-  const blocked = publicEventRejoinBlockedMs(event, characterId, now);
-  if (blocked > 0) return `После гибели вернуться в событие можно через ${Math.ceil(blocked / 1000)} с.`;
-  return '';
-}
-
 /**
  * Превью награды узла: те же строки, что лежат в сундуке шаблона, не больше
  * четырёх. Карта обещает ровно то, что откроется после зачистки.
@@ -588,12 +558,9 @@ module.exports = {
   publicEvent,
   publicEventChestOpen,
   publicEventRewardPreview,
-  publicEventEntryError,
-  publicEventRejoinBlockedMs,
   publicEventZone,
   publicEvents,
   purgeExpiredPublicEvents,
-  recordPublicEventDeath,
   spawnDuePublicEvents,
   tickPublicEvent
 };

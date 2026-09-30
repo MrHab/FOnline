@@ -107,10 +107,6 @@ namespace RealmOfAshes.Game
             new Dictionary<string, ResourceView>();
         private readonly HashSet<string> _authoredResourceIds = new HashSet<string>();
         private readonly List<StaticTarget> _staticTargets = new List<StaticTarget>();
-        // Порталы зоны из последнего состояния мира: к какой локации они относятся и их подпись.
-        private JArray _portalRows;
-        private string _portalLocationId = string.Empty;
-        private string _portalSignature = string.Empty;
         private readonly Dictionary<string, int> _tradeBuys = new Dictionary<string, int>();
         private readonly Dictionary<string, int> _tradeSells = new Dictionary<string, int>();
 
@@ -1312,8 +1308,6 @@ namespace RealmOfAshes.Game
             if (location.Transitions != null)
                 foreach (LocationTransition transition in location.Transitions)
                     AddTransitionTarget(transition, transitionIds);
-            // Состояние мира могло прийти раньше самой локации.
-            RebuildPortalTargets();
 
             RefreshResourceViews();
         }
@@ -1607,58 +1601,6 @@ namespace RealmOfAshes.Game
             if (payload?["map"] is JArray stateMap) Loader?.ApplyWorldMap(stateMap);
             ApplyContainers(payload?["containers"] as JArray);
             ApplyResources(payload?["resources"] as JArray);
-            if (payload?["portals"] is JArray portals)
-            {
-                _portalRows = portals;
-                _portalLocationId = payload["locationId"]?.ToString() ?? string.Empty;
-                RebuildPortalTargets();
-            }
-        }
-
-        /// <summary>
-        /// Порталы зоны к точкам мира — публичному событию, бою, следам угодий —
-        /// приходят в состоянии мира и стоят рядом с переходами локации: та же
-        /// метка, та же клавиша E и то же предупреждение о правилах зоны. Вход
-        /// шлёт id портала, билет в комнату точки выдаёт сервер.
-        /// </summary>
-        private void RebuildPortalTargets()
-        {
-            JArray rows = _locationReady && _portalLocationId == _locationId ? _portalRows : null;
-            var signature = new System.Text.StringBuilder();
-            if (rows != null)
-                foreach (JToken row in rows)
-                    signature.Append(row?["id"]).Append('@').Append(row?["tx"]).Append(',').Append(row?["tz"]).Append('|');
-            string next = signature.ToString();
-            if (next == _portalSignature) return;
-            _portalSignature = next;
-
-            for (int index = _staticTargets.Count - 1; index >= 0; index--)
-            {
-                StaticTarget target = _staticTargets[index];
-                if (string.IsNullOrEmpty(target?.Data?["portalId"]?.ToString())) continue;
-                if (target.Marker != null) Destroy(target.Marker);
-                _staticTargets.RemoveAt(index);
-            }
-            if (rows == null) return;
-            foreach (JToken token in rows)
-            {
-                JObject row = token as JObject;
-                string id = row?["id"]?.ToString() ?? string.Empty;
-                if (string.IsNullOrEmpty(id)) continue;
-                int before = _staticTargets.Count;
-                AddTransitionTarget(new LocationTransition
-                {
-                    Id = id,
-                    Type = "worldPortal",
-                    Label = row["name"]?.ToString(),
-                    To = row["to"]?.ToString(),
-                    Tx = row["tx"]?.ToObject<int>() ?? 0,
-                    Tz = row["tz"]?.ToObject<int>() ?? 0,
-                    Radius = row["radius"]?.ToObject<float>() ?? 3.2f,
-                    TargetZoneRules = row["targetZoneRules"] as JObject
-                }, new HashSet<string>());
-                if (_staticTargets.Count > before) _staticTargets[_staticTargets.Count - 1].Data["portalId"] = id;
-            }
         }
 
         private void HandleContainerSnapshot(JObject payload)
@@ -2319,8 +2261,6 @@ namespace RealmOfAshes.Game
                 ["deviceType"] = Application.isMobilePlatform ? "mobile" : "desktop",
                 ["controlType"] = Application.isMobilePlatform ? "touch" : "keyboard_mouse"
             };
-            string portalId = transition["portalId"]?.ToString() ?? string.Empty;
-            if (!string.IsNullOrEmpty(portalId)) payload["portalId"] = portalId;
             Socket.EmitWithAck("changeLocation", payload, ack =>
             {
                 _transitionPending = false;
@@ -3083,7 +3023,6 @@ namespace RealmOfAshes.Game
             foreach (StaticTarget target in _staticTargets)
                 if (target?.Marker != null) Destroy(target.Marker);
             _staticTargets.Clear();
-            _portalSignature = string.Empty;
         }
 
         private void RemoveContainer(string id)

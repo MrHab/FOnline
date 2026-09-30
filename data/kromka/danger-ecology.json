@@ -157,6 +157,20 @@
       "fleeAt": 0.6,
       "stepSeconds": [240, 420],
       "travel": { "mode": "patrol", "count": 1, "restMinutes": [20, 40], "respawnMinutes": 60, "patrolRadius": 2, "patrolStops": 3 }
+    },
+    {
+      "id": "faction_patrol",
+      "name": "Патруль",
+      "kind": "traveller",
+      "faction": "old_klim",
+      "members": [
+        { "type": "patrol_guard", "role": "guard", "name": "Патрульный", "min": 3, "max": 4, "equipment": { "weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots" } }
+      ],
+      "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
+      "aggression": 0.7,
+      "fleeAt": 0.6,
+      "stepSeconds": [240, 420],
+      "travel": { "mode": "follow", "count": 0, "restMinutes": [5, 10] }
     }
   ]
 }

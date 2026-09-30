@@ -92,8 +92,6 @@ namespace RealmOfAshes.EditorTools
             opening["contested"] = true;
             Require(RoaWorldEventsPresentation.ChestButtonLabel(opening).Contains("ОСПАРИВАЕТСЯ"),
                 "A contested channel is announced on the button");
-            publicEvent["rejoinInSeconds"] = 70;
-            Require(RoaWorldEventsPresentation.DescribePublicEvent(publicEvent, "randomAshGrove#pubev_1", 10).Contains("через 60 с"), "Death rejoin delay is shown");
 
             var boss = JObject.Parse(@"{'roomId':'coreLabCenterReactor','displayName':'Хранитель Нуля','phase':'shielded','phaseLabel':'Щит активен','nodesAlive':2,'nodesTotal':4,'pulseInSeconds':12,'pulseTelegraph':false,'bossHp':1800,'bossMaxHp':1800,'pulseRadius':9,'hazards':[{'id':'hazard_0','x':9,'z':0,'radius':5},{'id':'hazard_2','x':-4.5,'z':7.8,'radius':5}]}");
             string bossText = RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 2);

@@ -306,6 +306,7 @@ const {
   serializeEcologyState,
   buildLairs: ecologyBuildLairs,
   resetLairs: ecologyResetLairs,
+  purgeGroups: ecologyPurgeGroups,
   tickEcology,
   groupsAt: ecologyGroupsAt,
   moveGroup: ecologyMoveGroup,
@@ -316,9 +317,16 @@ const {
   cellKey: ecologyCellKey,
   directionBetweenCells: ecologyDirectionBetweenCells,
   canEnter: ecologyCanEnter,
+  travellerNextDirection: ecologyTravellerNextDirection,
+  travellerCameFrom: ecologyTravellerCameFrom,
+  travellerStep: ecologyTravellerStep,
+  travellerTurnBack: ecologyTravellerTurnBack,
+  aftermathAt: ecologyAftermathAt,
+  AFTERMATH_TTL_MS: ECOLOGY_AFTERMATH_TTL_MS,
   hash01: ecologyHash01,
   STEPS: ECOLOGY_STEPS,
-  LIVING_MODES: ECOLOGY_LIVING_MODES
+  LIVING_MODES: ECOLOGY_LIVING_MODES,
+  HUMAN_TYPES: ECOLOGY_HUMAN_TYPE_LIST
 } = require('./src/server/danger-ecology');
 const {
   normalizeAccountStore,
@@ -2291,6 +2299,7 @@ function serverEcologySpeciesWeight(species = {}, cell = {}) {
 }
 
 function serverEcologySpeciesAllowedAt(species, sx, sy) {
+  if (species?.kind === 'traveller') return !!serverEcologyZoneAt(sx, sy);
   const zone = serverEcologyZoneAt(sx, sy);
   return !!zone && serverEcologySpeciesLivesInTier(species, zone.difficulty || 1);
 }
@@ -2318,6 +2327,35 @@ function serverEcologyCanLeave(group, species, direction) {
     canStep: serverEcologyCanStep,
     speciesAllowedAt: serverEcologySpeciesAllowedAt
   }, group.sx + step.dx, group.sy + step.dy, group);
+}
+
+/** Города мира на сетке зон: из них выходят и в них идут путники. */
+function serverEcologyCities() {
+  const zones = serverEcologyZones();
+  if (!zones.cities) zones.cities = ZONE_RUNTIME.graph.zones.filter(zone => zone.city).map(zone => ({ id: zone.city, sx: zone.col, sy: zone.row }));
+  return zones.cities;
+}
+
+/** Соседние зоны за открытыми воротами, города тоже: путник входит в них. */
+function serverEcologyNeighbors(sx, sy) {
+  const zone = serverEcologyZoneAt(sx, sy);
+  if (!zone) return [];
+  return Object.values(zone.edges || {})
+    .filter(edge => edge && edge.open !== false)
+    .map(edge => serverEcologyZones().byId.get(edge.to))
+    .filter(Boolean)
+    .map(next => ({ sx: next.col, sy: next.row }));
+}
+
+/** Сквозь город путь не идёт: город — только начало или конец дороги. */
+function serverEcologyPassable(sx, sy) {
+  const zone = serverEcologyZoneAt(sx, sy);
+  return !!zone && !zone.city;
+}
+
+/** Враждебны ли виды в стычке без игроков — по тем же правилам фракций, что в сцене. */
+function serverEcologySpeciesHostile(a, b) {
+  return serverFactionsHostile(a?.faction || '', b?.faction || '');
 }
 
 /** Клетка комнаты: зона, чей это канал; прочие комнаты вне экологии. */
@@ -2348,7 +2386,7 @@ function serverEcologyCandidates() {
 function serverEcologyRevision() {
   const source = JSON.stringify([
     DANGER_ECOLOGY.lairs,
-    DANGER_ECOLOGY.species.map(row => [row.id, row.habitat, row.regions]),
+    DANGER_ECOLOGY.species.filter(row => row.kind !== 'traveller').map(row => [row.id, row.habitat, row.regions]),
     KROMKA_TIER_CONFIG.enemies.species,
     KROMKA_TIER_CONFIG.hideDrops.species,
     ZONE_GROUNDS.zones,
@@ -2368,6 +2406,15 @@ function serverEcologyState() {
       speciesAllowed: serverEcologySpeciesWeight
     }), revision);
   }
+  // Призраки: группы вне сетки зон (прежняя мелкая сетка мира) и бродяги без
+  // логова в зоне чужого тира. Живому миру они только занимают предел групп.
+  const ghosts = ecologyPurgeGroups(state, group => {
+    // Путник отдыхает и в городе: ему нужна лишь клетка на сетке зон.
+    if (DANGER_ECOLOGY.speciesById[group.speciesId]?.kind === 'traveller') return !!serverEcologyZoneAt(group.sx, group.sy);
+    if (!serverEcologyModeAt(group.sx, group.sy)) return false;
+    return !!group.lairId || serverEcologySpeciesAllowedAt(DANGER_ECOLOGY.speciesById[group.speciesId], group.sx, group.sy);
+  });
+  if (ghosts) console.log(`A-Life: dropped ${ghosts} groups that have no place in the zone world`);
   dangerEcologyState = state;
   return state;
 }
@@ -2387,8 +2434,11 @@ function serverSaveEcology(force = false, now = Date.now()) {
   }
 }
 
+// Люди A-Life — налётчики и путники: у всех облик и оружие человека.
+const ECOLOGY_HUMAN_TYPES = new Set(ECOLOGY_HUMAN_TYPE_LIST);
+
 function serverEcologyEnemyType(type = '') {
-  if (type === 'raider') return SERVER_ENEMY_TYPES[0] || null;
+  if (ECOLOGY_HUMAN_TYPES.has(type)) return SERVER_ENEMY_TYPES[0] || null;
   const index = serverEnemyTypeIndexByCreatureId(type);
   return index >= 0 ? SERVER_ENEMY_TYPES[index] : null;
 }
@@ -2401,10 +2451,26 @@ function serverEcologyMemberStats(type = '') {
 /** Параметры спавна особи: вид бестиария, фракция группы, снаряжение налётчиков. */
 function serverEcologySpawnOptions(species, member) {
   const spec = species.members[member.spec] || species.members.find(row => row.type === member.type) || {};
-  const human = member.type === 'raider';
+  const human = ECOLOGY_HUMAN_TYPES.has(member.type);
   const equipment = {};
   for (const [slot, itemId] of Object.entries(spec.equipment || {})) {
     if (SERVER_ITEM_IDS.has(itemId)) equipment[slot] = itemId;
+  }
+  // Путники — люди Лиги тракта: на игрока не нападают, не торгуют и не
+  // заговаривают, носят ровно своё снаряжение и дерутся с налётчиками и тварями.
+  if (species.kind === 'traveller') {
+    const role = spec.role || 'guard';
+    const traveller = {
+      typeIndex: 0,
+      name: member.name || spec.name || undefined,
+      faction: species.faction || 'tract_league',
+      role,
+      hostileToPlayer: false,
+      canDialogue: false,
+      authoredEquipment: Object.keys(equipment).length ? equipment : undefined
+    };
+    const look = serverEncounterActorVisualModel(traveller);
+    return { ...traveller, visual: look.visual, modelKey: look.modelKey };
   }
   const opts = {
     creatureTypeId: human ? undefined : member.type,
@@ -2463,7 +2529,10 @@ function serverEcologyMaterialize(room, group, options = {}) {
   const direction = String(options.direction || '');
   const entryKey = direction ? dangerEntryKeyForDirection(direction) : '';
   const entry = entryKey && loc[entryKey] && Number.isFinite(Number(loc[entryKey].tx)) ? loc[entryKey] : null;
-  const placed = entry || serverEcologyZoneAnchor(loc, group, state);
+  // Путник, уже идущий через зону, стоит на полпути между воротами входа и выхода.
+  const travelling = species.kind === 'traveller' ? ecologyTravellerNextDirection(group) : '';
+  const onTheRoad = !entry && travelling ? serverEcologyTravellerPoint(loc, dims, group, species) : null;
+  const placed = entry || onTheRoad || serverEcologyZoneAnchor(loc, group, state);
   const anchor = placed && Number.isFinite(Number(placed.tx))
     ? { tx: Number(placed.tx), tz: Number(placed.tz) }
     : { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
@@ -2484,7 +2553,9 @@ function serverEcologyMaterialize(room, group, options = {}) {
     enemy.hp = Math.max(1, Math.round(Number(enemy.maxHp || member.maxHp || 1) * ratio));
     enemy.ecologyGroupId = group.id;
     enemy.ecologyMemberId = member.id;
-    if (entry) {
+    if (travelling) {
+      serverEcologyStartTransit(room, enemy, travelling);
+    } else if (entry) {
       enemy.ecologyPhase = 'entering';
       enemy.ecologyTargetX = center.x;
       enemy.ecologyTargetZ = center.z;
@@ -2497,10 +2568,35 @@ function serverEcologyMaterialize(room, group, options = {}) {
   room.ecologyGroupIds.add(group.id);
   refreshRoomWorldState(room);
   emitEnemySnapshot(room, true);
-  if (entry) {
+  if (entry && species.kind === 'traveller') {
+    serverEcologyNotice(room, `${ECOLOGY_SIDE_FROM[direction] || 'С края'} идёт: ${species.name.toLowerCase()}.`);
+  } else if (entry) {
     serverEcologyNotice(room, `${ECOLOGY_SIDE_FROM[direction] || 'С края'} подходит: ${species.name.toLowerCase()}.`);
   }
   return spawned;
+}
+
+/**
+ * Где путник, идущий через зону: на прямой от ворот, которыми он вошёл, к
+ * воротам, куда идёт, — насколько прошло время его перехода.
+ */
+function serverEcologyTravellerPoint(loc, dims, group, species) {
+  const next = ecologyTravellerNextDirection(group);
+  const cameFrom = ecologyTravellerCameFrom(group);
+  // Идущий на север вошёл с южного края и выйдет у северного.
+  const exitKey = ECOLOGY_EXIT_KEYS[next];
+  const entryKey = cameFrom ? dangerEntryKeyForDirection(cameFrom) : '';
+  const exit = exitKey && loc[exitKey];
+  const start = entryKey && loc[entryKey];
+  if (!exit || !Number.isFinite(Number(exit.tx))) return null;
+  if (!start || !Number.isFinite(Number(start.tx))) return { tx: Number(exit.tx), tz: Number(exit.tz) };
+  const pace = species.stepSeconds || [300, 300];
+  const total = ((pace[0] + pace[1]) / 2) * 1000;
+  const progress = clamp(1 - (Number(group.nextStepAt || 0) - Date.now()) / Math.max(1, total), 0.1, 0.9);
+  return {
+    tx: Math.round(Number(start.tx) + (Number(exit.tx) - Number(start.tx)) * progress),
+    tz: Math.round(Number(start.tz) + (Number(exit.tz) - Number(start.tz)) * progress)
+  };
 }
 
 /** Все группы зоны, которых ещё нет в этом канале, — в него. */
@@ -2512,7 +2608,61 @@ function serverEcologyMaterializeCell(room) {
   for (const group of ecologyGroupsAt(state, cell.sx, cell.sy)) {
     if (serverEcologyMaterialize(room, group) > 0) count += 1;
   }
+  serverEcologyShowAftermath(room, cell, state);
   return count;
+}
+
+/**
+ * Места стычек без игроков: павшие лежат телами с мешками (и тушами, с которых
+ * снимают шкуру) там, где сошлись группы. Место показывается один раз — в
+ * первом канале, где зону увидел игрок: добыча одна на мир, а не на каждый канал.
+ */
+function serverEcologyShowAftermath(room, cell, state, now = Date.now()) {
+  const sites = ecologyAftermathAt(state, cell.sx, cell.sy, now);
+  if (!sites.length) return 0;
+  const loc = roomLocation(room);
+  const dims = roomTileDims(room);
+  const pool = loc.zone?.spawnAreas?.length ? loc.zone.spawnAreas : (loc.zone?.lairs || []);
+  let shown = 0;
+  for (const site of sites) {
+    site.shown = room.id;
+    state.dirty = true;
+    const spot = pool.length ? pool[Math.floor(ecologyHash01(`${site.id}:spot`) * pool.length)] : null;
+    const at = spot && Number.isFinite(Number(spot.tx))
+      ? { tx: Number(spot.tx), tz: Number(spot.tz) }
+      : { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+    // Тело лежит, пока место не выветрится, но не дольше 10 минут: обычный
+    // труп убирают через полторы минуты после гибели.
+    const keepUntil = Math.min(site.at + ECOLOGY_AFTERMATH_TTL_MS, now + 10 * 60000);
+    site.dead.forEach((dead, index) => {
+      const species = DANGER_ECOLOGY.speciesById[dead.speciesId];
+      if (!species) return;
+      const angle = ecologyHash01(`${site.id}:${index}`) * Math.PI * 2;
+      const reach = 1 + (index % 3);
+      const actor = spawnServerEnemy(room, {
+        ...serverEcologySpawnOptions(species, dead),
+        tx: Math.round(at.tx + Math.cos(angle) * reach),
+        tz: Math.round(at.tz + Math.sin(angle) * reach),
+        force: true,
+        allowSafeLocation: true,
+        maxSpawnSearchRadius: 5,
+        minPlayerDistance: 0
+      });
+      if (!actor) return;
+      finalizeNpcDeathState(actor, now);
+      actor.lastLootInspectAt = keepUntil - CORPSE_FULL_CLEANUP_MS;
+      actor.aftermathSiteId = site.id;
+      serverSpawnCarcass(room, actor, now);
+      serverPrepareNpcCorpseLoot(actor, room);
+      serverDropNpcLootBag(room, actor, now);
+      shown += 1;
+    });
+  }
+  if (shown) {
+    emitEnemySnapshot(room, true);
+    serverEcologyNotice(room, 'В зоне недавно был бой: павшие ещё лежат.');
+  }
+  return shown;
 }
 
 /** Каналы, где сейчас стоят особи группы. */
@@ -2587,8 +2737,12 @@ function serverEcologyNoteDeath(room, enemy) {
     return;
   }
   if (result.fleeing) {
-    // Ворота одни на всю группу: их выбирают по игрокам канала, где она понесла потери.
-    const direction = serverEcologyPickExit(room || elsewhere[0], result.group);
+    // Ворота одни на всю группу: их выбирают по игрокам канала, где она понесла
+    // потери. Разбитый путник уходит назад той дорогой, которой пришёл.
+    const species = DANGER_ECOLOGY.speciesById[result.group.speciesId];
+    const direction = species?.kind === 'traveller'
+      ? (ecologyTravellerTurnBack(result.group) ? ecologyTravellerNextDirection(result.group) : '')
+      : serverEcologyPickExit(room || elsewhere[0], result.group);
     if (direction) for (const where of [room, ...elsewhere]) if (where) serverEcologyStartLeaving(where, result.group, direction);
   }
 }
@@ -2630,6 +2784,66 @@ function serverEcologyPickExit(room, group) {
     return { direction, lead };
   }).filter(Boolean).sort((a, b) => b.lead - a.lead);
   return exits.length ? exits[0].direction : '';
+}
+
+/**
+ * Путь через зону к воротам direction: по дорожной сети зоны (узлы nav — ворота,
+ * повороты, середина), от ближайшего узла. Без сети — прямо к воротам.
+ */
+function serverEcologyGateRoute(loc, dims, fromX, fromZ, direction) {
+  const gate = serverEcologyExitPoint(loc, dims, direction);
+  if (!gate) return null;
+  const nav = loc?.zone?.nav;
+  const nodes = Array.isArray(nav?.nodes) ? nav.nodes.filter(node => Number.isFinite(Number(node?.tx)) && Number.isFinite(Number(node?.tz))) : [];
+  const goal = nodes.find(node => node.id === `gate_${direction}`);
+  if (!nodes.length || !goal) return [gate];
+  const world = node => tileToWorld(Number(node.tx), Number(node.tz), dims);
+  const links = new Map(nodes.map(node => [node.id, []]));
+  for (const [a, b] of Array.isArray(nav.links) ? nav.links : []) {
+    if (links.has(a) && links.has(b)) { links.get(a).push(b); links.get(b).push(a); }
+  }
+  const start = nodes.reduce((best, node) => {
+    const point = world(node);
+    const distance = Math.hypot(point.x - fromX, point.z - fromZ);
+    return !best || distance < best.distance ? { node, distance } : best;
+  }, null).node;
+  const prev = new Map([[start.id, '']]);
+  const queue = [start.id];
+  while (queue.length && !prev.has(goal.id)) {
+    const id = queue.shift();
+    for (const next of links.get(id) || []) {
+      if (prev.has(next)) continue;
+      prev.set(next, id);
+      queue.push(next);
+    }
+  }
+  if (!prev.has(goal.id)) return [gate];
+  const ids = [];
+  for (let id = goal.id; id; id = prev.get(id)) ids.push(id);
+  const byId = new Map(nodes.map(node => [node.id, node]));
+  const points = ids.reverse().map(id => world(byId.get(id)));
+  // Узел, от которого до ворот ближе, чем от самой особи, не нужен: не идти назад.
+  while (points.length > 1 && Math.hypot(points[0].x - gate.x, points[0].z - gate.z) > Math.hypot(fromX - gate.x, fromZ - gate.z)) points.shift();
+  points.push(gate);
+  return points;
+}
+
+/** Путники в канале: идут шагом по дороге к воротам своей следующей зоны. */
+function serverEcologyStartTransit(room, enemy, direction, now = Date.now()) {
+  const route = serverEcologyGateRoute(roomLocation(room), roomTileDims(room), enemy.x, enemy.z, direction);
+  if (!route) return false;
+  const gate = route[route.length - 1];
+  enemy.ecologyPhase = 'transit';
+  enemy.ecologyPhaseSince = now;
+  enemy.ecologyProgressAt = now;
+  enemy.ecologyBestDistance = Infinity;
+  enemy.ecologyTargetX = gate.x;
+  enemy.ecologyTargetZ = gate.z;
+  enemy.ecologyWaypoints = route;
+  enemy.ecologyWaypointIndex = 0;
+  enemy.ecologyExitDirection = direction;
+  enemy.stationary = false;
+  return true;
 }
 
 /** Бегство в канале: уцелевшие идут к воротам direction и уходят в них. */
@@ -2690,7 +2904,10 @@ function serverEcologyActorLeft(room, enemy, now = Date.now()) {
   }
   const step = ECOLOGY_STEPS[leaving.direction];
   const species = DANGER_ECOLOGY.speciesById[group.speciesId];
-  if (step && serverEcologyCanLeave(group, species, leaving.direction)) {
+  if (species?.kind === 'traveller') {
+    // Путник ушёл воротами своей дороги: он в следующей зоне маршрута (или в городе).
+    if (step && ecologyTravellerNextDirection(group) === leaving.direction) ecologyTravellerStep(state, DANGER_ECOLOGY, group, now);
+  } else if (step && serverEcologyCanLeave(group, species, leaving.direction)) {
     ecologyMoveGroup(state, group, group.sx + step.dx, group.sy + step.dy);
   }
   ecologySetGroupOffline(state, group, leaving.hp, now, DANGER_ECOLOGY);
@@ -2742,6 +2959,7 @@ function updateEcologyActorLifecycle(room = null, enemy = null, dt = 0) {
     }
     return true;
   }
+  if (phase === 'transit') return updateEcologyTransit(room, enemy, dt, now);
   if (phase === 'leaving') {
     enemy.aiState = 'return';
     enemy.targetId = '';
@@ -2772,6 +2990,44 @@ function updateEcologyActorLifecycle(room = null, enemy = null, dt = 0) {
     return true;
   }
   return false;
+}
+
+const ECOLOGY_FIGHT_STATES = new Set(['chase', 'attack', 'reload', 'pressure', 'factionCombat', 'stagger']);
+
+/**
+ * Путник идёт через зону шагом по дороге к воротам и уходит в них. Бой важнее
+ * дороги: пока у него враг, решает обычный ИИ, а потом путь продолжается с того
+ * места, где он оказался. Застрял — путь прокладывается заново.
+ */
+function updateEcologyTransit(room, enemy, dt, now) {
+  if (enemy.targetId || enemy.factionTargetId || ECOLOGY_FIGHT_STATES.has(String(enemy.aiState || ''))) {
+    enemy.ecologyProgressAt = now;
+    return false;
+  }
+  const gateX = Number(enemy.ecologyTargetX);
+  const gateZ = Number(enemy.ecologyTargetZ);
+  const waypoints = Array.isArray(enemy.ecologyWaypoints) && enemy.ecologyWaypoints.length ? enemy.ecologyWaypoints : [{ x: gateX, z: gateZ }];
+  let index = Math.min(Number(enemy.ecologyWaypointIndex || 0), waypoints.length - 1);
+  while (index < waypoints.length - 1 && Math.hypot(waypoints[index].x - enemy.x, waypoints[index].z - enemy.z) < 2.4) index += 1;
+  enemy.ecologyWaypointIndex = index;
+  enemy.aiState = 'return';
+  const waypoint = waypoints[index];
+  moveEnemyTowards(room, enemy, waypoint.x, waypoint.z, Math.max(1.1, Number(enemy.speed || 1.8) * 0.62), dt, { separationWeight: 0.36 });
+  // Дом — там, где он сейчас: после боя обычный ИИ не тянет его назад.
+  enemy.homeX = enemy.x;
+  enemy.homeZ = enemy.z;
+  const toGate = Math.hypot(gateX - enemy.x, gateZ - enemy.z);
+  if (toGate < Number(enemy.ecologyBestDistance ?? Infinity) - 1) {
+    enemy.ecologyBestDistance = toGate;
+    enemy.ecologyProgressAt = now;
+  }
+  const stalled = now - Number(enemy.ecologyProgressAt || now) > ECOLOGY_LEAVE_STALL_MS;
+  if (toGate <= ECOLOGY_LEAVE_GATE_M || (stalled && toGate <= 6)) {
+    serverEcologyActorLeft(room, enemy, now);
+    return true;
+  }
+  if (stalled) serverEcologyStartTransit(room, enemy, String(enemy.ecologyExitDirection || ''), now);
+  return true;
 }
 
 /** Сцена с игроками: гибель мимо обычных путей (аномалии, кровотечение) — тоже насовсем. */
@@ -2838,7 +3094,11 @@ function serverTickEcology(now = Date.now()) {
     speciesAllowedAt: serverEcologySpeciesAllowedAt,
     occupied: (sx, sy) => occupied.has(ecologyCellKey(sx, sy)),
     occupiedCells: [...occupied.values()].map(row => row.cell),
-    createMember: serverEcologyMemberStats
+    createMember: serverEcologyMemberStats,
+    cities: serverEcologyCities,
+    neighbors: serverEcologyNeighbors,
+    through: serverEcologyPassable,
+    hostile: serverEcologySpeciesHostile
   }, now);
   let arrivals = 0;
   for (const event of events) {

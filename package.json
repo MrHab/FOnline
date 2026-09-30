@@ -60,7 +60,7 @@
     "check:account-sin": "node tools/check-account-sin.js && node tools/check-account-sin-network.js && node tools/check-account-marks-network.js",
     "check:danger-cells": "node tools/check-danger-cells.js",
     "check:zones": "node tools/check-zone-builder.js && node tools/check-city-builder.js && node tools/check-zone-graph.js && node tools/check-zone-freeze.js && node tools/check-zone-migration.js && node tools/check-zone-walk-network.js && node tools/check-zone-channels-network.js && node tools/check-zone-portals-network.js && node tools/check-zone-transitions-network.js && node tools/check-fast-travel.js",
-    "check:danger-ecology": "node tools/check-danger-ecology.js && node tools/check-danger-ecology-network.js",
+    "check:danger-ecology": "node tools/check-danger-ecology.js && node tools/check-danger-ecology-network.js && node tools/check-living-wasteland-network.js",
     "check:crafting-plots": "node tools/check-crafting-plots.js && node tools/check-crafting-plots-network.js",
     "check:black-market": "node tools/check-black-market.js && node tools/check-black-market-network.js",
     "check:progression": "npm run check:kromka-character-terms && node tools/check-progression-sync.js && node tools/check-progression-balance.js && node tools/check-unity-progression.js",

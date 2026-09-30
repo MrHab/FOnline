@@ -10,11 +10,14 @@
     "refillMinutes": { "pve": 120, "pvp": 90, "pvpFullDrop": 75, "pvpBlack": 45 }
   },
   "roam": {
-    "restMinutes": [10, 30],
-    "stepSeconds": [480, 1200],
-    "huntStepSeconds": [240, 480],
+    "restMinutes": [4, 12],
+    "stepSeconds": [240, 600],
+    "huntStepSeconds": [150, 300],
     "senseSeconds": 30,
-    "radius": 1
+    "radius": 2,
+    "migrateRadius": 4,
+    "clashPerMinute": 0.25,
+    "clashCooldownMinutes": 12
   },
   "species": [
     {
@@ -43,7 +46,7 @@
       "perceptionCells": 1,
       "aggression": 0.8,
       "fleeAt": 0.6,
-      "stepSeconds": [360, 800]
+      "stepSeconds": [180, 400]
     },
     {
       "id": "dustling_brood",
@@ -77,7 +80,7 @@
       "perceptionCells": 0,
       "aggression": 0.5,
       "fleeAt": 0.67,
-      "stepSeconds": [800, 1600]
+      "stepSeconds": [400, 800]
     },
     {
       "id": "mourner_flock",
@@ -89,7 +92,7 @@
       "perceptionCells": 1,
       "aggression": 0.7,
       "fleeAt": 0.5,
-      "stepSeconds": [320, 720]
+      "stepSeconds": [160, 360]
     },
     {
       "id": "fold_cluster",
@@ -101,7 +104,7 @@
       "perceptionCells": 0,
       "aggression": 0.4,
       "fleeAt": 1,
-      "stepSeconds": [960, 1920]
+      "stepSeconds": [480, 960]
     },
     {
       "id": "burned_drifters",
@@ -124,6 +127,36 @@
       "perceptionCells": 0,
       "aggression": 0,
       "fleeAt": 0.3
+    },
+    {
+      "id": "city_caravan",
+      "name": "Караван",
+      "kind": "traveller",
+      "faction": "tract_league",
+      "members": [
+        { "type": "caravaneer", "role": "guard", "name": "Караванщик", "min": 1, "max": 1, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots", "backpack": "backpack" } },
+        { "type": "caravan_guard", "role": "guard", "name": "Охранник каравана", "min": 2, "max": 3, "equipment": { "weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots" } },
+        { "type": "porter", "role": "civilian", "name": "Носильщик", "min": 1, "max": 2, "equipment": { "armor": "leather", "boots": "boots", "backpack": "backpack" } }
+      ],
+      "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
+      "aggression": 0.3,
+      "fleeAt": 0.5,
+      "stepSeconds": [300, 480],
+      "travel": { "mode": "caravan", "count": 8, "restMinutes": [15, 45], "respawnMinutes": 40 }
+    },
+    {
+      "id": "road_patrol",
+      "name": "Дозор тракта",
+      "kind": "traveller",
+      "faction": "tract_league",
+      "members": [
+        { "type": "patrol_guard", "role": "guard", "name": "Дозорный", "min": 3, "max": 4, "equipment": { "weapon": "assaultRifle", "armor": "ballisticVest", "helmet": "tacticalHelmet", "boots": "reinforcedBoots" } }
+      ],
+      "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
+      "aggression": 0.8,
+      "fleeAt": 0.6,
+      "stepSeconds": [240, 420],
+      "travel": { "mode": "patrol", "count": 1, "restMinutes": [20, 40], "respawnMinutes": 60, "patrolRadius": 2, "patrolStops": 3 }
     }
   ]
 }

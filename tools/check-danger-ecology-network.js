@@ -142,7 +142,9 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
   });
   fs.writeFileSync(path.join(h.DATA_DIR, 'danger-ecology.json'), JSON.stringify({
     version: 1, mapRevision: 'check', nextId: 50, lairs: [],
-    groups: [resting('resident', 'test_gari', home), resting('hunter', 'test_scouts', north), resting('bluebirds', 'test_gari', blue)]
+    // Призрак — группа прежней мелкой сетки мира, клетки которой нет среди зон.
+    groups: [resting('resident', 'test_gari', home), resting('hunter', 'test_scouts', north), resting('bluebirds', 'test_gari', blue),
+      resting('ghost', 'test_gari', { col: 200, row: 180 })]
   }));
 
   await h.startServer();
@@ -167,6 +169,7 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
       .reduce((sum, zone) => sum + normalizeRecipe(zoneRecipe(graph, zone.id)).budget.lairs, 0);
     const summary = (await devGet(`/api/dev/danger-ecology?sx=${home.col}&sy=${home.row}&radius=0`)).summary;
     assert.equal(summary.lairs, expectedLairs, 'every live zone has its lairs');
+    assert.equal(summary.groups, 3, 'a group outside the zone world is dropped on start');
     // Чёрных зон на карте канона нет (библия, 4.4): логова есть в синих и красных.
     assert(summary.lairsByMode.pve > 0 && summary.lairsByMode.pvpFullDrop > 0, 'blue and red zones have lairs: ' + JSON.stringify(summary.lairsByMode));
     console.log(`PASS the group living in ${home.title} stands in both of its channels (3 + 3 creatures); ${expectedLairs} lairs across the live zones`);

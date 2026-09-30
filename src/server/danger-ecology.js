@@ -20,7 +20,14 @@
 const ECOLOGY_VERSION = 1;
 // Жизнь идёт во всех немирных зонах, синие (pve) — тоже: там слабые виды и потери без добычи.
 const LIVING_MODES = Object.freeze(['pve', 'pvp', 'pvpFullDrop', 'pvpBlack']);
-const GROUP_STATES = Object.freeze(['rest', 'roam', 'return', 'hunt', 'flee']);
+// Люди A-Life: налётчики и путники. Остальные типы особей — твари бестиария.
+const HUMAN_TYPES = Object.freeze(['raider', 'caravaneer', 'caravan_guard', 'porter', 'patrol_guard']);
+const GROUP_STATES = Object.freeze(['rest', 'roam', 'return', 'hunt', 'flee', 'travel']);
+
+// Место стычки без игроков (павшие) ждёт игроков столько, не больше стольких на зону и на мир.
+const AFTERMATH_TTL_MS = 40 * 60000;
+const AFTERMATH_PER_CELL = 3;
+const AFTERMATH_MAX = 400;
 
 const STEPS = Object.freeze({
   north: Object.freeze({ dx: 0, dy: -1 }),
@@ -47,7 +54,13 @@ const DEFAULT_CONFIG = Object.freeze({
     senseSeconds: 30,
     // Сколько сломленная группа после бегства не идёт на шум.
     shakenMinutes: 10,
-    radius: 2
+    radius: 2,
+    // Как далеко (в зонах от логова) уходит группа в дальний обход.
+    migrateRadius: 4,
+    // Враждебные группы в одной зоне без игроков сходятся в среднем раз в
+    // 1 / (clashPerMinute × агрессия) минут; после стычки — передышка.
+    clashPerMinute: 0.5,
+    clashCooldownMinutes: 10
   }),
   species: Object.freeze([])
 });
@@ -109,6 +122,8 @@ function normalizeSpecies(row = {}, roam = DEFAULT_CONFIG.roam) {
     return Object.freeze({
       type: safeId(member?.type),
       name: cleanText(member?.name, 60),
+      // Роль человека в группе (охранник, носильщик): от неё — облик и поведение NPC.
+      role: safeId(member?.role, 24),
       min,
       max: Math.floor(finite(member?.max, min, min, 12)),
       equipment: Object.freeze(equipment)
@@ -121,13 +136,15 @@ function normalizeSpecies(row = {}, roam = DEFAULT_CONFIG.roam) {
     const key = safeId(region, 48);
     if (key) regions[key] = finite(weight, 1, 0, 10);
   }
-  const kind = ['raider', 'monster', 'fauna'].includes(row.kind) ? row.kind : 'monster';
+  const kind = ['raider', 'monster', 'fauna', 'traveller'].includes(row.kind) ? row.kind : 'monster';
+  const travel = row.travel && typeof row.travel === 'object' ? row.travel : {};
   return Object.freeze({
     id,
     name: cleanText(row.name, 80) || id,
     kind,
-    // Мирная фауна (фонарники) никого не трогает и в стычку не тянется.
-    hostile: kind !== 'fauna' && row.hostile !== false,
+    // Мирная фауна (фонарники) никого не трогает и в стычку не тянется; путники
+    // (караваны, патрули) на игрока не нападают.
+    hostile: kind !== 'fauna' && kind !== 'traveller' && row.hostile !== false,
     faction: safeId(row.faction, 48),
     members: Object.freeze(members),
     habitat,
@@ -136,7 +153,23 @@ function normalizeSpecies(row = {}, roam = DEFAULT_CONFIG.roam) {
     perceptionCells: Math.floor(finite(row.perceptionCells, 2, 0, 6)),
     aggression: finite(row.aggression, 0.6, 0, 1),
     fleeAt: finite(row.fleeAt, 0.5, 0.05, 1),
-    stepSeconds: row.stepSeconds ? range(row.stepSeconds, roam.stepSeconds, 1, 3600) : roam.stepSeconds
+    stepSeconds: row.stepSeconds ? range(row.stepSeconds, roam.stepSeconds, 1, 3600) : roam.stepSeconds,
+    // Дойдя до цели обхода, группа с этой вероятностью идёт дальше, а не домой;
+    // после отдыха с вероятностью migrateChance уходит далеко, на migrateRadius зон.
+    wander: finite(row.wander, 0.35, 0, 1),
+    migrateChance: finite(row.migrateChance, 0.2, 0, 1),
+    // Сила в стычке без игроков на единицу здоровья: стволы налётчиков бьют больнее.
+    combat: finite(row.combat, kind === 'raider' ? 1.3 : kind === 'traveller' ? 1.2 : kind === 'fauna' ? 0.3 : 1, 0, 10),
+    // Путники ходят между городами (караван) или обходят зоны у своего города (патруль).
+    travel: kind === 'traveller' ? Object.freeze({
+      mode: travel.mode === 'patrol' ? 'patrol' : 'caravan',
+      // Караванов — столько на весь мир, патрулей — столько у каждого города.
+      count: Math.floor(finite(travel.count, 4, 0, 64)),
+      restMinutes: range(travel.restMinutes, [20, 60], 0, 1440),
+      respawnMinutes: finite(travel.respawnMinutes, 30, 1, 10080),
+      patrolRadius: Math.floor(finite(travel.patrolRadius, 2, 1, 6)),
+      patrolStops: Math.floor(finite(travel.patrolStops, 3, 1, 12))
+    }) : null
   });
 }
 
@@ -150,7 +183,10 @@ function normalizeEcologyConfig(input = {}) {
     huntStepSeconds: range(roamSrc.huntStepSeconds, DEFAULT_CONFIG.roam.huntStepSeconds, 1, 3600),
     senseSeconds: finite(roamSrc.senseSeconds, DEFAULT_CONFIG.roam.senseSeconds, 1, 3600),
     shakenMinutes: finite(roamSrc.shakenMinutes, DEFAULT_CONFIG.roam.shakenMinutes, 0, 1440),
-    radius: Math.floor(finite(roamSrc.radius, DEFAULT_CONFIG.roam.radius, 1, 6))
+    radius: Math.floor(finite(roamSrc.radius, DEFAULT_CONFIG.roam.radius, 1, 6)),
+    migrateRadius: Math.floor(finite(roamSrc.migrateRadius, DEFAULT_CONFIG.roam.migrateRadius, 1, 12)),
+    clashPerMinute: finite(roamSrc.clashPerMinute, DEFAULT_CONFIG.roam.clashPerMinute, 0, 60),
+    clashCooldownMinutes: finite(roamSrc.clashCooldownMinutes, DEFAULT_CONFIG.roam.clashCooldownMinutes, 0, 1440)
   });
   const species = [];
   const seen = new Set();
@@ -187,6 +223,8 @@ function emptyEcologyState(mapRevision = '') {
     lairs: new Map(),
     groups: new Map(),
     cellIndex: new Map(),
+    travellerNextAt: {},
+    aftermath: [],
     dirty: true
   };
 }
@@ -260,10 +298,37 @@ function normalizeEcologyState(input = {}, config = normalizeEcologyConfig()) {
       // После перезапуска сцен нет: все группы снова вне сети.
       online: '',
       size0: Math.max(members.length, Math.floor(finite(row.size0, members.length, 1, 100))),
-      bornAt: Math.max(0, Number(row.bornAt) || 0)
+      bornAt: Math.max(0, Number(row.bornAt) || 0),
+      clashReadyAt: Math.max(0, Number(row.clashReadyAt) || 0)
     };
+    if (species.kind === 'traveller') {
+      const route = (Array.isArray(row.route) ? row.route : [])
+        .filter(cell => Number.isFinite(Number(cell?.sx)) && Number.isFinite(Number(cell?.sy)))
+        .map(cell => ({ sx: Math.floor(Number(cell.sx)), sy: Math.floor(Number(cell.sy)) }));
+      group.home = safeId(row.home, 64);
+      group.dest = safeId(row.dest, 64);
+      group.route = route.length >= 2 ? route : null;
+      group.routeIndex = group.route ? Math.max(0, Math.min(route.length - 1, Math.floor(Number(row.routeIndex) || 0))) : 0;
+      group.fleeing = !!row.fleeing && !!group.route;
+      if (!group.route && group.state === 'travel') group.state = 'rest';
+    }
     state.groups.set(id, group);
     indexAdd(state, group);
+  }
+  state.aftermath = (Array.isArray(src.aftermath) ? src.aftermath : []).map(row => ({
+    id: safeId(row?.id, 32),
+    sx: Math.floor(Number(row?.sx) || 0),
+    sy: Math.floor(Number(row?.sy) || 0),
+    at: Math.max(0, Number(row?.at) || 0),
+    shown: safeId(row?.shown, 96),
+    dead: (Array.isArray(row?.dead) ? row.dead : []).slice(0, 24).map(dead => ({
+      speciesId: safeId(dead?.speciesId), type: safeId(dead?.type), spec: Math.floor(finite(dead?.spec, 0, 0, 32)), name: cleanText(dead?.name, 60)
+    })).filter(dead => config.speciesById[dead.speciesId] && dead.type)
+  })).filter(row => row.id && row.dead.length).slice(-AFTERMATH_MAX);
+  state.travellerNextAt = {};
+  for (const [key, at] of Object.entries(src.travellerNextAt && typeof src.travellerNextAt === 'object' ? src.travellerNextAt : {})) {
+    const cleanKey = String(key).replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96);
+    if (cleanKey && Number.isFinite(Number(at))) state.travellerNextAt[cleanKey] = Number(at);
   }
   state.dirty = false;
   return state;
@@ -288,8 +353,18 @@ function serializeEcologyState(state) {
       nextStepAt: group.nextStepAt,
       shakenUntil: group.shakenUntil || 0,
       size0: group.size0,
-      bornAt: group.bornAt
-    }))
+      bornAt: group.bornAt,
+      ...(group.clashReadyAt ? { clashReadyAt: group.clashReadyAt } : {}),
+      ...(group.home !== undefined ? {
+        home: group.home,
+        dest: group.dest || '',
+        route: group.route ? group.route.map(cell => ({ sx: cell.sx, sy: cell.sy })) : null,
+        routeIndex: group.routeIndex || 0,
+        fleeing: !!group.fleeing
+      } : {})
+    })),
+    travellerNextAt: { ...(state.travellerNextAt || {}) },
+    aftermath: (state.aftermath || []).map(row => ({ ...row, dead: row.dead.map(dead => ({ ...dead })) }))
   };
 }
 
@@ -298,6 +373,8 @@ function serializeEcologyState(state) {
 function pickSpecies(config, mode, region, roll, allowed = () => true) {
   // allowed — да/нет или множитель веса (угодья делают зверя чаще или реже).
   const weights = config.species.map(row => {
+    // Путники живут не в логовах, а в дороге между городами.
+    if (row.kind === 'traveller') return 0;
     const verdict = allowed(row);
     const factor = verdict === true ? 1 : verdict === false ? 0 : Math.max(0, Number(verdict) || 0);
     return factor > 0 ? row.habitat[mode] * (row.regions[region] ?? 1) * factor : 0;
@@ -344,6 +421,23 @@ function buildLairs(config, candidates = [], mapRevision = '', options = {}) {
     });
   }
   return lairs;
+}
+
+/**
+ * Убрать группы, которым нет места в мире (keep(group) !== true): клетки прежней
+ * сетки мира, которой больше нет. Такие «призраки» не ходят, не приходят в сцены
+ * и не гибнут, но занимают предел групп — и логова живого мира не пополняются.
+ */
+function purgeGroups(state, keep) {
+  let removed = 0;
+  for (const group of [...state.groups.values()]) {
+    if (keep(group) === true) continue;
+    indexRemove(state, group);
+    state.groups.delete(group.id);
+    removed += 1;
+  }
+  if (removed) state.dirty = true;
+  return removed;
 }
 
 /** Заменить логова (новая ревизия карты): группы старых логов остаются бродягами. */
@@ -460,14 +554,407 @@ function moveGroup(state, group, sx, sy) {
   state.dirty = true;
 }
 
-function pickRoamTarget(group, species, lair, ctx, random) {
+function pickRoamTarget(group, species, lair, ctx, random, radius = species.roamRadius) {
   const home = lair || { sx: group.sx, sy: group.sy };
   for (let attempt = 0; attempt < 8; attempt += 1) {
-    const sx = home.sx + Math.round((random() * 2 - 1) * species.roamRadius);
-    const sy = home.sy + Math.round((random() * 2 - 1) * species.roamRadius);
+    const sx = home.sx + Math.round((random() * 2 - 1) * radius);
+    const sy = home.sy + Math.round((random() * 2 - 1) * radius);
     if ((sx !== group.sx || sy !== group.sy) && canEnter(species, ctx, sx, sy)) return { sx, sy };
   }
   return { sx: home.sx, sy: home.sy };
+}
+
+// --- путники: караваны и патрули ------------------------------------------------------------
+
+/**
+ * Путь по клеткам от from до to включительно: Дейкстра со случайной ценой
+ * перехода (1 … 1 + jitter), поэтому пути между одними точками разные.
+ * neighbors(sx, sy) → соседние клетки, куда есть проход; through(sx, sy) —
+ * можно ли пройти клетку насквозь (город — только начало или конец пути).
+ */
+function planRoute(from, to, neighbors, random = Math.random, options = {}) {
+  const jitter = Number.isFinite(Number(options.jitter)) ? Number(options.jitter) : 1.5;
+  const through = typeof options.through === 'function' ? options.through : () => true;
+  const limit = Math.max(16, Math.floor(Number(options.maxCells) || 4096));
+  const start = cellKey(from.sx, from.sy);
+  const goal = cellKey(to.sx, to.sy);
+  const dist = new Map([[start, 0]]);
+  const prev = new Map();
+  const cells = new Map([[start, { sx: from.sx, sy: from.sy }]]);
+  const open = [start];
+  const done = new Set();
+  while (open.length && done.size < limit) {
+    let best = 0;
+    for (let i = 1; i < open.length; i += 1) if (dist.get(open[i]) < dist.get(open[best])) best = i;
+    const key = open.splice(best, 1)[0];
+    if (done.has(key)) continue;
+    done.add(key);
+    if (key === goal) break;
+    const cell = cells.get(key);
+    if (key !== start && !through(cell.sx, cell.sy)) continue;
+    for (const next of neighbors(cell.sx, cell.sy) || []) {
+      const nextKey = cellKey(next.sx, next.sy);
+      if (done.has(nextKey)) continue;
+      const cost = dist.get(key) + 1 + random() * jitter;
+      if (cost < (dist.get(nextKey) ?? Infinity)) {
+        dist.set(nextKey, cost);
+        prev.set(nextKey, key);
+        cells.set(nextKey, { sx: next.sx, sy: next.sy });
+        open.push(nextKey);
+      }
+    }
+  }
+  if (!prev.has(goal) && start !== goal) return null;
+  const path = [];
+  for (let key = goal; key; key = prev.get(key)) {
+    path.push(cells.get(key));
+    if (key === start) break;
+  }
+  return path.reverse();
+}
+
+function travellerNextCell(group) {
+  return Array.isArray(group?.route) ? group.route[(group.routeIndex || 0) + 1] || null : null;
+}
+
+/** Куда путник пойдёт из своей зоны: сторона следующей клетки маршрута. */
+function travellerNextDirection(group) {
+  const next = travellerNextCell(group);
+  return next ? directionBetweenCells(group, next) : '';
+}
+
+/** Сторона, с которой путник вошёл в свою зону (из предыдущей клетки маршрута). */
+function travellerCameFrom(group) {
+  const previous = Array.isArray(group?.route) && group.routeIndex > 0 ? group.route[group.routeIndex - 1] : null;
+  return previous ? directionBetweenCells(previous, group) : '';
+}
+
+/**
+ * Шаг путника в следующую клетку маршрута. Последняя клетка — город: путник
+ * входит в него и отдыхает, а потом выбирает новый путь.
+ */
+function travellerStep(state, config, group, now = Date.now(), random = Math.random) {
+  const species = config.speciesById[group.speciesId];
+  const next = travellerNextCell(group);
+  if (!species?.travel || !next) return null;
+  const from = { sx: group.sx, sy: group.sy };
+  const direction = directionBetweenCells(from, next);
+  moveGroup(state, group, next.sx, next.sy);
+  group.routeIndex += 1;
+  const arrived = !travellerNextCell(group);
+  if (arrived) {
+    group.state = 'rest';
+    group.route = null;
+    group.routeIndex = 0;
+    group.fleeing = false;
+    group.restUntil = now + between(random, species.travel.restMinutes) * 60000;
+    group.nextStepAt = group.restUntil;
+  } else {
+    group.nextStepAt = now + between(random, group.fleeing ? config.roam.huntStepSeconds : species.stepSeconds) * 1000;
+  }
+  state.dirty = true;
+  return { from, to: next, direction, arrived };
+}
+
+/** Разбитый путник поворачивает назад, в город, откуда вышел, — той же дорогой. */
+function travellerTurnBack(group, now = Date.now()) {
+  if (!Array.isArray(group.route) || group.routeIndex <= 0) {
+    // Ещё в городе или только вышел: возвращаться некуда, путь заново после отдыха.
+    group.fleeing = false;
+    return false;
+  }
+  group.route = group.route.slice(0, group.routeIndex + 1).reverse();
+  group.routeIndex = 0;
+  group.fleeing = true;
+  group.state = 'travel';
+  group.nextStepAt = Math.min(group.nextStepAt || now, now);
+  return true;
+}
+
+/**
+ * Новый путь из города: караван — в другой город, патруль — обход нескольких
+ * зон вокруг своего города и назад. ctx.cities() → [{id, sx, sy}], ctx.route(from,
+ * to, random) → клетки от from до to включительно (со случайной ценой переходов,
+ * поэтому пути между одними городами разные).
+ */
+function travellerPlan(state, config, group, species, ctx, now, random) {
+  const cities = typeof ctx.cities === 'function' ? ctx.cities() : [];
+  const route = typeof ctx.route === 'function' ? ctx.route
+    : typeof ctx.neighbors === 'function'
+      ? (from, to, rnd) => planRoute(from, to, ctx.neighbors, rnd, { through: ctx.through })
+      : null;
+  const here = { sx: group.sx, sy: group.sy };
+  let path = null;
+  if (route && species.travel.mode === 'patrol') {
+    const home = cities.find(city => city.id === group.home) || null;
+    const stops = [];
+    for (let attempt = 0; home && stops.length < species.travel.patrolStops && attempt < 40; attempt += 1) {
+      const r = species.travel.patrolRadius;
+      const sx = home.sx + Math.round((random() * 2 - 1) * r);
+      const sy = home.sy + Math.round((random() * 2 - 1) * r);
+      const mode = typeof ctx.modeAt === 'function' ? ctx.modeAt(sx, sy) : '';
+      if (LIVING_MODES.includes(mode) && !stops.some(stop => stop.sx === sx && stop.sy === sy)) stops.push({ sx, sy });
+    }
+    if (home && stops.length) {
+      path = [here];
+      let from = here;
+      for (const stop of [...stops, home]) {
+        const segment = route(from, stop, random);
+        if (!Array.isArray(segment) || segment.length < 2) { path = null; break; }
+        path.push(...segment.slice(1));
+        from = stop;
+      }
+      group.dest = home.id;
+    }
+  } else if (route) {
+    const options = cities.filter(city => city.sx !== here.sx || city.sy !== here.sy);
+    const dest = options.length ? options[Math.floor(random() * options.length)] : null;
+    const segment = dest ? route(here, dest, random) : null;
+    if (Array.isArray(segment) && segment.length >= 2) {
+      path = segment;
+      group.dest = dest.id;
+    }
+  }
+  if (!path || path.length < 2) {
+    group.restUntil = now + between(random, species.travel.restMinutes) * 60000;
+    group.nextStepAt = group.restUntil;
+    return false;
+  }
+  group.route = path.map(cell => ({ sx: cell.sx, sy: cell.sy }));
+  group.routeIndex = 0;
+  group.fleeing = false;
+  group.state = 'travel';
+  group.nextStepAt = now;
+  state.dirty = true;
+  return true;
+}
+
+/** Путник в городе: членов по составу вида, дом — этот город. */
+function spawnTraveller(state, config, species, city, now, random = Math.random, createMember = null) {
+  const members = [];
+  species.members.forEach((spec, index) => {
+    const count = spec.min + Math.floor(random() * (spec.max - spec.min + 1));
+    for (let i = 0; i < count; i += 1) {
+      const stats = typeof createMember === 'function' ? createMember(spec.type) || {} : {};
+      members.push(sanitizeMember({ id: `m${members.length + 1}`, type: spec.type, spec: index, name: spec.name || stats.name, hp: stats.maxHp, maxHp: stats.maxHp }, members.length));
+    }
+  });
+  if (!members.length) return null;
+  const group = {
+    id: `g${state.nextId++}`,
+    speciesId: species.id,
+    lairId: '',
+    sx: city.sx,
+    sy: city.sy,
+    members,
+    state: 'rest',
+    target: null,
+    // Путники выходят вразнобой, а не все разом.
+    restUntil: now + random() * species.travel.restMinutes[1] * 60000,
+    nextStepAt: 0,
+    online: '',
+    size0: members.length,
+    bornAt: now,
+    home: safeId(city.id, 64),
+    dest: '',
+    route: null,
+    routeIndex: 0,
+    fleeing: false
+  };
+  group.nextStepAt = group.restUntil;
+  state.groups.set(group.id, group);
+  indexAdd(state, group);
+  state.dirty = true;
+  return group;
+}
+
+/**
+ * Караванов в мире и патрулей у каждого города — столько, сколько задано. Мир
+ * сразу получает всех, погибших восполняет по одному за respawnMinutes.
+ */
+function dispatchTravellers(state, config, ctx, now, random, events) {
+  const cities = typeof ctx.cities === 'function' ? ctx.cities() : [];
+  if (!cities.length) return;
+  if (!state.travellerNextAt) state.travellerNextAt = {};
+  for (const species of config.species) {
+    if (species.kind !== 'traveller' || !species.travel.count) continue;
+    const alive = [...state.groups.values()].filter(group => group.speciesId === species.id);
+    const slots = species.travel.mode === 'patrol'
+      ? cities.map(city => ({ key: `${species.id}:${city.id}`, have: alive.filter(group => group.home === city.id).length, city }))
+      : [{ key: species.id, have: alive.length, city: null }];
+    const respawnMs = species.travel.respawnMinutes * 60000;
+    const spawnOne = slot => {
+      const city = slot.city || cities[Math.floor(random() * cities.length)];
+      const group = spawnTraveller(state, config, species, city, now, random, ctx.createMember);
+      if (group) events.push({ type: 'spawn', groupId: group.id, sx: group.sx, sy: group.sy });
+      return group;
+    };
+    for (const slot of slots) {
+      // Первое заселение — всех сразу.
+      if (!Object.prototype.hasOwnProperty.call(state.travellerNextAt, slot.key)) {
+        for (let have = slot.have; have < species.travel.count && state.groups.size < config.maxGroups; have += 1) {
+          if (!spawnOne(slot)) break;
+        }
+        state.travellerNextAt[slot.key] = now + respawnMs;
+        state.dirty = true;
+        continue;
+      }
+      // Полный состав: часы восполнения стоят на «срок от сейчас», и замена
+      // погибшим приходит не раньше чем через respawnMinutes после потери.
+      if (slot.have >= species.travel.count) {
+        state.travellerNextAt[slot.key] = now + respawnMs;
+        continue;
+      }
+      if (now < state.travellerNextAt[slot.key] || state.groups.size >= config.maxGroups) continue;
+      spawnOne(slot);
+      state.travellerNextAt[slot.key] = now + respawnMs;
+      state.dirty = true;
+    }
+  }
+}
+
+// --- стычки групп без игроков ---------------------------------------------------------------
+
+/** Враждебны ли виды: ctx.hostile(a, b) или разные фракции. Фауна в стычки не тянется. */
+function speciesHostile(ctx, a, b) {
+  if (!a || !b || a.kind === 'fauna' || b.kind === 'fauna') return false;
+  if (a.kind === 'traveller' && b.kind === 'traveller') return false;
+  if (typeof ctx.hostile === 'function') return ctx.hostile(a, b) === true;
+  return a.faction !== b.faction;
+}
+
+function groupPower(group, species) {
+  return group.members.reduce((sum, member) => sum + Math.max(0, member.hp), 0) * (species?.combat ?? 1);
+}
+
+/** Урон группе: кусками по случайным особям; павшие — в список потерь. */
+function woundGroup(group, damage, random, casualties) {
+  let left = damage;
+  while (left > 0.5 && group.members.length) {
+    const index = Math.floor(random() * group.members.length);
+    const member = group.members[index];
+    const dealt = Math.min(left, Math.max(8, member.maxHp * 0.45), member.hp);
+    member.hp = Math.round(member.hp - dealt);
+    left -= dealt;
+    if (member.hp <= 0) {
+      group.members.splice(index, 1);
+      casualties.push({ groupId: group.id, speciesId: group.speciesId, memberId: member.id, type: member.type, spec: member.spec, name: member.name, maxHp: member.maxHp });
+    }
+  }
+}
+
+/**
+ * Стычка двух групп в одной зоне без игроков: несколько обменов ударами, пока
+ * одна из сторон не сломается (потеряла fleeAt своего состава) или не кончатся
+ * раунды. Проигравший уходит (путник — назад по своей дороге), победитель
+ * задерживается на месте боя. Павшие — насовсем.
+ */
+function clashGroups(state, config, a, b, now = Date.now(), random = Math.random) {
+  const species = new Map([[a, config.speciesById[a.speciesId]], [b, config.speciesById[b.speciesId]]]);
+  const start = new Map([[a, a.members.length], [b, b.members.length]]);
+  const broken = group => !group.members.length
+    || 1 - group.members.length / Math.max(1, start.get(group)) >= (species.get(group)?.fleeAt ?? 0.5);
+  const casualties = [];
+  for (let round = 0; round < 6 && !broken(a) && !broken(b); round += 1) {
+    const hitA = groupPower(b, species.get(b)) * 0.16 * (0.7 + random() * 0.6);
+    const hitB = groupPower(a, species.get(a)) * 0.16 * (0.7 + random() * 0.6);
+    woundGroup(a, hitA, random, casualties);
+    woundGroup(b, hitB, random, casualties);
+  }
+  const loser = broken(a) !== broken(b)
+    ? (broken(a) ? a : b)
+    : (groupPower(a, species.get(a)) < groupPower(b, species.get(b)) ? a : b);
+  const winner = loser === a ? b : a;
+  const destroyed = [];
+  for (const group of [a, b]) {
+    group.clashReadyAt = now + config.roam.clashCooldownMinutes * 60000;
+    if (!group.members.length) {
+      indexRemove(state, group);
+      state.groups.delete(group.id);
+      destroyed.push(group.id);
+    }
+  }
+  if (loser.members.length) {
+    if (species.get(loser)?.kind === 'traveller') {
+      travellerTurnBack(loser, now);
+    } else {
+      const lair = state.lairs.get(loser.lairId) || null;
+      loser.state = 'return';
+      loser.target = lair ? { sx: lair.sx, sy: lair.sy } : null;
+      loser.shakenUntil = now + config.roam.shakenMinutes * 60000;
+      loser.nextStepAt = now;
+    }
+  }
+  // Победитель задерживается у места боя.
+  if (winner.members.length) winner.nextStepAt = Math.max(Number(winner.nextStepAt || 0), now + 120000);
+  state.dirty = true;
+  return {
+    groups: [a.id, b.id],
+    species: [a.speciesId, b.speciesId],
+    winner: winner.members.length ? winner.id : '',
+    loser: loser.id,
+    casualties,
+    destroyed
+  };
+}
+
+/**
+ * Место стычки: павшие лежат в зоне, пока их не увидит игрок (shown — канал,
+ * где их показали) или не истечёт срок. Старые места вытесняются новыми.
+ */
+function recordAftermath(state, sx, sy, casualties, now) {
+  if (!Array.isArray(state.aftermath)) state.aftermath = [];
+  if (!casualties.length) return null;
+  const row = {
+    id: `af${state.nextId++}`, sx, sy, at: now, shown: '',
+    dead: casualties.slice(0, 24).map(dead => ({ speciesId: dead.speciesId, type: dead.type, spec: dead.spec || 0, name: dead.name || '' }))
+  };
+  state.aftermath.push(row);
+  const here = state.aftermath.filter(site => site.sx === sx && site.sy === sy);
+  for (const old of here.slice(0, Math.max(0, here.length - AFTERMATH_PER_CELL))) state.aftermath.splice(state.aftermath.indexOf(old), 1);
+  if (state.aftermath.length > AFTERMATH_MAX) state.aftermath.splice(0, state.aftermath.length - AFTERMATH_MAX);
+  state.dirty = true;
+  return row;
+}
+
+/** Не показанные ещё места стычек в зоне (sx, sy). */
+function aftermathAt(state, sx, sy, now = Date.now()) {
+  return (state.aftermath || []).filter(site => site.sx === sx && site.sy === sy && !site.shown && now - site.at < AFTERMATH_TTL_MS);
+}
+
+function expireAftermath(state, now = Date.now()) {
+  const before = (state.aftermath || []).length;
+  state.aftermath = (state.aftermath || []).filter(site => now - site.at < AFTERMATH_TTL_MS);
+  if (state.aftermath.length !== before) state.dirty = true;
+}
+
+/** Враждебные группы вне сцен, стоящие в одной зоне без игроков, сходятся в стычке. */
+function resolveClashes(state, config, ctx, now, random, minutes, events) {
+  if (!(minutes > 0) || !(config.roam.clashPerMinute > 0)) return;
+  const occupied = typeof ctx.occupied === 'function' ? ctx.occupied : () => false;
+  for (const key of [...state.cellIndex.keys()]) {
+    const ids = state.cellIndex.get(key);
+    if (!ids || ids.size < 2) continue;
+    const here = [...ids].map(id => state.groups.get(id)).filter(group => group && !group.online);
+    if (here.length < 2 || occupied(here[0].sx, here[0].sy)) continue;
+    for (let i = 0; i < here.length; i += 1) {
+      for (let j = i + 1; j < here.length; j += 1) {
+        const a = here[i];
+        const b = here[j];
+        if (!state.groups.has(a.id) || !state.groups.has(b.id)) continue;
+        if (now < Number(a.clashReadyAt || 0) || now < Number(b.clashReadyAt || 0)) continue;
+        const sa = config.speciesById[a.speciesId];
+        const sb = config.speciesById[b.speciesId];
+        if (!speciesHostile(ctx, sa, sb)) continue;
+        const aggression = Math.max(sa.aggression, sb.aggression);
+        if (random() >= 1 - Math.exp(-config.roam.clashPerMinute * aggression * minutes)) continue;
+        const { sx, sy } = a;
+        const result = clashGroups(state, config, a, b, now, random);
+        const site = recordAftermath(state, sx, sy, result.casualties, now);
+        events.push({ type: 'clash', sx, sy, at: now, aftermathId: site?.id || '', ...result });
+      }
+    }
+  }
 }
 
 /** Ближайшая занятая сцена в пределах чутья вида (по Чебышёву). */
@@ -499,9 +986,12 @@ function tickEcology(state, config, ctx = {}, now = Date.now(), random = Math.ra
   const minutes = Math.max(0, (now - (state.lastTickAt || now)) / 60000);
   state.lastTickAt = now;
 
-  // Пополнение логов: медленно и только без игроков в клетке логова.
+  // Пополнение логов: медленно и только без игроков в клетке логова. Под пределом
+  // групп первыми встают пустые и дольше всех ждавшие логова, а не первые по списку.
   const counts = lairGroupCounts(state);
-  for (const lair of state.lairs.values()) {
+  const refillOrder = [...state.lairs.values()]
+    .sort((a, b) => ((counts.get(a.id) || 0) - (counts.get(b.id) || 0)) || (a.refillAt - b.refillAt));
+  for (const lair of refillOrder) {
     if (state.groups.size >= config.maxGroups) break;
     const capacity = config.lairs.capacity[lair.mode] || 0;
     if ((counts.get(lair.id) || 0) >= capacity || now < lair.refillAt || occupied(lair.sx, lair.sy)) continue;
@@ -524,6 +1014,21 @@ function tickEcology(state, config, ctx = {}, now = Date.now(), random = Math.ra
       }
     }
     const due = now >= group.nextStepAt;
+    // Путники идут своим маршрутом: из города в город или обходом у своего города.
+    if (species.kind === 'traveller') {
+      if (!due) continue;
+      if (group.state !== 'travel' || !travellerNextCell(group)) {
+        travellerPlan(state, config, group, species, ctx, now, random);
+        continue;
+      }
+      const stepped = travellerStep(state, config, group, now, random);
+      if (!stepped) continue;
+      events.push({ type: 'move', groupId: group.id, from: stepped.from, to: stepped.to, direction: stepped.direction });
+      if (!stepped.arrived && occupied(group.sx, group.sy)) {
+        events.push({ type: 'arrive', groupId: group.id, sx: group.sx, sy: group.sy, direction: stepped.direction });
+      }
+      continue;
+    }
     // Отдыхающая группа между шагами прислушивается: стрельба и шум в
     // сценах рядом поднимают её раньше конца отдыха.
     if (!due) {
@@ -553,12 +1058,17 @@ function tickEcology(state, config, ctx = {}, now = Date.now(), random = Math.ra
         continue;
       }
       group.state = 'roam';
-      group.target = pickRoamTarget(group, species, lair, ctx, random);
+      // Иногда после отдыха группа уходит в дальний обход — за несколько зон.
+      group.target = random() < species.migrateChance
+        ? pickRoamTarget(group, species, lair, ctx, random, config.roam.migrateRadius)
+        : pickRoamTarget(group, species, lair, ctx, random);
     }
     if ((group.state === 'return' || group.state === 'flee') && !group.target) group.target = home;
     if (!group.target || (group.target.sx === group.sx && group.target.sy === group.sy)) {
-      // Цель достигнута: обход → домой, домой → отдых.
-      if (group.state === 'roam') {
+      // Цель достигнута: обход → дальше (с вероятностью wander) или домой, домой → отдых.
+      if (group.state === 'roam' && random() < species.wander) {
+        group.target = pickRoamTarget(group, species, lair, ctx, random);
+      } else if (group.state === 'roam') {
         group.state = 'return';
         group.target = home;
       } else {
@@ -593,6 +1103,9 @@ function tickEcology(state, config, ctx = {}, now = Date.now(), random = Math.ra
     events.push({ type: 'move', groupId: group.id, from, to: { sx: group.sx, sy: group.sy }, direction });
     if (occupied(group.sx, group.sy)) events.push({ type: 'arrive', groupId: group.id, sx: group.sx, sy: group.sy, direction });
   }
+  dispatchTravellers(state, config, ctx, now, random, events);
+  resolveClashes(state, config, ctx, now, random, minutes, events);
+  expireAftermath(state, now);
   return events;
 }
 
@@ -634,8 +1147,11 @@ function setGroupOffline(state, group, hpByMember = new Map(), now = Date.now(),
   for (const member of group.members) {
     if (hpByMember.has(member.id)) member.hp = Math.max(1, Math.min(member.maxHp, Math.round(Number(hpByMember.get(member.id)) || member.hp)));
   }
-  // Бежавшая группа идёт домой и какое-то время не лезет обратно на шум.
-  if (group.state === 'flee') {
+  // Бежавшая группа идёт домой и какое-то время не лезет обратно на шум;
+  // разбитый путник поворачивает назад своей дорогой.
+  if (group.state === 'flee' && group.home !== undefined) {
+    if (!travellerTurnBack(group, now)) group.state = 'rest';
+  } else if (group.state === 'flee') {
     group.state = 'return';
     group.target = null;
     group.shakenUntil = now + (config?.roam?.shakenMinutes ?? DEFAULT_CONFIG.roam.shakenMinutes) * 60000;
@@ -709,6 +1225,7 @@ function ecologySummary(state, config) {
 module.exports = {
   ECOLOGY_VERSION,
   LIVING_MODES,
+  HUMAN_TYPES,
   STEPS,
   normalizeEcologyConfig,
   emptyEcologyState,
@@ -716,6 +1233,7 @@ module.exports = {
   serializeEcologyState,
   buildLairs,
   resetLairs,
+  purgeGroups,
   spawnGroup,
   tickEcology,
   groupsAt,
@@ -728,6 +1246,16 @@ module.exports = {
   groupSighting,
   directionBetweenCells,
   canEnter,
+  planRoute,
+  travellerNextCell,
+  travellerNextDirection,
+  travellerCameFrom,
+  travellerStep,
+  travellerTurnBack,
+  speciesHostile,
+  clashGroups,
+  aftermathAt,
+  AFTERMATH_TTL_MS,
   ecologySummary,
   cellKey,
   hash01

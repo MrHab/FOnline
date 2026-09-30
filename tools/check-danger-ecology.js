@@ -28,7 +28,7 @@ const config = eco.normalizeEcologyConfig({
     capacity: { pvp: 1, pvpFullDrop: 2, pvpBlack: 2 },
     refillMinutes: { pvp: 60, pvpFullDrop: 30, pvpBlack: 20 }
   },
-  roam: { restMinutes: [1, 2], stepSeconds: [60, 60], huntStepSeconds: [30, 30], radius: 2 },
+  roam: { restMinutes: [1, 2], stepSeconds: [60, 60], huntStepSeconds: [30, 30], radius: 2, migrateRadius: 4 },
   species: [
     { id: 'pack', name: 'Стая', kind: 'monster', members: [{ type: 'beast', min: 3, max: 4 }],
       habitat: { pvpFullDrop: 2, pvpBlack: 3 }, perceptionCells: 2, aggression: 1, fleeAt: 0.5 },
@@ -105,7 +105,7 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
     if (!config.speciesById.pack.habitat[modeAt(walker.sx, walker.sy)]) invalid += 1;
   }
   assert(maxAway >= 1, 'the group leaves its lair to roam');
-  assert(maxAway <= config.speciesById.pack.roamRadius + 1, `the group roams near its lair (${maxAway})`);
+  assert(maxAway <= config.roam.migrateRadius + 1, `the group roams near its lair, at most a far walk away (${maxAway})`);
   assert(wentHome, 'the group comes back home');
   assert.equal(invalid, 0, 'the group never walks into land it cannot live in');
   now = t;
@@ -233,7 +233,8 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
   const creatures = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'mutants.json'), 'utf8')).types.map(row => row.id);
   for (const row of real.species) {
     for (const spec of row.members) {
-      assert(spec.type === 'raider' || creatures.includes(spec.type), `${row.id}: ${spec.type} is a creature of the Kromka bestiary`);
+      assert(eco.HUMAN_TYPES.includes(spec.type) || creatures.includes(spec.type), `${row.id}: ${spec.type} is a person or a creature of the Kromka bestiary`);
+      if (row.kind === 'traveller') assert(eco.HUMAN_TYPES.includes(spec.type), `${row.id}: travellers are people`);
     }
   }
   console.log(`PASS the game data lists Kromka species only (${real.species.map(row => row.id).join(', ')})`);
@@ -276,6 +277,225 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
   assert(arrivals.some(event => event.groupId === blue.id && event.direction === 'east'), 'the blue group hunts through the open gate');
   for (const group of beyond) assert.equal(zoneState.groups.get(group.id)?.sx, 2, 'a closed gate holds the group in its zone');
   console.log('PASS on the zone grid groups walk only through open gates, zone lairs keep their slots and blue zones are alive');
+}
+
+// --- дальние обходы --------------------------------------------------------------------------
+{
+  // Группы не сидят у логова: обход продолжается дальше, иногда — на несколько
+  // зон, но за пределы дальнего обхода никто не уходит и все возвращаются.
+  const far = eco.normalizeEcologyConfig({
+    lairs: { capacity: { pvpFullDrop: 1 }, refillMinutes: { pvpFullDrop: 60 } },
+    roam: { restMinutes: [1, 2], stepSeconds: [60, 60], radius: 1, migrateRadius: 4 },
+    species: [{ id: 'roamer', members: [{ type: 'beast', min: 2, max: 2 }], habitat: { pvpFullDrop: 1 }, aggression: 0, migrateChance: 0.5, wander: 0.5 }]
+  });
+  const world = eco.emptyEcologyState('far');
+  const homes = [];
+  for (let i = 0; i < 12; i += 1) {
+    homes.push({ id: `lair_far_${i}`, speciesId: 'roamer', sx: 10 + (i % 4) * 5, sy: 10 + Math.floor(i / 4) * 5, mode: 'pvpFullDrop', region: '', slot: 0, refillAt: 0 });
+  }
+  eco.resetLairs(world, homes, 'far');
+  const ctx = {
+    modeAt: (sx, sy) => (sx >= 0 && sx < 40 && sy >= 0 && sy < 40 ? 'pvpFullDrop' : ''),
+    occupied: () => false,
+    occupiedCells: [],
+    createMember: members
+  };
+  const rnd = seeded(11);
+  let t = 9_000_000;
+  eco.tickEcology(world, far, ctx, t, rnd);
+  let farthest = 0;
+  const walked = new Map();
+  const cameBack = new Set();
+  for (let i = 0; i < 1500; i += 1) {
+    t += 60000;
+    eco.tickEcology(world, far, ctx, t, rnd);
+    for (const group of world.groups.values()) {
+      const lair = world.lairs.get(group.lairId);
+      const away = Math.max(Math.abs(group.sx - lair.sx), Math.abs(group.sy - lair.sy));
+      farthest = Math.max(farthest, away);
+      if (away === 0 && (walked.get(group.id) || 0) > far.roam.radius) cameBack.add(group.id);
+      walked.set(group.id, Math.max(walked.get(group.id) || 0, away));
+    }
+  }
+  assert(farthest > far.roam.radius, `groups walk beyond their near round: ${farthest}`);
+  assert(farthest <= far.roam.migrateRadius + 1, `but not beyond a far walk: ${farthest}`);
+  assert(cameBack.size > 0, 'a group comes back from a far walk');
+  console.log(`PASS groups wander on and sometimes walk far, up to ${farthest} zones from the lair, and come back`);
+}
+
+// --- стычки без игроков ------------------------------------------------------------------------
+{
+  const fight = eco.normalizeEcologyConfig({
+    roam: { restMinutes: [240, 240], stepSeconds: [600, 600], radius: 1, clashPerMinute: 0.5, clashCooldownMinutes: 10 },
+    species: [
+      { id: 'raiders', kind: 'raider', faction: 'raiders', members: [{ type: 'raider', min: 4, max: 4 }], habitat: { pvp: 1 }, aggression: 0.7, fleeAt: 0.5 },
+      { id: 'beasts', kind: 'monster', faction: 'gari', members: [{ type: 'beast', min: 3, max: 3 }], habitat: { pvp: 1 }, aggression: 0.8, fleeAt: 0.6 },
+      { id: 'lanterns', kind: 'fauna', faction: 'fonari', members: [{ type: 'deer', min: 3, max: 3 }], habitat: { pvp: 1 }, aggression: 0 }
+    ]
+  });
+  const stats = type => ({ maxHp: type === 'raider' ? 55 : 39 });
+  const world = eco.emptyEcologyState('fight');
+  eco.resetLairs(world, ['raiders', 'beasts', 'lanterns']
+    .map((speciesId, i) => ({ id: `lair_f_${i}`, speciesId, sx: 3, sy: 3, mode: 'pvp', region: '', slot: i, refillAt: 0 })), 'fight');
+  const quietFight = { modeAt: () => 'pvp', occupied: () => false, occupiedCells: [], createMember: stats };
+  const busy = { ...quietFight, occupied: (sx, sy) => sx === 3 && sy === 3, occupiedCells: [{ sx: 3, sy: 3 }] };
+  let t = 20_000_000;
+  eco.tickEcology(world, fight, quietFight, t, seeded(21));
+  assert.equal(world.groups.size, 3, 'three groups in one zone');
+  // С игроками в зоне дерутся сами NPC в сцене — стычки вне сцены нет.
+  t += 30 * 60000;
+  let clashes = eco.tickEcology(world, fight, busy, t, seeded(22)).filter(event => event.type === 'clash');
+  assert.equal(clashes.length, 0, 'no offline clash in a zone with players');
+  t += 30 * 60000;
+  clashes = eco.tickEcology(world, fight, quietFight, t, seeded(23)).filter(event => event.type === 'clash');
+  assert.equal(clashes.length, 1, 'raiders and beasts fight; lanterns stay out of it');
+  const clash = clashes[0];
+  assert(!clash.species.includes('lanterns'), 'the peaceful fauna is not dragged into a clash');
+  assert(clash.casualties.length > 0, 'a clash kills');
+  const raiders = [...world.groups.values()].find(group => group.speciesId === 'raiders');
+  assert.equal(clash.winner, raiders.id, 'the stronger band wins');
+  const beasts = [...world.groups.values()].find(group => group.speciesId === 'beasts');
+  if (beasts) {
+    assert.equal(beasts.state, 'return', 'the beaten pack leaves');
+    assert(beasts.shakenUntil > t, 'and keeps away for a while');
+  }
+  const dead = clash.casualties.filter(row => row.speciesId === 'beasts').length;
+  assert.equal((beasts?.members.length || 0) + dead, 3, 'the fallen do not come back');
+  // Павшие остаются местом боя в зоне, пока их не увидит игрок; место переживает сохранение.
+  const sites = eco.aftermathAt(world, 3, 3, t);
+  assert.equal(sites.length, 1, 'the clash leaves its fallen in the zone');
+  assert.equal(sites[0].dead.length, clash.casualties.length, 'every fallen lies there');
+  assert.equal(clash.aftermathId, sites[0].id);
+  const reloaded = eco.normalizeEcologyState(JSON.parse(JSON.stringify(eco.serializeEcologyState(world))), fight);
+  assert.equal(eco.aftermathAt(reloaded, 3, 3, t).length, 1, 'the place of a clash survives a restart');
+  assert.equal(eco.aftermathAt(world, 3, 3, t + eco.AFTERMATH_TTL_MS + 1).length, 0, 'and fades after a while');
+  t += 60000;
+  assert.equal(eco.tickEcology(world, fight, quietFight, t, seeded(24)).filter(event => event.type === 'clash').length, 0, 'a clash is followed by a lull');
+  console.log(`PASS hostile groups in a zone without players clash (${clash.casualties.length} fallen), the stronger wins, the fauna stays out, a zone with players is left to the scene`);
+}
+
+// --- путники ----------------------------------------------------------------------------------
+{
+  // Полоса 12×5 живых клеток, города на её концах: караван ходит между ними
+  // разными путями, патруль обходит зоны у своего города.
+  const cities = [{ id: 'westTown', sx: 0, sy: 2 }, { id: 'eastTown', sx: 11, sy: 2 }];
+  const isCity = (sx, sy) => cities.some(city => city.sx === sx && city.sy === sy);
+  const inside = (sx, sy) => sx >= 0 && sx < 12 && sy >= 0 && sy < 5;
+  const stripMode = (sx, sy) => (inside(sx, sy) && !isCity(sx, sy) ? 'pvp' : '');
+  const neighbors = (sx, sy) => Object.values(eco.STEPS)
+    .map(step => ({ sx: sx + step.dx, sy: sy + step.dy }))
+    .filter(cell => inside(cell.sx, cell.sy));
+  const through = (sx, sy) => !isCity(sx, sy);
+  const routes = new Set();
+  for (let i = 0; i < 12; i += 1) {
+    const path = eco.planRoute(cities[0], cities[1], neighbors, seeded(100 + i), { through });
+    assert(path && path.length >= 12, 'a route joins the cities');
+    for (let k = 1; k < path.length; k += 1) {
+      assert.equal(Math.abs(path[k].sx - path[k - 1].sx) + Math.abs(path[k].sy - path[k - 1].sy), 1, 'a route steps to a neighbouring zone');
+      if (k < path.length - 1) assert(!isCity(path[k].sx, path[k].sy), 'a route does not pass through a city');
+    }
+    routes.add(path.map(cell => `${cell.sx},${cell.sy}`).join(' '));
+  }
+  assert(routes.size >= 4, `caravans take different ways between the same cities: ${routes.size}`);
+
+  const travel = eco.normalizeEcologyConfig({
+    roam: { restMinutes: [30, 30], stepSeconds: [60, 60], huntStepSeconds: [30, 30], radius: 1, clashPerMinute: 2 },
+    species: [
+      { id: 'caravan', kind: 'traveller', faction: 'wayfarers', members: [{ type: 'guard', min: 3, max: 3 }, { type: 'porter', min: 2, max: 2 }],
+        habitat: { pvp: 1 }, aggression: 0.2, fleeAt: 0.4, stepSeconds: [60, 60], travel: { mode: 'caravan', count: 2, restMinutes: [1, 2], respawnMinutes: 30 } },
+      { id: 'patrol', kind: 'traveller', faction: 'wayfarers', members: [{ type: 'guard', min: 3, max: 3 }],
+        habitat: { pvp: 1 }, aggression: 0.8, stepSeconds: [60, 60], travel: { mode: 'patrol', count: 1, restMinutes: [1, 2], patrolRadius: 2, patrolStops: 2 } },
+      { id: 'raiders', kind: 'raider', faction: 'raiders', members: [{ type: 'raider', min: 5, max: 5 }], habitat: { pvp: 1 }, aggression: 1, fleeAt: 0.8 }
+    ]
+  });
+  const human = () => ({ maxHp: 55 });
+  const world = eco.emptyEcologyState('travel');
+  const ctx = { modeAt: stripMode, cities: () => cities, neighbors, through, occupied: () => false, occupiedCells: [], createMember: human };
+  const rnd = seeded(31);
+  let t = 30_000_000;
+  eco.tickEcology(world, travel, ctx, t, rnd);
+  const caravans = () => [...world.groups.values()].filter(group => group.speciesId === 'caravan');
+  const patrols = () => [...world.groups.values()].filter(group => group.speciesId === 'patrol');
+  assert.equal(caravans().length, 2, 'the world gets its caravans at once');
+  assert.equal(patrols().length, 2, 'every city gets its patrol');
+  assert(caravans().every(group => isCity(group.sx, group.sy)), 'caravans start in a city');
+  const trips = new Map();
+  let patrolFarthest = 0;
+  let patrolBackHome = 0;
+  for (let i = 0; i < 600; i += 1) {
+    t += 30000;
+    for (const event of eco.tickEcology(world, travel, ctx, t, rnd)) {
+      if (event.type !== 'move') continue;
+      const group = world.groups.get(event.groupId);
+      if (!group) continue;
+      assert.equal(Math.abs(event.to.sx - event.from.sx) + Math.abs(event.to.sy - event.from.sy), 1, 'a traveller steps to a neighbouring zone');
+      if (group.speciesId === 'caravan' && isCity(event.to.sx, event.to.sy)) trips.set(group.id, (trips.get(group.id) || 0) + 1);
+      if (group.speciesId === 'patrol' && isCity(event.to.sx, event.to.sy)) patrolBackHome += 1;
+    }
+    for (const group of patrols()) {
+      const home = cities.find(city => city.id === group.home);
+      patrolFarthest = Math.max(patrolFarthest, Math.max(Math.abs(group.sx - home.sx), Math.abs(group.sy - home.sy)));
+    }
+  }
+  assert([...trips.values()].some(count => count >= 2), 'a caravan reaches a city, rests and sets out again');
+  assert(patrolBackHome > 0, 'a patrol comes home');
+  assert(patrolFarthest >= 1 && patrolFarthest <= 3, `a patrol walks the zones around its city (${patrolFarthest})`);
+
+  // Налётчики на пути каравана: стычка; разбитый караван поворачивает назад своей дорогой.
+  let caravan = caravans().find(group => group.state === 'travel' && group.routeIndex >= 1 && eco.travellerNextCell(group));
+  for (let i = 0; i < 400 && !caravan; i += 1) {
+    t += 30000;
+    eco.tickEcology(world, travel, ctx, t, rnd);
+    caravan = caravans().find(group => group.state === 'travel' && group.routeIndex >= 1 && eco.travellerNextCell(group));
+  }
+  assert(caravan, 'a caravan is on the road');
+  const cameFrom = { ...caravan.route[caravan.routeIndex - 1] };
+  caravan.nextStepAt = t + 3600000;
+  world.lairs.set('lair_r', { id: 'lair_r', speciesId: 'raiders', sx: caravan.sx, sy: caravan.sy, mode: 'pvp', region: '', slot: 0, refillAt: 0 });
+  let met = null;
+  for (let i = 0; i < 40 && !met; i += 1) {
+    t += 20000;
+    met = eco.tickEcology(world, travel, ctx, t, rnd).find(event => event.type === 'clash' && event.groups.includes(caravan.id)) || null;
+  }
+  assert(met, 'raiders fall on a caravan in their zone');
+  assert(met.casualties.some(row => row.groupId === caravan.id), 'the caravan loses people');
+  assert.equal(met.loser, caravan.id, 'five raiders beat a caravan of five');
+  if (world.groups.has(caravan.id)) {
+    assert(caravan.fleeing, 'a beaten caravan turns back');
+    assert.deepEqual(eco.travellerNextCell(caravan), cameFrom, 'the way it came');
+  }
+  // Сохранение переживают и путь каравана, и его дом.
+  const copy = eco.normalizeEcologyState(JSON.parse(JSON.stringify(eco.serializeEcologyState(world))), travel);
+  for (const group of caravans()) {
+    const saved = copy.groups.get(group.id);
+    assert.deepEqual(saved.route, group.route, 'a caravan keeps its route over a restart');
+    assert.equal(saved.home, group.home);
+    assert.equal(saved.routeIndex, group.routeIndex);
+  }
+  console.log(`PASS caravans take ${routes.size} different ways between two cities and travel on, patrols walk around their city, raiders fall on caravans and a beaten one turns back`);
+}
+
+// --- призраки и очередь пополнения ------------------------------------------------------------
+{
+  // Группы вне мира (клетки прежней сетки) убираются; под пределом групп
+  // пополняются пустые логова, а не первые по списку.
+  const red = lairs.filter(lair => lair.mode === 'pvpFullDrop').slice(0, 3);
+  const world = eco.emptyEcologyState('rev-1');
+  eco.resetLairs(world, red, 'rev-1');
+  const spawnNow = 5_000_000;
+  const first = eco.spawnGroup(world, config, world.lairs.get(red[0].id), spawnNow, seeded(3), members);
+  const ghost = eco.spawnGroup(world, config, world.lairs.get(red[1].id), spawnNow, seeded(4), members);
+  eco.moveGroup(world, ghost, 200, 180);
+  assert.equal(eco.purgeGroups(world, group => !!modeAt(group.sx, group.sy)), 1, 'one group stands outside the world');
+  assert(!world.groups.has(ghost.id) && world.groups.has(first.id), 'the ghost is gone, the living group stays');
+  assert.equal(eco.groupsAt(world, 200, 180).length, 0, 'the cell index forgets the ghost');
+  const capped = eco.normalizeEcologyConfig({ ...config, species: config.species, maxGroups: 2 });
+  for (const lair of world.lairs.values()) lair.refillAt = 0;
+  const refill = eco.tickEcology(world, capped, quiet, spawnNow + 1000, seeded(5)).filter(event => event.type === 'spawn');
+  assert.equal(refill.length, 1, 'the group cap allows one more group');
+  const refilled = world.groups.get(refill[0].groupId);
+  assert.notEqual(refilled.lairId, red[0].id, 'an empty lair refills before a lair that already has a group');
+  console.log('PASS groups outside the world are purged and empty lairs refill first under the group cap');
 }
 
 // --- сервер подключает A-Life ------------------------------------------------------------------------

@@ -56,6 +56,17 @@ assert.deepStrictEqual(migration.retiredWorldSites.worldTasks, original.worldTas
 assert.deepStrictEqual(migration.worldTaskHistory, original.worldTaskHistory);
 assert.deepStrictEqual(migration.sites.settlement, original.sites.settlement);
 assert(!archiveUnplacedWorldSites(migration, map), 'Retirement must be idempotent');
+// «Баланс» остался на карте, но это подземелье, а не поселение: его прежняя
+// запись с торговцем, охраной и жителями Комитета уходит в архив.
+{
+  const bunker = { id: 'balanceBunker', type: 'settlement', owner: 'continuity', locationId: 'balanceBunker',
+    workers: [{ role: 'trader', count: 1 }, { role: 'guard', count: 4 }, { role: 'worker', count: 8 }] };
+  const saved = { sites: { settlement: retained, balanceBunker: bunker }, parties: {}, worldTasks: [], worldZones: [], cargoLedger: {} };
+  assert(authoredNodeForSite(map, bunker), 'Balance still stands on the map');
+  assert(archiveUnplacedWorldSites(saved, map));
+  assert.equal(saved.sites.balanceBunker, undefined, 'Balance no longer lives as a settlement');
+  assert.deepStrictEqual(saved.retiredWorldSites.sites.balanceBunker, bunker, 'its old record is archived whole');
+}
 
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'roa-authored-sites-'));
 try {

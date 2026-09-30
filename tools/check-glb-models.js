@@ -17,9 +17,13 @@ const {
   MAX_COLLIDER_PARTS,
   computeWalkCollision
 } = require('./model-collider-geometry');
+const { APPROVED_CREATURES } = require('./build-approved-creature-models');
 if (colliderCatalog?.schema !== 'realm.model-colliders.v1' || !colliderCatalog.models) {
   throw new Error('3D model collider catalog has an invalid schema');
 }
+// Approved creatures have exact bounds asserted by check-approved-creature-models.js,
+// so small animals (a city rat) are exempt from the generic character height floor.
+const APPROVED_CREATURE_FILES = new Set(APPROVED_CREATURES.map(definition => definition.outputFile));
 
 function isNpcLike(file) {
   return /^(?:npc_|trader_npc|brahmin)/.test(file);
@@ -139,7 +143,7 @@ async function main() {
     }
 
     if (isNpcLike(file)) {
-      const tooShort = size.y < 0.45;
+      const tooShort = size.y < 0.45 && !APPROVED_CREATURE_FILES.has(file);
       const tooTall = size.y > 2.7;
       const tooWide = Math.max(size.x, size.z) > 4.2;
       if (tooShort || tooTall || tooWide) {

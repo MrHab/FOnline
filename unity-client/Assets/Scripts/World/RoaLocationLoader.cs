@@ -227,9 +227,27 @@ namespace RealmOfAshes.World
             _currentRoot = new GameObject("Location:" + definition.Id);
             Current = definition;
 
-            // Край места выводит в его зону, а закрытое сюжетом место получает
-            // непроходимый пунктир. У самой зоны края нет: её стены и ворота собирает конструктор.
-            if (definition.ExitZone != null || !definition.CanExitAtEdge)
+            // Зона: сторона, открытая в соседнюю зону, — сплошная полоса перехода,
+            // прочие закрыты (в город ведёт портал). Город: край закрыт целиком, выход —
+            // порталы у ворот. Место: край выводит в его зону, а закрытое сюжетом
+            // место получает непроходимый пунктир.
+            if (definition.Zone != null || definition.CityZone)
+            {
+                var sides = new[] { "north", "east", "south", "west" };
+                var open = new bool[4];
+                var labels = new string[4];
+                for (int side = 0; side < 4; side++)
+                {
+                    LocationTransition strip = definition.CityZone ? null : definition.EdgeStrip(sides[side]);
+                    open[side] = strip != null;
+                    labels[side] = strip?.Label ?? string.Empty;
+                }
+                var exitBoundary = _currentRoot.AddComponent<RoaWorldExitBoundary>();
+                exitBoundary.ConfigureSides(definition.TileWidth, definition.TileDepth, open, labels,
+                    definition.CityZone ? "ГРАНИЦА ГОРОДА" : "КРАЙ ЗОНЫ",
+                    definition.CityZone ? "Выход из города — порталы у ворот" : "Здесь прохода нет");
+            }
+            else if (definition.ExitZone != null || !definition.CanExitAtEdge)
             {
                 var exitBoundary = _currentRoot.AddComponent<RoaWorldExitBoundary>();
                 exitBoundary.Configure(definition.TileWidth, definition.TileDepth);
@@ -285,6 +303,7 @@ namespace RealmOfAshes.World
                 yield return StartCoroutine(assembler.Build(definition, _currentRoot.transform, _objectRoots, _objectEntries,
                     share => Progress = share));
                 RoaZoneGroundCover cover = BuildZoneGroundCover(definition);
+                ShowPlotPads(definition, false);
                 IsLoading = false;
                 string zoneSummary = "Зона " + definition.Id + ": объектов " + assembler.ActiveCount
                     + ", создано новых " + assembler.CreatedCount + ", без префаба " + assembler.MissingPrefabs
@@ -318,6 +337,15 @@ namespace RealmOfAshes.World
                     continue;
                 }
 
+                // Постройка игрока на участке города: в сцене её нет, она — состояние
+                // торгов, и ставится из набора префабов, как в собранной зоне.
+                if (IsPlotBuilding(entry))
+                {
+                    if (PlacePlotBuilding(entry)) built++;
+                    else failures.Add(entry.Id + " (" + entry.Prefab + "): нет префаба в наборе");
+                    continue;
+                }
+
                 // A Kromka scene may deliberately replace the legacy static JSON
                 // composition. Missing static ids are then absent by design: spawning
                 // their old GLB fallbacks would put the retired layout on top of the
@@ -348,6 +376,7 @@ namespace RealmOfAshes.World
                 built++;
             }
 
+            ShowPlotPads(definition, false);
             IsLoading = false;
 
             string summary = "Локация " + definition.Id + ": построено " + built
@@ -364,6 +393,105 @@ namespace RealmOfAshes.World
             }
 
             onDone?.Invoke(true, summary);
+        }
+
+        /// <summary>Мастерская на участке города: её ставит сервер, когда участок застроен.</summary>
+        public static bool IsPlotBuilding(LocationObject entry)
+        {
+            return entry != null && !string.IsNullOrEmpty(entry.Id) && !string.IsNullOrEmpty(entry.Prefab)
+                && entry.Tags != null && entry.Tags.Contains("city-station");
+        }
+
+        /// <summary>
+        /// Обстановка свободного участка: площадка (`plot_N_ground`) и четыре
+        /// пролёта ограды (`plot_N_edge…`). На застроенном участке её место занимает
+        /// мастерская со своим основанием, и прежняя обстановка прячется.
+        /// </summary>
+        private static IEnumerable<string> PlotFixtureIds(LocationObject entry)
+        {
+            string plotId = entry?.Interactive?["plotId"]?.ToString();
+            if (string.IsNullOrEmpty(plotId)) yield break;
+            yield return plotId + "_ground";
+            foreach (string side in new[] { "0-1", "01", "-10", "10" }) yield return plotId + "_edge" + side;
+        }
+
+        private void ShowPlotPads(LocationDefinition definition, bool visible)
+        {
+            foreach (LocationObject entry in definition?.Objects ?? new List<LocationObject>())
+                if (IsPlotBuilding(entry)) ShowPlotFixtures(entry, visible);
+        }
+
+        /// <summary>
+        /// Пролётов застроенного участка сервер в определении не держит, а в сцене
+        /// города они лежат по-прежнему: их находим и в сцене по id.
+        /// </summary>
+        private void ShowPlotFixtures(LocationObject entry, bool visible)
+        {
+            RoaUnityLocationScene scene = _unityLocationRoot != null ? _unityLocationRoot.GetComponent<RoaUnityLocationScene>() : null;
+            foreach (string id in PlotFixtureIds(entry))
+            {
+                if (SetObjectVisible(id, visible)) continue;
+                if (scene != null && scene.TryGetObject(id, out GameObject sceneObject) && sceneObject.activeSelf != visible)
+                    sceneObject.SetActive(visible);
+            }
+        }
+
+        private bool PlacePlotBuilding(LocationObject entry)
+        {
+            GameObject instance = ZoneAssembler.Place(RoaZoneKitCatalog.Instance, entry, _currentRoot.transform);
+            if (instance == null) return false;
+            _objectRoots[entry.Id] = instance;
+            _objectEntries[entry.Id] = entry;
+            return true;
+        }
+
+        /// <summary>
+        /// Участок застроили или снесли, пока игрок в городе: локация перечитывается
+        /// с сервера, и меняются только мастерские на участках — остальная сцена
+        /// не трогается. onChanged получает свежее определение.
+        /// </summary>
+        public IEnumerator RefreshPlotBuildings(string locationId, string revision, Action<LocationDefinition> onChanged)
+        {
+            if (Current == null || _currentRoot == null || IsLoading) yield break;
+            if (!string.Equals(Current.Id, locationId, StringComparison.Ordinal)) yield break;
+            if (string.Equals(Current.Revision, revision, StringComparison.Ordinal)) yield break;
+            bool ok = false;
+            yield return FetchDefinition(locationId, (success, error) =>
+            {
+                ok = success;
+                if (!success) Debug.LogWarning("[ROA] " + error);
+            });
+            LocationDefinition fresh = ok ? GetDefinition(locationId) : null;
+            if (fresh == null || Current == null || _currentRoot == null || !string.Equals(Current.Id, locationId, StringComparison.Ordinal))
+                yield break;
+
+            var wanted = new Dictionary<string, LocationObject>(StringComparer.Ordinal);
+            foreach (LocationObject entry in fresh.Objects ?? new List<LocationObject>())
+                if (IsPlotBuilding(entry)) wanted[entry.Id] = entry;
+            foreach (LocationObject entry in Current.Objects ?? new List<LocationObject>())
+            {
+                if (!IsPlotBuilding(entry)) continue;
+                // Та же постройка остаётся; снесённая или перестроенная уходит в пул.
+                if (wanted.TryGetValue(entry.Id, out LocationObject same) && same.Prefab == entry.Prefab)
+                {
+                    wanted.Remove(entry.Id);
+                    continue;
+                }
+                if (_objectRoots.TryGetValue(entry.Id, out GameObject old)) ZoneAssembler.Release(old);
+                _objectRoots.Remove(entry.Id);
+                _objectEntries.Remove(entry.Id);
+                ShowPlotFixtures(entry, true);
+            }
+            foreach (LocationObject entry in wanted.Values) PlacePlotBuilding(entry);
+            // Город без своей сцены собирается из набора: вернувшиеся пролёты
+            // снесённого участка надо поставить, их ещё нет.
+            foreach (LocationObject entry in fresh.Objects ?? new List<LocationObject>())
+                if (_unityLocationRoot == null && entry != null && !string.IsNullOrEmpty(entry.Prefab)
+                    && entry.Id != null && entry.Id.Contains("_edge") && !_objectRoots.ContainsKey(entry.Id))
+                    PlacePlotBuilding(entry);
+            ShowPlotPads(fresh, false);
+            Current = fresh;
+            onChanged?.Invoke(fresh);
         }
 
         private static string UnitySceneName(string locationId)

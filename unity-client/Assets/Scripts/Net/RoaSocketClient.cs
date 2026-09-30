@@ -73,10 +73,16 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnEnemyActivityDelta;
         public event Action<JObject> OnWorldState;
         public event Action<JObject> OnAnomalyState;
+        /// <summary>Погода комнаты (kromka.weather.v1): рассылка при заметной смене; при входе она же приходит в worldState.weather.</summary>
+        public event Action<JObject> OnWeatherState;
+        /// <summary>Локация комнаты изменилась на сервере (застроили или снесли участок).</summary>
+        public event Action<JObject> OnLocationRevision;
         public event Action<JObject> OnBoltThrown;
 
         /// <summary>Игрок комнаты (в том числе свой) сел на транспорт или спешился: id, vehicle, reason.</summary>
         public event Action<JObject> OnPlayerVehicle;
+        /// <summary>Другой игрок начал или закончил сбор ресурса (type пуст — закончил).</summary>
+        public event Action<JObject> OnPlayerGathering;
         public event Action<JObject> OnArtifactState;
         public event Action<JObject> OnPersonalBaseState;
         public event Action<JObject> OnKromkaClanState;
@@ -448,12 +454,26 @@ namespace RealmOfAshes.Net
                     OnWorldState?.Invoke(state);
             }));
 
+            _connection.On("locationRevision", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
+                    OnLocationRevision?.Invoke(payload);
+            }));
+
             _connection.On("anomalyState", args => _mainThread.Enqueue(() =>
             {
                 var payload = First<JObject>(args);
                 JObject state = payload?["state"] as JObject ?? payload;
                 if (state != null && IsForCurrentRoom(state["roomId"]?.ToString()))
                     OnAnomalyState?.Invoke(state);
+            }));
+
+            _connection.On("weatherState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
+                    OnWeatherState?.Invoke(payload["weather"] as JObject);
             }));
 
             _connection.On("boltThrown", args => _mainThread.Enqueue(() =>
@@ -468,6 +488,13 @@ namespace RealmOfAshes.Net
                 var payload = First<JObject>(args);
                 if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
                     OnPlayerVehicle?.Invoke(payload);
+            }));
+
+            _connection.On("playerGathering", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
+                    OnPlayerGathering?.Invoke(payload);
             }));
 
             _connection.On("artifactState", args => _mainThread.Enqueue(() =>

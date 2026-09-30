@@ -17,6 +17,7 @@ namespace RealmOfAshes.EditorTools
     public static class RoaZoneKitMeasureProbe
     {
         private const string PrefabDir = "Assets/Prefabs/Kromka/RecoveredEnvironment";
+        internal const string KitCollisionName = "KitCollision";
 
         public static void Measure()
         {
@@ -44,6 +45,31 @@ namespace RealmOfAshes.EditorTools
                     else bounds.Encapsulate(renderer.bounds);
                 }
                 bool solid = instance.GetComponentInChildren<Collider>(true) != null;
+                // Префаб может сам назвать свои преграды (узел KitCollision): у
+                // мастерской участка это здание и штабели у двора, а плоский двор
+                // и мастер у рабочего места преградой не считаются. Коробок
+                // больше одной — они уходят в `parts`, общий габарит — их сумма.
+                Transform declared = instance.transform.Find(KitCollisionName);
+                BoxCollider[] declaredBoxes = declared != null ? declared.GetComponents<BoxCollider>() : new BoxCollider[0];
+                if (has && declaredBoxes.Length > 0)
+                {
+                    bounds = declaredBoxes[0].bounds;
+                    foreach (BoxCollider box in declaredBoxes) bounds.Encapsulate(box.bounds);
+                }
+                var parts = new StringBuilder();
+                if (declaredBoxes.Length > 1)
+                {
+                    parts.Append(", \"parts\": [");
+                    for (int i = 0; i < declaredBoxes.Length; i++)
+                    {
+                        Bounds part = declaredBoxes[i].bounds;
+                        if (i > 0) parts.Append(", ");
+                        parts.Append("{\"size\": [").Append(N(part.size.x)).Append(", ").Append(N(part.size.z)).Append("], ");
+                        parts.Append("\"height\": ").Append(N(part.size.y)).Append(", ");
+                        parts.Append("\"center\": [").Append(N(part.center.x)).Append(", ").Append(N(part.center.z)).Append("]}");
+                    }
+                    parts.Append("]");
+                }
                 Object.DestroyImmediate(instance);
                 if (!has) { Debug.LogError("[kit] у префаба нет мешей: " + key); continue; }
                 if (!first) text.Append(",\n");
@@ -53,6 +79,7 @@ namespace RealmOfAshes.EditorTools
                 text.Append("\"height\": ").Append(N(bounds.size.y)).Append(", ");
                 text.Append("\"center\": [").Append(N(bounds.center.x)).Append(", ").Append(N(bounds.center.z)).Append("], ");
                 text.Append("\"solid\": ").Append(solid ? "true" : "false");
+                text.Append(parts);
                 text.Append("}");
             }
             text.Append("\n}\n");

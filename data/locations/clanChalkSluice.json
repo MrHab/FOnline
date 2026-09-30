@@ -5,7 +5,7 @@
   "name": "Меловой шлюз",
   "seed": 2026091405,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pvpBlack",
   "kind": "clanBase",
   "clanBaseId": "chalk_sluice",
   "respawnAllowed": false,

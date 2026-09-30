@@ -314,6 +314,43 @@
       }
     },
     {
+      "id": "npc_rat",
+      "category": "creature",
+      "species": "rat",
+      "label": "Крысюк",
+      "file": "/assets/models/wasteland/npc_rat.glb",
+      "sha256": "B2A316C436AF3F2BFD50A186E68A3199E780D41CAA999501875EB7363FCE0541",
+      "approvedReviewSha256": "1505E433453B4263FFBC87C79A089A84AE318822934E7AEDFD8ED9E97C632A8F",
+      "runtimeScaleMultiplier": 1,
+      "runtimeScaleCompensation": null,
+      "bytes": 2940872,
+      "meshes": 1,
+      "vertices": 11999,
+      "triangles": 4004,
+      "materials": 5,
+      "images": 15,
+      "animations": [
+        "attack",
+        "death",
+        "hurt",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "animationChannels": 564,
+      "skins": 1,
+      "boundsMeters": {
+        "x": 0.203559,
+        "y": 0.313944,
+        "z": 0.955726
+      },
+      "centerMeters": {
+        "x": 0,
+        "y": 0.162638,
+        "z": -0.194404
+      }
+    },
+    {
       "id": "npc_super_mutant",
       "category": "creature",
       "species": "super_mutant",

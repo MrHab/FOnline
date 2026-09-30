@@ -77,6 +77,7 @@ namespace RealmOfAshes.Game
         public RoaAudio Audio;
         public RoaRadio Radio;
         public RoaMovementFx MovementFx;
+        public RoaWeather Weather;
         public RoaAnomalyFieldRenderer Anomalies;
         public RoaSettlementLifePresentation SettlementLifePresentation;
         public RoaBoltThrower BoltThrower;
@@ -226,6 +227,15 @@ namespace RealmOfAshes.Game
             if (MovementFx == null) MovementFx = GetComponent<RoaMovementFx>();
             if (MovementFx == null) MovementFx = gameObject.AddComponent<RoaMovementFx>();
             MovementFx.Configure(Audio);
+
+            // Погода комнаты: свет, мокрая земля, дождь, звук и шаг — по снимку сервера.
+            if (Weather == null) Weather = GetComponent<RoaWeather>();
+            if (Weather == null) Weather = gameObject.AddComponent<RoaWeather>();
+            Weather.Lighting = Lighting;
+            Weather.Audio = Audio;
+            Weather.MovementFx = MovementFx;
+            Weather.Combat = Combat;
+            Weather.ViewCamera = CameraRig != null ? CameraRig.GetComponent<Camera>() : Camera.main;
 
             if (Minimap == null) Minimap = GetComponent<RoaMinimap>();
             if (Minimap == null) Minimap = gameObject.AddComponent<RoaMinimap>();
@@ -750,10 +760,7 @@ namespace RealmOfAshes.Game
             if (width <= 0 || depth <= 0) return;
             Vector3 position = _controller.transform.position;
             bool inBand = RoaWorldExitBoundary.IsInExitBand(position, width, depth);
-            // Город занимает сектор: каждая его сторона ведёт к своему соседу.
-            ParentZoneInfo target = Loader?.Current?.SectorGate(RoaWorldExitBoundary.EdgeSide(position, width, depth)) ?? parentZone;
-            EdgeExitTarget = target;
-            Interaction.UpdateZoneEdge(target, inBand);
+            Interaction.UpdateZoneEdge(parentZone, inBand);
             if (inBand) _edgeExitRetryAt = Time.unscaledTime + 0.75f;
         }
 
@@ -801,10 +808,8 @@ namespace RealmOfAshes.Game
         }
 
         public bool CinematicActive { get { return _cinematicActive; } }
-        /// <summary>Край текущего места выводит в его зону: место стоит в зоне и сюжет его не держит.</summary>
-        /// <summary>Куда выводит край там, где стоит игрок: зона места или сторона города.</summary>
-        public ParentZoneInfo EdgeExitTarget { get; private set; }
 
+        /// <summary>Край текущего места выводит в его зону: место стоит в зоне и сюжет его не держит.</summary>
         public bool CurrentLocationHasEdgeExit
         {
             get { return AllowsEdgeExit(Loader?.Current, Onboarding?.Phase); }
@@ -932,6 +937,8 @@ namespace RealmOfAshes.Game
             Socket.OnDisconnected += HandleDisconnected;
             Socket.OnAuthoritativeSelf += HandleAuthoritativeSelf;
             Socket.OnWorldState += HandleWorldStateVisuals;
+            Socket.OnWeatherState += HandleWeatherState;
+            Socket.OnLocationRevision += HandleLocationRevision;
         }
 
         private void OnDisable()
@@ -943,6 +950,8 @@ namespace RealmOfAshes.Game
             Socket.OnDisconnected -= HandleDisconnected;
             Socket.OnAuthoritativeSelf -= HandleAuthoritativeSelf;
             Socket.OnWorldState -= HandleWorldStateVisuals;
+            Socket.OnWeatherState -= HandleWeatherState;
+            Socket.OnLocationRevision -= HandleLocationRevision;
         }
 
         private void OnDestroy()
@@ -1209,8 +1218,30 @@ namespace RealmOfAshes.Game
 
         #endregion
 
+        /// <summary>
+        /// Участок застроили или снесли, пока игрок в городе: мастерская встаёт
+        /// или уходит без перезагрузки локации, а с ней — цель станка.
+        /// </summary>
+        private void HandleLocationRevision(JObject payload)
+        {
+            if (Loader == null || payload == null) return;
+            string locationId = payload["locationId"]?.ToString();
+            string revision = payload["revision"]?.ToString();
+            if (string.IsNullOrEmpty(locationId)) return;
+            StartCoroutine(Loader.RefreshPlotBuildings(locationId, revision, fresh =>
+            {
+                if (Interaction != null) Interaction.RefreshPlotBuildings(fresh);
+            }));
+        }
+
+        private void HandleWeatherState(JObject weather)
+        {
+            Weather?.Apply(weather);
+        }
+
         private void HandleWorldStateVisuals(JObject state)
         {
+            Weather?.ApplyWorldState(state);
             Anomalies?.ApplyWorldState(state);
             SettlementLifePresentation?.ApplyWorldState(state);
             if (!(state?["map"] is JArray map)) return;
@@ -1530,8 +1561,41 @@ namespace RealmOfAshes.Game
             _status = "Вошли в " + ack.LocationId + " (комната '" + ack.RoomId + "')";
             Debug.Log("[ROA] " + _status + ", lease=" + ack.CharacterLeaseId);
 
+            // Бесшовен только тот вход, что начался переходом краем зоны.
+            _seamless = _seamlessPending;
+            _seamlessPending = false;
+            _seamlessStartedAt = Time.unscaledTime;
+            _seamlessReadyAt = -1f;
             _stage = Stage.LoadingLocation;
             StartCoroutine(EnterWorld(ack));
+        }
+
+        // --- бесшовный переход краем зоны: короткое затемнение вместо экрана загрузки ----------
+        private bool _seamlessPending;
+        private bool _seamless;
+        private float _seamlessStartedAt;
+        private float _seamlessReadyAt = -1f;
+        private const float SeamlessFadeIn = 0.12f;
+        private const float SeamlessFadeOut = 0.35f;
+
+        /// <summary>
+        /// Следующий вход — продолжение пути через край зоны: без карточки загрузки,
+        /// лишь короткое затемнение; игрок и камера сохраняют направление.
+        /// </summary>
+        public void BeginSeamlessCrossing() { _seamlessPending = true; }
+
+        public void CancelSeamlessCrossing() { _seamlessPending = false; }
+
+        public bool LoadingSeamless { get { return _seamless; } }
+
+        /// <summary>Непрозрачность затемнения бесшовного перехода: быстро темнеет, затем светлеет.</summary>
+        public float SeamlessVeilAlpha
+        {
+            get
+            {
+                if (_seamlessReadyAt > 0f) return 1f - Mathf.Clamp01((Time.unscaledTime - _seamlessReadyAt) / SeamlessFadeOut);
+                return Mathf.Clamp01((Time.unscaledTime - _seamlessStartedAt) / SeamlessFadeIn);
+            }
         }
 
         /// <summary>Убрать локальную сцену и её сущности (выход к экрану персонажей).</summary>
@@ -1542,6 +1606,7 @@ namespace RealmOfAshes.Game
                 Lighting.SetLocalWorldActive(false);
                 Lighting.SetLocation(null, null);
             }
+            Weather?.SetActive(false);
             SettlementLifePresentation?.SetLocalWorldActive(false);
             Anomalies?.SetLocalWorldActive(false);
             if (Minimap != null)
@@ -1617,6 +1682,8 @@ namespace RealmOfAshes.Game
             get
             {
                 bool loading = _stage == Stage.Joining || _stage == Stage.LoadingLocation;
+                if (_seamless)
+                    return loading || (_seamlessReadyAt > 0f && Time.unscaledTime - _seamlessReadyAt < SeamlessFadeOut);
                 return loading || (Time.unscaledTime - _loadingShownAt < LoadingMinVisible && _loadingShownAt > 0f && _stage == Stage.InWorld);
             }
         }
@@ -1743,6 +1810,9 @@ namespace RealmOfAshes.Game
                 Lighting.SetLocation(location, Loader.CurrentGroundRenderer);
                 Lighting.SetLocalWorldActive(true);
             }
+            // Новая комната — сразу её погода, без перетекания из прошлой.
+            Weather?.SetActive(true);
+            Weather?.ApplyWorldState(ack.WorldState);
             SettlementLifePresentation?.SetLocalWorldActive(true);
             Anomalies?.SetLocalWorldActive(true);
             if (Minimap != null)
@@ -1770,6 +1840,7 @@ namespace RealmOfAshes.Game
             SetGameMenuOpen(false);
             SetLoading("Мир готов.", 1f);
             _loadingShownAt = Time.unscaledTime; // минимум 360 мс показа готового экрана
+            if (_seamless) _seamlessReadyAt = Time.unscaledTime;
             _loadingStartup = false;
             _stage = Stage.InWorld;
         }
@@ -1881,6 +1952,7 @@ namespace RealmOfAshes.Game
                 _controller.Pipboy = Pipboy;
                 _controller.Inventory = Inventory;
                 _controller.Audio = Audio;
+                _controller.Weather = Weather;
 
                 // Бой и подбор знают о персонаже только после спавна: до входа
                 // в мир стрелять не из чего и подбирать некому.
@@ -1910,6 +1982,7 @@ namespace RealmOfAshes.Game
                 _controller.Pipboy = Pipboy;
                 _controller.Inventory = Inventory;
                 _controller.Audio = Audio;
+                _controller.Weather = Weather;
             }
             if (Fog != null) Fog.Observer = _controller;
             if (Interaction != null) Interaction.SetPlayer(_controller);

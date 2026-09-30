@@ -34,7 +34,9 @@ if (process.argv.includes('--sync-authored')) {
 }
 
 const byId = new Map(catalog.locations.map(row => [row.id, row]));
-const factionByCapital = new Map(factions.factions.map(row => [row.capitalLocationId, row.id]));
+// Столицы на карте — города открытых фракций. Скрытый Комитет
+// живёт в подземелье «Баланс», а не в городе (библия, 4.4).
+const factionByCapital = new Map(factions.factions.filter(row => row.visibility !== 'hidden').map(row => [row.capitalLocationId, row.id]));
 const regionById = new Map(seed.regions.map(row => [row.id, row]));
 
 function nodeKind(locationType) {

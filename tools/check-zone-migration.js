@@ -4,13 +4,14 @@
 // Миграция сохранений на мир зон (src/server/zone-migration.js) на образцах:
 // персонаж на карте встаёт в зону своей точки, из красной и чёрной — в
 // ближайшую синюю или мирную; из сцены мелкой клетки — в зону её точки;
-// персонаж в месте остаётся на месте; следы карты стираются; повторная
+// персонаж в месте остаётся на месте; сохранённый в зоне или городе до
+// «север = +Z» отражается вместе с ними; следы карты стираются; повторная
 // миграция ничего не меняет.
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { migrateSaveStateToZones } = require('../src/server/zone-migration');
+const { PLACES_REVISION, ZONE_FRAME_REVISION, migrateSaveStateToZones } = require('../src/server/zone-migration');
 const { zoneAtPoint, zoneOfPlace } = require('../src/server/zone-graph');
 
 const root = path.resolve(__dirname, '..');
@@ -32,8 +33,9 @@ const cityZone = graph.zones.find(zone => zone.city);
   assert.deepEqual([state.player.x, state.player.z], [0, 0], 'the character stands at the zone centre');
   assert(!('globalMap' in state), 'the map state is gone');
 }
-// На карте в красной и чёрной — в ближайшую синюю или мирную.
-for (const harsh of [red, black]) {
+// На карте в красной и чёрной — в ближайшую синюю или мирную. Чёрных зон на
+// карте канона нет (библия, 4.4), тогда проверяется одна красная.
+for (const harsh of [red, black].filter(Boolean)) {
   const state = { globalMap: { onWorldMap: true, playerX: centre(harsh).x, playerY: centre(harsh).y } };
   const out = migrateSaveStateToZones(state, graph);
   const landed = graph.zones.find(zone => (zone.city || zone.id) === out.zoneId);
@@ -59,14 +61,66 @@ for (const harsh of [red, black]) {
 }
 // В месте — на месте; повторная миграция ничего не трогает.
 {
-  const state = { currentLocationId: 'settlement', player: { x: 3, z: 4 }, globalMap: { onWorldMap: false, playerX: 1, playerY: 1 } };
+  const state = { currentLocationId: 'antHive', player: { x: 3, z: 4 }, globalMap: { onWorldMap: false, playerX: 1, playerY: 1 } };
   const out = migrateSaveStateToZones(state, graph);
   assert.equal(out.zoneId, '', 'a character in a place stays there');
-  assert.equal(state.currentLocationId, 'settlement');
-  assert.deepEqual([state.player.x, state.player.z], [3, 4]);
+  assert.equal(state.currentLocationId, 'antHive');
+  assert.deepEqual([state.player.x, state.player.z, state.zoneFrameRevision], [3, 4, ZONE_FRAME_REVISION], 'a place was not mirrored');
   assert.equal(out.changed, true, 'the stale map state is dropped');
   assert.equal(migrateSaveStateToZones(state, graph).changed, false, 'migration is idempotent');
   assert(zoneOfPlace(graph, 'settlement'), 'Keys stands in a zone its edge leads to');
 }
+// Сектор, который занял переехавший город: персонаж просыпается в самом городе.
+{
+  const sector = graph.zones.find(zone => zone.city);
+  const state = { currentLocationId: sector.id, player: { x: 40, z: -12 }, serverLocationContext: { locationId: sector.id } };
+  const out = migrateSaveStateToZones(state, graph);
+  assert.equal(out.reason, 'sectorBecameCity');
+  assert.equal(state.currentLocationId, sector.city, 'a save in a sector a city took over wakes in that city');
+  assert.deepEqual([state.player.x, state.player.z], [0, 0]);
+  assert(!state.serverLocationContext);
+  assert.equal(migrateSaveStateToZones(state, graph).changed, false, 'and a second run changes nothing');
+}
+// Бывший город «Баланс» — подземелье с правилами красной зоны: сохранённый в
+// нём до перемены просыпается в ближайшей синей или мирной зоне, а зашедший
+// туда уже после (ревизия мест в сохранении) остаётся в подземелье.
+{
+  assert.deepEqual(graph.retiredCities, ['balanceBunker'], 'Balance is the retired city');
+  const home = zoneOfPlace(graph, 'balanceBunker');
+  assert(home && !home.city, 'Balance is a place inside an ordinary zone');
+  const state = { currentLocationId: 'balanceBunker', player: { x: 30, z: -44 }, serverLocationContext: { locationId: 'balanceBunker' } };
+  const out = migrateSaveStateToZones(state, graph);
+  assert.equal(out.reason, 'cityRetired');
+  const landed = graph.zones.find(zone => (zone.city || zone.id) === out.zoneId);
+  assert(['pve', 'peaceful'].includes(landed.mode), `a save in the former city wakes in a safe zone, got ${landed.mode}`);
+  const nearest = Math.min(...graph.zones.filter(zone => ['pve', 'peaceful'].includes(zone.mode))
+    .map(zone => Math.hypot(zone.col - home.col, zone.row - home.row)));
+  assert.equal(Math.hypot(landed.col - home.col, landed.row - home.row), nearest, 'the safe zone nearest to Balance');
+  assert.deepEqual([state.player.x, state.player.z, state.placesRevision], [0, 0, PLACES_REVISION]);
+  assert(!state.serverLocationContext);
+  const visitor = { currentLocationId: 'balanceBunker', player: { x: 1, z: -17 }, placesRevision: PLACES_REVISION, zoneFrameRevision: ZONE_FRAME_REVISION };
+  assert.equal(migrateSaveStateToZones(visitor, graph).changed, false, 'a visitor saved after the change stays in the dungeon');
+  assert.equal(visitor.currentLocationId, 'balanceBunker');
+}
 
-console.log(`Zone migration OK: map characters land in the zone of their point (red and black move to the nearest blue or peaceful zone), cell scenes too, places stay, the map state is dropped and a second run changes nothing.`);
+// Зоны и города отражены по оси север-юг (север стал +Z): сохранённый в них
+// раньше отражается вместе с ними — сектор вокруг середины, город вокруг центра
+// плана (z = +1 м); переселённый в центр не отражается; сохранённый после — не трогается.
+{
+  const sector = graph.zones.find(zone => !zone.city);
+  const inSector = { currentLocationId: sector.id, player: { x: 12, z: 30 }, placesRevision: PLACES_REVISION };
+  assert.equal(migrateSaveStateToZones(inSector, graph).changed, true);
+  assert.deepEqual([inSector.player.x, inSector.player.z, inSector.zoneFrameRevision], [12, -30, ZONE_FRAME_REVISION], 'a sector save is mirrored');
+  assert.equal(migrateSaveStateToZones(inSector, graph).changed, false, 'and only once');
+  const inCity = { currentLocationId: cityZone.city, player: { x: 3, z: 4 }, placesRevision: PLACES_REVISION };
+  migrateSaveStateToZones(inCity, graph);
+  assert.deepEqual([inCity.player.x, inCity.player.z], [3, -2], 'a city save is mirrored about the centre of the city plan');
+  const moved = { currentLocationId: cityZone.id, player: { x: 40, z: -12 } };
+  migrateSaveStateToZones(moved, graph);
+  assert.deepEqual([moved.currentLocationId, moved.player.z], [cityZone.city, 0], 'a save moved to a centre stays at the centre');
+  const fresh = { currentLocationId: sector.id, player: { x: 12, z: 30 }, placesRevision: PLACES_REVISION, zoneFrameRevision: ZONE_FRAME_REVISION };
+  assert.equal(migrateSaveStateToZones(fresh, graph).changed, false, 'a save made after the mirror is left alone');
+  assert.equal(fresh.player.z, 30);
+}
+
+console.log(`Zone migration OK: map characters land in the zone of their point (red and black move to the nearest blue or peaceful zone), cell scenes too, places stay, a sector a city took over wakes in the city, a save in the former city of Balance wakes in the nearest safe zone, saves from before north = +Z are mirrored with their zone or city, the map state is dropped and a second run changes nothing.`);

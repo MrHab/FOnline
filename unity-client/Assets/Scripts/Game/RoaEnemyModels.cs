@@ -37,6 +37,7 @@ namespace RealmOfAshes.Game
             { "kromkaListener", Wasteland + "npc_gecko.glb" },
             { "kromkaMourner", Wasteland + "npc_fire_gecko.glb" },
             { "kromkaLantern", Wasteland + "npc_lantern_stag.glb" },
+            { "kromkaRat", Wasteland + "npc_rat.glb" },
             { "brahmin", Wasteland + "brahmin.glb" },
             { "friendlyBrahmin", Wasteland + "brahmin.glb" }
         };
@@ -65,6 +66,7 @@ namespace RealmOfAshes.Game
             { "listener", "kromkaListener" },
             { "mourner", "kromkaMourner" },
             { "lantern", "kromkaLantern" },
+            { "rat", "kromkaRat" },
             { "brahmin", "friendlyBrahmin" }
         };
 
@@ -104,7 +106,7 @@ namespace RealmOfAshes.Game
         /// </summary>
         private static readonly HashSet<string> OwnVisual = new HashSet<string>
         {
-            "kromkaLantern", "kromkaGari", "kromkaDustling", "kromkaRykhlyak", "brahmin", "friendlyBrahmin"
+            "kromkaLantern", "kromkaGari", "kromkaDustling", "kromkaRykhlyak", "kromkaRat", "brahmin", "friendlyBrahmin"
         };
 
         public static bool OwnsVisual(string modelKey) =>

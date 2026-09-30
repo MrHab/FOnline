@@ -95,13 +95,18 @@ module.exports = function practicalSteps({ call, state, actors, containers, move
     } else if (step.id === 'resources') {
       for (const [id, tool, x, z, key] of [['yard_ore', 'pickaxe', 21, 7, 'oreGathered'], ['yard_wood', 'axe', 23, -1, 'woodGathered']]) {
         await moveNear(x, z, 2, id);
-        assert.equal((await call('harvestResource', { id, toolId: tool })).ok, false, 'Resource harvested without its held tool');
-        await equip(tool);
+        // Сбор как в Albion: без начатого сбора цикл не засчитывается, а
+        // инструмент из ящика только ускоряет — держать его в руках не нужно.
+        assert.equal((await call('harvestResource', { id })).ok, false, 'A gather cycle counted before gathering started');
+        assert(qty(tool) > 0, `The tutorial supplies carry no ${tool}`);
+        const started = await action('startGather', { id });
+        assert(started.tool?.id === tool && started.cycleMs > 0, `The bagged ${tool} did not speed gathering`);
         while (fact(key) < 2) {
-          const harvested = await action('harvestResource', { id, toolId: tool });
-          assert(harvested.item.qty > 0 && harvested.apCost > 0);
-          await delay(350);
+          await delay(started.cycleMs);
+          const harvested = await action('harvestResource', { id });
+          assert(harvested.item.qty > 0 && harvested.apCost === 0);
         }
+        await call('stopGather', {});
       }
       assert(qty('ore') >= 2 && qty('wood') >= 2);
     } else if (step.id === 'craft_repair') {

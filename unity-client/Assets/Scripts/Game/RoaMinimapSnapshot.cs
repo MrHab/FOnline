@@ -11,7 +11,7 @@ namespace RealmOfAshes.Game
     /// рисует собранный мир в RenderTexture один раз на локацию.
     ///
     /// Ориентация — север вверху, как у подложки-схемы и у маркеров: вправо — +X Unity
-    /// (восток), вверх — +Z Unity (север, малые тайлы tz). Камера смотрит вниз с
+    /// (восток), вверх — +Z Unity (север, старшие тайлы tz). Камера смотрит вниз с
     /// поворотом (90, 0, 0) — ровно эти оси и даёт. Сверяет RoaMinimapSnapshotProbe.
     ///
     /// Живые актёры в снимок не попадают: их скиновые меши на время кадра гасятся,
@@ -135,6 +135,8 @@ namespace RealmOfAshes.Game
             }
             HideUnder(FindObjectsByType<RoaFogOfWar>(FindObjectsSortMode.None), hidden);
             HideUnder(FindObjectsByType<RoaZoneGroundCover>(FindObjectsSortMode.None), hidden);
+            // Буря выброса идёт сквозь локацию и в снимок земли не запекается.
+            if (RoaRadiationStorm.Active != null) RoaRadiationStorm.Active.HideForSnapshot(hidden);
             return hidden;
         }
 

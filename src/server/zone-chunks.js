@@ -31,6 +31,17 @@ function normalizeKit(raw = {}) {
     const center = Array.isArray(row.center) && row.center.length === 2 ? row.center.map(Number) : [0, 0];
     const turn = Number(row.turn || 0);
     if (![0, 90, 180, 270].includes(turn)) throw new Error(`zone kit: prefab "${key}" has turn ${row.turn}`);
+    // Несколько масс одного префаба (мастерская участка): у каждой своя преграда.
+    const parts = (Array.isArray(row.parts) ? row.parts : []).map((part, index) => {
+      const partSize = Array.isArray(part?.size) ? part.size.map(Number) : [];
+      if (partSize.length !== 2 || !partSize.every(n => n > 0)) throw new Error(`zone kit: prefab "${key}" part ${index} needs size [x, z]`);
+      const partCenter = Array.isArray(part.center) && part.center.length === 2 ? part.center.map(Number) : [0, 0];
+      return Object.freeze({
+        size: Object.freeze(partSize),
+        height: Math.max(0.05, Number(part.height || 1)),
+        center: Object.freeze([partCenter[0] || 0, partCenter[1] || 0])
+      });
+    });
     prefabs[id] = Object.freeze({
       name: String(row.name || id).slice(0, 60),
       size: Object.freeze([size[0], size[1]]),
@@ -41,7 +52,8 @@ function normalizeKit(raw = {}) {
       solid: row.solid === true,
       vision: row.vision === true,
       resource: row.resource ? safeId(row.resource) : '',
-      hp: Math.max(1, Math.round(Number(row.hp || 5)))
+      hp: Math.max(1, Math.round(Number(row.hp || 5))),
+      ...(parts.length ? { parts: Object.freeze(parts) } : {})
     });
   }
   return Object.freeze(prefabs);

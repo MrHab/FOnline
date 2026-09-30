@@ -58,11 +58,13 @@ for (const city of cities) {
     const entry = built[{ north: 'entryFromNorth', south: 'entryFromSouth', west: 'entryFromWest', east: 'entryFromEast' }[side]];
     assert(entry, `${city.locationId}: no entry point for arrivals from the ${side}`);
     const depth = side === 'north' || side === 'south' ? entry.tz : entry.tx;
-    const outside = side === 'north' || side === 'west' ? depth < CENTRE - WALL_HALF : depth > CENTRE + WALL_HALF;
+    // Север — +Z (большие tz), восток — +X.
+    const outside = side === 'south' || side === 'west' ? depth < CENTRE - WALL_HALF : depth > CENTRE + WALL_HALF;
+    assert.equal(depth > CENTRE, side === 'north' || side === 'east', `${city.locationId}: the ${side} arrival stands on its own side`);
     assert(!outside, `${city.locationId}: the ${side} arrival stands outside the city wall`);
     // Проём ворот: в створе стены секций нет.
     const gateTile = { tx: side === 'west' ? CENTRE - WALL_HALF : side === 'east' ? CENTRE + WALL_HALF : CENTRE,
-                       tz: side === 'north' ? CENTRE - WALL_HALF : side === 'south' ? CENTRE + WALL_HALF : CENTRE };
+                       tz: side === 'north' ? CENTRE + WALL_HALF : side === 'south' ? CENTRE - WALL_HALF : CENTRE };
     const blocked = walls.some(object => Math.hypot(object.position.x - (gateTile.tx - CENTRE + 0.5) * 2,
       object.position.z - (gateTile.tz - CENTRE + 0.5) * 2) < 4);
     assert(!blocked, `${city.locationId}: the ${side} gate is walled up`);
@@ -135,6 +137,112 @@ for (const city of cities) {
   assert.equal(built.containers.length, 0, `${city.locationId}: the city still carries ${built.containers.length} loot boxes`);
   assert.equal(built.anomalyFields.length, (authored.anomalyFields || []).length, `${city.locationId}: the city keeps its anomalies`);
 
+  // --- застроенные участки: мастерская ремесла и мастер у входа, как в Albion -------------
+  // Город собирается так же, как сервер: из живого определения и списка построек.
+  const stations = ['ammo_bench', 'weapon_bench', 'tool_bench', 'repair_bench', 'energy_bench', 'chem_station'];
+  const openPlots = (live.cityPlan?.plots || []).filter(row => row.open);
+  const withWorkshops = runtime.cityDefinition(city.locationId, live,
+    openPlots.map((row, index) => ({ plotId: row.id, station: stations[index % stations.length] })));
+  assert.notEqual(withWorkshops.revision, runtime.cityDefinition(city.locationId, live).revision,
+    `${city.locationId}: a built plot must change the city revision`);
+  for (const row of openPlots) {
+    const station = withWorkshops.objects.find(object => object.id === `station_${row.id}`);
+    const master = withWorkshops.objects.find(object => object.id === `master_${row.id}`);
+    assert(station && master, `${city.locationId}: ${row.id} is built without a workshop or a master`);
+    // Забор свободного участка уходит вместе с его площадкой: мастерская стоит на своём основании.
+    assert(!withWorkshops.objects.some(object => String(object.id).startsWith(`${row.id}_edge`)),
+      `${city.locationId}: the built ${row.id} keeps its plot fence`);
+    assert.equal(station.interactive?.plotId, row.id);
+    assert.equal(master.entity?.stationObjectId, station.id);
+    assert(!master.prefab, `${city.locationId}: the live master of ${row.id} must not carry a kit prefab`);
+    const yaw = station.rotation.y;
+    const cos = Math.cos(yaw);
+    const sin = Math.sin(yaw);
+    assert(station.collisionParts.length > 0, `${city.locationId}: the ${station.prefab} on ${row.id} has no collision`);
+    for (const part of station.collisionParts) {
+      const centre = {
+        x: station.position.x + part.center.x * cos + part.center.z * sin,
+        z: station.position.z - part.center.x * sin + part.center.z * cos
+      };
+      // Мастерская не выходит за свой участок: каждая её преграда в квадрате участка.
+      const half = 6.2;
+      for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        const lx = sx * part.size.x / 2;
+        const lz = sz * part.size.z / 2;
+        const corner = { x: centre.x + lx * cos + lz * sin, z: centre.z - lx * sin + lz * cos };
+        assert(Math.abs(corner.x - station.position.x) <= half && Math.abs(corner.z - station.position.z) <= half,
+          `${city.locationId}: the ${station.prefab} on ${row.id} sticks out of its plot`);
+      }
+      // Мастер стоит у рабочего места, а не внутри преграды мастерской.
+      const dx = master.position.x - centre.x;
+      const dz = master.position.z - centre.z;
+      const along = { x: dx * cos - dz * sin, z: dx * sin + dz * cos };
+      const clear = Math.max(Math.abs(along.x) - part.size.x / 2, Math.abs(along.z) - part.size.z / 2);
+      assert(clear >= 0.4, `${city.locationId}: the master of ${row.id} stands in the ${station.prefab} (${clear.toFixed(2)} m clear)`);
+    }
+    // От улицы до мастера проходит игрок: ни витрина, ни штабели двора его не запирают.
+    assert(reachesMaster(withWorkshops.objects, station, master),
+      `${city.locationId}: a player cannot walk from the street to the master of ${row.id} (${station.prefab})`);
+  }
+}
+
+/** Преграды объекта в плане: повёрнутые прямоугольники его collisionParts. */
+function blockersOf(object) {
+  if (object?.collision !== 'solid' || !Array.isArray(object.collisionParts)) return [];
+  const yaw = Number(object.rotation?.y) || 0;
+  const cos = Math.cos(yaw);
+  const sin = Math.sin(yaw);
+  const sx = Number(object.scale?.x) || 1;
+  const sz = Number(object.scale?.z) || 1;
+  return object.collisionParts.map(part => {
+    const cx = (part.center?.x || 0) * sx;
+    const cz = (part.center?.z || 0) * sz;
+    return {
+      x: object.position.x + cx * cos + cz * sin, z: object.position.z - cx * sin + cz * cos,
+      hx: Math.abs(part.size.x * sx) / 2, hz: Math.abs(part.size.z * sz) / 2, cos, sin
+    };
+  });
+}
+
+/**
+ * Поиск в ширину по сетке 0,25 м в пределах участка: игрок радиусом 0,35 м
+ * идёт от лицевого края участка (улица) и должен встать в 1,3 м от мастера.
+ */
+function reachesMaster(objects, station, master) {
+  const radius = 0.35;
+  const step = 0.25;
+  const reach = 7.6;
+  const near = objects.filter(object => Math.hypot(object.position.x - station.position.x, object.position.z - station.position.z) < 12);
+  const blockers = near.flatMap(blockersOf);
+  const yaw = station.rotation.y;
+  const side = { x: Math.cos(yaw), z: -Math.sin(yaw) };
+  const front = { x: Math.sin(yaw), z: Math.cos(yaw) };
+  const world = (u, v) => ({ x: station.position.x + side.x * u + front.x * v, z: station.position.z + side.z * u + front.z * v });
+  const blocked = point => blockers.some(b => {
+    const dx = point.x - b.x;
+    const dz = point.z - b.z;
+    return Math.abs(dx * b.cos - dz * b.sin) <= b.hx + radius && Math.abs(dx * b.sin + dz * b.cos) <= b.hz + radius;
+  });
+  const cells = Math.round(reach * 2 / step);
+  const seen = new Set();
+  const queue = [];
+  for (let i = 0; i <= cells; i++) {
+    const cell = [i, cells];
+    if (!blocked(world(-reach + i * step, reach))) { seen.add(cell.join()); queue.push(cell); }
+  }
+  while (queue.length) {
+    const [i, j] = queue.shift();
+    const point = world(-reach + i * step, -reach + j * step);
+    if (Math.hypot(point.x - master.position.x, point.z - master.position.z) <= 1.3) return true;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const ni = i + di;
+      const nj = j + dj;
+      if (ni < 0 || nj < 0 || ni > cells || nj > cells || seen.has(`${ni},${nj}`)) continue;
+      seen.add(`${ni},${nj}`);
+      if (!blocked(world(-reach + ni * step, -reach + nj * step))) queue.push([ni, nj]);
+    }
+  }
+  return false;
 }
 
 if (handAuthored.length) {

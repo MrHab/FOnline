@@ -165,6 +165,8 @@ namespace RealmOfAshes.Game
             _mapImage = Child("Tiles", rotor).gameObject.AddComponent<RawImage>();
             Stretch(_mapImage.rectTransform, 0f);
             _mapImage.raycastTarget = false;
+            // Буря выброса поверх карты локации, под метками.
+            RoaStormMapOverlay.Attach(rotor).ShowScene();
 
             _markerLayer = Child("Markers", rotor);
             Stretch(_markerLayer, 0f);

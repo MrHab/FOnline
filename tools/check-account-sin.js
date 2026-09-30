@@ -98,7 +98,7 @@ assert.equal(economy.auctions.premiumTaxPct, config.premium.auctionTaxPct, 'the 
     ["serverPremiumMultiplier(p, 'npcMarksMultiplier')", 'premium NPC marks'],
     ["serverPremiumMultiplier(p, 'baseJobSpeedMultiplier')", 'premium base jobs'],
     ["plot && data.useFocus === true ? serverCraftFocusCost(player, plotOutput)", 'focus only when the player asks for it'],
-    ["plotReturnRate(WORLD_ECONOMY.plots, locationId, requiredStation, focusCost > 0)", 'the focus bonus on returns'],
+    ["plotReturnRate(WORLD_ECONOMY.plots, locationId, requiredStation, focusCost > 0,", 'the focus bonus on returns'],
     ['serverNpcHoldsTraderBalance(enemy) ? 1', 'no premium marks from trader cash'],
     ['const workUnits = Math.max(1, Math.round(qty / premiumGather));', 'harvest XP without a double premium'],
     ['id => serverCostItemQty(p, id)', 'base jobs priced in sin'],

@@ -19,7 +19,7 @@ namespace RealmOfAshes.Game
     /// и событий на карте нет. Если сцена не загрузилась, окно рисует плоскую сетку зон.
     /// Открывается кнопкой «КАРТА МИРА» у миникарты и в окне локальной карты.
     /// </summary>
-    public sealed class RoaWorldOverviewCanvas : MonoBehaviour
+    public sealed partial class RoaWorldOverviewCanvas : MonoBehaviour
     {
         private static readonly Color PanelBg = new Color(0.055f, 0.066f, 0.052f, 0.94f);
         private static readonly Color PanelBorder = new Color(0.82f, 0.694f, 0.404f, 0.58f);
@@ -90,7 +90,11 @@ namespace RealmOfAshes.Game
         private float _arrivedUntil;
         private float _nextRouteCheck;
 
+        /// <summary>Состояние игрока для проб без сокета.</summary>
+        public JObject ProbeSelf;
+
         public bool IsOpen { get { return _root != null && _root.activeSelf; } }
+        private JObject CurrentSelf { get { return Socket?.Session?.Self ?? ProbeSelf; } }
         public bool Uses3D { get { return _use3D && _map3D != null && _map3D.IsOpen; } }
         public RoaWorldMap3D Map3D { get { return _map3D; } }
         public string RouteHint { get { return _routeHint != null ? _routeHint.text : string.Empty; } }
@@ -123,9 +127,9 @@ namespace RealmOfAshes.Game
 
         public static string DangerLegendText()
         {
-            return "<color=#5cd175>■</color> мирная  <color=#549eff>■</color> синяя — PvE, вещи при себе  "
-                + "<color=#f7cc4d>■</color> жёлтая — PvP, вещи при себе  <color=#e63324>■</color> красная — выпадает инвентарь  "
-                + "<color=#9e1452>■</color> чёрная — выпадает всё";
+            return "<color=#5cd175>•</color> мирная  <color=#549eff>•</color> синяя — PvE, вещи при себе  "
+                + "<color=#f7cc4d>•</color> жёлтая — PvP, вещи при себе  <color=#e63324>•</color> красная — выпадает инвентарь  "
+                + "<color=#9e1452>•</color> чёрная — выпадает всё";
         }
 
         /// <summary>Тир зоны или места из /api/world-map (0 — не пришёл).</summary>
@@ -136,6 +140,46 @@ namespace RealmOfAshes.Game
         {
             if (tier < 1) return string.Empty;
             return "Тир " + RoaTierData.Badge(tier) + ": ресурсы и враги только " + tier + "-го тира";
+        }
+
+        /// <summary>Семейство ресурсов по-русски: ore → «руда».</summary>
+        public static string FamilyName(string family)
+        {
+            switch (family)
+            {
+                case "ore": return "руда";
+                case "wood": return "дерево";
+                case "fiber": return "волокно";
+                case "oil": return "нефть";
+                case "hide": return "шкуры";
+                default: return family ?? string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Строки карточки об угодьях (библия, 4.5): чьи угодья и три семейства
+        /// ресурсов по убыванию, а если зона — жила, то её имя и тир.
+        /// </summary>
+        public static string GroundsText(JObject zone)
+        {
+            var text = new System.Text.StringBuilder();
+            JObject grounds = zone?["grounds"] as JObject;
+            if (grounds != null)
+            {
+                var families = new List<string>();
+                foreach (JToken token in grounds["families"] as JArray ?? new JArray()) families.Add(FamilyName(token?.ToString()));
+                text.Append(grounds["name"]?.ToString() ?? "Угодья").Append(": ").Append(string.Join(", ", families));
+            }
+            JObject hotspot = zone?["hotspot"] as JObject;
+            if (hotspot != null)
+            {
+                if (text.Length > 0) text.Append('\n');
+                int tier = hotspot["tier"]?.ToObject<int?>() ?? 0;
+                text.Append("Жила ").Append(tier > 0 ? RoaTierData.Badge(tier) + ": " : ": ")
+                    .Append(hotspot["name"]?.ToString() ?? string.Empty)
+                    .Append(" — ").Append(FamilyName(hotspot["family"]?.ToString())).Append(" ×2");
+            }
+            return text.ToString();
         }
 
         public static string DangerRulesText(string mode)
@@ -176,7 +220,15 @@ namespace RealmOfAshes.Game
 
         private void LateUpdate()
         {
-            if (IsOpen && Uses3D) LayoutViewLabels();
+            if (!IsOpen || !Uses3D) return;
+            UpdateStormView();
+            LayoutViewLabels();
+            UpdateCompass();
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseZoneWindow();
         }
 
         public void Toggle()
@@ -187,7 +239,7 @@ namespace RealmOfAshes.Game
 
         public void Open()
         {
-            OpenFor(Socket?.Session?.Self);
+            OpenFor(CurrentSelf);
         }
 
         /// <summary>Открыть карту для состояния игрока (self сервера); пробы подают своё.</summary>
@@ -239,8 +291,8 @@ namespace RealmOfAshes.Game
             }
             _status.text = string.Empty;
             if (!IsOpen) yield break;
-            if (_use3D) StartCoroutine(Open3D(self ?? Socket?.Session?.Self));
-            else ShowFlat(self ?? Socket?.Session?.Self);
+            if (_use3D) StartCoroutine(Open3D(self ?? CurrentSelf));
+            else ShowFlat(self ?? CurrentSelf);
         }
 
         /// <summary>Подставить карту мира без запроса (пробы).</summary>
@@ -328,40 +380,6 @@ namespace RealmOfAshes.Game
             ShowCard();
         }
 
-        private void ShowCard()
-        {
-            if (_selectedZone == null) { _card.gameObject.SetActive(false); return; }
-            JObject zone = _selectedZone;
-            _card.gameObject.SetActive(true);
-            _cardTitle.text = _selectedPlace != null
-                ? (_selectedPlace["name"]?.ToString() ?? "Место")
-                : (zone["title"]?.ToString() ?? RoaWorldMapRoute.Id(zone));
-            var body = new System.Text.StringBuilder();
-            if (_selectedPlace != null) body.Append("В зоне: ").Append(zone["title"]).Append('\n');
-            bool isCity = !string.IsNullOrEmpty(zone["city"]?.ToString());
-            if (isCity) body.Append("Город занимает сектор целиком: ворота соседей ведут прямо в него.\n");
-            body.Append("Зона ").Append(DangerRulesText(zone["mode"]?.ToString())).Append('\n');
-            string tierLine = TierRulesText(Tier(_selectedPlace ?? zone));
-            if (!string.IsNullOrEmpty(tierLine)) body.Append(tierLine).Append('\n');
-            string gates = zone["gates"]?.ToString() ?? string.Empty;
-            var open = new List<string>();
-            foreach (char side in RoaWorldMapRoute.Sides) if (gates.IndexOf(side) >= 0) open.Add(RoaWorldMapRoute.GateName(side));
-            body.Append("Ворота: ").Append(open.Count > 0 ? string.Join(", ", open) : "нет").Append('\n');
-            var places = new List<string>();
-            foreach (JToken token in zone["places"] as JArray ?? new JArray()) places.Add(token?["name"]?.ToString() ?? string.Empty);
-            if (places.Count > 0) body.Append("Места: ").Append(string.Join(", ", places)).Append('\n');
-            string from = CurrentZoneId();
-            List<JObject> path = RoaWorldMapRoute.Find(_zonesById, from, RoaWorldMapRoute.Id(zone));
-            if (string.IsNullOrEmpty(from)) body.Append("Путь проложить нельзя: вы не в зоне мира.");
-            else if (path.Count == 0) body.Append("Пути туда через открытые ворота нет.");
-            else if (path.Count == 1) body.Append("Вы уже здесь.");
-            else body.Append("Путь: ").Append(RoaWorldMapRoute.ZonesWord(path.Count - 1)).Append(" через ворота.");
-            _cardBody.text = body.ToString();
-            bool routed = _routeTargetZone == RoaWorldMapRoute.Id(zone);
-            _routeButtonLabel.text = routed ? "Сбросить путь" : "Проложить путь";
-            _routeButton.interactable = routed || path.Count > 1;
-        }
-
         private void ToggleRoute()
         {
             if (_selectedZone == null) return;
@@ -403,7 +421,7 @@ namespace RealmOfAshes.Game
         /// <summary>Место, из которого игрок ещё должен выйти в свою зону; пусто, если он уже в зоне.</summary>
         private string CurrentPlaceName()
         {
-            if (!string.IsNullOrEmpty(SelfZoneId(Socket?.Session?.Self))) return string.Empty;
+            if (!string.IsNullOrEmpty(SelfZoneId(CurrentSelf))) return string.Empty;
             LocationDefinition current = Loader != null ? Loader.Current : null;
             if (current == null || current.ExitZone == null) return string.Empty;
             return string.IsNullOrEmpty(current.Name) ? "места" : current.Name;
@@ -444,6 +462,8 @@ namespace RealmOfAshes.Game
             foreach (Text label in _viewLabelPool) label.gameObject.SetActive(false);
             if (_map3D == null || !_map3D.IsOpen) return;
             int used = 0;
+            LayoutEdgeLetters(ref used);
+            LayoutStormLabel(ref used);
             float distance = _map3D.Distance;
             foreach (JObject zone in _zonesById.Values)
             {
@@ -467,7 +487,7 @@ namespace RealmOfAshes.Game
                     Text name = TakeViewLabel(ref used);
                     name.fontSize = capital ? 14 : 12;
                     name.color = capital ? Accent : Ink;
-                    name.text = (capital ? "◆ " : "■ ") + (zone["title"]?.ToString() ?? city);
+                    name.text = zone["title"]?.ToString() ?? city;
                     PlaceViewLabel(name, cityAt + new Vector2(0f, -6f));
                 }
                 foreach (JToken token in zone["places"] as JArray ?? new JArray())
@@ -479,7 +499,7 @@ namespace RealmOfAshes.Game
                     Text name = TakeViewLabel(ref used);
                     name.fontSize = capital ? 14 : 11;
                     name.color = capital ? Accent : Ink;
-                    name.text = (capital ? "◆ " : string.Empty) + (place["name"]?.ToString() ?? string.Empty)
+                    name.text = (place["name"]?.ToString() ?? string.Empty)
                         + PlaceTierSuffix(zone, place);
                     PlaceViewLabel(name, at + new Vector2(0f, 16f));
                 }
@@ -497,6 +517,7 @@ namespace RealmOfAshes.Game
             }
             Text text = _viewLabelPool[used++];
             text.gameObject.SetActive(true);
+            text.fontStyle = FontStyle.Normal;
             return text;
         }
 
@@ -508,7 +529,7 @@ namespace RealmOfAshes.Game
 
         private void FocusPlayer()
         {
-            Vector2? player = PlayerPoint(Socket?.Session?.Self, out JObject _);
+            Vector2? player = PlayerPoint(CurrentSelf, out JObject _);
             if (player.HasValue) _map3D?.FocusOn(player.Value);
         }
 
@@ -517,7 +538,7 @@ namespace RealmOfAshes.Game
         /// <summary>Зона, в которой игрок: сама зона или зона, куда выводит край места.</summary>
         private string CurrentZoneId()
         {
-            string zoneId = SelfZoneId(Socket?.Session?.Self);
+            string zoneId = SelfZoneId(CurrentSelf);
             if (!string.IsNullOrEmpty(zoneId) && _zonesById.ContainsKey(zoneId)) return zoneId;
             ParentZoneInfo exit = Loader != null && Loader.Current != null ? Loader.Current.ExitZone : null;
             return exit != null && _zonesById.ContainsKey(exit.Id ?? string.Empty) ? exit.Id : string.Empty;
@@ -537,12 +558,14 @@ namespace RealmOfAshes.Game
             float u = 0.5f, v = 0.5f;
             if (!string.IsNullOrEmpty(zoneId) && _zonesById.TryGetValue(zoneId, out zone))
             {
-                // В зоне: центр зоны — 0,0, ось z сервера — на юг.
+                // В зоне: центр зоны — 0,0, север — +z (там северные ворота и туда смотрит
+                // компас; так же ложится на карту буря выброса, radiation-storm.js), а v
+                // на карте растёт к югу.
                 LocationDefinition current = Loader != null ? Loader.Current : null;
                 float width = current != null && current.WorldWidth > 0 ? current.WorldWidth : 320f;
                 float depth = current != null && current.WorldDepth > 0 ? current.WorldDepth : 320f;
                 u = Mathf.Clamp01((self["x"]?.ToObject<float>() ?? 0f) / width + 0.5f);
-                v = Mathf.Clamp01((self["z"]?.ToObject<float>() ?? 0f) / depth + 0.5f);
+                v = Mathf.Clamp01(0.5f - (self["z"]?.ToObject<float>() ?? 0f) / depth);
             }
             else
             {
@@ -658,10 +681,10 @@ namespace RealmOfAshes.Game
                     bool cityCapital = _capitals.Contains(cityId);
                     Vector2 middle = cell + new Vector2(scale * 0.5f, -scale * 0.5f);
                     Text mark = TakeLabel(ref used);
-                    mark.fontSize = cityCapital ? 16 : 13;
+                    mark.fontSize = cityCapital ? 24 : 20;
                     mark.color = cityCapital ? Accent : Ink;
                     mark.alignment = TextAnchor.MiddleCenter;
-                    mark.text = cityCapital ? "◆" : "■";
+                    mark.text = "•";
                     SetLabelRect(mark, middle, new Vector2(18f, 18f), new Vector2(0.5f, 0.5f));
                     Text cityName = TakeLabel(ref used);
                     cityName.fontSize = cityCapital ? 12 : 10;
@@ -678,10 +701,10 @@ namespace RealmOfAshes.Game
                     float v = place["v"]?.ToObject<float>() ?? 0.5f;
                     Vector2 at = cell + new Vector2(u * scale, -v * scale);
                     Text dot = TakeLabel(ref used);
-                    dot.fontSize = capital ? 16 : 12;
+                    dot.fontSize = capital ? 22 : 18;
                     dot.color = capital ? Accent : Ink;
                     dot.alignment = TextAnchor.MiddleCenter;
-                    dot.text = capital ? "◆" : "●";
+                    dot.text = "•";
                     SetLabelRect(dot, at, new Vector2(18f, 18f), new Vector2(0.5f, 0.5f));
                     Text name = TakeLabel(ref used);
                     name.fontSize = capital ? 12 : 10;
@@ -836,12 +859,13 @@ namespace RealmOfAshes.Game
             _labels = Child("Labels", _map);
             Place(_labels, 0f, 0f, 1f, 1f, Vector2.zero, Vector2.zero);
 
-            Text flag = Label("Flag", _map, 22, TextAnchor.LowerCenter, FlagColor, FontStyle.Bold);
-            flag.text = "⚑";
+            Text flag = Label("Flag", _map, 14, TextAnchor.LowerCenter, FlagColor, FontStyle.Bold);
+            flag.text = "Вы";
             _flag = flag.rectTransform;
             _flag.anchorMin = _flag.anchorMax = new Vector2(0f, 1f);
             _flag.pivot = new Vector2(0.5f, 0f);
             _flag.sizeDelta = new Vector2(28f, 28f);
+            BuildFlatCompass();
 
             Text legend = Label("Legend", _panel, 11, TextAnchor.MiddleLeft, MutedInk);
             legend.supportRichText = true;
@@ -875,23 +899,8 @@ namespace RealmOfAshes.Game
             Button close = MakeButton("Close", top, "×", 22, Close);
             Place((RectTransform)close.transform, 1f, 0.5f, 1f, 0.5f, new Vector2(-110f, -19f), new Vector2(-70f, 19f));
 
-            _card = Child("Card", _view);
-            Place(_card, 1f, 1f, 1f, 1f, new Vector2(-336f, -330f), new Vector2(-12f, -74f));
-            _card.gameObject.AddComponent<Image>().color = PanelBg;
-            var outline = _card.gameObject.AddComponent<Outline>();
-            outline.effectColor = PanelBorder;
-            outline.effectDistance = new Vector2(1.5f, -1.5f);
-            _cardTitle = Label("Title", _card, 16, TextAnchor.UpperLeft, Accent, FontStyle.Bold);
-            _cardTitle.horizontalOverflow = HorizontalWrapMode.Wrap;
-            Place(_cardTitle.rectTransform, 0f, 1f, 1f, 1f, new Vector2(14f, -40f), new Vector2(-14f, -10f));
-            _cardBody = Label("Body", _card, 12, TextAnchor.UpperLeft, Ink);
-            _cardBody.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _cardBody.verticalOverflow = VerticalWrapMode.Truncate;
-            Place(_cardBody.rectTransform, 0f, 0f, 1f, 1f, new Vector2(14f, 56f), new Vector2(-14f, -44f));
-            _routeButton = MakeButton("Route", _card, "Проложить путь", 14, ToggleRoute);
-            _routeButtonLabel = _routeButton.GetComponentInChildren<Text>();
-            Place((RectTransform)_routeButton.transform, 0f, 0f, 1f, 0f, new Vector2(14f, 12f), new Vector2(-14f, 46f));
-            _card.gameObject.SetActive(false);
+            BuildCompass(_view);
+            BuildZoneWindow(_view);
 
             RectTransform bottom = Child("Bottom", _view);
             Place(bottom, 0f, 0f, 1f, 0f, Vector2.zero, new Vector2(0f, 48f));

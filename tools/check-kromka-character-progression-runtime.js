@@ -102,6 +102,8 @@ async function startServer() {
     cwd: root,
     env: {
       ...process.env,
+      // Живая погода меняет скорость и меткость; проверки идут в ясную, если не просят иной.
+      KROMKA_WEATHER: process.env.KROMKA_WEATHER || 'clear',
       PORT: String(port),
       DATA_DIR: dataDir,
       NODE_ENV: 'test',

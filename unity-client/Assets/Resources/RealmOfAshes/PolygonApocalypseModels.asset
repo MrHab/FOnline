@@ -1906,17 +1906,17 @@ MonoBehaviour:
   - modelKey: cot_bed
     prefab: {fileID: 1762450614453468, guid: 016ad3349798a984b85484ddf70a27dc, type: 3}
   - modelKey: craft_station_ammo
-    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+    prefab: {fileID: 1623887923129212, guid: f5ad313ca648bc8468d23789d80a70d5, type: 3}
   - modelKey: craft_station_chem
-    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+    prefab: {fileID: 1051052327438898, guid: 491b8f3587293c74d80d7566981beb57, type: 3}
   - modelKey: craft_station_energy
     prefab: {fileID: 1225048615775740, guid: 464f78a898f604d4aa6188472f930185, type: 3}
   - modelKey: craft_station_repair
     prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
   - modelKey: craft_station_tools
-    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+    prefab: {fileID: 1463608583571732, guid: 460021f9062a51b4c8ce90b5741f5775, type: 3}
   - modelKey: craft_station_weapon
-    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+    prefab: {fileID: 1278057997903672, guid: 382190a507c261a49b9b165385818adf, type: 3}
   - modelKey: dead_tree_a
     prefab: {fileID: 1796885337435754, guid: 97eeef42e1d4d814db88bb348f6c5315, type: 3}
   - modelKey: dead_tree_b
@@ -1996,7 +1996,7 @@ MonoBehaviour:
   - modelKey: craftStationRepair
     prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
   - modelKey: craftStationChem
-    prefab: {fileID: 1977311790363920, guid: 855aa742b30e06d4598bd9cb0efad304, type: 3}
+    prefab: {fileID: 1051052327438898, guid: 491b8f3587293c74d80d7566981beb57, type: 3}
   - modelKey: relayConsole
     prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
   - modelKey: radioTower

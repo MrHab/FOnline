@@ -13,4 +13,8 @@ Current masters:
 - `wasteland/trader_yard_ground_v757.png` and
   `wasteland/wasteland_ground_reference.png` — historical visual references;
 - `psx-buildings/T_Buildings_Textures.png` — source atlas retained with its
-  upload/license notice.
+  upload/license notice;
+- `ground-textures/sources.json` — CC0 ground sets from Poly Haven for the zone
+  ground shader: pages, authors, pinned map URLs and md5. The maps themselves are
+  not stored here: `npm run build:ground-textures` downloads them into
+  `Build/SourceDownloads/ground-textures` and writes the Unity textures.

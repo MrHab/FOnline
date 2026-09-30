@@ -183,7 +183,7 @@ namespace RealmOfAshes.EditorTools
             var go = new GameObject("Measure", typeof(RectTransform));
             go.transform.SetParent(host.transform, false);
             var text = go.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = RoaUiFont.Default;
             text.fontSize = fontSize;
             text.supportRichText = true;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -279,10 +279,12 @@ namespace RealmOfAshes.EditorTools
         }
 
         /// <summary>
-        /// Баннер Сдвига вверху по центру. Сдвиг с разбуженными полями даёт строку
-        /// в две строки: баннер обязан показать её целиком (у подписи обрезание)
-        /// и не наехать на баннер режима зоны HUD под собой. Канвы у них разные
-        /// (баннер — 1600×900, HUD — RoaUiScale), поэтому сверяются пиксели экрана.
+        /// Баннер Сдвига вверху по центру. Сдвиг или буря с разбуженными полями
+        /// дают строку в две строки: баннер обязан показать её целиком и в полном
+        /// кегле (у подписи обрезание и подгонка размера — ужатая строка значит,
+        /// что баннер не вырос) и не наехать на баннер режима зоны HUD под собой.
+        /// Канвы у них разные (баннер — 1600×900, HUD — RoaUiScale), поэтому
+        /// сверяются пиксели экрана.
         /// </summary>
         private static void CheckShiftBanner()
         {
@@ -293,7 +295,12 @@ namespace RealmOfAshes.EditorTools
                 JObject.Parse(@"{'phase':'aftermath','remainingMs':1200000,'strength':2,
                     'fieldsExcited':true,'fieldsExcitedSeconds':1800,'fieldsChanceMultiplier':10}"),
                 JObject.Parse(@"{'phase':'active','remainingMs':1200000,'strength':3,'sheltered':false,
-                    'fieldsExcited':true,'fieldsExcitedSeconds':1800,'fieldsChanceMultiplier':10}")
+                    'fieldsExcited':true,'fieldsExcitedSeconds':1800,'fieldsChanceMultiplier':10}"),
+                // Самая длинная строка бури: откуда, сила, км, через сколько, укрытие и поля.
+                JObject.Parse(@"{'phase':'warning','remainingMs':600000,'strength':3,'sheltered':true,
+                    'fieldsExcited':true,'fieldsExcitedSeconds':1800,'fieldsChanceMultiplier':10,
+                    'storm':{'id':'probe','strength':3,'phase':'warning','dirX':0.7071,'dirY':0.7071,
+                        'here':{'inside':false,'passed':false,'aheadKm':120,'etaSeconds':2700}}}")
             };
             MethodInfo applyShift = typeof(RoaKromkaShiftAndDetector).GetMethod("ApplyShift",
                 BindingFlags.Instance | BindingFlags.NonPublic);
@@ -327,19 +334,28 @@ namespace RealmOfAshes.EditorTools
                         + tallest.ToString("0.#") + " px, zone banner top " + zoneTop.ToString("0.#") + " px");
                     foreach (JObject shift in shifts)
                     {
-                        applyShift.Invoke(view, new object[] { shift });
+                        applyShift.Invoke(view, new object[] { shift, null });
                         var wave = waveField.GetValue(view) as LineRenderer;
                         if (wave != null && !trash.Contains(wave.gameObject)) { trash.Add(wave.sharedMaterial); trash.Add(wave.gameObject); }
                         Canvas.ForceUpdateCanvases();
-                        float needed = text.preferredHeight;
-                        float box = text.rectTransform.rect.height;
+                        // С подгонкой размера preferredHeight не годится: сверяются
+                        // видимые символы и кегль в рамке против рамки без предела.
+                        Vector2 box = text.rectTransform.rect.size;
+                        var inBox = new TextGenerator();
+                        inBox.Populate(text.text, text.GetGenerationSettings(box));
+                        var unbounded = new TextGenerator();
+                        unbounded.Populate(text.text, text.GetGenerationSettings(new Vector2(box.x, 4000f)));
                         float bottom = (-panel.anchoredPosition.y + panel.rect.height) * canvas.scaleFactor;
-                        Debug.Log("[MOBILE LAYOUT] " + screenName + " shift banner: " + needed.ToString("0.#") + " / "
-                            + box.ToString("0.#") + " units, bottom " + bottom.ToString("0.#") + " px above the zone banner at "
-                            + zoneTop.ToString("0.#") + " px: " + text.text);
-                        Require(needed <= box,
-                            screenName + ": the shift banner cuts its line — " + needed.ToString("0.#") + " units of text in a "
-                            + box.ToString("0.#") + " unit box: " + text.text);
+                        Debug.Log("[MOBILE LAYOUT] " + screenName + " shift banner: " + inBox.characterCountVisible + " / "
+                            + unbounded.characterCountVisible + " characters at " + inBox.fontSizeUsedForBestFit + " / "
+                            + unbounded.fontSizeUsedForBestFit + " px in a " + box.y.ToString("0.#") + " unit box, bottom "
+                            + bottom.ToString("0.#") + " px above the zone banner at " + zoneTop.ToString("0.#") + " px: " + text.text);
+                        Require(inBox.characterCountVisible == unbounded.characterCountVisible,
+                            screenName + ": the shift banner cuts its line — " + inBox.characterCountVisible + " of "
+                            + unbounded.characterCountVisible + " characters in a " + box.y.ToString("0.#") + " unit box: " + text.text);
+                        Require(inBox.fontSizeUsedForBestFit == unbounded.fontSizeUsedForBestFit,
+                            screenName + ": the shift banner shrinks its line to " + inBox.fontSizeUsedForBestFit + " px instead of growing: "
+                            + text.text);
                         Require(bottom + MinGapPixels <= zoneTop,
                             screenName + ": the shift banner reaches the HUD zone banner — bottom " + bottom.ToString("0.#")
                             + " px, zone banner top " + zoneTop.ToString("0.#") + " px: " + text.text);

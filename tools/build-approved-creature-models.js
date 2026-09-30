@@ -176,6 +176,24 @@ const APPROVED_CREATURES = [
     expected: { meshes: 2, vertices: 1399, triangles: 674, materials: 6, images: 18, channels: 438, joints: 24 }
   },
   {
+    id: 'npc_rat',
+    label: 'Крысюк',
+    species: 'rat',
+    outputFile: 'npc_rat.glb',
+    reviewDirectory: fromRoot('docs', 'art', 'reviews', 'rat-v1', 'rat'),
+    reviewFile: 'creature_rat_v1.glb',
+    reviewReport: 'creature_rat_v1-report.json',
+    approvalFile: 'CRITIC_APPROVAL_V1.md',
+    approvedReviewSha256: '1505E433453B4263FFBC87C79A089A84AE318822934E7AEDFD8ED9E97C632A8F',
+    expectedRuntimeSha256: 'B2A316C436AF3F2BFD50A186E68A3199E780D41CAA999501875EB7363FCE0541',
+    generator: fromRoot('tools', 'blender', 'build_quaternius_rat_review.py'),
+    sourceGlb: fromRoot('source-assets', 'quaternius', 'poly-pizza', 'rat', 'Rat.glb'),
+    sourceBlend: null,
+    builderArgs: [],
+    runtimeScaleMultiplier: 1,
+    expected: { meshes: 1, vertices: 11999, triangles: 4004, materials: 5, images: 15, channels: 564, joints: 31 }
+  },
+  {
     id: 'npc_super_mutant',
     label: 'Супермутант',
     species: 'super_mutant',

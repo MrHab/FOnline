@@ -25,8 +25,7 @@ const FACTION_CAPITAL_SITES = {
   scrapTown: 'scrap_union',
   relayStation: 'relay_order',
   caravanCamp: 'caravans',
-  secondHaven: 'seconds',
-  balanceBunker: 'continuity'
+  secondHaven: 'seconds'
 };
 const FACTION_CAPITAL_SITE_IDS = new Set(Object.keys(FACTION_CAPITAL_SITES));
 

@@ -99,7 +99,7 @@ while (queue.length) {
     queue.push(neighbor);
   }
 }
-for (const capital of ['sluiceCity', 'scrapTown', 'relayStation', 'caravanCamp', 'secondHaven', 'balanceBunker']) {
+for (const capital of ['sluiceCity', 'scrapTown', 'relayStation', 'caravanCamp', 'secondHaven']) {
   assert(visited.has(capital), `faction capital ${capital} is disconnected from the travel network`);
 }
 

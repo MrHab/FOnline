@@ -17,7 +17,7 @@ namespace RealmOfAshes.Game
     /// Компонент ничего не переносит между инвентарями локально. Любая сделка,
     /// награда, взлом и добыча применяются только из ack с каноническим self.
     /// </summary>
-    public sealed class RoaInteraction : MonoBehaviour
+    public sealed partial class RoaInteraction : MonoBehaviour
     {
         public string BaseUrl = "http://127.0.0.1:3000";
         public RoaSocketClient Socket;
@@ -139,7 +139,6 @@ namespace RealmOfAshes.Game
         private float _plotRefreshAt;
         // null — поле ещё не заполнено значением по умолчанию; пустую строку
         // игрок стёр сам, и её не нужно тут же заполнять заново.
-        private bool _harvestPending;
         private bool _robPending;
         private bool _worldRequestPending;
         private bool _tradePending;
@@ -150,7 +149,6 @@ namespace RealmOfAshes.Game
         private string _zoneWarningTarget = string.Empty;
         private float _zoneWarningUntil;
         private string _acknowledgedZoneMode = string.Empty;
-        private Material _transitionMaterial;
         private QuantityKind _quantityKind;
         private string _quantityItemId = string.Empty;
         private int _quantityValue = 1;
@@ -176,7 +174,14 @@ namespace RealmOfAshes.Game
         /// <summary>Канонический id открытого станка: по нему отбираются рецепты.</summary>
         public string CraftingStation { get { return _active?["station"]?.ToString() ?? string.Empty; } }
         /// <summary>Участок поселения под открытым станком; null — станок без участка.</summary>
-        public JObject CraftingPlot { get { return RoaCraftingPlots.ForObject(_active?["id"]?.ToString()); } }
+        public JObject CraftingPlot
+        {
+            get
+            {
+                string plotId = _active?["plotId"]?.ToString();
+                return RoaCraftingPlots.ForObject(string.IsNullOrEmpty(plotId) ? _active?["id"]?.ToString() : plotId);
+            }
+        }
         /// <summary>Снимок счёта игрока (self.account): премиум и запас фокуса.</summary>
         public JObject CraftingAccount { get { return _self?["account"] as JObject; } }
         public bool CraftPending { get { return _craftPending; } }
@@ -295,7 +300,15 @@ namespace RealmOfAshes.Game
                 string name = _candidateKind == TargetKind.Actor
                     ? DisplayNpcName(_candidate) : (_candidate["name"]?.ToString() ?? "Объект");
                 string action;
-                if (_candidateKind == TargetKind.Resource) action = "добыть";
+                if (_candidateKind == TargetKind.Resource)
+                {
+                    // Сбор с этого узла уже идёт: остаток и цикл показывает полоса сбора.
+                    if (GatherActive && _candidate["id"]?.ToString() == _gatherId) return string.Empty;
+                    action = _candidate["type"]?.ToString() == "hide" ? "свежевать" : "добыть";
+                    name += " · " + FormatCharges(_candidate["hp"]?.ToObject<int?>() ?? 0,
+                        _candidate["maxHp"]?.ToObject<int?>() ?? 0);
+                    return "ЛКМ / " + InteractKey + " — " + action + ": " + name;
+                }
                 else if (_candidateKind == TargetKind.CraftingStation) action = "открыть станок";
                 else if (_candidateKind == TargetKind.JobBoard) action = "посмотреть контракты";
                 else if (_candidateKind == TargetKind.PlotBoard) action = "торги за участок";
@@ -303,7 +316,9 @@ namespace RealmOfAshes.Game
                 else if (_candidateKind == TargetKind.Transition) action = "перейти";
                 else if (_candidateKind == TargetKind.Storage) action = "открыть хранилище";
                 else if (_candidateKind == TargetKind.Container) action = "открыть";
-                else if (_candidate["dead"]?.ToObject<bool>() == true) action = "обыскать";
+                else if (_candidate["dead"]?.ToObject<bool>() == true)
+                    return InteractKey + " — обыскать: " + name + (CorpseHasCarcass(_candidate) ? " · ЛКМ — свежевать" : string.Empty);
+                else if (!string.IsNullOrEmpty(_candidate["stationObjectId"]?.ToString())) action = "заказать работу";
                 else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) action = "поговорить";
                 else if (NpcHasTrade(_candidate)) action = "торговать";
                 else action = "услуги";
@@ -1288,40 +1303,7 @@ namespace RealmOfAshes.Game
                     Loader?.SetObjectVisible(entry.Id, visible);
                 }
 
-                TargetKind kind = StaticTargetKind(entry);
-                if (kind == TargetKind.None) continue;
-
-                string station = kind == TargetKind.CraftingStation ? CraftingStationId(entry) : string.Empty;
-                string boardSiteId = kind == TargetKind.JobBoard
-                    ? (entry.Interactive?["boardSiteId"]?.ToString() ?? _locationId)
-                    : string.Empty;
-                string questObjective = kind == TargetKind.QuestObject
-                    ? (entry.Interactive?["questObjective"]?.ToString() ?? string.Empty)
-                    : string.Empty;
-                // Табличка участка знает, за какой участок торгуются: без этого
-                // окно торгов не открыть.
-                string plotId = kind == TargetKind.PlotBoard
-                    ? (entry.Interactive?["plotId"]?.ToString() ?? string.Empty)
-                    : string.Empty;
-
-                _staticTargets.Add(new StaticTarget
-                {
-                    Kind = kind,
-                    Position = RoaCoords.ToUnity(entry.Position.X, entry.Position.Y, entry.Position.Z),
-                    Data = new JObject
-                    {
-                        ["id"] = entry.Id,
-                        ["name"] = string.IsNullOrEmpty(entry.Name)
-                            ? DefaultStaticName(kind, station)
-                            : entry.Name,
-                        ["staticKind"] = kind.ToString(),
-                        ["station"] = station,
-                        ["boardSiteId"] = boardSiteId,
-                        ["questObjective"] = questObjective,
-                        ["plotId"] = plotId,
-                        ["locationId"] = _locationId
-                    }
-                });
+                AddStaticTarget(entry);
             }
 
             var transitionIds = new HashSet<string>();
@@ -1333,6 +1315,58 @@ namespace RealmOfAshes.Game
             RebuildPortalTargets();
 
             RefreshResourceViews();
+        }
+
+        private void AddStaticTarget(LocationObject entry)
+        {
+            TargetKind kind = StaticTargetKind(entry);
+            if (kind == TargetKind.None) return;
+
+            string station = kind == TargetKind.CraftingStation ? CraftingStationId(entry) : string.Empty;
+            string boardSiteId = kind == TargetKind.JobBoard
+                ? (entry.Interactive?["boardSiteId"]?.ToString() ?? _locationId)
+                : string.Empty;
+            string questObjective = kind == TargetKind.QuestObject
+                ? (entry.Interactive?["questObjective"]?.ToString() ?? string.Empty)
+                : string.Empty;
+            // Табличка участка знает, за какой участок торгуются: без этого
+            // окно торгов не открыть. Мастерская на участке знает свой участок:
+            // по нему окно станка берёт владельца и плату.
+            string plotId = kind == TargetKind.PlotBoard || kind == TargetKind.CraftingStation
+                ? (entry.Interactive?["plotId"]?.ToString() ?? string.Empty)
+                : string.Empty;
+
+            _staticTargets.Add(new StaticTarget
+            {
+                Kind = kind,
+                Position = RoaCoords.ToUnity(entry.Position.X, entry.Position.Y, entry.Position.Z),
+                Data = new JObject
+                {
+                    ["id"] = entry.Id,
+                    ["name"] = string.IsNullOrEmpty(entry.Name)
+                        ? DefaultStaticName(kind, station)
+                        : entry.Name,
+                    ["staticKind"] = kind.ToString(),
+                    ["station"] = station,
+                    ["boardSiteId"] = boardSiteId,
+                    ["questObjective"] = questObjective,
+                    ["plotId"] = plotId,
+                    ["locationId"] = _locationId
+                }
+            });
+        }
+
+        /// <summary>
+        /// Мастерские на участках сменились, пока игрок в городе: цели станков
+        /// участков пересобираются по свежему определению, остальные не трогаются.
+        /// </summary>
+        public void RefreshPlotBuildings(LocationDefinition location)
+        {
+            if (location == null || !string.Equals(location.Id, _locationId, StringComparison.Ordinal)) return;
+            _staticTargets.RemoveAll(target => target.Kind == TargetKind.CraftingStation
+                && (target.Data?["id"]?.ToString() ?? string.Empty).StartsWith("station_plot_", StringComparison.Ordinal));
+            foreach (LocationObject entry in location.Objects ?? new List<LocationObject>())
+                if (RoaLocationLoader.IsPlotBuilding(entry) && entry.Position != null) AddStaticTarget(entry);
         }
 
         private void AddTransitionTarget(LocationTransition transition, HashSet<string> seen)
@@ -1356,6 +1390,8 @@ namespace RealmOfAshes.Game
                     ["auto"] = transition.Auto,
                     ["to"] = transition.To,
                     ["entryKey"] = transition.EntryKey ?? string.Empty,
+                    ["crossing"] = transition.Crossing ?? string.Empty,
+                    ["direction"] = transition.Direction ?? string.Empty,
                     ["locationId"] = _locationId,
                     ["targetPvpMode"] = transition.TargetPvpMode ?? string.Empty,
                     ["targetZoneRules"] = transition.TargetZoneRules != null
@@ -1363,51 +1399,20 @@ namespace RealmOfAshes.Game
                         : JValue.CreateNull()
                 }
             };
-            target.Marker = CreateTransitionMarker(position);
+            // Полоса края зоны рисуется границей локации, а не точкой: переход — вся сторона.
+            if (!transition.IsEdgeStrip) target.Marker = CreatePortalMarker(position, target.Range, transition.Direction);
             _staticTargets.Add(target);
         }
 
-        private GameObject CreateTransitionMarker(Vector3 position)
+        /// <summary>
+        /// Портал перехода: светящееся пятно с искрами. У ворот (есть сторона) оно
+        /// вытянуто вдоль края, у портала места — квадратное.
+        /// </summary>
+        private GameObject CreatePortalMarker(Vector3 position, float range, string direction)
         {
-            var root = new GameObject("LocationTransitionMarker");
-            root.transform.SetParent(transform, false);
-            root.transform.position = position + Vector3.up * 0.08f;
-            var line = root.AddComponent<LineRenderer>();
-            line.loop = true;
-            line.useWorldSpace = false;
-            line.positionCount = 48;
-            line.startWidth = 0.055f;
-            line.endWidth = 0.055f;
-            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            line.receiveShadows = false;
-            if (_transitionMaterial == null)
-            {
-                Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
-                    ?? Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
-                if (shader != null)
-                {
-                    _transitionMaterial = new Material(shader);
-                    Color color = new Color(0.85f, 0.74f, 0.43f, 0.76f);
-                    _transitionMaterial.color = color;
-                    if (_transitionMaterial.HasProperty("_BaseColor"))
-                        _transitionMaterial.SetColor("_BaseColor", color);
-                    if (_transitionMaterial.HasProperty("_Surface")) _transitionMaterial.SetFloat("_Surface", 1f);
-                    if (_transitionMaterial.HasProperty("_SrcBlend"))
-                        _transitionMaterial.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    if (_transitionMaterial.HasProperty("_DstBlend"))
-                        _transitionMaterial.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    if (_transitionMaterial.HasProperty("_ZWrite")) _transitionMaterial.SetFloat("_ZWrite", 0f);
-                    _transitionMaterial.renderQueue = 3000;
-                    _transitionMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                }
-            }
-            line.sharedMaterial = _transitionMaterial;
-            for (int i = 0; i < line.positionCount; i++)
-            {
-                float angle = i / (float)line.positionCount * Mathf.PI * 2f;
-                line.SetPosition(i, new Vector3(Mathf.Cos(angle) * 0.92f, 0f, Mathf.Sin(angle) * 0.92f));
-            }
-            return root;
+            Vector3 across = direction == "north" || direction == "south" ? Vector3.right
+                : direction == "east" || direction == "west" ? Vector3.forward : Vector3.zero;
+            return RoaPortalGlow.Create(transform, position, range, across, RoaPortalGlow.PortalGold).gameObject;
         }
 
         private void Start()
@@ -1424,14 +1429,6 @@ namespace RealmOfAshes.Game
         {
             Detach();
             ClosePanel(false);
-        }
-
-        private void OnDestroy()
-        {
-            if (_transitionMaterial == null) return;
-            if (Application.isPlaying) Destroy(_transitionMaterial);
-            else DestroyImmediate(_transitionMaterial);
-            _transitionMaterial = null;
         }
 
         private void Attach()
@@ -1759,8 +1756,13 @@ namespace RealmOfAshes.Game
             // Тир узла — тир зоны: «Руда T3» сразу говорит, какой нужен инструмент.
             int resourceTier = row["tier"]?.ToObject<int?>() ?? 0;
             view.Data["name"] = ResourceLabel(row["type"]?.ToString()) + (resourceTier > 0 ? " T" + resourceTier : string.Empty);
-            view.Position = RoaCoords.TileToWorld(tx, tz, _mapWidth, _mapDepth);
+            view.Position = IsCarcass(row) ? CarcassPosition(row) : RoaCoords.TileToWorld(tx, tz, _mapWidth, _mapDepth);
             bool available = row["hp"]?.ToObject<float>() > 0f;
+            if (id == _gatherId)
+            {
+                _gatherCharges = row["hp"]?.ToObject<int?>() ?? _gatherCharges;
+                _gatherMaxCharges = row["maxHp"]?.ToObject<int?>() ?? _gatherMaxCharges;
+            }
 
             bool loaderOwnsVisual = Loader != null && Loader.TryGetObjectRoot(id, out GameObject _);
             if (_locationReady && (_authoredResourceIds.Contains(id) || loaderOwnsVisual))
@@ -1773,7 +1775,7 @@ namespace RealmOfAshes.Game
             }
             else if (_locationReady)
             {
-                if (view.Marker == null) view.Marker = CreateResourceMarker(id, row);
+                if (view.Marker == null) view.Marker = IsCarcass(row) ? CreateCarcassMarker(id) : CreateResourceMarker(id, row);
                 view.Marker.transform.position = view.Position;
                 view.Marker.SetActive(available);
             }
@@ -1900,6 +1902,7 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            UpdateGathering();
             if (_panel != PanelKind.None)
             {
                 MaintainServerHolds();
@@ -1933,6 +1936,13 @@ namespace RealmOfAshes.Game
             foreach (StaticTarget target in _staticTargets)
             {
                 if (target.Kind != TargetKind.Transition || target.Data?["auto"]?.ToObject<bool>() != true) continue;
+                if (target.Data["crossing"]?.ToString() == "edge")
+                {
+                    // Сплошная полоса: переход там, где игрок пересёк край своей стороны.
+                    string side = target.Data["direction"]?.ToString() ?? string.Empty;
+                    if (RoaWorldExitBoundary.IsInSideBand(position, _mapWidth, _mapDepth, side)) { inside = target.Data; break; }
+                    continue;
+                }
                 Vector3 delta = target.Position - position;
                 delta.y = 0f;
                 if (delta.magnitude <= target.Range) { inside = target.Data; break; }
@@ -2110,6 +2120,8 @@ namespace RealmOfAshes.Game
 
             foreach (StaticTarget target in _staticTargets)
             {
+                // Полоса края — вся сторона зоны, у бывшей точки ворот нечего нажимать.
+                if (target.Kind == TargetKind.Transition && target.Data?["crossing"]?.ToString() == "edge") continue;
                 float range = target.Range > 0f ? target.Range
                     : (target.Kind == TargetKind.Storage ? 4.5f : 5.0f);
                 Vector3 delta = target.Position - origin;
@@ -2178,7 +2190,7 @@ namespace RealmOfAshes.Game
 
             if (_candidateKind == TargetKind.Resource)
             {
-                HarvestResource(_candidate);
+                BeginGather(_candidate);
                 return;
             }
             if (_candidateKind == TargetKind.CraftingStation)
@@ -2209,6 +2221,7 @@ namespace RealmOfAshes.Game
 
             if (_candidateKind != TargetKind.Actor) return;
             if (_candidate["dead"]?.ToObject<bool>() == true) InspectCorpse(_candidate);
+            else if (TryOpenMasterStation(_candidate)) return;
             else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) OpenNpc(_candidate);
             else if (NpcHasTrade(_candidate))
             {
@@ -2279,7 +2292,9 @@ namespace RealmOfAshes.Game
                 entryKey = target == "settlement" ? "entryFromWasteland" : "entryFromSettlement";
 
             _transitionPending = true;
-            Show("Переход: " + (transition["name"]?.ToString() ?? "локация") + "…", 3f);
+            bool seamless = transition["crossing"]?.ToString() == "edge";
+            // Край зоны — продолжение пути, а не телепорт: без сообщения и экрана загрузки.
+            if (!seamless) Show("Переход: " + (transition["name"]?.ToString() ?? "локация") + "…", 3f);
             var payload = new Dictionary<string, object>
             {
                 ["locationId"] = target,
@@ -2306,72 +2321,39 @@ namespace RealmOfAshes.Game
                     onFinished?.Invoke(true);
                     return;
                 }
+                if (seamless) RoaGameBootstrap.Active?.BeginSeamlessCrossing();
                 if (Socket.ApplyLocationTransitionAck(ack) == null)
+                {
+                    RoaGameBootstrap.Active?.CancelSeamlessCrossing();
                     Show("Ответ перехода не удалось разобрать.", 4f);
+                }
                 onFinished?.Invoke(false);
             });
         }
 
-        private void HarvestResource(JObject resource)
-        {
-            if (_harvestPending || resource == null) return;
-            string id = resource["id"]?.ToString();
-            string toolRuntimeId = _self?["equipmentRuntime"]?["weapon"]?.ToString() ?? string.Empty;
-            string toolId = BaseItemId(toolRuntimeId);
-            if (string.IsNullOrEmpty(id)) return;
-
-            _harvestPending = true;
-            Show("Добыча ресурса…", 2f);
-            PlayGatherAction(resource["type"]?.ToString());
-            Socket.EmitWithAck("harvestResource", new Dictionary<string, object>
-            {
-                ["id"] = id,
-                ["tx"] = resource["tx"]?.ToObject<int>() ?? 0,
-                ["tz"] = resource["tz"]?.ToObject<int>() ?? 0,
-                ["type"] = resource["type"]?.ToString() ?? string.Empty,
-                ["toolId"] = toolRuntimeId,
-                ["baseToolId"] = toolId
-            }, ack =>
-            {
-                _harvestPending = false;
-                ApplyActionAck(ack);
-                if (ack?["ok"]?.ToObject<bool>() != true)
-                {
-                    Show(ack?["error"]?.ToString() ?? "Сервер отклонил добычу ресурса.");
-                    return;
-                }
-
-                JObject item = ack["item"] as JObject;
-                JObject profession = ack["profession"] as JObject;
-                string itemId = item?["id"]?.ToString() ?? string.Empty;
-                Show("Получено: " + (string.IsNullOrEmpty(itemId) ? "ресурс" : RoaItemData.Name(itemId))
-                    + " x" + (item?["qty"]?.ToObject<int>() ?? 1)
-                    + (profession != null ? " · " + profession["name"] + " +" + profession["gained"]
-                        + (profession["leveledUp"]?.ToObject<bool>() == true ? " — уровень " + profession["level"] + "!" : string.Empty)
-                        : string.Empty));
-            });
-        }
-
         /// <summary>
-        /// Персонаж добывает сразу, не дожидаясь ответа сервера: рубит дерево и
-        /// бьёт жилу с размаха, срезает волокно у земли, возится у качалки.
+        /// Мастер участка стоит у своей мастерской, как в Albion: разговор с ним
+        /// открывает её станок. Крафт уходит от имени станка — сервер меряет
+        /// расстояние до мастерской и берёт с неё участок и плату.
         /// </summary>
-        private void PlayGatherAction(string type)
+        private bool TryOpenMasterStation(JObject actor)
         {
-            RoaCharacterView view = Player != null ? Player.View : null;
-            if (view == null) return;
-            switch (type)
+            string stationId = actor?["stationObjectId"]?.ToString();
+            if (string.IsNullOrEmpty(stationId)) return false;
+            foreach (StaticTarget target in _staticTargets)
             {
-                case "wood":
-                case "ore": view.PlayAction("chop", 1.0f); break;
-                case "fiber": view.PlayAction("harvest", 1.5f, 1.3f); break;
-                default: view.PlayAction("kneel_work", 1.6f); break;
+                if (target.Kind != TargetKind.CraftingStation) continue;
+                if (target.Data?["id"]?.ToString() != stationId) continue;
+                OpenCrafting(target.Data);
+                return true;
             }
+            return false;
         }
 
         private void OpenCrafting(JObject station)
         {
             _active = (JObject)station.DeepClone();
+            RoaCraftingPlots.ActivePlotId = _active["plotId"]?.ToString() ?? string.Empty;
             _panel = PanelKind.Crafting;
             _scroll = Vector2.zero;
             _status = string.Empty;
@@ -3048,7 +3030,7 @@ namespace RealmOfAshes.Game
             _locationId = string.Empty;
             _encounterLocation = false;
             _craftPending = false;
-            _harvestPending = false;
+            EndGather(null);
             _transitionPending = false;
             _world = new JObject();
             _worldRequestPending = false;
@@ -3501,6 +3483,7 @@ namespace RealmOfAshes.Game
             if (type == "wood") return "Древесина";
             if (type == "oil") return "Нефть";
             if (type == "fiber") return "Волокно";
+            if (type == "hide") return "Шкура";
             if (type == "blue") return "Синь";
             return "Ресурс";
         }

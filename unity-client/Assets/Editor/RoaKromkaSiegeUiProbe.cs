@@ -127,6 +127,9 @@ namespace RealmOfAshes.EditorTools
                 RectTransform panel = (RectTransform)canvas.transform.Find("SiegeStatus");
                 Require(Mathf.Approximately(panel.anchoredPosition.y, RoaKromkaSiegePresentation.PanelTop),
                     "The panel sits under the PvP banner of the HUD");
+                // В WebGL у LegacyRuntime.ttf нет кириллицы: панель рисовала одни цифры.
+                foreach (Text text in canvas.GetComponentsInChildren<Text>(true))
+                    Require(text.font == RoaUiFont.Default, text.name + " is drawn with the bundled Cyrillic font, not " + (text.font != null ? text.font.name : "none"));
             }
             finally
             {

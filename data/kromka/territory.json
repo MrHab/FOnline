@@ -86,8 +86,8 @@
       "baseDisplayName": "Узел Лиги",
       "capitalLocationId": "caravanCamp",
       "mapPoint": {
-        "x": 206,
-        "z": 141
+        "x": 210,
+        "z": 127
       },
       "platform": {
         "id": "platform_league",

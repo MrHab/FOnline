@@ -7,6 +7,7 @@ using RealmOfAshes.World;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 
 namespace RealmOfAshes.Game
@@ -23,7 +24,7 @@ namespace RealmOfAshes.Game
     /// Сцена стоит в начале координат, как и локальный мир, поэтому её коллайдеры
     /// выключаются, а выбор точки считается по рельефу, без физики.
     /// </summary>
-    public sealed class RoaWorldMap3D : MonoBehaviour
+    public sealed partial class RoaWorldMap3D : MonoBehaviour
     {
         public const int MapLayer = 30;
         public const float WorldScale = 0.1f;
@@ -52,6 +53,7 @@ namespace RealmOfAshes.Game
         public string FailReason { get; private set; } = string.Empty;
         public Camera MapCamera { get { return _camera; } }
         public float Distance { get { return _distance; } }
+        public float Pitch { get { return _pitch; } }
         public bool InputEnabled = true;
         public bool HasZones { get { return _zonesView != null; } }
 
@@ -62,6 +64,7 @@ namespace RealmOfAshes.Game
         private Transform _root;
         private RoaGlobalMapRelief _relief;
         private Camera _camera;
+        private Camera _previewCamera;
         private Camera _hiddenMain;
         private int _hiddenMainMask;
         private bool _savedFog;
@@ -434,6 +437,68 @@ namespace RealmOfAshes.Game
             if (point.HasValue) _selectionMarker.localPosition = PointToLocal(point.Value, 0f);
         }
 
+        /// <summary>
+        /// Куда на экране смотрит север карты: градусы по часовой стрелке от «вверх».
+        /// Компас окна поворачивается на этот угол вместе с камерой.
+        /// </summary>
+        public float NorthScreenAngle()
+        {
+            if (_camera == null || _root == null) return 0f;
+            Vector3 north = _root.forward;
+            float x = Vector3.Dot(north, _camera.transform.right);
+            float y = Vector3.Dot(north, _camera.transform.up);
+            return Mathf.Abs(x) + Mathf.Abs(y) < 1e-5f ? 0f : Mathf.Atan2(x, y) * Mathf.Rad2Deg;
+        }
+
+        /// <summary>
+        /// Снять квадрат карты сверху, север вверху: окно зоны показывает её местность.
+        /// corner — северо-западный угол квадрата (км). Флажки игрока и выбора в кадр не попадают.
+        /// </summary>
+        public bool RenderArea(Vector2 corner, float sizeKm, RenderTexture target)
+        {
+            if (!IsOpen || _root == null || target == null) return false;
+            if (_previewCamera == null)
+            {
+                var go = new GameObject("WorldMapAreaCamera");
+                go.transform.SetParent(transform, false);
+                _previewCamera = go.AddComponent<Camera>();
+                _previewCamera.cullingMask = 1 << MapLayer;
+                _previewCamera.clearFlags = CameraClearFlags.SolidColor;
+                _previewCamera.backgroundColor = new Color(0.035f, 0.04f, 0.035f, 1f);
+                _previewCamera.orthographic = true;
+                _previewCamera.enabled = false;
+            }
+            float scale = Mathf.Max(1e-4f, _root.lossyScale.x);
+            Vector3 centre = PointToWorld(corner + Vector2.one * (sizeKm * 0.5f), 0f);
+            _previewCamera.orthographicSize = sizeKm * 0.5f * WorldScale * scale;
+            _previewCamera.nearClipPlane = 0.05f;
+            _previewCamera.farClipPlane = 120f * scale;
+            _previewCamera.transform.SetPositionAndRotation(centre + _root.up * (50f * scale), _root.rotation * Quaternion.Euler(90f, 0f, 0f));
+            bool player = _playerMarker != null && _playerMarker.gameObject.activeSelf;
+            bool selection = _selectionMarker != null && _selectionMarker.gameObject.activeSelf;
+            // Буря в кадр местности не попадает: окно зоны кладёт её своим слоем.
+            bool storm = _stormView != null && _stormView.activeSelf;
+            if (player) _playerMarker.gameObject.SetActive(false);
+            if (selection) _selectionMarker.gameObject.SetActive(false);
+            if (storm) _stormView.SetActive(false);
+            // В URP прямой Camera.Render() не поддержан: сперва запрос рендера конвейера.
+            var request = new UniversalRenderPipeline.SingleCameraRequest { destination = target };
+            if (RenderPipeline.SupportsRenderRequest(_previewCamera, request))
+            {
+                RenderPipeline.SubmitRenderRequest(_previewCamera, request);
+            }
+            else
+            {
+                _previewCamera.targetTexture = target;
+                _previewCamera.Render();
+                _previewCamera.targetTexture = null;
+            }
+            if (player) _playerMarker.gameObject.SetActive(true);
+            if (selection) _selectionMarker.gameObject.SetActive(true);
+            if (storm) _stormView.SetActive(true);
+            return true;
+        }
+
         /// <summary>Навести камеру на точку карты.</summary>
         public void FocusOn(Vector2 point, float distance = -1f)
         {
@@ -757,6 +822,7 @@ namespace RealmOfAshes.Game
 
         private void ReleaseOverlays()
         {
+            ReleaseStorm();
             if (_zonesView != null) Destroy(_zonesView);
             if (_routeView != null) Destroy(_routeView);
             _zonesView = _routeView = null;

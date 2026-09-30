@@ -45,8 +45,13 @@ for (const zone of graph.zones) {
   if (eventZone && groundsZone) break;
   // Города собирает свой конструктор — здесь нужны обычные зоны пустоши.
   if (zone.city) continue;
-  const definition = buildZone(zoneRecipe(graph, zone.id), catalog);
-  if (!(definition.zone.eventAnchors || []).length) continue;
+  // Сервер берёт закреплённый сектор из data/zones/authored, а не свежую сборку:
+  // конструктор с тех пор мог поменяться, и якоря разошлись бы.
+  const authored = path.join(root, 'data', 'zones', 'authored', `${zone.id}.json`);
+  const definition = fs.existsSync(authored)
+    ? JSON.parse(fs.readFileSync(authored, 'utf8'))
+    : buildZone(zoneRecipe(graph, zone.id), catalog);
+  if (!(definition.zone?.eventAnchors || []).length) continue;
   if (!eventZone && zone.mode === 'pvp' && !insideGrounds(zone)) { eventZone = zone; built[zone.id] = definition; }
   if (!groundsZone && insideGrounds(zone)) { groundsZone = zone; built[zone.id] = definition; }
 }
@@ -161,7 +166,7 @@ async function leaveByEdge(account, state, zoneId, tileWidth, tileDepth) {
     assert(atBoard.ok || !/у доски работ/.test(atBoard.error || ''), 'the board of Keys picks an activity: ' + JSON.stringify(atBoard).slice(0, 200));
     console.log(`PASS the quick activity join works at the board of Keys (${atBoard.ok ? atBoard.taskId : atBoard.error}) and not at another settlement's`);
 
-    // --- город — сектор целиком: из него выходят через край, а не по старой дороге --------------
+    // --- город — сектор целиком: из него выходят порталом в проёме ворот, а не по старой дороге ---
     const keysCity = graph.zones.find(zone => zone.city === 'settlement');
     const keysNorth = zoneById(graph, keysCity.edges.north.to);
     const shownKeys = await new Promise((resolve, reject) => {
@@ -173,18 +178,20 @@ async function leaveByEdge(account, state, zoneId, tileWidth, tileDepth) {
     });
     assert(!shownKeys.exit, 'a city built by the constructor has no old road out of the world');
     const openSides = Object.entries(keysCity.edges).filter(([, edge]) => edge.open).map(([dir]) => dir).sort();
-    assert.deepEqual((shownKeys.sectorGates || []).map(gate => gate.side).sort(), openSides,
-      'the city carries a gate for every open side: ' + JSON.stringify(shownKeys.sectorGates).slice(0, 300));
-    assert.equal(shownKeys.sectorGates.find(gate => gate.side === 'north')?.to, keysNorth.id);
+    const portals = (shownKeys.transitions || []).filter(row => row.type === 'zoneGate' && row.crossing === 'portal');
+    assert.deepEqual(portals.map(row => row.direction).sort(), openSides,
+      'the city carries a gate portal for every open side: ' + JSON.stringify(portals).slice(0, 300));
+    const northPortal = portals.find(row => row.direction === 'north');
+    assert.equal(northPortal.to, keysNorth.id);
     const clerkState = { x: Number(clerk.join.self?.x ?? clerk.join.x ?? 0), z: Number(clerk.join.self?.z ?? clerk.join.z ?? 0) };
     // Улица от площади к северным воротам свободна по построению: по ней и выходим.
-    const keysEdge = zoneWalk.cityEdge('settlement', 'north');
-    assert(await zoneWalk.driveTo(h, clerk, clerkState, keysEdge.x, keysEdge.z, 700), 'the player walks to the north edge of Keys: ' + JSON.stringify(clerkState));
+    const gate = zoneWalk.cityWorld('settlement', northPortal);
+    assert(await zoneWalk.driveTo(h, clerk, clerkState, gate.x, gate.z - 2, 700), 'the player walks to the north gate of Keys: ' + JSON.stringify(clerkState));
     const faraway = await changeLocation(clerk, { locationId: 'wasteland' });
-    assert.equal(faraway.ok, false, 'the edge of a city does not carry the player across the world');
+    assert.equal(faraway.ok, false, 'the gate of a city does not carry the player across the world');
     const outOfKeys = await changeLocation(clerk, { locationId: keysNorth.id });
-    assert(outOfKeys.ok && outOfKeys.locationId === keysNorth.id, 'the north edge of Keys leads into the sector north of it: ' + JSON.stringify(outOfKeys).slice(0, 200));
-    console.log(`PASS the north edge of Keys leads into ${keysNorth.title}`);
+    assert(outOfKeys.ok && outOfKeys.locationId === keysNorth.id, 'the north gate portal of Keys leads into the sector north of it: ' + JSON.stringify(outOfKeys).slice(0, 200));
+    console.log(`PASS the north gate portal of Keys leads into ${keysNorth.title}`);
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();

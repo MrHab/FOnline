@@ -5,7 +5,7 @@
   "name": "Фильтровальная Т-6",
   "seed": 2026091401,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pvpBlack",
   "kind": "clanBase",
   "clanBaseId": "filter_t6",
   "respawnAllowed": false,

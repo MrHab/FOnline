@@ -5,7 +5,7 @@
   "name": "Форт 14",
   "seed": 2026091407,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pvpBlack",
   "kind": "clanBase",
   "clanBaseId": "fort14",
   "respawnAllowed": false,

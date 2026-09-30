@@ -63,10 +63,19 @@ namespace RealmOfAshes.Game
             StationCosts = null;
         }
 
+        /// <summary>
+        /// Участок открытого станка. В городе мастерских одного ремесла бывает
+        /// несколько, и плата у каждой своя: считать надо по той, у которой стоишь.
+        /// </summary>
+        public static string ActivePlotId { get; set; } = string.Empty;
+
         public static JObject ForStation(string station)
         {
+            if (string.IsNullOrEmpty(station)) return null;
+            JObject active = ForObject(ActivePlotId);
+            if (active != null && active["station"]?.ToString() == station) return active;
             JObject plot;
-            return !string.IsNullOrEmpty(station) && ByStation.TryGetValue(station, out plot) ? plot : null;
+            return ByStation.TryGetValue(station, out plot) ? plot : null;
         }
 
         public static JObject ForObject(string objectId)

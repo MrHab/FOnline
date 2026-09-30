@@ -24,7 +24,6 @@ const CAPITALS = {
   relayStation: 'contour',
   caravanCamp: 'tract_league',
   secondHaven: 'seconds',
-  balanceBunker: 'continuity',
   coreBaseUprava: 'uprava',
   coreBaseArtels: 'free_artels',
   coreBaseContour: 'contour',

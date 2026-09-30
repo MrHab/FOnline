@@ -31,7 +31,10 @@ function buildFromData() {
     regionNames: Object.fromEntries(seed.regions.map(region => [region.id, region.displayName || region.id])),
     locationNames: Object.fromEntries(locations.locations.map(row => [row.id, row.displayName || row.id])),
     locationModes,
-    overrides
+    overrides,
+    // Пояса опасности канона (библия, 4.4) — из data/kromka/grounds.json.
+    belts: fs.existsSync(path.join(root, 'data', 'kromka', 'grounds.json'))
+      ? (readJson('data', 'kromka', 'grounds.json').belts || {}) : {}
   });
 }
 

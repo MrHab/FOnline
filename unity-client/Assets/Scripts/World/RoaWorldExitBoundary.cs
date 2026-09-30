@@ -6,9 +6,12 @@ using UnityEngine.Rendering;
 namespace RealmOfAshes.World
 {
     /// <summary>
-    /// Край места внутри зоны мира. Когда выход открыт, рисует золотую полосу:
-    /// шаг в неё уводит в родительскую зону. Место, закрытое сюжетом, вместо
-    /// полосы получает пунктирный непроходимый периметр по её внутренней кромке.
+    /// Край локации. У места внутри зоны — золотая полоса по всему краю: шаг в неё
+    /// уводит в родительскую зону; место, закрытое сюжетом, вместо полосы получает
+    /// пунктирный непроходимый периметр. У зоны и города край задан по сторонам
+    /// (ConfigureSides): сторона, открытая в соседнюю зону, — сплошная полоса
+    /// перехода, прочие — пунктирная граница (в город ведёт портал, из города —
+    /// порталы у ворот).
     /// </summary>
     public sealed class RoaWorldExitBoundary : MonoBehaviour
     {
@@ -38,8 +41,19 @@ namespace RealmOfAshes.World
         private float _halfWidth;
         private float _halfDepth;
         private float _distanceToEdge = float.MaxValue;
+        private float _distanceToClosed = float.MaxValue;
         private float _nextPlayerLookupAt;
         private bool _exitAllowed = true;
+
+        // Стороны: 0 — север (+z, старшие tz), 1 — восток (+x), 2 — юг (−z), 3 — запад (−x), как у компаса.
+        private static readonly string[] SideNames = { "north", "east", "south", "west" };
+        private readonly bool[] _open = { true, true, true, true };
+        private readonly string[] _labels = new string[4];
+        private bool _sidesDriven;
+        private int _nearestOpenSide = -1;
+        private string _closedTitle = string.Empty;
+        private string _closedDetail = string.Empty;
+        private GameObject _edgeStopRoot;
 
         public int MapWidth { get { return _mapWidth; } }
         public int MapDepth { get { return _mapDepth; } }
@@ -55,8 +69,38 @@ namespace RealmOfAshes.World
         {
             mapWidth = Mathf.Max(1, mapWidth);
             mapDepth = Mathf.Max(1, mapDepth);
-            if (_visualRoot != null && _mapWidth == mapWidth && _mapDepth == mapDepth) return;
+            if (_visualRoot != null && !_sidesDriven && _mapWidth == mapWidth && _mapDepth == mapDepth) return;
+            _sidesDriven = false;
+            for (int side = 0; side < 4; side++) { _open[side] = true; _labels[side] = string.Empty; }
+            Build(mapWidth, mapDepth);
+        }
 
+        /// <summary>
+        /// Край зоны или города по сторонам: `open[side]` — полоса перехода в соседнюю
+        /// зону (подпись — `labels[side]`), закрытая сторона — пунктир и упор.
+        /// Порядок сторон: север, восток, юг, запад.
+        /// </summary>
+        public void ConfigureSides(int mapWidth, int mapDepth, bool[] open, string[] labels, string closedTitle, string closedDetail)
+        {
+            _sidesDriven = true;
+            for (int side = 0; side < 4; side++)
+            {
+                _open[side] = open != null && side < open.Length && open[side];
+                _labels[side] = labels != null && side < labels.Length ? labels[side] ?? string.Empty : string.Empty;
+            }
+            _closedTitle = closedTitle ?? string.Empty;
+            _closedDetail = closedDetail ?? string.Empty;
+            Build(Mathf.Max(1, mapWidth), Mathf.Max(1, mapDepth));
+        }
+
+        public bool SideOpen(string side)
+        {
+            int index = System.Array.IndexOf(SideNames, side);
+            return index >= 0 && _open[index];
+        }
+
+        private void Build(int mapWidth, int mapDepth)
+        {
             ReleaseVisuals();
             _mapWidth = mapWidth;
             _mapDepth = mapDepth;
@@ -73,6 +117,55 @@ namespace RealmOfAshes.World
             BuildArrows();
             BuildBeacons();
             BuildLockedBoundary();
+            BuildEdgeStops();
+        }
+
+        /// <summary>
+        /// Игрок в полосе перехода стороны `side` («north» — старшие tz, +z). Та же ширина,
+        /// что у края места: крайняя клетка и клетка запаса.
+        /// </summary>
+        public static bool IsInSideBand(Vector3 worldPosition, int mapWidth, int mapDepth, string side)
+        {
+            if (mapWidth <= 0 || mapDepth <= 0) return false;
+            RoaCoords.WorldToTile(worldPosition, mapWidth, mapDepth, out int tx, out int tz);
+            int innerOffset = ExitBandTileCount - 1;
+            switch (side)
+            {
+                case "north": return tz >= mapDepth - 1 - innerOffset;
+                case "south": return tz <= innerOffset;
+                case "west": return tx <= innerOffset;
+                case "east": return tx >= mapWidth - 1 - innerOffset;
+                default: return false;
+            }
+        }
+
+        // Наружная нормаль стороны, её ось вдоль и расстояние от центра до края.
+        private Vector3 Outward(int side)
+        {
+            return side == 0 ? Vector3.forward : side == 1 ? Vector3.right : side == 2 ? Vector3.back : Vector3.left;
+        }
+
+        private Vector3 Along(int side) { return side == 0 || side == 2 ? Vector3.right : Vector3.forward; }
+
+        private float HalfAcross(int side) { return side == 0 || side == 2 ? _halfDepth : _halfWidth; }
+
+        private float HalfAlong(int side) { return side == 0 || side == 2 ? _halfWidth : _halfDepth; }
+
+        /// <summary>Сторона рисуется полосой: у места — все, у зоны — открытые в соседа.</summary>
+        private bool StripSide(int side) { return !_sidesDriven || _open[side]; }
+
+        /// <summary>Сторона рисуется пунктиром: у места — все (включаются сюжетом), у зоны — закрытые.</summary>
+        private bool LockedSide(int side) { return !_sidesDriven || !_open[side]; }
+
+        private float DistanceToSide(Vector3 position, int side)
+        {
+            switch (side)
+            {
+                case 0: return _halfDepth - position.z;
+                case 1: return _halfWidth - position.x;
+                case 2: return position.z + _halfDepth;
+                default: return position.x + _halfWidth;
+            }
         }
 
         public static bool IsInExitBand(Vector3 worldPosition, int mapWidth, int mapDepth)
@@ -82,21 +175,6 @@ namespace RealmOfAshes.World
             int innerOffset = ExitBandTileCount - 1;
             return tx <= innerOffset || tz <= innerOffset
                 || tx >= mapWidth - 1 - innerOffset || tz >= mapDepth - 1 - innerOffset;
-        }
-
-        /// <summary>Ближайшая сторона карты: «north» — малые tz, «west» — малые tx (как у сервера).</summary>
-        public static string EdgeSide(Vector3 worldPosition, int mapWidth, int mapDepth)
-        {
-            if (mapWidth <= 0 || mapDepth <= 0) return string.Empty;
-            RoaCoords.WorldToTile(worldPosition, mapWidth, mapDepth, out int tx, out int tz);
-            int north = tz;
-            int south = mapDepth - 1 - tz;
-            int west = tx;
-            int east = mapWidth - 1 - tx;
-            int nearest = Mathf.Min(Mathf.Min(north, south), Mathf.Min(west, east));
-            if (nearest == north) return "north";
-            if (nearest == south) return "south";
-            return nearest == west ? "west" : "east";
         }
 
         public static float DistanceToMapEdge(Vector3 worldPosition, int mapWidth, int mapDepth)
@@ -111,24 +189,23 @@ namespace RealmOfAshes.World
         private void BuildBand()
         {
             float band = ExitBandWidth;
-            float innerWidth = Mathf.Max(0.1f, _halfWidth - band);
-            float innerDepth = Mathf.Max(0.1f, _halfDepth - band);
             var vertices = new List<Vector3>(16);
             var triangles = new List<int>(24);
             const float y = 0.075f;
 
-            AddHorizontalQuad(vertices, triangles,
-                new Vector3(-_halfWidth, y, -_halfDepth), new Vector3(-_halfWidth, y, _halfDepth),
-                new Vector3(-innerWidth, y, _halfDepth), new Vector3(-innerWidth, y, -_halfDepth));
-            AddHorizontalQuad(vertices, triangles,
-                new Vector3(innerWidth, y, -_halfDepth), new Vector3(innerWidth, y, _halfDepth),
-                new Vector3(_halfWidth, y, _halfDepth), new Vector3(_halfWidth, y, -_halfDepth));
-            AddHorizontalQuad(vertices, triangles,
-                new Vector3(-innerWidth, y, -_halfDepth), new Vector3(-innerWidth, y, -innerDepth),
-                new Vector3(innerWidth, y, -innerDepth), new Vector3(innerWidth, y, -_halfDepth));
-            AddHorizontalQuad(vertices, triangles,
-                new Vector3(-innerWidth, y, innerDepth), new Vector3(-innerWidth, y, _halfDepth),
-                new Vector3(innerWidth, y, _halfDepth), new Vector3(innerWidth, y, innerDepth));
+            for (int side = 0; side < 4; side++)
+            {
+                if (!StripSide(side)) continue;
+                Vector3 outward = Outward(side), along = Along(side);
+                Vector3 edge = outward * HalfAcross(side) + Vector3.up * y;
+                Vector3 inner = edge - outward * band;
+                // У места северная и южная полосы идут между боковыми, чтобы углы не
+                // светились дважды; у зоны каждая открытая сторона — во всю длину.
+                bool shortened = !_sidesDriven && (side == 0 || side == 2);
+                float halfSpan = shortened ? Mathf.Max(0.1f, HalfAlong(side) - band) : HalfAlong(side);
+                AddHorizontalQuad(vertices, triangles,
+                    edge - along * halfSpan, inner - along * halfSpan, inner + along * halfSpan, edge + along * halfSpan);
+            }
 
             _bandMesh = new Mesh { name = "PlaceExitBandMesh" };
             _bandMesh.SetVertices(vertices);
@@ -142,22 +219,42 @@ namespace RealmOfAshes.World
         {
             float innerWidth = Mathf.Max(0.1f, _halfWidth - ExitBandWidth);
             float innerDepth = Mathf.Max(0.1f, _halfDepth - ExitBandWidth);
+            if (!_sidesDriven)
+            {
+                _threshold = CreateThresholdLine(true, new[]
+                {
+                    new Vector3(-innerWidth, 0.13f, -innerDepth), new Vector3(-innerWidth, 0.13f, innerDepth),
+                    new Vector3(innerWidth, 0.13f, innerDepth), new Vector3(innerWidth, 0.13f, -innerDepth)
+                });
+                return;
+            }
+            for (int side = 0; side < 4; side++)
+            {
+                if (!_open[side]) continue;
+                Vector3 inner = Outward(side) * (HalfAcross(side) - ExitBandWidth) + Vector3.up * 0.13f;
+                Vector3 along = Along(side) * HalfAlong(side);
+                _thresholds.Add(CreateThresholdLine(false, new[] { inner - along, inner + along }));
+            }
+        }
+
+        private readonly List<LineRenderer> _thresholds = new List<LineRenderer>(4);
+
+        private LineRenderer CreateThresholdLine(bool loop, Vector3[] points)
+        {
             var lineObject = new GameObject("ExitThresholdLine");
             lineObject.transform.SetParent(_visualRoot.transform, false);
-            _threshold = lineObject.AddComponent<LineRenderer>();
-            _threshold.useWorldSpace = false;
-            _threshold.loop = true;
-            _threshold.positionCount = 4;
-            _threshold.startWidth = 0.16f;
-            _threshold.endWidth = 0.16f;
-            _threshold.numCornerVertices = 2;
-            _threshold.sharedMaterial = _accentMaterial;
-            _threshold.shadowCastingMode = ShadowCastingMode.Off;
-            _threshold.receiveShadows = false;
-            _threshold.SetPosition(0, new Vector3(-innerWidth, 0.13f, -innerDepth));
-            _threshold.SetPosition(1, new Vector3(-innerWidth, 0.13f, innerDepth));
-            _threshold.SetPosition(2, new Vector3(innerWidth, 0.13f, innerDepth));
-            _threshold.SetPosition(3, new Vector3(innerWidth, 0.13f, -innerDepth));
+            LineRenderer line = lineObject.AddComponent<LineRenderer>();
+            line.useWorldSpace = false;
+            line.loop = loop;
+            line.positionCount = points.Length;
+            line.startWidth = 0.16f;
+            line.endWidth = 0.16f;
+            line.numCornerVertices = 2;
+            line.sharedMaterial = _accentMaterial;
+            line.shadowCastingMode = ShadowCastingMode.Off;
+            line.receiveShadows = false;
+            line.SetPositions(points);
+            return line;
         }
 
         private void BuildArrows()
@@ -170,13 +267,13 @@ namespace RealmOfAshes.World
             var vertices = new List<Vector3>(256);
             var triangles = new List<int>(384);
 
-            AddArrowRow(vertices, triangles, new Vector3(-x, 0f, 0f), Vector3.left,
+            if (StripSide(3)) AddArrowRow(vertices, triangles, new Vector3(-x, 0f, 0f), Vector3.left,
                 Vector3.forward, innerDepth * 2f);
-            AddArrowRow(vertices, triangles, new Vector3(x, 0f, 0f), Vector3.right,
+            if (StripSide(1)) AddArrowRow(vertices, triangles, new Vector3(x, 0f, 0f), Vector3.right,
                 Vector3.forward, innerDepth * 2f);
-            AddArrowRow(vertices, triangles, new Vector3(0f, 0f, -z), Vector3.back,
+            if (StripSide(0)) AddArrowRow(vertices, triangles, new Vector3(0f, 0f, z), Vector3.forward,
                 Vector3.right, innerWidth * 2f);
-            AddArrowRow(vertices, triangles, new Vector3(0f, 0f, z), Vector3.forward,
+            if (StripSide(2)) AddArrowRow(vertices, triangles, new Vector3(0f, 0f, -z), Vector3.back,
                 Vector3.right, innerWidth * 2f);
 
             _arrowMesh = new Mesh { name = "PlaceExitArrowMesh" };
@@ -214,10 +311,10 @@ namespace RealmOfAshes.World
         {
             float innerWidth = Mathf.Max(0.1f, _halfWidth - ExitBandWidth);
             float innerDepth = Mathf.Max(0.1f, _halfDepth - ExitBandWidth);
-            AddBeaconRow(new Vector3(-innerWidth, 0f, 0f), Vector3.forward, innerDepth * 2f);
-            AddBeaconRow(new Vector3(innerWidth, 0f, 0f), Vector3.forward, innerDepth * 2f);
-            AddBeaconRow(new Vector3(0f, 0f, -innerDepth), Vector3.right, innerWidth * 2f);
-            AddBeaconRow(new Vector3(0f, 0f, innerDepth), Vector3.right, innerWidth * 2f);
+            if (StripSide(3)) AddBeaconRow(new Vector3(-innerWidth, 0f, 0f), Vector3.forward, innerDepth * 2f);
+            if (StripSide(1)) AddBeaconRow(new Vector3(innerWidth, 0f, 0f), Vector3.forward, innerDepth * 2f);
+            if (StripSide(0)) AddBeaconRow(new Vector3(0f, 0f, innerDepth), Vector3.right, innerWidth * 2f);
+            if (StripSide(2)) AddBeaconRow(new Vector3(0f, 0f, -innerDepth), Vector3.right, innerWidth * 2f);
         }
 
         private void BuildLockedBoundary()
@@ -231,13 +328,13 @@ namespace RealmOfAshes.World
 
             var vertices = new List<Vector3>(512);
             var triangles = new List<int>(768);
-            AddDashedRow(vertices, triangles, new Vector3(-innerWidth, 0.16f, 0f),
+            if (LockedSide(3)) AddDashedRow(vertices, triangles, new Vector3(-innerWidth, 0.16f, 0f),
                 Vector3.forward, innerDepth * 2f);
-            AddDashedRow(vertices, triangles, new Vector3(innerWidth, 0.16f, 0f),
+            if (LockedSide(1)) AddDashedRow(vertices, triangles, new Vector3(innerWidth, 0.16f, 0f),
                 Vector3.forward, innerDepth * 2f);
-            AddDashedRow(vertices, triangles, new Vector3(0f, 0.16f, -innerDepth),
+            if (LockedSide(0)) AddDashedRow(vertices, triangles, new Vector3(0f, 0.16f, innerDepth),
                 Vector3.right, innerWidth * 2f);
-            AddDashedRow(vertices, triangles, new Vector3(0f, 0.16f, innerDepth),
+            if (LockedSide(2)) AddDashedRow(vertices, triangles, new Vector3(0f, 0.16f, -innerDepth),
                 Vector3.right, innerWidth * 2f);
 
             _lockedDashMesh = new Mesh { name = "ClosedLocationDashedPerimeterMesh" };
@@ -248,15 +345,36 @@ namespace RealmOfAshes.World
             CreateMeshNode("LockedDashedPerimeter", _lockedDashMesh, _lockedMaterial, 2,
                 _lockedRoot.transform);
 
-            AddLockedCollider("ClosedBoundaryWest", new Vector3(-innerWidth, 2f, 0f),
+            if (LockedSide(3)) AddLockedCollider(_lockedRoot, "ClosedBoundaryWest", new Vector3(-innerWidth, 2f, 0f),
                 new Vector3(0.32f, 4f, innerDepth * 2f + 0.32f));
-            AddLockedCollider("ClosedBoundaryEast", new Vector3(innerWidth, 2f, 0f),
+            if (LockedSide(1)) AddLockedCollider(_lockedRoot, "ClosedBoundaryEast", new Vector3(innerWidth, 2f, 0f),
                 new Vector3(0.32f, 4f, innerDepth * 2f + 0.32f));
-            AddLockedCollider("ClosedBoundarySouth", new Vector3(0f, 2f, -innerDepth),
+            if (LockedSide(0)) AddLockedCollider(_lockedRoot, "ClosedBoundaryNorth", new Vector3(0f, 2f, innerDepth),
                 new Vector3(innerWidth * 2f + 0.32f, 4f, 0.32f));
-            AddLockedCollider("ClosedBoundaryNorth", new Vector3(0f, 2f, innerDepth),
+            if (LockedSide(2)) AddLockedCollider(_lockedRoot, "ClosedBoundarySouth", new Vector3(0f, 2f, -innerDepth),
                 new Vector3(innerWidth * 2f + 0.32f, 4f, 0.32f));
-            _lockedRoot.SetActive(false);
+            // У зоны закрытые стороны закрыты всегда, у места — пока сюжет держит.
+            _lockedRoot.SetActive(_sidesDriven);
+        }
+
+        /// <summary>
+        /// Упор за открытой стороной зоны: пока сервер переводит в соседнюю зону,
+        /// игрок не уходит за край карты. Невидим.
+        /// </summary>
+        private void BuildEdgeStops()
+        {
+            if (!_sidesDriven) return;
+            _edgeStopRoot = new GameObject("EdgeStripStops");
+            _edgeStopRoot.transform.SetParent(transform, false);
+            for (int side = 0; side < 4; side++)
+            {
+                if (!_open[side]) continue;
+                Vector3 centre = Outward(side) * (HalfAcross(side) + 0.2f) + Vector3.up * 2f;
+                Vector3 size = side == 0 || side == 2
+                    ? new Vector3(_halfWidth * 2f + 0.4f, 4f, 0.4f)
+                    : new Vector3(0.4f, 4f, _halfDepth * 2f + 0.4f);
+                AddLockedCollider(_edgeStopRoot, "EdgeStop_" + SideNames[side], centre, size);
+            }
         }
 
         private static void AddDashedRow(List<Vector3> vertices, List<int> triangles,
@@ -275,10 +393,10 @@ namespace RealmOfAshes.World
             }
         }
 
-        private void AddLockedCollider(string objectName, Vector3 center, Vector3 size)
+        private static void AddLockedCollider(GameObject root, string objectName, Vector3 center, Vector3 size)
         {
             var node = new GameObject(objectName);
-            node.transform.SetParent(_lockedRoot.transform, false);
+            node.transform.SetParent(root.transform, false);
             node.transform.localPosition = center;
             var collider = node.AddComponent<BoxCollider>();
             collider.size = size;
@@ -314,11 +432,14 @@ namespace RealmOfAshes.World
         {
             if (_mapWidth <= 0 || _mapDepth <= 0) return;
             RoaGameBootstrap bootstrap = RoaGameBootstrap.Active;
-            _exitAllowed = bootstrap == null || bootstrap.CurrentLocationHasEdgeExit;
-            if (_visualRoot != null && _visualRoot.activeSelf != _exitAllowed)
-                _visualRoot.SetActive(_exitAllowed);
-            if (_lockedRoot != null && _lockedRoot.activeSelf == _exitAllowed)
-                _lockedRoot.SetActive(!_exitAllowed);
+            if (!_sidesDriven)
+            {
+                _exitAllowed = bootstrap == null || bootstrap.CurrentLocationHasEdgeExit;
+                if (_visualRoot != null && _visualRoot.activeSelf != _exitAllowed)
+                    _visualRoot.SetActive(_exitAllowed);
+                if (_lockedRoot != null && _lockedRoot.activeSelf == _exitAllowed)
+                    _lockedRoot.SetActive(!_exitAllowed);
+            }
             if (_player == null && Time.unscaledTime >= _nextPlayerLookupAt)
             {
                 _nextPlayerLookupAt = Time.unscaledTime + 0.5f;
@@ -327,12 +448,20 @@ namespace RealmOfAshes.World
                     : null;
             }
 
-            _distanceToEdge = _player != null
-                ? DistanceToMapEdge(_player.position, _mapWidth, _mapDepth)
-                : float.MaxValue;
+            if (_sidesDriven) MeasureSides();
+            else
+                _distanceToEdge = _player != null
+                    ? DistanceToMapEdge(_player.position, _mapWidth, _mapDepth)
+                    : float.MaxValue;
             float proximity = Mathf.InverseLerp(ApproachDistance, ExitBandWidth, _distanceToEdge);
             float wave = (Mathf.Sin(Time.unscaledTime * 2.4f) + 1f) * 0.5f;
-            if (!_exitAllowed)
+            if (_sidesDriven)
+            {
+                float lockedNear = Mathf.InverseLerp(ApproachDistance, ExitBandWidth, _distanceToClosed);
+                ApplyMaterialColor(_lockedMaterial, new Color(LockedAmber.r, LockedAmber.g, LockedAmber.b,
+                    0.5f + lockedNear * 0.35f + wave * 0.06f));
+            }
+            else if (!_exitAllowed)
             {
                 ApplyMaterialColor(_lockedMaterial, new Color(LockedAmber.r, LockedAmber.g, LockedAmber.b,
                     0.68f + proximity * 0.2f + wave * 0.08f));
@@ -344,14 +473,9 @@ namespace RealmOfAshes.World
                 0.68f + proximity * 0.22f + wave * 0.08f);
             ApplyMaterialColor(_accentMaterial, accent);
 
-            if (_threshold != null)
-            {
-                float width = 0.14f + proximity * 0.08f + wave * 0.025f;
-                _threshold.startWidth = width;
-                _threshold.endWidth = width;
-                _threshold.startColor = accent;
-                _threshold.endColor = accent;
-            }
+            float thresholdWidth = 0.14f + proximity * 0.08f + wave * 0.025f;
+            if (_threshold != null) PaintThreshold(_threshold, thresholdWidth, accent);
+            foreach (LineRenderer line in _thresholds) PaintThreshold(line, thresholdWidth, accent);
             for (int index = 0; index < _beacons.Count; index++)
             {
                 LineRenderer beacon = _beacons[index];
@@ -361,7 +485,31 @@ namespace RealmOfAshes.World
             }
         }
 
-        /// <summary>Граница загруженной локации; в зоне мира её нет.</summary>
+        private static void PaintThreshold(LineRenderer line, float width, Color color)
+        {
+            if (line == null) return;
+            line.startWidth = width;
+            line.endWidth = width;
+            line.startColor = color;
+            line.endColor = color;
+        }
+
+        /// <summary>Расстояние до ближайшей открытой и ближайшей закрытой стороны зоны.</summary>
+        private void MeasureSides()
+        {
+            _distanceToEdge = float.MaxValue;
+            _distanceToClosed = float.MaxValue;
+            _nearestOpenSide = -1;
+            if (_player == null) return;
+            for (int side = 0; side < 4; side++)
+            {
+                float distance = DistanceToSide(_player.position, side);
+                if (!_open[side]) { _distanceToClosed = Mathf.Min(_distanceToClosed, distance); continue; }
+                if (distance < _distanceToEdge) { _distanceToEdge = distance; _nearestOpenSide = side; }
+            }
+        }
+
+        /// <summary>Граница загруженной локации.</summary>
         public static RoaWorldExitBoundary Current { get; private set; }
 
         /// <summary>Канва рисует баннер сама; IMGUI-вариант молчит.</summary>
@@ -383,8 +531,9 @@ namespace RealmOfAshes.World
         /// </summary>
         public bool TryGetBanner(out string title, out string detail, out bool locked)
         {
-            locked = !_exitAllowed;
             title = detail = string.Empty;
+            if (_sidesDriven) return TryGetSideBanner(out title, out detail, out locked);
+            locked = !_exitAllowed;
             bool near = _exitAllowed ? PlayerIsApproaching : _distanceToEdge <= ExitBandWidth + 3f;
             if (!near) return false;
             if (locked)
@@ -393,8 +542,7 @@ namespace RealmOfAshes.World
                 detail = "Выход закрыт до завершения задания";
                 return true;
             }
-            ParentZoneInfo zone = RoaGameBootstrap.Active?.EdgeExitTarget
-                ?? RoaGameBootstrap.Active?.Loader?.Current?.ExitZone;
+            ParentZoneInfo zone = RoaGameBootstrap.Active?.Loader?.Current?.ExitZone;
             string zoneName = zone != null && !string.IsNullOrEmpty(zone.Title) ? zone.Title : "зона мира";
             title = "ВЫХОД: " + zoneName.ToUpperInvariant();
             float remaining = Mathf.Max(0f, _distanceToEdge - ExitBandWidth);
@@ -402,6 +550,31 @@ namespace RealmOfAshes.World
                 ? "Переход в зону..."
                 : "Пересеките золотую полосу  •  " + Mathf.CeilToInt(remaining) + " м";
             return true;
+        }
+
+        /// <summary>Баннер зоны: переход в соседа у открытой стороны, граница — у закрытой.</summary>
+        private bool TryGetSideBanner(out string title, out string detail, out bool locked)
+        {
+            title = detail = string.Empty;
+            locked = false;
+            if (_nearestOpenSide >= 0 && PlayerIsApproaching)
+            {
+                string name = string.IsNullOrEmpty(_labels[_nearestOpenSide]) ? "соседняя зона" : _labels[_nearestOpenSide];
+                title = "ПЕРЕХОД: " + name.ToUpperInvariant();
+                float remaining = Mathf.Max(0f, _distanceToEdge - ExitBandWidth);
+                detail = _distanceToEdge <= ExitBandWidth + 0.25f
+                    ? "Переход в зону..."
+                    : "Пересеките золотую полосу  •  " + Mathf.CeilToInt(remaining) + " м";
+                return true;
+            }
+            if (_distanceToClosed <= ExitBandWidth + 3f)
+            {
+                locked = true;
+                title = _closedTitle;
+                detail = _closedDetail;
+                return !string.IsNullOrEmpty(title);
+            }
+            return false;
         }
 
         private void CreateMeshNode(string objectName, Mesh mesh, Material material, int sortingOrder)
@@ -479,9 +652,12 @@ namespace RealmOfAshes.World
         private void ReleaseVisuals()
         {
             _beacons.Clear();
+            _thresholds.Clear();
             _threshold = null;
             DestroyRuntime(_visualRoot);
             DestroyRuntime(_lockedRoot);
+            DestroyRuntime(_edgeStopRoot);
+            _edgeStopRoot = null;
             DestroyRuntime(_bandMesh);
             DestroyRuntime(_arrowMesh);
             DestroyRuntime(_lockedDashMesh);

@@ -103,11 +103,25 @@ namespace RealmOfAshes.EditorTools
                     + terrain.SurfaceDetailClusterCount + "/" + budget);
                 Require(terrain.DistantRidgeCount == RoaGroundDressing.RidgeBudget(Application.isMobilePlatform),
                     "дальний рельеф не соблюдает бюджет");
-                int expectedDetailSize = Application.isMobilePlatform ? 64 : 128;
-                Require(terrain.MicroDetailTextureSize == expectedDetailSize
-                        && terrain.GroundRenderer.sharedMaterial.GetTexture("_DetailAlbedoMap") != null
-                        && terrain.GroundRenderer.sharedMaterial.IsKeywordEnabled("_DETAIL_MULX2"),
-                    "повторяемая микротекстура земли не подключена");
+                // Деталь земли — бесшовные наборы шейдера Kromka Ground; процедурная
+                // микротекстура остаётся только у прежней земли URP/Lit (набора нет в сборке).
+                Material groundMaterial = terrain.GroundRenderer.sharedMaterial;
+                if (terrain.UsesGroundTextures)
+                {
+                    Require(groundMaterial.GetTexture("_GroundAlbedo") != null
+                            && groundMaterial.GetTexture("_GroundNormal") != null
+                            && groundMaterial.GetTexture("_PathAlbedo") != null
+                            && groundMaterial.GetTexture("_SurfaceMask") == terrain.SurfaceMaskTexture,
+                        "наборы земли или маска поверхности не подключены");
+                }
+                else
+                {
+                    int expectedDetailSize = Application.isMobilePlatform ? 64 : 128;
+                    Require(terrain.MicroDetailTextureSize == expectedDetailSize
+                            && groundMaterial.GetTexture("_DetailAlbedoMap") != null
+                            && groundMaterial.IsKeywordEnabled("_DETAIL_MULX2"),
+                        "повторяемая микротекстура земли не подключена");
+                }
                 Require(terrain.UsesAuthoredEnvironment
                         && terrain.AuthoredEnvironmentPrefabCount
                             >= terrain.SurfaceDetailClusterCount + terrain.DistantRidgeCount

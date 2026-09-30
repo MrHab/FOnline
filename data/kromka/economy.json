@@ -111,7 +111,7 @@
       }
     },
     "regions": {
-      "settlement": [
+      "sluiceCity": [
         "weapon_bench",
         "repair_bench"
       ],
@@ -122,6 +122,10 @@
       "relayStation": [
         "energy_bench",
         "chem_station"
+      ],
+      "secondHaven": [
+        "chem_station",
+        "repair_bench"
       ],
       "caravanCamp": [
         "ammo_bench",
@@ -178,8 +182,7 @@
       "scrapTown",
       "relayStation",
       "caravanCamp",
-      "secondHaven",
-      "balanceBunker"
+      "secondHaven"
     ],
     "safeRadiusKm": 12,
     "blueRadiusKm": 38,

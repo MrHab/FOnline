@@ -272,6 +272,32 @@ function stationRefundValue(plot, config, priceOf = null) {
 }
 
 /**
+ * Участки мест, которые перестали быть городами («Баланс», библия 4.4):
+ * аукциона участков там больше нет. Ставка возвращается участнику, строитель
+ * станка получает возврат, как при смене арендатора, а сам участок исчезает.
+ * Возвращает список изменений.
+ */
+function retireLocationPlots(state, config, locationIds = [], priceOf = null) {
+  const retired = new Set(locationIds.map(id => safeId(id)).filter(Boolean));
+  const changes = [];
+  for (const [id, plot] of Object.entries(state.plots)) {
+    if (!retired.has(plot.locationId)) continue;
+    if (plot.bid) {
+      creditPayout(state, plot.bid.characterId, plot.bid.amount);
+      changes.push({ plotId: id, kind: 'bidReturned', characterId: plot.bid.characterId, refund: plot.bid.amount });
+    }
+    const refund = stationRefundValue(plot, config, priceOf);
+    if (refund > 0) {
+      creditPayout(state, plot.stationOwner.characterId, refund);
+      changes.push({ plotId: id, kind: 'stationRefunded', characterId: plot.stationOwner.characterId, refund });
+    }
+    changes.push({ plotId: id, kind: 'retired', characterId: plot.lessee?.characterId || '' });
+    delete state.plots[id];
+  }
+  return changes;
+}
+
+/**
  * Итоги торгов и конец аренды. Победитель получает участок: если он уже
  * арендатор — продлевает, иначе аренда начинается сейчас (или с конца
  * текущей). Возвращает список изменений.
@@ -341,9 +367,13 @@ function plotCraftFee(plot, config, userCharacterId = '', value = 0, baseFee = 0
   return { fee: Math.max(floor, shareOf(worth, config.unleasedFeePct)), payee: null, leased: false, own: false };
 }
 
-/** Доля возвращённых материалов: 1 − 1/(1 + бонус/100). */
-function plotReturnRate(config, locationId = '', station = '', premium = false) {
-  const regional = (config.regions[safeId(locationId)] || []).includes(safeId(station, 32));
+/**
+ * Доля возвращённых материалов: 1 − 1/(1 + бонус/100). Профильный бонус даёт
+ * станок профиля города или ремесло города (specialized — переработка
+ * семейства, которого нет в его угодьях).
+ */
+function plotReturnRate(config, locationId = '', station = '', premium = false, specialized = false) {
+  const regional = specialized || (config.regions[safeId(locationId)] || []).includes(safeId(station, 32));
   const bonus = config.plotBonus + (regional ? config.regionBonus : 0) + (premium ? config.premiumFocusBonus : 0);
   return bonus > 0 ? 1 - 1 / (1 + bonus / 100) : 0;
 }
@@ -409,6 +439,7 @@ module.exports = {
   placePlotBid,
   setPlotFee,
   settleCraftingPlots,
+  retireLocationPlots,
   plotCraftFee,
   stationBuildCost,
   stationRefundValue,

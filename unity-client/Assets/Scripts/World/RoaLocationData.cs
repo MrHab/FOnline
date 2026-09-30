@@ -64,32 +64,40 @@ namespace RealmOfAshes.World
         /// </summary>
         [JsonIgnore] public ParentZoneInfo RoomParentZone;
 
-        /// <summary>Город занимает сектор: у каждой его стороны свои ворота в соседний сектор.</summary>
-        [JsonProperty("sectorGates")] public List<SectorGateInfo> SectorGates;
-
-        /// <summary>Куда выводит край: зона комнаты точки мира, иначе зона места. У города — сторона.</summary>
+        /// <summary>Куда выводит край места: зона комнаты точки мира, иначе зона места.</summary>
         [JsonIgnore]
-        public ParentZoneInfo ExitZone
-        {
-            get
-            {
-                if (RoomParentZone != null) return RoomParentZone;
-                if (ParentZone != null) return ParentZone;
-                return SectorGates != null && SectorGates.Count > 0 ? SectorGates[0].AsZone() : null;
-            }
-        }
-
-        /// <summary>Ворота города со стороны `side` («north», «east», «south», «west»).</summary>
-        public ParentZoneInfo SectorGate(string side)
-        {
-            if (SectorGates == null) return null;
-            for (int i = 0; i < SectorGates.Count; i++)
-                if (string.Equals(SectorGates[i].Side, side, StringComparison.Ordinal)) return SectorGates[i].AsZone();
-            return null;
-        }
+        public ParentZoneInfo ExitZone { get { return RoomParentZone ?? ParentZone; } }
 
         [JsonIgnore]
         public bool CanExitAtEdge { get { return AllowEdgeExit != false; } }
+
+        /// <summary>Город занимает сектор целиком; выходят из него порталами у ворот.</summary>
+        [JsonProperty("cityZone")] public bool CityZone;
+
+        /// <summary>
+        /// Полоса перехода зоны на стороне `side` («north» — старшие tz, +z; «west» —
+        /// малые tx): ворота этой стороны ведут в соседнюю зону сплошным краем. null — нет.
+        /// </summary>
+        public LocationTransition EdgeStrip(string side)
+        {
+            if (Transitions == null) return null;
+            foreach (LocationTransition row in Transitions)
+                if (row != null && row.IsEdgeStrip && string.Equals(row.Direction, side, StringComparison.Ordinal)) return row;
+            return null;
+        }
+
+        /// <summary>У зоны есть хоть одна полоса перехода в соседнюю зону.</summary>
+        [JsonIgnore]
+        public bool HasEdgeStrips
+        {
+            get
+            {
+                if (Transitions == null) return false;
+                foreach (LocationTransition row in Transitions)
+                    if (row != null && row.IsEdgeStrip) return true;
+                return false;
+            }
+        }
 
         /// <summary>
         /// map.width/map.depth are authored in world metres (76 for the standard
@@ -210,23 +218,6 @@ namespace RealmOfAshes.World
         [JsonProperty("targetZoneRules")] public JObject TargetZoneRules;
     }
 
-    /// <summary>Ворота города: сектор занят городом целиком, и у каждой его стороны свой сосед.</summary>
-    public sealed class SectorGateInfo
-    {
-        [JsonProperty("side")] public string Side;
-        [JsonProperty("id")] public string Id;
-        [JsonProperty("n")] public int N;
-        [JsonProperty("title")] public string Title;
-        [JsonProperty("mode")] public string Mode;
-        [JsonProperty("entryKey")] public string EntryKey;
-        [JsonProperty("targetZoneRules")] public JObject TargetZoneRules;
-
-        public ParentZoneInfo AsZone()
-        {
-            return new ParentZoneInfo { Id = Id, N = N, Title = Title, Mode = Mode, EntryKey = EntryKey, TargetZoneRules = TargetZoneRules };
-        }
-    }
-
     public sealed class LocationTransition
     {
         [JsonProperty("id")] public string Id;
@@ -240,6 +231,14 @@ namespace RealmOfAshes.World
         [JsonProperty("tx")] public int Tx;
         [JsonProperty("tz")] public int Tz;
         [JsonProperty("radius")] public float Radius;
+
+        /// <summary>
+        /// Как проходят ворота: «edge» — сплошной полосой по всей стороне зоны
+        /// (переход в соседнюю зону), «portal» — светящимся порталом (город).
+        /// </summary>
+        [JsonProperty("crossing")] public string Crossing;
+
+        [JsonIgnore] public bool IsEdgeStrip { get { return string.Equals(Crossing, "edge", StringComparison.Ordinal); } }
 
         /// <summary>Режим зоны за переходом: сервер присылает его вместе с переходом.</summary>
         [JsonProperty("targetPvpMode")] public string TargetPvpMode;

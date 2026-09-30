@@ -67,6 +67,18 @@ MonoBehaviour:
     prefab: {fileID: 9077499661432099276, guid: c9be0701644078b4596ba698a73b216c, type: 3}
   - key: perimeter_debris
     prefab: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  - key: plot_workshop_ammo
+    prefab: {fileID: 4264086163688281482, guid: 563391749cbcabb42881d62a421af2e5, type: 3}
+  - key: plot_workshop_chem
+    prefab: {fileID: 8734406785864522827, guid: 807aef02c6f65f5459915f972121c186, type: 3}
+  - key: plot_workshop_energy
+    prefab: {fileID: 3345296893010126425, guid: a2918a263401cca48a78498e3d87ad53, type: 3}
+  - key: plot_workshop_repair
+    prefab: {fileID: 7996668860337952292, guid: 5f6c6d75b5156a44f9dd2da43388c238, type: 3}
+  - key: plot_workshop_tools
+    prefab: {fileID: 2718036798893639534, guid: 6cde67c78d2433442b96ef823dfaa3e5, type: 3}
+  - key: plot_workshop_weapon
+    prefab: {fileID: 9106201127405335169, guid: 9e59d01c493dde840913d76285f1cc32, type: 3}
   - key: relay_antenna
     prefab: {fileID: 5832172409919202900, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
   - key: road_tile

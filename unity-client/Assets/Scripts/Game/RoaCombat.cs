@@ -126,6 +126,7 @@ namespace RealmOfAshes.Game
         private const float BlockedAttackFeedbackSeconds = 1f;
         private float _nextBlockedAttackFeedbackAt = -100f;
         private bool _desktopBlockedAttackHeld;
+        private bool _gatherClickHeld;
         private int _shotSeq;
         private string _fireMode = "single";
         private string _modeWeapon = string.Empty;
@@ -214,6 +215,17 @@ namespace RealmOfAshes.Game
             AddLog(text);
             if (Player != null)
                 Float(text, Player.transform.position + Vector3.up * 0.6f, new Color(0.97f, 0.72f, 0.3f));
+        }
+
+        /// <summary>
+        /// Событие мира (смена погоды): строка в журнал HUD и надпись над персонажем —
+        /// на телефоне журнала нет.
+        /// </summary>
+        public void AnnounceWorld(string text, Color color)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            AddLog(text);
+            if (Player != null) Float(text, Player.transform.position + Vector3.up * 0.6f, color);
         }
 
         private void HandleEnemyAttack(JObject payload)
@@ -347,7 +359,23 @@ namespace RealmOfAshes.Game
             if (inputAllowed && Input.GetKeyDown(ReloadKey)) Reload();
             bool mouseHeld = !MobileInputMode && Input.GetMouseButton(0);
             if (!mouseHeld) _desktopBlockedAttackHeld = false;
-            if (inputAllowed && mouseHeld && Time.time >= _nextRequestAt) Attack();
+            if (!mouseHeld) _gatherClickHeld = false;
+            // Сбор как в Albion: клик по ресурсу, когда под курсором нет цели,
+            // начинает сбор, а не выстрел, и удержание кнопки после него не стреляет.
+            // Тот же фильтр, что у выстрела (окна и PIP-ASH — в inputAllowed): проверка
+            // EventSystem в WebGL считала курсор над UI и глушила клик по узлу.
+            // Попадание в модель узла — явное намерение и выигрывает даже у цели
+            // оружия; близость луча к точке узла — только когда цели нет.
+            if (inputAllowed && !MobileInputMode && Input.GetMouseButtonDown(0)
+                && Interaction != null
+                && Interaction.TryGatherAtScreenPoint(Input.mousePosition, _hoverTarget != null))
+                _gatherClickHeld = true;
+            if (inputAllowed && mouseHeld && !_gatherClickHeld && Time.time >= _nextRequestAt)
+            {
+                // Выстрел обрывает сбор: руки заняты оружием.
+                if (Interaction != null && Interaction.GatherActive) Interaction.StopGather(null);
+                Attack();
+            }
             UpdateHoverTarget(inputAllowed);
             UpdateTargetingFeedback(inputAllowed);
 

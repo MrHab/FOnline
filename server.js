@@ -197,6 +197,20 @@ const {
 } = require('./src/server/anomaly-artifact-births');
 const { createShiftCycle } = require('./src/server/shift-cycle');
 const {
+  createWeather,
+  groundMudFactor,
+  normalizeWeatherOverride,
+  weatherChanged,
+  weatherShelteredLocation
+} = require('./src/server/weather');
+const {
+  createRadiationStorm,
+  placeFrame: radiationStormPlaceFrame,
+  publicStorm: publicRadiationStorm,
+  sampleStorm: sampleRadiationStorm,
+  sectorFrame: radiationStormSectorFrame
+} = require('./src/server/radiation-storm');
+const {
   mergeBirthArtifacts,
   pickupArtifact: serverPickupArtifact,
   publicArtifactsForPlayer,
@@ -243,6 +257,7 @@ const {
 const {
   normalizeCityMarkets,
   migrateLegacyMarket,
+  retireCityBooks,
   cityBook,
   adoptLegacyShelf,
   rulesForSeller: cityAuctionRulesForSeller,
@@ -257,6 +272,7 @@ const {
   placePlotBid,
   setPlotFee,
   settleCraftingPlots,
+  retireLocationPlots,
   plotCraftFee,
   plotReturnRate,
   rollPlotReturns,
@@ -268,8 +284,10 @@ const { entryKeyForDirection: dangerEntryKeyForDirection } = require('./src/serv
 const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
 const { createZoneRuntime } = require('./src/server/zone-runtime');
 const { TILES: CITY_TILES, WALL_HALF: CITY_WALL_HALF } = require('./src/server/city-builder');
+// Город — внутри стены (клетки CENTRE ± WALL_HALF), с запасом на её толщину.
+const CITY_INNER_TILE_MARGIN = CITY_TILES / 2 - CITY_WALL_HALF + 3;
 const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
-const { migrateSaveStateToZones } = require('./src/server/zone-migration');
+const { PLACES_REVISION, ZONE_FRAME_REVISION, migrateSaveStateToZones } = require('./src/server/zone-migration');
 const { zoneAtPoint, zoneById, zoneLocationId, zoneOfLocation, zoneOfPlace, zoneRecipe } = require('./src/server/zone-graph');
 const { portalSignature, zonePortals } = require('./src/server/zone-portals');
 const { normalizeRecipe: normalizeZoneRecipe } = require('./src/server/zone-builder');
@@ -526,6 +544,9 @@ const {
 } = require('./src/server/onsite-party-formation');
 const { buildTutorialStartingLoadout, buildTutorialSupplies } = require('./src/server/starting-loadout');
 const { harvestBonusChance } = require('./src/server/harvest-bonus');
+const gathering = require('./src/server/gathering');
+const cityCritters = require('./src/server/city-critters');
+const zoneGrounds = require('./src/server/zone-grounds');
 const { planFailedPlayerActivities } = require('./src/server/player-activity-recovery');
 const {
   createResourceExpedition,
@@ -808,6 +829,8 @@ const KROMKA_TERRITORY_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'territory.j
 const KROMKA_PVE_AREAS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'pve-areas.json');
 const KROMKA_PUBLIC_EVENTS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'public-events.json');
 const KROMKA_NPCS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'npcs.json');
+// Угодья (библия, 4.5): какие семейства ресурсов растут в зоне и что перерабатывает город.
+const ZONE_GROUNDS = zoneGrounds.normalizeGrounds(JSON.parse(fs.readFileSync(path.join(BUNDLED_DATA_DIR, 'kromka', 'grounds.json'), 'utf8')));
 const KROMKA_ANOMALIES_FILE = path.join(BUNDLED_DATA_DIR, 'anomalies.json');
 const KROMKA_ONBOARDING_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'onboarding.json');
 const KROMKA_MUTANTS_FILE = path.join(BUNDLED_DATA_DIR, 'mutants.json');
@@ -843,6 +866,10 @@ const FAST_TRAVEL_RULES = normalizeFastTravelRules(readJson(process.env.KROMKA_E
 const DANGER_ECOLOGY = normalizeEcologyConfig(readJson(
   process.env.KROMKA_DANGER_ECOLOGY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'danger-ecology.json'), {}));
 const DANGER_ECOLOGY_STATE_FILE = path.join(DATA_DIR, 'danger-ecology.json');
+// Городская живность: мирные зверьки в стенах городов, шкура с их туш.
+// KROMKA_CITY_CRITTERS_FILE подменяет её в сетевых проверках.
+const CITY_CRITTERS = cityCritters.normalizeCityCritters(readJson(
+  process.env.KROMKA_CITY_CRITTERS_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'city-critters.json'), {}));
 
 // Прогрессия добычу не создаёт вовсе: перки поиска только усиливают останки,
 // трофеи и авторские тайники (src/server/loot-perks.js).
@@ -1108,7 +1135,6 @@ const SERVER_FACTION_CAPITAL_LOCATIONS = {
   relayStation: 'contour',
   caravanCamp: 'tract_league',
   secondHaven: 'seconds',
-  balanceBunker: 'continuity',
   coreBaseUprava: 'uprava',
   coreBaseArtels: 'free_artels',
   coreBaseContour: 'contour',
@@ -1144,11 +1170,6 @@ const SERVER_FACTION_CAPITAL_STORAGE = {
     x: 5,
     z: 11,
     name: 'Хранилище Вторых'
-  },
-  balanceBunker: {
-    x: 0,
-    z: 8,
-    name: 'Хранилище Комитета'
   },
   coreBaseUprava: { x: 14, z: 4, name: 'Хранилище Управы' },
   coreBaseArtels: { x: 14, z: 4, name: 'Хранилище Вольных артелей' },
@@ -1447,7 +1468,9 @@ function normalizeLocationDefinition(raw, fallback = null) {
       };
     });
   }
-  if (!loc.exit && Array.isArray(loc.transitions)) {
+  // Старым местам без выхода выходом служит первый переход. У зоны выхода нет:
+  // её стороны — полосы и порталы, а копия первых ворот рисовалась бы лишним порталом.
+  if (!loc.exit && loc.kind !== 'zone' && Array.isArray(loc.transitions)) {
     const firstLocationExit = loc.transitions.find(row => row && row.type !== 'globalMap' && row.to);
     if (firstLocationExit) {
       loc.exit = {
@@ -2120,9 +2143,19 @@ app.get('/api/locations', (_, res) => {
 // обращении). Ответ сжат и кэшируется по ревизии зоны.
 // Обзорная карта мира зон: одна на всех, сжата и кэширована до смены графа.
 let worldMapResponse = null;
+/** Угодья зоны для карты мира: чьи они, три семейства и жила, если есть. */
+function serverPublicZoneGrounds(zoneLocationId = '') {
+  const ground = serverLocationGrounds(zoneLocationId);
+  const hotspot = ZONE_RUNTIME.isZone(zoneLocationId) ? ZONE_GROUNDS.hotspots[zoneLocationId] : null;
+  return {
+    ...(ground ? { grounds: { id: ground.id, name: ground.name, families: [...ground.families] } } : {}),
+    ...(hotspot ? { hotspot: { family: hotspot.family, tier: hotspot.tier, name: hotspot.name } } : {})
+  };
+}
+
 app.get('/api/world-map', (_, res) => {
   if (!worldMapResponse || worldMapResponse.revision !== ZONE_RUNTIME.graph.worldRevision) {
-    const body = Buffer.from(JSON.stringify({ ok: true, map: ZONE_RUNTIME.worldMap(serverLocationPublicName, serverLocationTier) }), 'utf8');
+    const body = Buffer.from(JSON.stringify({ ok: true, map: ZONE_RUNTIME.worldMap(serverLocationPublicName, serverLocationTier, serverPublicZoneGrounds) }), 'utf8');
     worldMapResponse = { revision: ZONE_RUNTIME.graph.worldRevision, body, gzip: gzipJsonBuffer(body) };
   }
   sendJsonBuffer(res, worldMapResponse.body, worldMapResponse.gzip);
@@ -2231,6 +2264,21 @@ function serverEcologySpeciesLivesInTier(species = {}, tier = 1) {
   return kromkaTiers.speciesLivesInTier(KROMKA_TIER_CONFIG, memberType, tier);
 }
 
+/**
+ * Вес вида в логове клетки: вид чужого тира не заводится, зверь со шкурой — по
+ * угодьям зоны (где шкур нет — не заводится, где они основные — чаще).
+ */
+function serverEcologySpeciesWeight(species = {}, cell = {}) {
+  if (!serverEcologySpeciesLivesInTier(species, cell.tier)) return 0;
+  const zone = serverEcologyZoneAt(cell.sx, cell.sy);
+  const ground = zone ? zoneGrounds.groundsFor(ZONE_GROUNDS, { zoneId: zone.id }) : null;
+  const memberType = String(species.members?.[0]?.type || '');
+  return zoneGrounds.beastWeight(ZONE_GROUNDS, ground, {
+    hideBeast: KROMKA_TIER_CONFIG.hideDrops.species.includes(memberType),
+    hotspotFamily: zone ? (ZONE_GROUNDS.hotspots[zone.id]?.family || '') : ''
+  });
+}
+
 function serverEcologySpeciesAllowedAt(species, sx, sy) {
   const zone = serverEcologyZoneAt(sx, sy);
   return !!zone && serverEcologySpeciesLivesInTier(species, zone.difficulty || 1);
@@ -2281,6 +2329,9 @@ function serverEcologyRevision() {
     DANGER_ECOLOGY.lairs,
     DANGER_ECOLOGY.species.map(row => [row.id, row.habitat, row.regions]),
     KROMKA_TIER_CONFIG.enemies.species,
+    KROMKA_TIER_CONFIG.hideDrops.species,
+    ZONE_GROUNDS.zones,
+    ZONE_GROUNDS.hotspots,
     ZONE_RUNTIME.graph.zones.map(zone => [zone.id, zone.mode, zone.difficulty])
   ]);
   return `zones:${Math.floor(ecologyHash01(source) * 4294967296).toString(36)}`;
@@ -2293,7 +2344,7 @@ function serverEcologyState() {
   if (state.mapRevision !== revision || !state.lairs.size) {
     // Группы прежних логов остаются бродягами, пока не погибнут.
     ecologyResetLairs(state, ecologyBuildLairs(DANGER_ECOLOGY, serverEcologyCandidates(), revision, {
-      speciesAllowed: (species, cell) => serverEcologySpeciesLivesInTier(species, cell.tier)
+      speciesAllowed: serverEcologySpeciesWeight
     }), revision);
   }
   dangerEcologyState = state;
@@ -2883,6 +2934,28 @@ app.post('/api/dev/accounts/sin', (req, res) => {
     if (String(player?.userId || '') === String(user.id)) emitAuthoritativePlayerState(player, { reason: 'accountSin' });
   }
   res.json({ ok: true, userId: user.id, credited, sin: account.sin });
+});
+
+// Погода для разработчика: снимок комнат с игроками и закрепление погоды
+// (override: clear | overcast | wet | rain | storm, null — снова живое поле).
+app.get('/api/dev/weather', (_, res) => {
+  const now = Date.now();
+  const occupied = [...rooms.values()].filter(room => room.sockets?.size);
+  res.json({
+    ok: true,
+    override: KROMKA_WEATHER.override,
+    rooms: occupied.map(room => ({ roomId: room.id, locationId: room.locationId, weather: serverRoomWeather(room, now) }))
+  });
+});
+
+app.post('/api/dev/weather', (req, res) => {
+  const requested = req.body?.override ?? null;
+  if (requested !== null && !normalizeWeatherOverride(requested)) {
+    return res.status(400).json({ ok: false, error: 'Погода: clear, overcast, wet, rain, storm или null.' });
+  }
+  const override = KROMKA_WEATHER.setOverride(requested);
+  for (const room of rooms.values()) room.weatherAt = 0;
+  res.json({ ok: true, override });
 });
 
 app.post('/api/dev/wasteland/reset', (_, res) => {
@@ -4431,15 +4504,45 @@ if (WORLD_ECONOMY.worldModel.cityAuctions) {
     || Object.keys(savesDb.market.shelves || {}).length > 0;
   if (!firstMigration && legacyStillUsed) migrateLegacyMarket(savesDb.markets, savesDb.market, Date.now());
   if (firstMigration || legacyStillUsed) savesDb.market = normalizeMarketStore(null);
+  // Книга бывшего города (Баланс) закрывается: ордера снимаются, полки ждут
+  // владельцев у аукционеров других городов.
+  const retired = retireCityBooks(savesDb.markets, ZONE_RUNTIME.graph.retiredCities || [], Date.now());
+  if (retired.books) console.log(`Closed ${retired.books} auction book(s) of former cities: ${retired.orders} orders, ${retired.shelves} shelves wait at other auctioneers.`);
 }
 // Участки станков (экономика v3): аренда, ставки и невыплаченные марки.
 savesDb.craftingPlots = normalizeCraftingPlotState(savesDb.craftingPlots, WORLD_ECONOMY.plots);
+// Участки бывшего города (Баланс) закрываются: ставки и станки возвращаются
+// марками по базовой цене материалов, выплату игрок получит при входе.
+{
+  const retiredPlots = retireLocationPlots(savesDb.craftingPlots, WORLD_ECONOMY.plots, ZONE_RUNTIME.graph.retiredCities || [],
+    itemId => Number(KROMKA_ITEM_INDEXES.basePrices[itemId] || 0));
+  if (retiredPlots.length) console.log(`Closed ${retiredPlots.filter(row => row.kind === 'retired').length} crafting plot(s) of former cities.`);
+}
 // Синь на счетах аккаунтов и книга обменника синь↔марки (экономика v3).
 savesDb.accounts = normalizeAccountStore(savesDb.accounts, WORLD_ECONOMY.accountSin);
 savesDb.sinExchange = normalizeMarketStore(savesDb.sinExchange);
 const KROMKA_AUCTION_RULES = normalizeMarketRules(KROMKA_TERRITORY_CATALOG.rules?.auction || {});
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
-const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
+// KROMKA_TEST_SHIFT_EPOCH_MS сдвигает начало циклов сдвига: локальная
+// проверка бури без ожидания чётного часа UTC. На проде не задаётся.
+const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {}, {
+  epochMs: Number(process.env.KROMKA_TEST_SHIFT_EPOCH_MS || 0) || 0
+});
+// Буря выброса идёт по прямоугольнику графа зон (км карты, y — на юг).
+const KROMKA_RADIATION_STORM = createRadiationStorm(KROMKA_SHIFT_CYCLE, KROMKA_ARTIFACT_CATALOG.shift?.storm || {}, {
+  minX: 0,
+  minY: 0,
+  maxX: ZONE_RUNTIME.graph.grid.cols * ZONE_RUNTIME.graph.grid.zoneKm,
+  maxY: ZONE_RUNTIME.graph.grid.rows * ZONE_RUNTIME.graph.grid.zoneKm
+});
+// Погода — одно поле облаков и дождя над картой мира (src/server/weather.js).
+// KROMKA_WEATHER (clear | overcast | wet | rain | storm) закрепляет её: проверки
+// идут в ясную погоду, а локальный сервер можно запустить сразу в ливень.
+const KROMKA_WEATHER = createWeather({
+  seed: `${GLOBAL_MAP?.worldRevision || 'kromka'}:weather`,
+  override: process.env.KROMKA_WEATHER || null
+});
+const WEATHER_REFRESH_MS = 5000;
 const KROMKA_CLAIMED_ARTIFACT_IDS = claimedArtifactIdsFromSaves(savesDb);
 const ANOMALY_SYSTEM = createAnomalySystem({
   catalog: KROMKA_ANOMALY_CATALOG,
@@ -4570,20 +4673,26 @@ function kromkaPublicLocationDefinition(location = {}) {
       const rules = serverTransitionZoneRules({ to: gate.to });
       return { ...gate, ...(rules ? { targetPvpMode: rules.mode, targetZoneRules: rules } : {}) };
     };
-    next.sectorGates = cityGates.map(withRules);
-    const asCityGate = row => {
-      const side = serverCitySideOfTile(location, row);
-      const gate = withRules(cityGates.find(item => item.side === side) || cityGates[0]);
+    // Выход из города — порталы в проёмах ворот; край города больше не выводит,
+    // а старые дороги «в мир» переходами не считаются.
+    next.allowGlobalMapExit = false;
+    const portals = cityGates.map(withRules).map(gate => {
+      const portal = serverCityGatePortal(location, gate.side);
       return {
-        ...row, type: 'zoneGate', direction: gate.side, to: gate.to, entryKey: gate.entryKey,
-        label: `Выход: ${gate.title}`,
+        id: `gate_${gate.side}`, type: 'zoneGate', auto: true, crossing: 'portal', direction: gate.side,
+        to: gate.to, entryKey: gate.entryKey, label: `Выход: ${gate.title}`, tx: portal.tx, tz: portal.tz, radius: portal.radius,
         ...(gate.targetZoneRules ? { targetPvpMode: gate.targetPvpMode, targetZoneRules: gate.targetZoneRules } : {})
       };
-    };
-    if (Array.isArray(next.transitions)) {
-      next.transitions = next.transitions.map(row => (serverLegacyCityExit(location, row) ? asCityGate(row) : row));
-    }
-    if (next.exit && serverLegacyCityExit(location, next.exit)) next.exit = asCityGate(next.exit);
+    });
+    next.transitions = [
+      ...(Array.isArray(next.transitions) ? next.transitions.filter(row => !serverLegacyCityExit(location, row)) : []),
+      ...portals
+    ];
+    if (next.exit && serverLegacyCityExit(location, next.exit)) delete next.exit;
+  }
+  // Ворота зоны: в соседнюю зону — полоса края, в город — портал.
+  if (ZONE_RUNTIME.isZone(next.id) && Array.isArray(next.transitions)) {
+    next.transitions = next.transitions.map(row => (row?.type === 'zoneGate' ? { ...row, crossing: serverZoneGateCrossing(row) } : row));
   }
   // Куда выводит край места: зона мира, её название и правила.
   const parentZone = ZONE_RUNTIME.parentZoneView(next.id);
@@ -4716,7 +4825,7 @@ function kromkaPublicWastelandSnapshot(raw = {}) {
   return snapshot;
 }
 const KROMKA_MUTANT_TYPE_ORDER = Object.freeze([
-  'burned', 'fold', 'gari', 'rykhlyak', 'dustling', 'listener', 'mourner', 'lantern'
+  'burned', 'fold', 'gari', 'rykhlyak', 'dustling', 'listener', 'mourner', 'lantern', 'rat'
 ]);
 const KROMKA_MUTANT_BY_ID = Object.freeze(Object.fromEntries(
   (Array.isArray(KROMKA_MUTANT_CATALOG.types) ? KROMKA_MUTANT_CATALOG.types : [])
@@ -4766,6 +4875,11 @@ const SERVER_ENEMY_TYPES = [
     visionRange: 10.0, hearingShotRange: 12.5, hearingHarvestRange: 5.5, memoryMs: 3400, investigateMs: 4200, senseIntervalMs: 340, noiseReaction: 0.72, noiseScatter: 1.2, separationRadius: 1.15 },
   ...KROMKA_MUTANT_TYPE_ORDER.map(serverEnemyTypeFromKromkaCreature)
 ];
+// Вид для обычного случайного спавна: городская живность живёт только в своих
+// местах внутри городов и в пустошь не заводится.
+const SERVER_RANDOM_ENEMY_TYPE_INDICES = Object.freeze(SERVER_ENEMY_TYPES
+  .map((type, index) => (type.creatureTypeId === CITY_CRITTERS.species ? -1 : index))
+  .filter(index => index >= 0));
 const SERVER_ENEMY_MODEL_KEY_BY_VISUAL = {
   raider: 'enemyRaider',
   enemyraider: 'enemyRaider',
@@ -4778,6 +4892,7 @@ const SERVER_ENEMY_MODEL_KEY_BY_VISUAL = {
   listener: 'kromkaListener',
   mourner: 'kromkaMourner',
   lantern: 'kromkaLantern',
+  rat: 'kromkaRat',
   // Legacy aliases are accepted only when old saves and old world contacts migrate.
   ghoul: 'kromkaBurned',
   enemyghoul: 'kromkaBurned',
@@ -4847,6 +4962,7 @@ const SERVER_MODEL_FILE_BY_KEY = Object.freeze({
   ,kromkaListener: 'npc_gecko.glb'
   ,kromkaMourner: 'npc_fire_gecko.glb'
   ,kromkaLantern: 'npc_lantern_stag.glb'
+  ,kromkaRat: 'npc_rat.glb'
 });
 const SERVER_MODEL_KEY_BY_FILE = Object.freeze(Object.fromEntries(
   Object.entries(SERVER_MODEL_FILE_BY_KEY)
@@ -4875,6 +4991,7 @@ const SERVER_APPROVED_ACTOR_MODEL_KEYS = new Set([
   ,'kromkaListener'
   ,'kromkaMourner'
   ,'kromkaLantern'
+  ,'kromkaRat'
 ]);
 
 function serverApprovedActorModelKey(modelKey = '') {
@@ -5225,7 +5342,10 @@ function serverPlayersAllied(attacker = {}, target = {}) {
 }
 
 function serverPlayerCanDamageNpc(player, enemy, room) {
-  if (!enemy || enemy.dead || !roomAllowsNpcCombat(room)
+  // Городская живность — добыча: её бьют и в мирном городе, где прочих трогать нельзя.
+  if (enemy?.cityCritter === true) return !enemy.dead;
+  // Мастер мастерской участка — служащий у станка, а не боец.
+  if (!enemy || enemy.dead || !roomAllowsNpcCombat(room) || enemy.service === 'stationMaster'
     || serverNpcIsKromkaOnboardingProtected(enemy)
     || !serverActorHostileToPlayer(enemy, player)) return false;
   if (serverCombatFactionsAllied(
@@ -6551,10 +6671,14 @@ function serverPveAreaNodeYieldIds(area = {}) {
   const locationId = normalizeLocationId(area?.locationId || '');
   const loc = LOCATIONS[locationId];
   const tier = serverLocationTier(locationId);
+  // Растут только семейства угодий локации (узлы чужих семейств перекрашиваются).
+  const ground = serverLocationGrounds(locationId);
+  const targets = zoneGrounds.nodeTargets(ZONE_GROUNDS, ground,
+    Object.values(SERVER_TIER_RESOURCE_MINIMUM).reduce((sum, value) => sum + value, 0), '');
   const types = [
     ...(Array.isArray(loc?.objects) ? loc.objects : []).map(row => locationObjectResourceType(row)),
-    ...Object.keys(SERVER_TIER_RESOURCE_MINIMUM)
-  ].filter(type => SERVER_TIER_FAMILY_BY_RESOURCE.has(type));
+    ...Object.keys(targets)
+  ].filter(type => SERVER_TIER_FAMILY_BY_RESOURCE.has(type) && Number(targets[type] || 0) > 0);
   return [...new Set(types)].map(type => SERVER_TIER_FAMILY_BY_RESOURCE.get(type).raw.ids[tier - 1]);
 }
 
@@ -9658,6 +9782,7 @@ function initialServerCharacterState(data = {}, characterId = '', options = {}) 
   return {
     version: 4,
     worldRevision: 'kromka-1',
+    zoneFrameRevision: ZONE_FRAME_REVISION,
     savedAt: now,
     characterProfile: {
       name: safeName(data.name || 'Странник'),
@@ -10469,9 +10594,11 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
   // Только что спешенный ещё короткое время укладывается в тот же бюджет.
   const mountedSpeed = Number(player.mountedVehicle?.speed || 0)
     || (Number(player.vehicleGraceUntil || 0) > now ? Number(player.vehicleGraceSpeed || 0) : 0);
+  // Пешехода замедляет грязь после дождя (room.weather, src/server/weather.js).
   const speedLimit = mountedSpeed > 0
     ? mountedSpeed
-    : PLAYER_SPEED * (1 + serverArtifactEffects(player).speedPct);
+    : PLAYER_SPEED * (1 + serverArtifactEffects(player).speedPct)
+      * Number(room?.weather?.effects?.moveSpeedMultiplier ?? 1);
   const maxDistance = speedLimit * elapsed * 1.35 + 0.22;
   const scale = distance > maxDistance && distance > 0 ? maxDistance / distance : 1;
   const moveAllowed = (toX, toZ) => !room || (
@@ -10699,6 +10826,8 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
     player.kromkaOnboarding || previousState.kromkaOnboarding || {}, KROMKA_ONBOARDING_CATALOG
   );
   next.worldRevision = 'kromka-1';
+  next.placesRevision = PLACES_REVISION;
+  next.zoneFrameRevision = ZONE_FRAME_REVISION;
   next.skillRanks = sanitizeSkillRanks(player.skillRanks || {});
   next.talentRanks = sanitizeTalentRanks(player.talentRanks || {});
   next.progressionLedger = sanitizeServerProgressionLedger(player.progressionLedger || {}, player);
@@ -11421,10 +11550,6 @@ function completeServerPlayerTrade(session = null) {
     io.to(player.id).emit('playerTradeUpdated', { state: null, reason: 'completed', message: 'Обмен завершён сервером.', t: now });
   }
   return { ok: true };
-}
-
-function serverHarvestApCost() {
-  return 2;
 }
 
 function serverHarvestXp(qty = 1) {
@@ -12186,6 +12311,8 @@ function serverHitChance(p = {}, enemy, dist, w = SERVER_WEAPONS.fists, modeInfo
   if (w.ammoType) {
     base = Math.max(0.38, 0.82 - dist / (Number(w.range || 1) * 3.1)) + skillBonus + statAimBonus + luckBonus + modeBonus + Number(w.modAccuracyBonus || 0) - conditionPenalty - strengthPenalty - movementPenalty - traumaPenalty;
     if (modeInfo.id === 'auto') base -= serverAutomaticAccuracyPenalty(p, w, client);
+    // Дождь сбивает прицел (room.weather.effects, src/server/weather.js).
+    base *= Number(rooms.get(p.roomId || '')?.weather?.effects?.rangedAccuracyMultiplier ?? 1);
     if (serverIsShotgunWeapon(w)) {
       const perp = Number(client.conePerp ?? client.shotgunPerp ?? 0);
       const width = Number(client.coneWidth ?? client.shotgunWidth ?? serverShotgunSpreadWidthAtDistance(w, dist));
@@ -12871,7 +12998,7 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), optio
   enemy.killerId = p.id;
   enemy.npcLootProtectedUntil = now + 15000;
   applyEnemyProgressionLoot(room, enemy, p);
-  const skinning = serverApplySkinningLoot(room, enemy, p);
+  const carcass = serverSpawnCarcass(room, enemy, now);
   serverPrepareNpcCorpseLoot(enemy, room);
   serverGrantXp(p, enemy.xp || 0);
   enemy.attackTimer = 0;
@@ -12886,7 +13013,7 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), optio
     sourceZ: Number(sourceZ.toFixed(2)),
     damage: Math.max(0, Math.round(Number(options.damage || 0))),
     critical: !!options.critical,
-    ...(skinning ? { skinned: skinning.item } : {}),
+    ...(carcass ? { carcassId: carcass.id } : {}),
     t: now
   });
   recordServerWorldActivityEnemyKill(room, enemy, p, now);
@@ -12998,6 +13125,15 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
     }
   }
   if (current.exit && normalizeLocationId(current.exit.to || '') === target) candidates.push(current.exit);
+  // Зона в зону — сплошная полоса по всей открытой стороне: переход там, где
+  // игрок пересёк край, а не в точке ворот. Портал остаётся только у города.
+  if (ZONE_RUNTIME.isZone(current.id)) {
+    const edgeGate = candidates.find(row => row?.type === 'zoneGate' && serverZoneGateCrossing(row) === 'edge');
+    if (edgeGate) {
+      if (!serverPlayerAtZoneEdge(p, current, edgeGate.direction)) return null;
+      return { ...edgeGate, crossing: 'edge', crossedAt: { x: Number(p.x || 0), z: Number(p.z || 0) } };
+    }
+  }
   // Старые дороги «в мир» переходами не считаются: у места они ведут в его зону,
   // у города — в соседний сектор той стороны, где стоят.
   const authored = candidates.filter(row => !serverLegacyWorldExit(current, row)
@@ -13007,10 +13143,13 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
   }) || null;
   if (authored) return authored;
-  // Город занимает сектор целиком: его край ведёт прямо в соседний сектор той стороны.
+  // Город: выход — портал в проёме ворот той стороны, край города не выводит.
   const cityGate = ZONE_RUNTIME.cityGates(current.id).find(row => normalizeLocationId(row.to) === target);
-  if (cityGate && serverPlayerAtCityEdge(p, cityGate.side)) {
-    return { id: `gate_${cityGate.side}`, type: 'zoneGate', direction: cityGate.side, to: cityGate.to, entryKey: cityGate.entryKey };
+  if (cityGate) {
+    const portal = serverCityGatePortal(current, cityGate.side);
+    const point = tileToWorld(portal.tx, portal.tz, locationTileDims(current));
+    if (Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > portal.radius + 1.0) return null;
+    return { id: `gate_${cityGate.side}`, type: 'zoneGate', crossing: 'portal', direction: cityGate.side, to: cityGate.to, entryKey: cityGate.entryKey };
   }
   // Край места ведёт в зону мира, где это место стоит; край комнаты точки
   // мира — в зону точки, к её порталу.
@@ -13117,7 +13256,7 @@ function roomTileHasResource(room, tx, tz, clearance = 0) {
   if (!room || !(room.resources instanceof Map)) return false;
   const c = Math.max(0, Math.floor(Number(clearance || 0)));
   for (const r of room.resources.values()) {
-    if (!r || Number(r.hp || 0) <= 0) continue;
+    if (!r || r.carcass || Number(r.hp || 0) <= 0) continue;
     if (Math.abs(Number(r.tx) - tx) <= c && Math.abs(Number(r.tz) - tz) <= c) return true;
   }
   return false;
@@ -13555,7 +13694,8 @@ function enemyCanSeePlayer(room, enemy, p, now = Date.now()) {
   if (!room || !enemy || !p || p.dead || Number(p.hp || 0) <= 0) return false;
   const d = Math.hypot(Number(p.x || 0) - Number(enemy.x || 0), Number(p.z || 0) - Number(enemy.z || 0));
   const closeEnough = d < 1.7;
-  let visionRange = enemyVisionRange(enemy);
+  // Дождь сокращает обзор (room.weather.effects, src/server/weather.js).
+  let visionRange = enemyVisionRange(enemy) * Number(room.weather?.effects?.visionMultiplier ?? 1);
   if (p.crouching) {
     const stealthReduction = serverSkillNorm(p, 'stealth') * 0.44 + serverTalentLevel(p, 'ghost') * 0.11;
     visionRange *= Math.max(0.35, 1 - stealthReduction);
@@ -13582,7 +13722,7 @@ function chooseVisibleEnemyTarget(room, enemy, candidates, now = Date.now()) {
   for (const p of candidates) {
     if (!serverActorHostileToPlayer(enemy, p)) continue;
     const d = Math.hypot(Number(p.x || 0) - Number(enemy.x || 0), Number(p.z || 0) - Number(enemy.z || 0));
-    if (d > enemyVisionRange(enemy)) continue;
+    if (d > enemyVisionRange(enemy) * Number(room?.weather?.effects?.visionMultiplier ?? 1)) continue;
     if (!enemyCanSeePlayer(room, enemy, p, now)) continue;
     observePlayerThreat(enemy, p, now);
     const score = playerThreatScore(enemy, p, { now, distance: d, visible: true });
@@ -13913,6 +14053,11 @@ function weaponNoiseShouldTriggerChase(enemy, sourcePlayer, noiseType) {
 
 function aggroEnemyFromHit(room, enemy, player, now = Date.now()) {
   if (!room || !enemy || !player || enemy.dead || player.dead) return;
+  // Зверёк не отвечает на удар и не поднимает свою сторону против игрока: он удирает.
+  if (enemy.cityCritter === true) {
+    startleCityCritter(room, enemy, player, now);
+    return;
+  }
   if (enemy.hostileToPlayer === false) setEncounterFactionHostileToPlayer(room, enemy.faction, player, now);
   const canSee = enemyCanSeePlayer(room, enemy, player, now);
   enemy.noiseCooldownUntil = 0;
@@ -15324,39 +15469,127 @@ function applyEnemyProgressionLoot(room, enemy, p = {}) {
   return changed;
 }
 
-/** Старший тир ножа свежевальщика в сумке игрока (0 — ножа нет). */
-function serverSkinningKnifeInBag(p = {}) {
+/**
+ * Лучший инструмент группы (кирка, топор, серп, насос, нож свежевальщика) в
+ * сумке или в руках игрока: { id: '', tier: 0 } — инструмента нет. Сбор идёт и
+ * без него, инструмент только ускоряет цикл (src/server/gathering.js).
+ */
+function serverBestGatherTool(p = {}, group = '') {
   let best = { id: '', tier: 0 };
-  for (const row of sanitizeServerInventorySnapshot(p.inventory || [], { includeEquipped: true })) {
-    if (serverItemTierGroup(row.id) !== 'skinningKnife' || Number(row.qty || 0) <= 0) continue;
-    const tier = serverItemTier(row.id);
-    if (tier > best.tier) best = { id: row.id, tier };
+  if (!group) return best;
+  const candidates = sanitizeServerInventorySnapshot(p.inventory || [], { includeEquipped: true })
+    .filter(row => Number(row.qty || 0) > 0)
+    .map(row => row.id);
+  // Инструмент в руках лежит в снаряжении, а не в сумке.
+  const equipment = p.equipment && typeof p.equipment === 'object' ? p.equipment : {};
+  for (const id of Object.values(equipment)) if (id) candidates.push(serverBaseItemId(id));
+  for (const id of candidates) {
+    if (serverItemTierGroup(id) !== group) continue;
+    const tier = serverItemTier(id);
+    if (tier > best.tier) best = { id, tier };
   }
   return best;
 }
 
-// Шкура — добыча семейства «Шкуры»: зверь зоны тира N отдаёт шкуру тира N, если
-// у убившего в сумке нож свежевальщика не ниже N и навык «Свежевальщик» открыл тир.
-function serverApplySkinningLoot(room, enemy, p = {}) {
-  if (!room || !enemy || enemy.skinned || !serverNpcIsNaturalCreature(enemy, enemy)) return null;
-  const species = String(enemy.creatureTypeId || '');
-  if (!KROMKA_TIER_CONFIG.hideDrops.species.includes(species)) return null;
-  enemy.skinned = true;
-  const family = SERVER_TIER_FAMILY_BY_RESOURCE.get('hide');
-  const skill = family ? kromkaTiers.professionForFamily(KROMKA_TIER_CONFIG, 'gather', family.id) : null;
-  const tier = serverRoomTier(room);
-  const knife = serverSkinningKnifeInBag(p);
-  if (!family || !skill || knife.tier < tier || serverProfessionTierRefusal(p, skill.id, tier)) return null;
+/**
+ * Общие проверки сбора: узел жив, игрок рядом и видит его, навык открыл тир,
+ * а для узла выше T1 в сумке или в руках есть инструмент его группы не ниже
+ * тира на один меньше узла (gathering.requiredToolTier). На T1 инструмент не
+ * нужен; инструмент тира узла на любом тире ускоряет цикл.
+ */
+function serverGatherContext(p, data = {}) {
+  if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return { error: 'Игрок недоступен.' };
+  const room = rooms.get(p.roomId);
+  if (!room) return { error: 'Локация не найдена.' };
+  ensureRoomWorld(room);
+  const resource = findRoomResource(room, data);
+  if (!resource || Number(resource.hp || 0) <= 0) return { error: 'Ресурс уже исчерпан.' };
+  const resourceDef = serverResourceDef(resource.type);
+  const yieldItemId = serverResourceYieldItemId(resource, room);
+  if (!resourceDef || !SERVER_ITEM_IDS.has(yieldItemId)) return { error: 'Этот ресурс нельзя добыть.' };
+  const tierFamily = SERVER_TIER_FAMILY_BY_RESOURCE.get(normalizeServerResourceType(resource.type)) || null;
+  const resourceTier = tierFamily ? serverItemTier(yieldItemId) : 0;
+  const pos = resource.carcass
+    ? { x: Number(resource.x || 0), z: Number(resource.z || 0) }
+    : tileToWorld(resource.tx, resource.tz, roomTileDims(room));
+  const dist = Math.hypot(Number(p.x || 0) - pos.x, Number(p.z || 0) - pos.z);
+  if (dist > 3.2) return { error: 'Подойдите ближе к ресурсу.' };
+  if (!serverInteractionHasLineOfSight(room, p, pos, { ignoreObjectId: resource.authoredObjectId || resource.id })) {
+    return { error: 'Ресурс находится за препятствием.' };
+  }
+  const gatherSkill = tierFamily ? kromkaTiers.professionForFamily(KROMKA_TIER_CONFIG, 'gather', tierFamily.id) : null;
+  if (gatherSkill && resourceTier) {
+    const refusal = serverProfessionTierRefusal(p, gatherSkill.id, resourceTier);
+    if (refusal) return { error: refusal };
+  }
+  const activeActivity = ensureServerWorldActivityForRoom(room, Date.now());
+  const activityFieldKit = activeActivity?.kind === 'resource_expedition'
+    && sanitizeServerWorldTaskIds(p.worldTaskAccepted || []).includes(String(activeActivity.taskId || ''))
+    && ((activeActivity.allowedItemIds || []).includes(String(resourceDef.itemId || ''))
+      || (activeActivity.allowedItemIds || []).includes(yieldItemId));
+  // Полевой набор экспедиции работает как инструмент любого тира и не изнашивается.
+  const tool = activityFieldKit ? { id: '', tier: 5, fieldKit: true } : serverBestGatherTool(p, resourceDef.toolId);
+  if (resourceTier && !gathering.toolAllowsNode(KROMKA_TIER_CONFIG, tool, resourceTier)) {
+    const need = gathering.requiredToolTier(KROMKA_TIER_CONFIG, resourceTier);
+    const have = Number(tool.tier || 0) > 0 ? ` У вас — тира ${tool.tier}.` : '';
+    return { error: `${resourceDef.needTool.replace(/\.$/, '')} тира ${need} или выше.${have}` };
+  }
+  return { room, resource, resourceDef, yieldItemId, tierFamily, resourceTier, gatherSkill, tool };
+}
+
+/** Тип ресурса, который игрок собирает в своей комнате, или '' — не собирает. */
+function serverPlayerGatheringType(p = {}) {
+  const session = p?.gather;
+  return session && session.roomId === String(p.roomId || '') ? String(session.type || '') : '';
+}
+
+/**
+ * Комната видит сбор: начало и конец рассылаются сразу, чтобы другие игроки
+ * включили и сняли анимацию, не дожидаясь полного снимка.
+ */
+function serverEmitPlayerGathering(p = {}) {
+  if (!p?.id || !p.roomId) return;
+  io.to(p.roomId).emit('playerGathering', {
+    id: p.id,
+    roomId: p.roomId,
+    type: serverPlayerGatheringType(p),
+    cycleMs: p.gather ? Number(p.gather.cycleMs || 0) : 0,
+    t: Date.now()
+  });
+}
+
+/** Закончить сбор игрока и сообщить комнате. */
+function serverEndGather(p) {
+  if (!p || !p.gather) return;
+  p.gather = null;
+  serverEmitPlayerGathering(p);
+}
+
+// Шкура — как в Albion: зверь с шкурой оставляет тушу, временный узел «hide»
+// тира зоны. Её свежуют кликом, как любой ресурс; нож не обязателен.
+function serverSpawnCarcass(room, enemy, now = Date.now()) {
+  if (!room || !(room.resources instanceof Map) || !enemy || enemy.carcassSpawned) return null;
+  if (!serverNpcIsNaturalCreature(enemy, enemy)) return null;
+  // Городской зверёк — не зверь логова, но шкуру с него снимают так же: тира города.
+  const critter = enemy.cityCritter === true;
+  if (!critter && !KROMKA_TIER_CONFIG.hideDrops.species.includes(String(enemy.creatureTypeId || ''))) return null;
+  enemy.carcassSpawned = true;
   const rng = room.rng || Math.random;
   const [min, max] = KROMKA_TIER_CONFIG.hideDrops.qty;
-  const bonus = rng() < kromkaTiers.professionGatherBonus(KROMKA_TIER_CONFIG, serverProfessionXpOf(p, skill.id)) ? 1 : 0;
-  const qty = min + Math.floor(rng() * (max - min + 1)) + bonus;
-  if (qty <= 0) return null;
-  const item = { id: family.raw.ids[tier - 1], qty };
-  enemy.inventory = serverInventoryMergeRows(enemy.inventory || [], [item]);
-  serverWearPlayerItem(p, knife.id, 1);
-  const profession = serverGrantProfessionXp(p, skill.id, kromkaTiers.professionXpForWork(KROMKA_TIER_CONFIG, tier, qty));
-  return { item, profession };
+  const charges = critter
+    ? cityCritters.hideCharges(CITY_CRITTERS, rng())
+    : min + Math.floor(rng() * (Math.max(min, max) - min + 1));
+  if (charges <= 0) return null;
+  const x = Number(enemy.x || 0), z = Number(enemy.z || 0);
+  const tile = worldToTile(x, z, roomTileDims(room));
+  const node = gathering.carcassResource(KROMKA_TIER_CONFIG, {
+    enemyId: enemy.id, tx: tile.tx, tz: tile.tz, tier: serverRoomTier(room), charges, now
+  });
+  node.x = x;
+  node.z = z;
+  room.resources.set(node.id, node);
+  emitResourceUpdate(room, node);
+  return node;
 }
 
 // «Нюх на тайники» срабатывает один раз на тайник — у первого открывшего с
@@ -15941,7 +16174,8 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   let plotReturns = plot
     ? rollPlotReturns(
       Object.entries(crafted.requirements || {}).map(([id, qty]) => ({ id, qty })),
-      plotReturnRate(WORLD_ECONOMY.plots, locationId, requiredStation, focusCost > 0),
+      plotReturnRate(WORLD_ECONOMY.plots, locationId, requiredStation, focusCost > 0,
+        serverCityRefinesRecipe(locationId, recipeId)),
       Math.random
     )
     : [];
@@ -15981,7 +16215,8 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   // Опыт профессии — за каждую израсходованную единицу тирового материала.
   const profession = recipeDef?.profession
     ? serverGrantProfessionXp(player, recipeDef.profession, kromkaTiers.professionXpForWork(
-      KROMKA_TIER_CONFIG, recipeDef.tier || 1, serverCraftTierMaterialUnits(crafted.requirements || {})))
+      KROMKA_TIER_CONFIG, recipeDef.tier || 1, serverCraftTierMaterialUnits(crafted.requirements || {})),
+      recipeDef.tier || 1)
     : null;
   sanitizeCarrySnapshot(player);
   if (tutorialBench) {
@@ -16578,6 +16813,14 @@ const SERVER_RESOURCE_DEFS = {
     toolId: 'sickle',
     label: 'волокно',
     needTool: 'Для сбора волокна нужен серп.'
+  },
+  // Шкура — не узел карты, а туша убитого зверя (serverSpawnCarcass): клетки не занимает.
+  hide: {
+    itemId: 'hide',
+    tile: null,
+    toolId: 'skinningKnife',
+    label: 'шкура',
+    needTool: 'Для свежевания нужен нож свежевальщика.'
   }
 };
 
@@ -16644,8 +16887,9 @@ function serverProfessionXpOf(p = {}, skillId = '') {
   return Math.max(0, Number(serverPlayerProfessionXp(p)[skillId] || 0));
 }
 
-function serverGrantProfessionXp(p = {}, skillId = '', amount = 0) {
-  return kromkaTiers.grantProfessionXp(KROMKA_TIER_CONFIG, serverPlayerProfessionXp(p), skillId, amount);
+/** Опыт профессии за работу тира tier: не выше уровня, открывающего следующий тир. */
+function serverGrantProfessionXp(p = {}, skillId = '', amount = 0, tier = 1) {
+  return kromkaTiers.grantProfessionXp(KROMKA_TIER_CONFIG, serverPlayerProfessionXp(p), skillId, amount, { tier });
 }
 
 function serverProfessionTierRefusal(p = {}, skillId = '', tier = 1) {
@@ -17134,6 +17378,38 @@ function serverReachableTiles(room, loc = {}, starts = []) {
  * детерминированно (хеш id локации), подальше от входов и других узлов, в городе —
  * ближе к окраине, чтобы не перегородить улицы.
  */
+/**
+ * Ремесло города (библия, 4.5): переработка семейства, которого нет в его
+ * угодьях, получает профильный бонус участка на любом станке города.
+ */
+function serverCityRefinesRecipe(locationId = '', recipeId = '') {
+  const family = zoneGrounds.cityRefineFamily(ZONE_GROUNDS, locationId);
+  if (!family) return false;
+  const row = SERVER_TIER_FAMILY_BY_RESOURCE.get(family);
+  const outputId = String(KROMKA_FIELD_RECIPE_INDEXES.byId[String(recipeId || '')]?.output?.id || '');
+  return !!row && !!outputId && row.refined.ids.includes(outputId);
+}
+
+/**
+ * Угодья локации: город — свои угодья, зона — угодья своего клина, место —
+ * угодья зоны, в которой оно стоит. null — угодий нет (Ключи, обучение, база).
+ */
+function serverLocationGrounds(locationId = '') {
+  const id = String(locationId || '');
+  if (!id) return null;
+  if (ZONE_GROUNDS.byCity[id] || id === ZONE_GROUNDS.centerLocationId) {
+    return zoneGrounds.groundsFor(ZONE_GROUNDS, { cityLocationId: id });
+  }
+  const zoneId = ZONE_RUNTIME.isZone(id) ? id : (ZONE_RUNTIME.cityOf(id)?.id || ZONE_RUNTIME.parentZoneOf(id));
+  return zoneGrounds.groundsFor(ZONE_GROUNDS, { zoneId });
+}
+
+/** Жила основного ресурса угодий: только в самой зоне, не в местах внутри неё. */
+function serverLocationHotspotFamily(locationId = '') {
+  const id = String(locationId || '');
+  return ZONE_RUNTIME.isZone(id) ? (ZONE_GROUNDS.hotspots[id]?.family || '') : '';
+}
+
 // Комната -> карта и число узлов после последней расстановки узлов семейств.
 const TIER_RESOURCE_FILLED_MAP = new WeakMap();
 
@@ -17147,10 +17423,39 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
     changed = true;
   }
   const tier = serverRoomTier(room);
+  // Угодья решают, какие семейства растут здесь: узел семейства, которого в
+  // угодьях нет, становится семейством угодий (детерминированно по его id).
+  const roomLocationId = String(loc?.id || room.locationId || '');
+  const ground = serverLocationGrounds(roomLocationId);
+  const nodeTargets = zoneGrounds.nodeTargets(ZONE_GROUNDS, ground,
+    Object.values(SERVER_TIER_RESOURCE_MINIMUM).reduce((sum, value) => sum + value, 0),
+    serverLocationHotspotFamily(roomLocationId));
+  if (ground) {
+    for (const resource of room.resources.values()) {
+      if (resource.carcass) continue;
+      const type = normalizeServerResourceType(resource.type);
+      if (Number(nodeTargets[type] || 0) > 0) continue;
+      const replacement = zoneGrounds.replacementFamily(ground, stableSiteResourceHash(`${roomLocationId}:${resource.id}`) / 4294967296);
+      if (!replacement) continue;
+      resource.type = replacement;
+      updateResourceTile(room, resource);
+      changed = true;
+    }
+  }
+  // Запас узла — по тиру, как заряды узлов Albion: полный узел остаётся полным.
+  const charges = gathering.nodeCharges(KROMKA_TIER_CONFIG, tier);
   for (const resource of room.resources.values()) {
-    if (resource.tier === tier) continue;
-    resource.tier = tier;
-    changed = true;
+    if (resource.carcass) continue;
+    if (resource.tier !== tier) {
+      resource.tier = tier;
+      changed = true;
+    }
+    if (Number(resource.maxHp) !== charges) {
+      const full = Number(resource.hp || 0) >= Number(resource.maxHp || 0);
+      resource.hp = full ? charges : Math.min(Number(resource.hp || 0), charges);
+      resource.maxHp = charges;
+      changed = true;
+    }
   }
   const locationId = String(loc?.id || room.locationId || '');
   if (!locationId || SERVER_TIER_RESOURCE_SKIP.has(locationId)) return changed;
@@ -17161,8 +17466,7 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
   let minZ = Math.max(3, bounds.minZ + 3), maxZ = Math.min(dims.h - 4, bounds.maxZ - 3);
   const city = !!(loc?.cityZone || ZONE_RUNTIME.cityOf(locationId));
   if (city && dims.w === CITY_TILES && dims.h === CITY_TILES) {
-    // Город — внутри стены (клетки CENTRE ± WALL_HALF), с запасом на её толщину.
-    const inner = CITY_TILES / 2 - CITY_WALL_HALF + 3;
+    const inner = CITY_INNER_TILE_MARGIN;
     minX = Math.max(minX, inner); minZ = Math.max(minZ, inner);
     maxX = Math.min(maxX, CITY_TILES - 1 - inner); maxZ = Math.min(maxZ, CITY_TILES - 1 - inner);
   }
@@ -17170,25 +17474,21 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
   // Обход проходимости дорогой (тысячи проверок коллизий), а зовут эту функцию на
   // каждый ensureRoomWorld: считать его, только когда узла действительно не хватает,
   // и не повторять для той же карты и тех же узлов: места уже не нашлось.
-  const missing = Object.entries(SERVER_TIER_RESOURCE_MINIMUM).some(([type, minimum]) =>
+  const missing = Object.entries(nodeTargets).some(([type, minimum]) =>
     [...room.resources.values()].filter(resource => normalizeServerResourceType(resource.type) === type).length < minimum);
   const filled = TIER_RESOURCE_FILLED_MAP.get(room);
   if (!missing || (filled?.map === room.map && filled.size === room.resources.size)) return changed;
   const centreX = (minX + maxX) / 2, centreZ = (minZ + maxZ) / 2;
   const halfSize = Math.max(1, Math.min(maxX - minX, maxZ - minZ) / 2);
   const keepClear = serverResourceKeepClearTiles(room, loc);
-  // Обход — от точки появления и входов (не от выходов: они у края, за стеной).
-  const starts = [loc.spawn, loc.respawn, ...Object.keys(loc).filter(key => key.startsWith('entry')).map(key => loc[key])]
-    .filter(point => point && Number.isFinite(Number(point.tx)) && Number.isFinite(Number(point.tz)))
-    .map(point => ({ tx: Number(point.tx), tz: Number(point.tz) }));
-  const reachable = serverReachableTiles(room, loc, starts);
+  const reachable = serverReachableTilesFromEntries(room, loc);
   const nearest = (tx, tz) => {
     let best = Infinity;
     for (const other of room.resources.values()) best = Math.min(best, Math.hypot(other.tx - tx, other.tz - tz));
     return best;
   };
 
-  for (const [type, minimum] of Object.entries(SERVER_TIER_RESOURCE_MINIMUM)) {
+  for (const [type, minimum] of Object.entries(nodeTargets)) {
     let count = [...room.resources.values()].filter(resource => normalizeServerResourceType(resource.type) === type).length;
     for (let index = 0; count < minimum && index < minimum; index++) {
       const id = `tier_${type}_${index + 1}`;
@@ -17213,7 +17513,7 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
         if (score > chosenScore) { chosen = { tx, tz }; chosenScore = score; }
       }
       if (!chosen) break;
-      room.resources.set(id, { id, tx: chosen.tx, tz: chosen.tz, type, tier, hp: 3, maxHp: 3, tierResourceNode: true });
+      room.resources.set(id, { id, tx: chosen.tx, tz: chosen.tz, type, tier, hp: charges, maxHp: charges, tierResourceNode: true });
       room.map[chosen.tz][chosen.tx] = serverResourceTile(type);
       count++;
       changed = true;
@@ -17227,10 +17527,175 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
   return changed;
 }
 
+/** Клетки, до которых доходят от точки появления и входов (не от выходов: они у края, за стеной). */
+function serverReachableTilesFromEntries(room, loc = {}) {
+  const starts = [loc.spawn, loc.respawn, ...Object.keys(loc).filter(key => key.startsWith('entry')).map(key => loc[key])]
+    .filter(point => point && Number.isFinite(Number(point.tx)) && Number.isFinite(Number(point.tz)))
+    .map(point => ({ tx: Number(point.tx), tz: Number(point.tz) }));
+  return serverReachableTiles(room, loc, starts);
+}
+
+// --- городская живность ------------------------------------------------------
+
+function serverRoomHostsCityCritters(room, loc = roomLocation(room)) {
+  if (!room || !Array.isArray(room.map) || CITY_CRITTERS.perCity <= 0 || room.locationWorldEvent) return false;
+  const locationId = String(loc?.id || room.locationId || '');
+  if (!(loc?.cityZone || ZONE_RUNTIME.cityOf(locationId))) return false;
+  const dims = roomTileDims(room);
+  return dims.w === CITY_TILES && dims.h === CITY_TILES;
+}
+
+/** Места зверьков: двор внутри стен, куда можно дойти от входа, вдали от служб и узлов. */
+function serverCityCritterCandidates(room, loc = roomLocation(room)) {
+  const dims = roomTileDims(room);
+  const keepClear = serverResourceKeepClearTiles(room, loc);
+  const reachable = serverReachableTilesFromEntries(room, loc);
+  const last = CITY_TILES - 1 - CITY_INNER_TILE_MARGIN;
+  const tiles = [];
+  for (let tz = CITY_INNER_TILE_MARGIN; tz <= last; tz++) {
+    for (let tx = CITY_INNER_TILE_MARGIN; tx <= last; tx++) {
+      const tile = room.map?.[tz]?.[tx];
+      if (tile !== TILE_TYPES.GRASS && tile !== TILE_TYPES.DARK && tile !== TILE_TYPES.PATH) continue;
+      if (reachable && !reachable.has(tz * dims.w + tx)) continue;
+      if (roomTileHasResource(room, tx, tz, 2) || roomTileHasContainer(room, tx, tz, 2)) continue;
+      if (keepClear.some(point => Math.hypot(point.tx - tx, point.tz - tz) < CITY_CRITTERS.keepClearTiles)) continue;
+      const pos = tileToWorld(tx, tz, dims);
+      if (!isRoomWalkableWorld(room, pos.x, pos.z, 0.9)) continue;
+      tiles.push({ tx, tz });
+    }
+  }
+  return tiles;
+}
+
+/**
+ * Живность городской комнаты: места считаются раз на карту города, пустое место
+ * заселяется сразу, место погибшего зверька — через respawnMs после его смерти.
+ * Если у места стоит игрок, зверёк появится на одном из следующих тиков.
+ */
+function updateCityCritterSlots(room, loc = roomLocation(room), now = Date.now()) {
+  if (!serverRoomHostsCityCritters(room, loc)) return false;
+  if (room.cityCritterMap !== room.map || !Array.isArray(room.cityCritterSlots)) {
+    room.cityCritterMap = room.map;
+    room.cityCritterSlots = cityCritters.planSlots(CITY_CRITTERS, String(loc?.id || room.locationId || ''),
+      serverCityCritterCandidates(room, loc));
+  }
+  const due = cityCritters.dueSlots(CITY_CRITTERS, room.cityCritterSlots, enemyId => {
+    const enemy = room.enemies.get(enemyId);
+    return enemy ? { alive: !enemy.dead, diedAt: Number(enemy.diedAt || 0) } : null;
+  }, now);
+  let spawned = false;
+  for (const slot of due) {
+    const enemy = spawnServerEnemy(room, {
+      force: true,
+      allowSafeLocation: true,
+      creatureTypeId: CITY_CRITTERS.species,
+      tx: slot.tx,
+      tz: slot.tz,
+      maxSpawnSearchRadius: 3,
+      requirePreferredSpawn: true,
+      minPlayerDistance: CITY_CRITTERS.minPlayerDistance,
+      hostileToPlayer: false,
+      canDialogue: false
+    });
+    if (!enemy) continue;
+    enemy.cityCritter = true;
+    enemy.cityCritterSlotId = slot.id;
+    slot.enemyId = enemy.id;
+    slot.respawnAt = 0;
+    spawned = true;
+  }
+  return spawned;
+}
+
+/**
+ * Удар или взрыв: зверёк бежит прочь от обидчика — в первую проходимую точку
+ * из нескольких направлений и дальностей, чтобы не упереться в стену дома.
+ */
+function startleCityCritter(room, enemy, threat, now = Date.now()) {
+  const first = Math.random();
+  const turns = [first, 0.5, 0.15, 0.85, 0, 0.999];
+  let point = null;
+  for (const scale of [1, 0.6]) {
+    for (const turn of turns) {
+      const candidate = cityCritters.fleePoint(enemy, threat, CITY_CRITTERS.fleeDistance * scale, turn);
+      if (isRoomWalkableWorld(room, candidate.x, candidate.z, 0.5)) { point = candidate; break; }
+    }
+    if (point) break;
+  }
+  if (!point) point = cityCritters.fleePoint(enemy, threat, CITY_CRITTERS.fleeDistance, first);
+  enemy.critterFleeX = point.x;
+  enemy.critterFleeZ = point.z;
+  enemy.critterFleeUntil = now + CITY_CRITTERS.fleeMs;
+  invalidateEnemyPath(enemy);
+}
+
+/** Зверёк удирает, пока не прошёл испуг; отбежав далеко, возвращается к месту, иначе пасётся. */
+function updateCityCritter(room, enemy, dt, now = Date.now(), rng = Math.random) {
+  clearEnemyLook(enemy);
+  if (Number(enemy.critterFleeUntil || 0) > now) {
+    enemy.aiState = 'flee';
+    const left = moveEnemyTowards(room, enemy, Number(enemy.critterFleeX), Number(enemy.critterFleeZ), enemy.speed, dt);
+    if (left < 0.8) enemy.critterFleeUntil = 0;
+    return;
+  }
+  const home = ensureEnemyHome(enemy);
+  const homeDist = Math.hypot(home.x - Number(enemy.x || 0), home.z - Number(enemy.z || 0));
+  if (enemy.aiState === 'return' || homeDist > CITY_CRITTERS.wanderRadius * 2) {
+    if (enemy.aiState !== 'return') {
+      enemy.critterReturnBest = homeDist;
+      enemy.critterReturnCheckAt = now + 2000;
+    }
+    enemy.aiState = 'return';
+    const left = moveEnemyTowards(room, enemy, home.x, home.z, enemy.speed * 0.62, dt);
+    // Домой — это в свой двор, а не в точку: на ней может стоять игрок. Если
+    // путь закрыт и за две секунды зверёк не продвинулся, он пасётся, где стоит.
+    const stuck = now >= Number(enemy.critterReturnCheckAt || 0) && left > Number(enemy.critterReturnBest) - 0.2;
+    if (left <= CITY_CRITTERS.wanderRadius || stuck) {
+      enemy.aiState = 'idle';
+      enemy.wanderTimer = 0;
+      invalidateEnemyPath(enemy);
+    } else if (now >= Number(enemy.critterReturnCheckAt || 0)) {
+      enemy.critterReturnBest = left;
+      enemy.critterReturnCheckAt = now + 2000;
+    }
+    return;
+  }
+  enemy.aiState = 'idle';
+  enemy.wanderTimer = Number(enemy.wanderTimer || 0) - dt;
+  if (enemy.wanderTimer <= 0) {
+    // Короткие перебежки с остановками: то принюхивается на месте, то семенит дальше.
+    enemy.wanderTimer = 1.2 + rng() * 2.4;
+    const pause = rng() < 0.45;
+    const angle = rng() * Math.PI * 2;
+    enemy.vx = pause ? 0 : Math.cos(angle);
+    enemy.vz = pause ? 0 : Math.sin(angle);
+  }
+  let vx = Number(enemy.vx || 0), vz = Number(enemy.vz || 0);
+  if (!vx && !vz) return;
+  const step = enemy.speed * 0.28 * dt;
+  if (Math.hypot(enemy.x + vx * step - home.x, enemy.z + vz * step - home.z) > CITY_CRITTERS.wanderRadius) {
+    const dx = home.x - enemy.x, dz = home.z - enemy.z;
+    const length = Math.hypot(dx, dz);
+    if (length > 0.001) { vx = dx / length; vz = dz / length; enemy.vx = vx; enemy.vz = vz; }
+  }
+  let moved = false;
+  if (isEnemyStepOpen(room, enemy, enemy.x + vx * step, enemy.z, 0.32)) { enemy.x += vx * step; moved = true; }
+  if (isEnemyStepOpen(room, enemy, enemy.x, enemy.z + vz * step, 0.32)) { enemy.z += vz * step; moved = true; }
+  if (!moved) enemy.wanderTimer = 0;
+}
+
 function updateRoomResourceRespawns(room, now = Date.now()) {
   if (!room || !(room.resources instanceof Map)) return false;
   let changed = false;
-  for (const resource of room.resources.values()) {
+  for (const [id, resource] of [...room.resources.entries()]) {
+    // Туша не восстанавливается: исчезает, когда её освежевали или она истлела.
+    if (resource?.carcass) {
+      if (Number(resource.hp || 0) <= 0 || now >= Number(resource.expiresAt || 0)) {
+        room.resources.delete(id);
+        changed = true;
+      }
+      continue;
+    }
     if (!resource || !(Number(resource.maxHp || 0) > 0)) continue;
     if (Number(resource.hp || 0) > 0) {
       resource.depletedAt = 0;
@@ -17430,11 +17895,16 @@ function authoredNpcMatchesWastelandOwner(row = {}, site = null, loc = {}) {
   return faction === owner;
 }
 
-function spawnAuthoredLocationActors(room, loc) {
+/**
+ * `only` — отбор строк: пересоздаются только подходящие НПС, остальные (и их
+ * товар) не трогаются. Так мастера участков встают и уходят вместе с постройкой.
+ */
+function spawnAuthoredLocationActors(room, loc, only = null) {
   if (!room || !loc || !Array.isArray(loc.objects)) return 0;
   const preservedQuestNpcIds = new Set();
   for (const [id, actor] of [...room.enemies.entries()]) {
     if (actor?.authoredLocationId !== loc.id) continue;
+    if (only && !only({ id: actor.authoredLocationObjectId })) continue;
     const questNpcId = String(actor.kromkaNamedNpcId || '').slice(0, 96);
     if (questNpcId && !actor.dead) {
       preservedQuestNpcIds.add(questNpcId);
@@ -17473,6 +17943,7 @@ function spawnAuthoredLocationActors(room, loc) {
   }
   authoredRows.forEach((row, index) => {
     if (!locationDefinitionObjectIsNpc(row)) return;
+    if (only && !only(row)) return;
     // Именных и учебных НПС ставят их каталоги; строка — только их место и облик.
     const rowOwner = String(locationDefinitionObjectEntity(row).spawnedBy || '');
     if (rowOwner === 'named' || rowOwner === 'onboarding') return;
@@ -17551,6 +18022,7 @@ function spawnAuthoredLocationActors(room, loc) {
     }
     actor.authoredLocationId = loc.id;
     actor.authoredLocationObjectId = String(row.id || `authored_npc_${index + 1}`).slice(0, 64);
+    actor.stationObjectId = String(entity.stationObjectId || '').slice(0, 64);
     // Стоящий НПС смотрит туда, куда его повернули в сцене Unity: к стойке, к
     // воротам, к столу. Угол сервера и поворот сцены совпадают
     // (RoaCoords.ModelYawOffsetDeg = 0), так что поворот строки и есть взгляд.
@@ -17591,7 +18063,7 @@ function spawnAuthoredLocationActors(room, loc) {
     serverPrepareNpcCorpseLoot(actor, room);
     count++;
   });
-  return count + serverSpawnFastTravelDispatcher(room, loc);
+  return only ? count : count + serverSpawnFastTravelDispatcher(room, loc);
 }
 
 /**
@@ -19404,6 +19876,8 @@ function publicEnemy(e, viewer = null) {
     lootProfile: String(e.lootProfile || '').slice(0, 64),
     tradeProfile: String(e.tradeProfile || '').slice(0, 64),
     service: naturalCreature ? '' : String(e.service || '').slice(0, 32),
+    // Мастер участка: разговор с ним открывает станок его мастерской.
+    stationObjectId: naturalCreature ? '' : String(e.stationObjectId || '').slice(0, 64),
     territoryFactionId: String(e.territoryFactionId || '').slice(0, 32),
     special: npcSpecial ? {
       ST: clamp(Math.round(Number(npcSpecial.ST || 0)), 1, 10),
@@ -19444,6 +19918,8 @@ function publicEnemy(e, viewer = null) {
     kromkaOnboardingNpcId: naturalCreature ? '' : String(e.kromkaOnboardingNpcId || '').slice(0, 96),
     kromkaOnboardingProtected: !naturalCreature && serverNpcIsKromkaOnboardingProtected(e),
     trainingTarget: e.trainingTarget === true,
+    // Мирная добыча: не враг, но её можно бить (городская живность).
+    prey: e.cityCritter === true,
     kromkaProjection: !naturalCreature && e.kromkaProjection === true,
     kromkaRoleDescription: naturalCreature ? '' : String(e.kromkaRoleDescription || '').slice(0, 140),
     kromkaQuestIds: naturalCreature ? [] : (Array.isArray(e.kromkaQuestIds)
@@ -19810,7 +20286,13 @@ function publicResource(r) {
     tier: clamp(Math.round(Number(r?.tier || 0)), 0, 5),
     hp: clamp(Number(r?.hp ?? 0), 0, 999),
     maxHp: clamp(Number(r?.maxHp ?? 3), 1, 999),
-    respawnAt: Math.max(0, Number(r?.respawnAt || 0))
+    respawnAt: Math.max(0, Number(r?.respawnAt || 0)),
+    ...(r?.carcass ? {
+      carcass: true,
+      x: Number(Number(r.x || 0).toFixed(2)),
+      z: Number(Number(r.z || 0).toFixed(2)),
+      expiresAt: Math.max(0, Number(r.expiresAt || 0))
+    } : {})
   };
 }
 
@@ -19828,7 +20310,7 @@ function findRoomResource(room, data = {}) {
 }
 
 function updateResourceTile(room, r) {
-  if (!room || !r || !Array.isArray(room.map) || !Array.isArray(room.map[r.tz])) return;
+  if (!room || !r || r.carcass || !Array.isArray(room.map) || !Array.isArray(room.map[r.tz])) return;
   room.map[r.tz][r.tx] = r.authoredObjectId || Number(r.hp || 0) <= 0
     ? TILE_TYPES.GRASS
     : serverResourceTile(r.type);
@@ -20010,6 +20492,102 @@ function serverRestoreRoomGroundDrops(room) {
   return restored;
 }
 
+/** Зона, над которой считается погода места: сама зона, сектор города или зона, куда выводит край места. */
+function serverWeatherZone(locationId = '') {
+  const id = String(locationId || '');
+  if (ZONE_RUNTIME.isZone(id)) return zoneById(ZONE_RUNTIME.graph, id);
+  return ZONE_RUNTIME.cityOf(id) || zoneById(ZONE_RUNTIME.graph, ZONE_RUNTIME.parentZoneOf(id)) || null;
+}
+
+/**
+ * Погода комнаты: снимок поля над центром её зоны, в кеше room.weather на
+ * WEATHER_REFRESH_MS. Игровые расчёты читают множители прямо из
+ * room.weather.effects: скорость пешком, слух и обзор врагов, меткость.
+ */
+function serverRoomWeather(room, now = Date.now()) {
+  if (!room) return null;
+  if (room.weather && now - Number(room.weatherAt || 0) < WEATHER_REFRESH_MS) return room.weather;
+  const loc = roomLocation(room) || LOCATIONS[room.locationId] || {};
+  const zone = serverWeatherZone(room.locationId);
+  const point = zone
+    ? serverZoneCentrePoint(zone)
+    : (sanitizeServerGlobalMapPoint(room.encounterWorldPoint || null)
+      || serverGlobalMapPointForLocation(room.locationId) || { x: 0, y: 0 });
+  room.weather = KROMKA_WEATHER.sampleAt(point.x, point.y, now, {
+    sheltered: weatherShelteredLocation(loc),
+    mudFactor: groundMudFactor(zone?.city ? 'city' : (zone?.ground || loc.ground?.preset))
+  });
+  room.weatherAt = now;
+  return room.weather;
+}
+
+// Рамка сцены для бури выброса: как точка сцены ложится на карту мира. Сектор
+// (зона, город) — своя клетка графа, место — его точка на карте (как её рисует
+// карта мира: зона + u, v), комната встречи — точка встречи.
+function serverStormFrameForLocation(locationId = '', fallbackPoint = null) {
+  const id = normalizeLocationId(locationId);
+  const grid = ZONE_RUNTIME.graph.grid;
+  if (ZONE_RUNTIME.isSector(id)) {
+    const zone = zoneOfLocation(ZONE_RUNTIME.graph, id);
+    const map = LOCATIONS[id]?.map || {};
+    if (zone) return radiationStormSectorFrame(zone.col, zone.row, grid.zoneKm, map.width, map.depth);
+  }
+  const parent = zoneOfPlace(ZONE_RUNTIME.graph, id);
+  const place = parent?.places?.find(row => row.locationId === id);
+  if (place) return radiationStormPlaceFrame((parent.col + Number(place.u ?? 0.5)) * grid.zoneKm, (parent.row + Number(place.v ?? 0.5)) * grid.zoneKm);
+  const point = fallbackPoint || serverGlobalMapPointForLocation(id);
+  return point ? radiationStormPlaceFrame(point.x, point.y) : null;
+}
+
+function serverStormFrameForPlayer(p = {}) {
+  const room = rooms.get(p.roomId || '');
+  if (room?.encounterWorldPoint) return radiationStormPlaceFrame(room.encounterWorldPoint.x, room.encounterWorldPoint.y);
+  const frame = serverStormFrameForLocation(String(p.locationId || room?.locationId || ''), null);
+  if (frame) return frame;
+  const point = serverGlobalPointForPlayer(p);
+  return point ? radiationStormPlaceFrame(point.x, point.y) : null;
+}
+
+/** Буря над точкой сцены игрока: рамка его локации и его x, z. */
+function serverStormAtPlayer(storm, p = {}, now = Date.now()) {
+  const frame = storm ? serverStormFrameForPlayer(p) : null;
+  if (!frame) return { frame: null, here: null };
+  const x = frame.ox + Number(p.x || 0) * frame.kx;
+  const y = frame.oy + Number(p.z || 0) * frame.kz;
+  return { frame, here: sampleRadiationStorm(storm, x, y, now) };
+}
+
+// Точка локации на карте для бури: начало её рамки.
+function serverStormPointForLocation(locationId = '') {
+  const frame = serverStormFrameForLocation(locationId, null);
+  return frame ? { x: frame.ox, y: frame.oy } : null;
+}
+
+// Конец выброса для полей локации — когда задняя кромка бури ушла с её точки.
+// Пока буря этого цикла сюда не дошла, в силе проход прошлой бури.
+function serverStormEmissionEndAt(locationId = '', globalEndAt = 0, now = Date.now()) {
+  const point = locationId && globalEndAt > 0 ? serverStormPointForLocation(locationId) : null;
+  if (!point) return globalEndAt;
+  const current = KROMKA_RADIATION_STORM.at(now);
+  if (current?.phase === 'active') {
+    const passedAt = sampleRadiationStorm(current, point.x, point.y, now).passedAt;
+    if (passedAt <= now) return passedAt;
+  }
+  const last = KROMKA_RADIATION_STORM.at(globalEndAt - 1);
+  if (!last) return globalEndAt;
+  return Math.min(globalEndAt, Math.max(last.activeStartAt, sampleRadiationStorm(last, point.x, point.y, globalEndAt - 1).passedAt));
+}
+
+// Выброс приходит в локацию вместе с передней кромкой бури: тогда он и
+// обновляет неподобранные находки её полей.
+function serverStormEmissionId(locationId = '', globalId = '', now = Date.now()) {
+  if (!globalId || !locationId) return globalId;
+  const storm = KROMKA_RADIATION_STORM.at(now);
+  const point = storm?.phase === 'active' ? serverStormPointForLocation(locationId) : null;
+  if (!point) return globalId;
+  return sampleRadiationStorm(storm, point.x, point.y, now).reachedAt <= now ? globalId : '';
+}
+
 function serverCurrentShiftState(now = Date.now(), player = null) {
   const shift = KROMKA_SHIFT_CYCLE.state(now);
   const locationId = String(player?.locationId || '');
@@ -20021,11 +20599,16 @@ function serverCurrentShiftState(now = Date.now(), player = null) {
     Math.max(0, Math.floor(Number(clanBenefits.earlyShiftForecastMinutes || 0) * 60))
   );
   const earlyWarningAt = Number(shift.nextShiftAt || 0) - Number(KROMKA_SHIFT_CYCLE.warningMs || 0) - warningLeadSeconds * 1000;
+  const earlyWarning = warningLeadSeconds > 0 && shift.phase === 'calm' && now >= earlyWarningAt;
+  // Буря выброса: путь по карте, рамка сцены игрока и что над ним сейчас.
+  // Ранний прогноз (жители, клан) показывает бурю ещё в спокойную фазу.
+  const storm = KROMKA_RADIATION_STORM.fromShift(shift, { forecast: earlyWarning });
+  const stormHere = player && storm ? serverStormAtPlayer(storm, player, now) : { frame: null, here: null };
   // Окно повышенного рождения после выброса: поля «разбужены», пока шанс выше
   // базового. Раньше это окно жило только на сервере, и игрок не знал, что
   // именно сейчас стоит обходить аномалии с детектором.
   const birthRules = KROMKA_ARTIFACT_CATALOG.births || {};
-  const emissionEndAt = artifactEmissionEndAt(KROMKA_SHIFT_CYCLE, now);
+  const emissionEndAt = serverStormEmissionEndAt(locationId, artifactEmissionEndAt(KROMKA_SHIFT_CYCLE, now), now);
   const birthDecayMs = Math.max(0, Math.floor(Number(birthRules.decayMs || 1800000)));
   const excitedUntil = emissionEndAt > 0 ? emissionEndAt + birthDecayMs : 0;
   const fieldsExcited = excitedUntil > 0 && now < excitedUntil;
@@ -20039,9 +20622,10 @@ function serverCurrentShiftState(now = Date.now(), player = null) {
     fieldsExcited,
     fieldsExcitedSeconds: fieldsExcited ? Math.max(0, Math.round((excitedUntil - now) / 1000)) : 0,
     fieldsChanceMultiplier: baseChance > 0 ? Number((chance / baseChance).toFixed(2)) : 1,
-    earlyWarning: warningLeadSeconds > 0 && shift.phase === 'calm' && now >= earlyWarningAt,
+    earlyWarning,
     clanEventDetectionPct: clamp(Number(clanBenefits.eventDetectionPct || 0), 0, 1),
-    sheltered: !!player && (safeShelters.has(locationId) || roomLocation(rooms.get(player.roomId))?.safe === true)
+    sheltered: !!player && (safeShelters.has(locationId) || roomLocation(rooms.get(player.roomId))?.safe === true),
+    storm: publicRadiationStorm(storm, stormHere.frame, stormHere.here)
   };
 }
 
@@ -20072,7 +20656,7 @@ function scheduleServerArtifactBirthPersist() {
 }
 
 // Одна проверка в минуту на свободное поле каждой локации с аномалиями.
-// Шанс растёт после активной фазы выброса и затухает за 30 реальных минут.
+// Шанс растёт, когда буря выброса прошла над локацией, и затухает за 30 реальных минут.
 function serverTickAnomalyBirths(now = Date.now(), options = {}) {
   const store = serverArtifactBirthStore();
   const emissionEndAt = artifactEmissionEndAt(KROMKA_SHIFT_CYCLE, now);
@@ -20082,9 +20666,10 @@ function serverTickAnomalyBirths(now = Date.now(), options = {}) {
   for (const locationId of Object.keys(LOCATIONS)) {
     const fields = serverLocationAnomalyFields(locationId);
     if (!fields.length) continue;
+    // Буря идёт по карте: поля локации «просыпаются», когда буря прошла именно её.
     const result = tickArtifactBirths(store, locationId, fields, KROMKA_ARTIFACT_CATALOG, now, {
-      emissionEndAt,
-      emissionId,
+      emissionEndAt: serverStormEmissionEndAt(locationId, emissionEndAt, now),
+      emissionId: serverStormEmissionId(locationId, emissionId, now),
       random: options.random,
       // Приватная соль экземпляра: свойства находки нельзя вычислить по её
       // публичному id, пока артефакт не стабилизирован.
@@ -21045,8 +21630,19 @@ function serverRebuildCity(locationId = '') {
     if (normalizeLocationId(room?.locationId || '') !== id) continue;
     room.staticCollision = null;
     room.worldVersion = (Number(room.worldVersion) || 0) + 1;
+    // Мастер стоит у своей мастерской: встаёт с постройкой и уходит со сносом.
+    // Остальных НПС города (и товар торговцев) это не трогает.
+    if (room.worldReady) spawnAuthoredLocationActors(room, LOCATIONS[id], row => isCityStationMasterId(row?.id));
+    // Клиент перечитывает локацию и ставит или убирает мастерскую на месте.
+    if (room.sockets?.size) {
+      io.to(room.id).emit('locationRevision', { roomId: room.id, locationId: id, revision: String(LOCATIONS[id].revision || '') });
+    }
   }
   return true;
+}
+
+function isCityStationMasterId(id = '') {
+  return String(id || '').startsWith('master_plot_');
 }
 
 /** Невыплаченные марки участков (возвраты ставок, плата арендатору) — в рюкзак. */
@@ -23146,6 +23742,7 @@ function publicWorldState(room, includeMap = true) {
     // Зал лаборатории: шкала угрозы, объявленный удар и готовность узлов.
     labHall: serverLabPayload(room, {}, Date.now()),
     shift: serverCurrentShiftState(Date.now()),
+    weather: serverRoomWeather(room, Date.now()),
     anomalies: ANOMALY_SYSTEM.snapshot(room.id, room.locationId),
     map: includeMap ? room.map.map(row => row.slice()) : undefined,
     resources: [...room.resources.values()].map(publicResource),
@@ -24404,7 +25001,8 @@ function spawnServerEnemy(room, opts = {}) {
     ? explicitCreatureTypeIndex
     : Number.isInteger(opts.typeIndex)
     ? clamp(opts.typeIndex, 0, SERVER_ENEMY_TYPES.length - 1)
-    : (opts.typeName ? serverEnemyTypeIndexByName(opts.typeName) : Math.floor(rng() * SERVER_ENEMY_TYPES.length));
+    : (opts.typeName ? serverEnemyTypeIndexByName(opts.typeName)
+      : SERVER_RANDOM_ENEMY_TYPE_INDICES[Math.floor(rng() * SERVER_RANDOM_ENEMY_TYPE_INDICES.length)]);
   const baseType = SERVER_ENEMY_TYPES[typeIndex] || SERVER_ENEMY_TYPES[0];
   const variantType = forced ? { ...baseType } : applyServerEnemyVariant(baseType, rollServerEnemyVariant(rng));
   // Тир зоны усиливает зверей и налётчиков относительно базового тира вида.
@@ -25716,7 +26314,8 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
     actor.nextFactionAttackAt = now + Math.round(serverNpcAttackCooldownSeconds(actor, weapon, room.rng || Math.random) * 1000);
     const hitChance = npcAttackHitChance(actor, foe, weapon, dist, {
       attackRange,
-      naturalCreature: serverNpcIsNaturalCreature(actor, actor)
+      naturalCreature: serverNpcIsNaturalCreature(actor, actor),
+      accuracyMultiplier: Number(room.weather?.effects?.rangedAccuracyMultiplier ?? 1)
     });
     if ((room.rng || Math.random)() > hitChance) {
       if (ranged) {
@@ -25933,6 +26532,7 @@ function updateServerEnemies(room, dt, opts = {}) {
   }
   const rng = room.rng || Math.random;
   const now = Date.now();
+  if (updateCityCritterSlots(room, loc, now)) enemyStructureChanged = true;
   for (const enemy of [...room.enemies.values()]) {
     if (enemy.dead) {
       if (serverShouldRemoveCorpse(enemy, now)) {
@@ -25947,6 +26547,12 @@ function updateServerEnemies(room, dt, opts = {}) {
       continue;
     }
     ensureEnemyHome(enemy);
+    // Городской зверёк не дерётся и не живёт по расписанию: пасётся у своего
+    // места и удирает от удара.
+    if (enemy.cityCritter === true) {
+      updateCityCritter(room, enemy, dt, now, rng);
+      continue;
+    }
     // Отступающая группа A-Life уходит за край и из стычки с другими NPC.
     if (enemy.ecologyPhase === 'leaving' && updateEcologyActorLifecycle(room, enemy, dt)) continue;
     // Стационарные торговцы и служебные NPC просто стоят и торгуют.
@@ -26176,7 +26782,8 @@ function updateServerEnemies(room, dt, opts = {}) {
           enemy.attackTimer = serverNpcAttackCooldownSeconds(enemy, weapon, rng);
           const hitChance = npcAttackHitChance(enemy, target, weapon, visibleDistance, {
             attackRange,
-            naturalCreature: serverNpcIsNaturalCreature(enemy, enemy)
+            naturalCreature: serverNpcIsNaturalCreature(enemy, enemy),
+            accuracyMultiplier: Number(room.weather?.effects?.rangedAccuracyMultiplier ?? 1)
           });
           if (rng() > hitChance) {
             if (ranged) {
@@ -26782,13 +27389,15 @@ function serverZoneChannelPreference(p = {}, zoneId = '') {
  * Отряд у ворот: кто стоит рядом с шагнувшим и не в перестрелке, проходит
  * вместе с ним в тот же канал; отставшим сервер говорит, какими воротами ушли.
  */
-function serverZoneGateFollowers(p, fromRoomId, from, room, entryKey, label = '') {
+function serverZoneGateFollowers(p, fromRoomId, from, room, entryKey, label = '', edgeSide = '') {
   const now = Date.now();
   for (const mate of serverWorldPartyMatesOnline(p)) {
     if (mate.roomId !== fromRoomId || mate.dead || Number(mate.hp || 0) <= 0) continue;
     const near = Math.hypot(Number(mate.x || 0) - from.x, Number(mate.z || 0) - from.z) <= ZONE_GATE_FOLLOW_METRES;
+    // Через край товарищ выходит там же, где стоял, — напротив своей точки.
+    const arrival = edgeSide ? serverZoneEdgeArrival(roomLocation(room), edgeSide, { x: mate.x, z: mate.z }) : null;
     if (near && serverZoneGatePvpPauseLeft(mate, now) <= 0
-      && transferPlayerToServerRoom(mate, room, { entryKey, reason: 'zoneGateFollow', message: `Отряд прошёл ворота: ${label}`.slice(0, 160) })) {
+      && transferPlayerToServerRoom(mate, room, { entryKey, ...(arrival || {}), reason: 'zoneGateFollow', message: `Отряд прошёл ворота: ${label}`.slice(0, 160) })) {
       mate.zoneArrivalShieldUntil = now + ZONE_ARRIVAL_SHIELD_MS;
       continue;
     }
@@ -26802,7 +27411,7 @@ function serverZoneGateFollowers(p, fromRoomId, from, room, entryKey, label = ''
  */
 // Подсказки первого входа в зону мира: как ходить воротами и где карта мира.
 const ZONE_FIRST_HINTS = Object.freeze([
-  { id: 'zoneGates', text: 'Вы в зоне мира. Проходы по краям — ворота в соседние зоны: шагните в проход. У ворот видно, куда они ведут и насколько там опасно.' },
+  { id: 'zoneGates', text: 'Вы в зоне мира. Золотая полоса по краю ведёт в соседнюю зону: пересеките её где угодно — и вы на той же линии в соседней зоне. В город ведёт светящийся портал у края. У полосы и портала видно, куда они ведут и насколько там опасно.' },
   { id: 'worldMap', text: 'Карта мира — кнопка у миникарты: зоны, их цвета, места и где вы стоите.' }
 ]);
 
@@ -27485,6 +28094,8 @@ function publicPlayer(p) {
     crouching: !!p.crouching,
     moving: !!p.moving,
     turning: !!p.turning,
+    // Что игрок сейчас собирает (ore, wood, fiber, oil, hide) — другие видят анимацию сбора.
+    gathering: serverPlayerGatheringType(p),
     // На чём игрок едет; пешком — null. Остальные клиенты сажают его в седло.
     vehicle: publicMountedVehicle(p.mountedVehicle),
     hp: Math.round(Number(p.hp || 0)),
@@ -28040,6 +28651,8 @@ function serverGlobalPointForPlayer(p = {}) {
 function serverPlayerCanLeaveByEdge(p = {}) {
   const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
   if (loc.allowGlobalMapExit === false) return false;
+  // Из города выходят порталом у ворот, край города закрыт.
+  if (loc.cityZone || ZONE_RUNTIME.cityOf(loc.id)) return false;
   const prologueLocationId = normalizeLocationId(KROMKA_ONBOARDING_CATALOG.firstMissionLocationId || 'randomRuinedRoad');
   if (loc.id === prologueLocationId && p.kromkaOnboarding?.phase === 'firstMission') return false;
   return true;
@@ -28047,12 +28660,15 @@ function serverPlayerCanLeaveByEdge(p = {}) {
 
 function serverClosedLocationMovementBounds(p = {}, room = null, radius = PLAYER_COLLISION_RADIUS) {
   if (!room || serverPlayerCanLeaveByEdge(p)) return null;
-  const bounds = normalizedLocationPlayableBounds(roomLocation(room));
+  const loc = roomLocation(room);
+  const bounds = normalizedLocationPlayableBounds(loc);
   const inset = Math.max(1, WORLD_MAP_EXIT_BAND_TILES);
-  const minTileX = Math.min(bounds.maxX, bounds.minX + inset);
-  const maxTileX = Math.max(bounds.minX, bounds.maxX - inset);
-  const minTileZ = Math.min(bounds.maxZ, bounds.minZ + inset);
-  const maxTileZ = Math.max(bounds.minZ, bounds.maxZ - inset);
+  // У зоны сторона, открытая в соседнюю зону, — полоса перехода: к ней подходят вплотную.
+  const edges = serverZoneEdgeSides(loc);
+  const minTileX = edges.has('west') ? bounds.minX : Math.min(bounds.maxX, bounds.minX + inset);
+  const maxTileX = edges.has('east') ? bounds.maxX : Math.max(bounds.minX, bounds.maxX - inset);
+  const minTileZ = edges.has('south') ? bounds.minZ : Math.min(bounds.maxZ, bounds.minZ + inset);
+  const maxTileZ = edges.has('north') ? bounds.maxZ : Math.max(bounds.minZ, bounds.maxZ - inset);
   const safeRadius = clamp(Number(radius || 0), 0, TILE * 0.45);
   const epsilon = 0.001;
   const boundsDims = roomTileDims(room);
@@ -28070,32 +28686,68 @@ function serverPointInsideClosedLocationBounds(x, z, bounds = null) {
     && Number(z) >= bounds.minZ && Number(z) <= bounds.maxZ;
 }
 
-/**
- * Игрок стоит у края города со стороны `side`. Полоса та же, что у мест (включая
- * запас у старых дорог), а сторона — ближайшая к нему, как и у клиента.
- */
-function serverPlayerAtCityEdge(p = {}, side = '') {
-  const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
-  if (!loc.cityZone || !serverPlayerAtPlaceEdge(p)) return false;
-  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), locationTileDims(loc));
-  const bounds = normalizedLocationPlayableBounds(loc);
-  const distances = [
-    ['north', tile.tz - bounds.minZ], ['south', bounds.maxZ - tile.tz],
-    ['west', tile.tx - bounds.minX], ['east', bounds.maxX - tile.tx]
-  ];
-  return distances.sort((a, b) => a[1] - b[1])[0][0] === side;
+// Переходы между секторами. Зона в зону — сплошная полоса по открытой стороне:
+// игрок проходит край где угодно и выходит в соседней зоне напротив той же
+// точки, в нескольких шагах от её края. Город и зона связаны порталами: в городе
+// портал в проёме ворот, в зоне — у края, обращённого к городу.
+const ZONE_EDGE_ARRIVAL_INSET_TILES = 4;
+const CITY_GATE_PORTAL_RADIUS = 5;
+
+/** Как проходят ворота зоны: 'edge' — полосой края, 'portal' — порталом (в город). */
+function serverZoneGateCrossing(row = {}) {
+  return ZONE_RUNTIME.cityOf(normalizeLocationId(row.to || '')) ? 'portal' : 'edge';
 }
 
-/** Сторона города, к которой ближе всего тайл: старые дороги «в мир» становятся её воротами. */
-function serverCitySideOfTile(loc = {}, row = {}) {
-  const bounds = normalizedLocationPlayableBounds(loc);
-  const tx = Number(row.tx || 0);
-  const tz = Number(row.tz || 0);
-  const distances = [
-    ['north', tz - bounds.minZ], ['south', bounds.maxZ - tz],
-    ['west', tx - bounds.minX], ['east', bounds.maxX - tx]
-  ];
-  return distances.sort((a, b) => a[1] - b[1])[0][0];
+/** Стороны зоны, открытые полосой перехода в соседнюю зону. */
+function serverZoneEdgeSides(loc = {}) {
+  if (!loc?.id || !ZONE_RUNTIME.isZone(loc.id)) return new Set();
+  return new Set((loc.transitions || [])
+    .filter(row => row?.type === 'zoneGate' && serverZoneGateCrossing(row) === 'edge')
+    .map(row => String(row.direction || '')));
+}
+
+/** Игрок в полосе перехода на стороне `side` зоны: крайние клетки и клетка запаса. Север — +Z. */
+function serverPlayerAtZoneEdge(p = {}, loc = {}, side = '') {
+  if (!p?.roomId || !serverZoneEdgeSides(loc).has(side)) return false;
+  const dims = locationTileDims(loc);
+  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), dims);
+  const band = WORLD_MAP_EXIT_BAND_TILES;
+  if (side === 'north') return tile.tz >= dims.h - 1 - band;
+  if (side === 'south') return tile.tz <= band;
+  if (side === 'west') return tile.tx <= band;
+  if (side === 'east') return tile.tx >= dims.w - 1 - band;
+  return false;
+}
+
+/**
+ * Точка прибытия после перехода краем: напротив места пересечения, у стороны
+ * соседа, обращённой назад, за её полосой — шаг вперёд ведёт дальше, а не обратно.
+ */
+function serverZoneEdgeArrival(target = {}, side = '', crossedAt = null) {
+  if (!target || !crossedAt || !Number.isFinite(Number(crossedAt.x)) || !Number.isFinite(Number(crossedAt.z))) return null;
+  const dims = locationTileDims(target);
+  const halfW = dims.w * TILE / 2;
+  const halfH = dims.h * TILE / 2;
+  const depth = (ZONE_EDGE_ARRIVAL_INSET_TILES + 0.5) * TILE;
+  const along = (value, half) => clamp(Number(value), -half + depth, half - depth);
+  if (side === 'north') return { x: along(crossedAt.x, halfW), z: -halfH + depth };
+  if (side === 'south') return { x: along(crossedAt.x, halfW), z: halfH - depth };
+  if (side === 'west') return { x: halfW - depth, z: along(crossedAt.z, halfH) };
+  if (side === 'east') return { x: -halfW + depth, z: along(crossedAt.z, halfH) };
+  return null;
+}
+
+/** Портал выхода из города со стороны `side`: в проёме ворот стены. */
+function serverCityGatePortal(loc = {}, side = '') {
+  const gate = (loc.cityPlan?.gates || []).find(row => row?.dir === side);
+  const centre = CITY_TILES / 2;
+  const fallback = {
+    north: { tx: centre, tz: centre + CITY_WALL_HALF }, south: { tx: centre, tz: centre - CITY_WALL_HALF },
+    west: { tx: centre - CITY_WALL_HALF, tz: centre }, east: { tx: centre + CITY_WALL_HALF, tz: centre }
+  }[side] || { tx: centre, tz: centre };
+  const tx = Number.isFinite(Number(gate?.tx)) ? Number(gate.tx) : fallback.tx;
+  const tz = Number.isFinite(Number(gate?.tz)) ? Number(gate.tz) : fallback.tz;
+  return { tx, tz, radius: CITY_GATE_PORTAL_RADIUS };
 }
 
 function serverPlayerAtPlaceEdge(p = {}) {
@@ -31101,7 +31753,8 @@ io.on('connection', (socket) => {
   });
 
   // Сквозная проверка кампании (tools/check-kromka-live-journey) переезжает между местами
-  // сразу: дорогу через ворота зон проверяют проверки зон. Есть только в тестовом сервере.
+  // сразу, а проверка переходов (tools/check-zone-transitions-network) ставит игрока к
+  // каждому краю и порталу. Есть только в тестовом сервере.
   if (process.env.NODE_ENV === 'test' && process.env.KROMKA_TEST_TRAVEL === '1') {
     socket.on('qaTravel', (data = {}, ack) => {
       const p = players.get(socket.id);
@@ -31109,8 +31762,10 @@ io.on('connection', (socket) => {
       const reply = payload => { if (typeof ack === 'function') ack({ ...payload, self: p ? publicAuthoritativePlayerState(p) : null }); };
       if (!p || !p.roomId || !LOCATIONS[to]) return reply({ ok: false, error: 'Нет такого места.' });
       const room = chooseRoomForLocation(to);
-      if (!transferPlayerToServerRoom(p, room, { entryKey: 'entryFromWorld', reason: 'qaTravel' })) return reply({ ok: false, error: 'Перенос сорвался.' });
-      reply({ ok: true, locationId: to, roomId: room.id });
+      // Проверка переходов ставит игрока в точку края или портала: x/z в метрах локации.
+      const point = Number.isFinite(Number(data.x)) && Number.isFinite(Number(data.z)) ? { x: Number(data.x), z: Number(data.z) } : {};
+      if (!transferPlayerToServerRoom(p, room, { entryKey: 'entryFromWorld', ...point, reason: 'qaTravel' })) return reply({ ok: false, error: 'Перенос сорвался.' });
+      reply({ ok: true, locationId: to, roomId: room.id, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)) });
     });
   }
 
@@ -32176,57 +32831,55 @@ io.on('connection', (socket) => {
 
 
 
+  // Сбор как в Albion (src/server/gathering.js): startGather открывает сессию у
+  // узла, каждый готовый цикл клиент засчитывает через harvestResource, а
+  // stopGather её закрывает. Шаг в сторону или урон прерывают сбор.
+  socket.on('startGather', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
+    const ctx = serverGatherContext(p, data);
+    if (ctx.error) {
+      serverEndGather(p);
+      return fail(ctx.error);
+    }
+    const now = Date.now();
+    p.gather = gathering.beginGatherSession({
+      config: KROMKA_TIER_CONFIG, resource: ctx.resource, player: p, roomId: p.roomId, tool: ctx.tool, now
+    });
+    p.gather.type = normalizeServerResourceType(ctx.resource.type);
+    serverEmitPlayerGathering(p);
+    const tool = p.gather.toolId || ctx.tool.fieldKit ? { id: p.gather.toolId, tier: ctx.tool.tier } : null;
+    if (typeof ack === 'function') ack({ ok: true, cycleMs: p.gather.cycleMs, tool, resource: publicResource(ctx.resource) });
+  });
+
+  socket.on('stopGather', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    serverEndGather(p);
+    if (typeof ack === 'function') ack({ ok: true });
+  });
+
   socket.on('harvestResource', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
-    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
-    const room = rooms.get(p.roomId);
-    if (!room) return fail('Локация не найдена.');
-    ensureRoomWorld(room);
-
-    const resource = findRoomResource(room, data);
-    if (!resource || Number(resource.hp || 0) <= 0) return fail('Ресурс уже исчерпан.');
-    const resourceDef = serverResourceDef(resource.type);
-    const yieldItemId = serverResourceYieldItemId(resource, room);
-    if (!resourceDef || !SERVER_ITEM_IDS.has(yieldItemId)) return fail('Этот ресурс нельзя добыть.');
-    const tierFamily = SERVER_TIER_FAMILY_BY_RESOURCE.get(normalizeServerResourceType(resource.type)) || null;
-    const resourceTier = tierFamily ? serverItemTier(yieldItemId) : 0;
-
-    const pos = tileToWorld(resource.tx, resource.tz, roomTileDims(room));
-    const dist = Math.hypot(Number(p.x || 0) - pos.x, Number(p.z || 0) - pos.z);
-    if (dist > 3.2) return fail('Подойдите ближе к ресурсу.');
-    if (!serverInteractionHasLineOfSight(room, p, pos, { ignoreObjectId: resource.authoredObjectId || resource.id })) {
-      return fail('Ресурс находится за препятствием.');
+    const ctx = serverGatherContext(p, data);
+    if (ctx.error) {
+      serverEndGather(p);
+      return fail(ctx.error, { stop: true });
     }
-
-    const expectedTool = resourceDef.toolId;
-    const activeActivity = ensureServerWorldActivityForRoom(room, Date.now());
-    const activityFieldKit = activeActivity?.kind === 'resource_expedition'
-      && sanitizeServerWorldTaskIds(p.worldTaskAccepted || []).includes(String(activeActivity.taskId || ''))
-      && ((activeActivity.allowedItemIds || []).includes(String(resourceDef.itemId || ''))
-        || (activeActivity.allowedItemIds || []).includes(yieldItemId));
-    // Инструмент берётся из рук на сервере: группа должна совпасть с узлом,
-    // а тир инструмента — быть не ниже тира узла.
-    const equippedToolId = serverActiveWeaponId(p);
-    if (!activityFieldKit && serverItemTierGroup(equippedToolId) !== expectedTool) return fail(resourceDef.needTool);
-    if (!activityFieldKit && resourceTier > serverItemTier(equippedToolId)) {
-      return fail(`Это ${resourceDef.label} тира ${resourceTier}: нужен инструмент тира ${resourceTier} или выше.`);
-    }
-    const gatherSkill = tierFamily ? kromkaTiers.professionForFamily(KROMKA_TIER_CONFIG, 'gather', tierFamily.id) : null;
-    if (gatherSkill && resourceTier) {
-      const refusal = serverProfessionTierRefusal(p, gatherSkill.id, resourceTier);
-      if (refusal) return fail(refusal);
-    }
-
+    const { room, resource, yieldItemId, resourceTier, gatherSkill } = ctx;
     const now = Date.now();
-    if (p.lastHarvestAt && now - p.lastHarvestAt < 320) return fail('Слишком частая добыча.');
-    p.lastHarvestAt = now;
+    const cycle = gathering.checkGatherCycle(KROMKA_TIER_CONFIG, p.gather, {
+      resourceId: resource.id, roomId: p.roomId, player: p, now, lastDamageAt: p.lastServerDamageAt
+    });
+    if (!cycle.ok) {
+      if (cycle.stop) serverEndGather(p);
+      return fail(cycle.error, { stop: !!cycle.stop, reason: cycle.reason || '' });
+    }
 
     syncServerActionProgressionPlayer(p, data);
-    const spend = serverPrepareFixedActionAp(p, data, serverHarvestApCost(p), now, 'добыча ресурса');
-    if (!spend.ok) return fail(spend.error, { apCost: spend.apCost, ...serverMedicalApAck(p) });
     const rng = room.rng || Math.random;
-    const condition = activityFieldKit ? 100 : Number(serverPlayerItemCondition(p, equippedToolId) ?? 100);
+    const toolId = p.gather.toolId;
+    const condition = toolId ? Number(serverPlayerItemCondition(p, toolId) ?? 100) : 100;
     const professionBonus = gatherSkill
       ? kromkaTiers.professionGatherBonus(KROMKA_TIER_CONFIG, serverProfessionXpOf(p, gatherSkill.id))
       : 0;
@@ -32238,10 +32891,13 @@ io.on('connection', (socket) => {
       * premiumGather, rng));
     const carryCheck = serverLimitItemsByCarry(p, {}, [{ id: yieldItemId, qty }], { apply: false });
     qty = Math.max(0, Number(carryCheck.items?.[0]?.qty || 0));
-    if (qty <= 0) return fail('Нет места для ресурса.', { carry: carryCheck.carry });
+    if (qty <= 0) {
+      serverEndGather(p);
+      return fail('Нет места для ресурса.', { stop: true, carry: carryCheck.carry });
+    }
 
     resource.hp = Math.max(0, Number(resource.hp || 0) - 1);
-    if (Number(resource.hp || 0) <= 0) {
+    if (Number(resource.hp || 0) <= 0 && !resource.carcass) {
       // Узел выработан: он исчезает с карты и вернётся по таймеру.
       resource.depletedAt = now;
       resource.respawnAt = now + RESOURCE_RESPAWN_MS;
@@ -32251,7 +32907,7 @@ io.on('connection', (socket) => {
     refreshRoomWorldState(room);
 
     const item = { id: yieldItemId, qty };
-    if (!activityFieldKit) serverWearPlayerItem(p, equippedToolId, 1.5);
+    if (toolId) serverWearPlayerItem(p, toolId, 1.5);
     serverInventoryAdd(p, item.id, item.qty);
     if (resource.id === 'yard_ore') serverRecordTutorialFact(p, 'oreGathered', item.qty);
     if (resource.id === 'yard_wood') serverRecordTutorialFact(p, 'woodGathered', item.qty);
@@ -32259,11 +32915,18 @@ io.on('connection', (socket) => {
     const xp = serverGrantXp(p, serverHarvestXp(workUnits)).gained;
     // Опыт профессии — за каждую добытую единицу, по тиру узла (как fame в Albion).
     const profession = gatherSkill
-      ? serverGrantProfessionXp(p, gatherSkill.id, kromkaTiers.professionXpForWork(KROMKA_TIER_CONFIG, resourceTier || 1, workUnits))
+      ? serverGrantProfessionXp(p, gatherSkill.id, kromkaTiers.professionXpForWork(KROMKA_TIER_CONFIG, resourceTier || 1, workUnits),
+        resourceTier || 1)
       : null;
     const activityUpdate = recordServerWorldActivityHarvest(room, p, item, now);
+    const depleted = Number(resource.hp || 0) <= 0;
+    const cycleMs = p.gather.cycleMs;
+    if (depleted) serverEndGather(p);
+    else gathering.advanceGatherSession(p.gather, now);
+    // Освежёванная туша исчезает сразу; клиент убирает её по resourceUpdated.
+    if (depleted && resource.carcass) room.resources.delete(resource.id);
     const publicRes = publicResource(resource);
-    if (typeof ack === 'function') ack({ ok: true, item, xp, profession, apCost: spend.apCost, ...serverMedicalApAck(p), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), resource: publicRes, activity: activityUpdate.activity, depleted: Number(resource.hp || 0) <= 0 });
+    if (typeof ack === 'function') ack({ ok: true, item, xp, profession, apCost: 0, cycleMs, next: !depleted, ...serverMedicalApAck(p), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), resource: publicRes, activity: activityUpdate.activity, depleted });
     emitResourceUpdate(room, resource, socket.id, item);
   });
 
@@ -33171,9 +33834,12 @@ io.on('connection', (socket) => {
     rememberPlayerSettlement(p, room.locationId);
     const entryKey = serverEntryKeyForTransition(locationId, {}, transitionTicket || localTransition);
     const entryTile = !transitionTicket ? localTransition?.entryTile : null;
-    const spawn = entryTile
+    const edgeArrival = !transitionTicket && localTransition?.crossing === 'edge'
+      ? serverZoneEdgeArrival(LOCATIONS[locationId], localTransition.direction, localTransition.crossedAt)
+      : null;
+    const spawn = edgeArrival || (entryTile
       ? tileToWorld(entryTile.tx, entryTile.tz + 2, locationTileDims(LOCATIONS[locationId]))
-      : playerSpawnWorld(locationId, entryKey);
+      : playerSpawnWorld(locationId, entryKey));
     p.x = spawn.x;
     p.z = spawn.z;
     if (zoneCrossing && ZONE_RUNTIME.isZone(locationId)) p.zoneArrivalShieldUntil = Date.now() + ZONE_ARRIVAL_SHIELD_MS;
@@ -33230,7 +33896,8 @@ io.on('connection', (socket) => {
     emitWorldContainersSnapshot(room, true, socket.id);
     emitServerArtifactState(p, 'locationChanged');
     if (zoneCrossing && localTransition?.type === 'zoneGate') {
-      serverZoneGateFollowers(p, crossedFrom.roomId, crossedFrom, room, entryKey, String(localTransition.label || room.locationId));
+      serverZoneGateFollowers(p, crossedFrom.roomId, crossedFrom, room, entryKey, String(localTransition.label || room.locationId),
+        localTransition.crossing === 'edge' ? localTransition.direction : '');
     }
     if (serverShowZoneFirstHints(p)) persistActivePlayerState(p);
   };
@@ -33443,9 +34110,12 @@ setInterval(() => {
   for (const p of players.values()) {
     if (!p || !p.roomId || p.onGlobalMap || p.dead) continue;
     const shift = serverCurrentShiftState(now, p);
-    if (shift.phase === 'active' && !shift.sheltered && now - Number(p.lastShiftDamageAt || 0) >= 3000) {
+    // Выброс бьёт того, над кем сейчас идёт буря: у передней кромки слабее, в
+    // глубине полосы в полную силу. Укрытие (город, база) защищает целиком.
+    const stormHere = shift.storm?.here;
+    if (stormHere?.inside && !shift.sheltered && now - Number(p.lastShiftDamageAt || 0) >= 3000) {
       p.lastShiftDamageAt = now;
-      const rawDamage = 4 + Number(shift.strength || 1) * 2;
+      const rawDamage = Math.max(1, Math.round((4 + Number(shift.strength || 1) * 2) * Math.max(0.5, Number(stormHere.intensity || 0))));
       const mitigation = serverMitigateDamage(rawDamage, p, 'anomalous');
       p.hp = Math.max(0, Number(p.hp || p.maxHp || 1) - mitigation.damage);
       const newInjuries = serverApplyInjuriesFromHit(
@@ -33494,6 +34164,19 @@ setInterval(() => {
   }
 }, 500);
 
+// Погода комнат с игроками: пересчёт раз в WEATHER_REFRESH_MS, рассылка — когда
+// снимок заметно изменился. При входе погода приходит в состоянии комнаты.
+setInterval(() => {
+  const now = Date.now();
+  for (const room of rooms.values()) {
+    if (!room.sockets?.size) continue;
+    const weather = serverRoomWeather(room, now);
+    if (!weather || !weatherChanged(room.weatherSent || null, weather)) continue;
+    room.weatherSent = weather;
+    io.to(room.id).emit('weatherState', { roomId: room.id, weather });
+  }
+}, WEATHER_REFRESH_MS);
+
 setInterval(() => {
   // 1) Сначала двигаем игроков.
   for (const p of players.values()) {
@@ -33537,9 +34220,12 @@ setInterval(() => {
     updateServerArtifactRegeneration(p, playerTickNow);
     const supportRoom = rooms.get(p.roomId);
     const supportEffects = serverArtifactEffects(p);
-    tickArtifactRuntime(p, supportEffects, !!supportRoom && isWetEnvironment(p,
+    // Под дождём игрок мокнет так же, как в росе аномалии.
+    const rainWet = !!supportRoom?.weather && !supportRoom.weather.sheltered
+      && (supportRoom.weather.state === 'rain' || supportRoom.weather.state === 'storm');
+    tickArtifactRuntime(p, supportEffects, rainWet || (!!supportRoom && isWetEnvironment(p,
       ANOMALY_SYSTEM.authoredFields(supportRoom.locationId),
-      (KROMKA_LOCATION_CATALOG.locations || []).find(row => row.id === supportRoom.locationId)?.wetZones || []), playerTickNow);
+      (KROMKA_LOCATION_CATALOG.locations || []).find(row => row.id === supportRoom.locationId)?.wetZones || [])), playerTickNow);
     if (isArtifactStunned(p, playerTickNow)) {
       p.input = { forward: 0, right: 0 }; p.vx = 0; p.vz = 0; p.moving = false;
     }
@@ -33554,7 +34240,8 @@ setInterval(() => {
     const moving = Math.abs(p.input.forward) + Math.abs(p.input.right) > 0.01;
     if (moving) {
       const speedFactor = (p.input.forward < -0.15 ? 0.58 : 1)
-        * (1 + serverArtifactEffects(p).speedPct);
+        * (1 + serverArtifactEffects(p).speedPct)
+        * Number(supportRoom?.weather?.effects?.moveSpeedMultiplier ?? 1);
       const legacyExtent = playerWorldExtent(p);
       const nextX = clamp(p.x + dx * PLAYER_SPEED * speedFactor * DT, -legacyExtent, legacyExtent);
       const nextZ = clamp(p.z + dz * PLAYER_SPEED * speedFactor * DT, -legacyExtent, legacyExtent);
@@ -33572,7 +34259,9 @@ setInterval(() => {
     }
 
     const stepRadius = artifactFootstep(p, supportEffects, playerTickNow);
-    if (stepRadius > 0) addRoomNoise(supportRoom, p.x, p.z, serverPlayerNoiseRadius(p, stepRadius), p.id, 'footstep');
+    // Шум дождя глушит шаги: враги слышат их ближе (room.weather.effects).
+    if (stepRadius > 0) addRoomNoise(supportRoom, p.x, p.z, serverPlayerNoiseRadius(p, stepRadius)
+      * Number(supportRoom?.weather?.effects?.hearingMultiplier ?? 1), p.id, 'footstep');
     const anomalyRoom = rooms.get(p.roomId);
     const anomalyHit = anomalyRoom ? ANOMALY_SYSTEM.evaluatePlayer({
       roomId: anomalyRoom.id,
@@ -33728,6 +34417,10 @@ function getLanUrls(port) {
   }
   return urls;
 }
+
+// Построенное на участках живёт в сохранениях: при старте города собираются уже
+// с ним, иначе мастерские пропадали до первой новой стройки.
+for (const city of ZONE_RUNTIME.cities()) serverRebuildCity(city.locationId);
 
 server.listen(PORT, '0.0.0.0', () => {
   const address = server.address();

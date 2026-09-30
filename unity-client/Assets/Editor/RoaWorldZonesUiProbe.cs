@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RealmOfAshes.EditorTools
 {
@@ -351,8 +352,29 @@ namespace RealmOfAshes.EditorTools
                 var presentation = go.AddComponent<RoaWorldEventsPresentation>();
                 presentation.Configure(null);
                 Require(go.GetComponentInChildren<Canvas>(true) != null, "World events presentation builds its canvas without a socket");
+                // В WebGL у LegacyRuntime.ttf нет кириллицы: панель рисовала одни цифры.
+                foreach (Text text in go.GetComponentsInChildren<Text>(true))
+                    Require(text.font == RoaUiFont.Default, "World events " + text.name + " is drawn with the bundled Cyrillic font");
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
+
+            // Баннер сдвига: вложенный шрифт и строка целиком. Строка Noto Sans
+            // выше, чем у LegacyRuntime, и в прежней рамке пропадала вся.
+            var shiftHost = new GameObject("ShiftBannerProbe");
+            try
+            {
+                shiftHost.AddComponent<RoaKromkaShiftAndDetector>().Configure(null, null);
+                Text shiftText = shiftHost.GetComponentInChildren<Canvas>(true).transform.Find("ShiftWarning/ShiftText").GetComponent<Text>();
+                Require(shiftText.font == RoaUiFont.Default, "The shift banner is drawn with the bundled Cyrillic font");
+                float box = shiftText.rectTransform.rect.height;
+                foreach (string line in new[] { activeLine, earlyLine, excitedLine })
+                {
+                    shiftText.text = line;
+                    Require(shiftText.preferredHeight <= box,
+                        "The shift banner cuts its line — " + Mathf.CeilToInt(shiftText.preferredHeight) + " px in a " + box + " px box: " + line);
+                }
+            }
+            finally { UnityEngine.Object.DestroyImmediate(shiftHost); }
             Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, transition zone warnings, artifact tier cards, list rows, belt caps, excited fields, detector readout and the outpost/base difference, preview deltas and the faction contract window.");
         }
 

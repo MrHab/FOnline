@@ -486,6 +486,10 @@ namespace RealmOfAshes.Game
             _shiftPanel = Panel(canvasObject.transform, "ShiftWarning", new Vector2(0.5f, 1f), new Vector2(0f, -18f), new Vector2(620f, 48f), new Color(0.42f, 0.28f, 0.08f, 0.9f));
             _shiftText = Label(_shiftPanel.transform, "ShiftText", 20, TextAnchor.MiddleCenter, Color.white);
             Stretch(_shiftText.rectTransform, 12f);
+            // Строка Noto Sans в 20 пт — 27 ед.: рамка 48 − 2 × 12 = 24 ед. её
+            // обрезала (Truncate), и баннер сдвига выходил пустым.
+            _shiftText.rectTransform.offsetMin = new Vector2(12f, 6f);
+            _shiftText.rectTransform.offsetMax = new Vector2(-12f, -6f);
             _shiftPanel.gameObject.SetActive(false);
 
             // Detector signal is communicated by sound and the revealed object in
@@ -521,7 +525,7 @@ namespace RealmOfAshes.Game
             GameObject go = new GameObject(name, typeof(RectTransform), typeof(Text));
             go.transform.SetParent(parent, false);
             Text text = go.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = RoaUiFont.Default;
             text.fontSize = size;
             text.alignment = alignment;
             text.color = color;

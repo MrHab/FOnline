@@ -522,7 +522,7 @@ namespace RealmOfAshes.Game
         private static Text CreateText(string name, RectTransform parent, int size, TextAnchor anchor, Color color)
         {
             var go = new GameObject(name, typeof(RectTransform)); go.transform.SetParent(parent, false);
-            var text = go.AddComponent<Text>(); text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); text.fontSize = size; text.alignment = anchor; text.color = color; text.horizontalOverflow = HorizontalWrapMode.Wrap; text.verticalOverflow = VerticalWrapMode.Overflow; return text;
+            var text = go.AddComponent<Text>(); text.font = RoaUiFont.Default; text.fontSize = size; text.alignment = anchor; text.color = color; text.horizontalOverflow = HorizontalWrapMode.Wrap; text.verticalOverflow = VerticalWrapMode.Overflow; return text;
         }
         private static void Stretch(RectTransform rect, float pad) { rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = new Vector2(pad, pad); rect.offsetMax = new Vector2(-pad, -pad); }
         private static string Human(string value) { return string.IsNullOrEmpty(value) ? "—" : value.Replace('_', ' '); }

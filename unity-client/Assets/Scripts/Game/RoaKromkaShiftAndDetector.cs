@@ -558,6 +558,10 @@ namespace RealmOfAshes.Game
             _shiftPanel = Panel(canvasObject.transform, "ShiftWarning", new Vector2(0.5f, 1f), new Vector2(0f, -18f), new Vector2(760f, 48f), new Color(0.42f, 0.28f, 0.08f, 0.9f));
             _shiftText = Label(_shiftPanel.transform, "ShiftText", 20, TextAnchor.MiddleCenter, Color.white);
             Stretch(_shiftText.rectTransform, 12f);
+            // Строка Noto Sans в 20 пт — 27 ед.: в рамке 48 − 2 × 12 = 24 ед. она
+            // не помещалась, и подгонка ужимала до 17 пт даже короткую строку.
+            _shiftText.rectTransform.offsetMin = new Vector2(12f, 6f);
+            _shiftText.rectTransform.offsetMax = new Vector2(-12f, -6f);
             // Строка бури длиннее прежней (откуда, сколько км, через сколько):
             // лучше чуть мельче, чем обрезанный хвост.
             _shiftText.resizeTextForBestFit = true;

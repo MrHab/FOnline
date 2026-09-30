@@ -309,17 +309,10 @@ namespace RealmOfAshes.Game
                         AddAction("ОТКРЫТЬ ЛИЧНОЕ ДЕЛО · " + (resident["personalQuestName"]?.ToString() ?? string.Empty), resident["bark"]?.ToString() ?? string.Empty,
                             () => SendAction(new Dictionary<string, object> { ["action"] = "resident", ["residentAction"] = "startQuest", ["residentId"] = residentId }));
                     else if (recruited && residentState?["personalQuestCompleted"]?.Value<bool>() != true)
-                    {
-                        JObject requirement = resident["questRequirement"] as JObject ?? new JObject();
-                        string requiredItemId = requirement["itemId"]?.ToString() ?? string.Empty;
-                        int requiredQty = requirement["qty"]?.Value<int>() ?? 0;
-                        string requiredName = RoaItemData.Name(requiredItemId);
-                        if (string.IsNullOrWhiteSpace(requiredName)) requiredName = requiredItemId;
-                        string objective = resident["questObjective"]?.ToString() ?? "Выполнить просьбу специалиста.";
                         AddAction("ЗАВЕРШИТЬ ЛИЧНОЕ ДЕЛО · " + (resident["personalQuestName"]?.ToString() ?? string.Empty),
-                            objective + "\nНужно: " + requiredName + " ×" + requiredQty,
-                            () => SendAction(new Dictionary<string, object> { ["action"] = "resident", ["residentAction"] = "completeQuest", ["residentId"] = residentId }));
-                    }
+                            PersonalQuestTaskText(resident),
+                            () => SendAction(new Dictionary<string, object> { ["action"] = "resident", ["residentAction"] = "completeQuest", ["residentId"] = residentId }),
+                            ResidentRowHeight);
                 }
             }
         }
@@ -466,7 +459,7 @@ namespace RealmOfAshes.Game
             _window.GetComponent<Image>().color = new Color(0.035f, 0.075f, 0.055f, 0.98f);
             _summary = Label(window, "Summary", 18, TextAnchor.MiddleLeft); Anchor(_summary.rectTransform, new Vector2(0f, 1f), new Vector2(12f, -12f), new Vector2(610f, 54f));
             Button close = Button(window, "Close", "×", out _); Anchor((RectTransform)close.transform, new Vector2(1f, 1f), new Vector2(-12f, -12f), new Vector2(52f, 42f)); close.onClick.AddListener(Close);
-            _status = Label(window, "Status", 14, TextAnchor.MiddleLeft); Anchor(_status.rectTransform, new Vector2(0f, 0f), new Vector2(12f, 10f), new Vector2(690f, 34f));
+            _status = Label(window, "Status", 14, TextAnchor.MiddleLeft); Anchor(_status.rectTransform, new Vector2(0f, 0f), new Vector2(12f, 8f), new Vector2(690f, StatusHeight));
             GameObject scrollGo = new GameObject("Scroll", typeof(RectTransform), typeof(Image), typeof(Mask), typeof(ScrollRect));
             scrollGo.transform.SetParent(window, false); RectTransform sr = (RectTransform)scrollGo.transform;
             sr.anchorMin = Vector2.zero; sr.anchorMax = Vector2.one; sr.offsetMin = new Vector2(12f, 50f); sr.offsetMax = new Vector2(-12f, -72f);
@@ -505,8 +498,12 @@ namespace RealmOfAshes.Game
 
         /// <summary>Ширина подписи строки списка: окно 720 минус прокрутка, отступы списка и подписи.</summary>
         public const float RowLabelWidth = 720f - 24f - 16f - 24f;
-        public const float ResidentRowHeight = 80f;
-        public const float NoteHeight = 88f;
+        /// <summary>Строка жителя — четыре строки текста (имя, роль, «Даёт», «Нужно») по 19 ед. в Noto Sans 14 пт.</summary>
+        public const float ResidentRowHeight = 88f;
+        /// <summary>Вклад всей базы — до пяти строк по 19 ед.</summary>
+        public const float NoteHeight = 100f;
+        /// <summary>Строка статуса под списком вмещает две строки ответа сервера; прокрутка начинается на 50.</summary>
+        public const float StatusHeight = 40f;
 
         /// <summary>
         /// Что даёт житель или вся база. Подписаны только ключи, которые сервер
@@ -571,6 +568,21 @@ namespace RealmOfAshes.Game
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Задание личного дела: цель и что принести. С заголовком строки это
+        /// три строки текста, поэтому строка списка высотой как у жителя.
+        /// </summary>
+        public static string PersonalQuestTaskText(JObject resident)
+        {
+            JObject requirement = resident?["questRequirement"] as JObject ?? new JObject();
+            string requiredItemId = requirement["itemId"]?.ToString() ?? string.Empty;
+            int requiredQty = requirement["qty"]?.Value<int>() ?? 0;
+            string requiredName = RoaItemData.Name(requiredItemId);
+            if (string.IsNullOrWhiteSpace(requiredName)) requiredName = requiredItemId;
+            string objective = resident?["questObjective"]?.ToString() ?? "Выполнить просьбу специалиста.";
+            return objective + "\nНужно: " + requiredName + " ×" + requiredQty;
+        }
+
         private static string Percent(float value)
         {
             int rounded = Mathf.RoundToInt(value * 100f);
@@ -588,7 +600,7 @@ namespace RealmOfAshes.Game
             var parts = new List<string>(); foreach (var entry in cost) parts.Add(entry.Key + " " + entry.Value); return string.Join(" · ", parts);
         }
         private static string Signed(int value) { return value > 0 ? "+" + value : value.ToString(); }
-        private static Text Label(Transform parent, string name, int size, TextAnchor align) { var go = new GameObject(name, typeof(RectTransform), typeof(Text)); go.transform.SetParent(parent, false); var text = go.GetComponent<Text>(); text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); text.fontSize = size; text.alignment = align; text.color = new Color(0.72f, 0.92f, 0.68f); return text; }
+        private static Text Label(Transform parent, string name, int size, TextAnchor align) { var go = new GameObject(name, typeof(RectTransform), typeof(Text)); go.transform.SetParent(parent, false); var text = go.GetComponent<Text>(); text.font = RoaUiFont.Default; text.fontSize = size; text.alignment = align; text.color = new Color(0.72f, 0.92f, 0.68f); return text; }
         private static Button Button(Transform parent, string name, string value, out Text label) { var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button)); go.transform.SetParent(parent, false); go.GetComponent<Image>().color = new Color(0.1f, 0.2f, 0.14f, 0.98f); label = Label(go.transform, "Label", 14, TextAnchor.MiddleCenter); label.text = value; label.rectTransform.anchorMin = Vector2.zero; label.rectTransform.anchorMax = Vector2.one; label.rectTransform.offsetMin = new Vector2(4f, 2f); label.rectTransform.offsetMax = new Vector2(-4f, -2f); return go.GetComponent<Button>(); }
         private static void Anchor(RectTransform rect, Vector2 anchor, Vector2 pos, Vector2 size) { rect.anchorMin = rect.anchorMax = anchor; rect.pivot = anchor; rect.anchoredPosition = pos; rect.sizeDelta = size; }
     }

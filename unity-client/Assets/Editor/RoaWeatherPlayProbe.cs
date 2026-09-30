@@ -99,6 +99,8 @@ namespace RealmOfAshes.EditorTools
             public float FogDensity;
             public float GroundSmoothness;
             public float GroundWetness;
+            public float GroundPuddles;
+            public float GroundMud;
             public bool ShaderWetness;
             public Color GroundTint;
             public float GroundLuminance;
@@ -166,7 +168,8 @@ namespace RealmOfAshes.EditorTools
                         + "fog {8:0.0000}, ground smoothness {9:0.000}, tint {10:0.00}, ground luminance {11:0.000}, lightning {12}, wetness {13:0.00}",
                         row.Name, row.Streaks, row.Ripples, row.RainVolume, row.Chip, row.HudChip, row.MoveMultiplier,
                         row.SunIntensity, row.FogDensity, row.GroundSmoothness, row.GroundTint.grayscale, row.GroundLuminance, row.Lightning,
-                        row.GroundWetness));
+                        row.GroundWetness) + string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                        ", puddles {0:0.00}, mud {1:0.00}", row.GroundPuddles, row.GroundMud));
 
                 Require(clear.Streaks == 0 && clear.Chip == "" && Mathf.Approximately(clear.MoveMultiplier, 1f), "в ясную не должно быть дождя и штрафа шага");
                 Material groundMaterial = bootstrap.Loader.CurrentGroundRenderer.sharedMaterial;
@@ -191,6 +194,10 @@ namespace RealmOfAshes.EditorTools
                     // Шейдер земли мочит себя сам: цвет часа не темнеет, влажность уходит в _Wetness.
                     Require(wet.GroundWetness > 0.5f && storm.GroundWetness > wet.GroundWetness * 0.99f,
                         "шейдер земли не получает влажность: " + wet.GroundWetness);
+                    // Лужи и грязь — из снимка сервера: в ясную их нет, в ливень полные лужи и грязь грунта.
+                    Require(clear.GroundPuddles == 0f && clear.GroundMud == 0f, "в ясную на земле лужи или грязь");
+                    Require(storm.GroundPuddles > 0.9f && storm.GroundMud > 0.5f,
+                        "в ливень шейдер земли не получает лужи и грязь: " + storm.GroundPuddles + "/" + storm.GroundMud);
                 }
                 else
                 {
@@ -222,7 +229,8 @@ namespace RealmOfAshes.EditorTools
             await Until(() => Mathf.Abs(weather.Rain - weather.Target.Rain) < 0.01f
                 && Mathf.Abs(weather.Wetness - weather.Target.Wetness) < 0.01f
                 && Mathf.Abs(weather.Cloud - weather.Target.Cloud) < 0.01f
-                && Mathf.Abs(weather.Mud - weather.Target.Mud) < 0.01f ? weather : null, "сглаживание " + state, 40f);
+                && Mathf.Abs(weather.Mud - weather.Target.Mud) < 0.01f
+                && Mathf.Abs(weather.Puddles - weather.Target.Puddles) < 0.01f ? weather : null, "сглаживание " + state, 40f);
             await Seconds(2.5f);
 
             var report = new StateReport { Name = state };
@@ -240,6 +248,8 @@ namespace RealmOfAshes.EditorTools
             report.GroundSmoothness = block.GetFloat("_Smoothness");
             report.ShaderWetness = ground.sharedMaterial.HasProperty("_Wetness");
             report.GroundWetness = block.GetFloat("_Wetness");
+            report.GroundPuddles = block.GetFloat("_Puddles");
+            report.GroundMud = block.GetFloat("_Mud");
             report.GroundTint = block.GetColor("_BaseColor");
             Texture2D desktop = Capture(camera, 1600, 900);
             report.GroundLuminance = LowerLuminance(desktop);

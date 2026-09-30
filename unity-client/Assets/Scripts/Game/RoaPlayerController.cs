@@ -73,6 +73,20 @@ namespace RealmOfAshes.Game
         public const float CrouchSpeedFactorValue = 0.62f;
 
         /// <summary>
+        /// Спиной вперёд не бегут в полную силу: шаг короткий, опора — на носки.
+        /// Прямо назад скорость ×0.55 (4.2 → 2.3 м/с, темп клипа run_back — 2.22 м/с,
+        /// и стопы перестают скользить), вбок — полная, между ними — плавно.
+        /// </summary>
+        public const float BackpedalSpeedFactor = 0.55f;
+
+        /// <summary>
+        /// На таче корпус поворачивает не игрок, а прицел (AimAtWorld): стик его не
+        /// разворачивает. Столько секунд после прицела взгляд считается намеренным,
+        /// и ход спиной замедляется; дальше тач-игрок, пятясь, не теряет скорость.
+        /// </summary>
+        public const float TouchAimHoldSeconds = 1.5f;
+
+        /// <summary>
         /// Верхом скорость задаёт транспорт (self.vehicle.speed, data/kromka/vehicles.json),
         /// а не SPECIAL. Потолок — защита от кривого пакета: сервер режет быстрее.
         /// </summary>
@@ -136,6 +150,7 @@ namespace RealmOfAshes.Game
         private float _baseSpeed = DefaultSpeed;
         private Vector2 _virtualMove;
         private bool _virtualCrouch;
+        private float _touchAimUntil;
         private Vector3 _presentationCorrectionOffset;
         private Vector3 _presentationCorrectionVelocity;
         /// <summary>Ход мотоцикла вдоль носа, м/с: минус — задний ход.</summary>
@@ -407,6 +422,7 @@ namespace RealmOfAshes.Game
             Vector3 delta = target - transform.position;
             delta.y = 0f;
             if (delta.sqrMagnitude < 0.0004f) return;
+            _touchAimUntil = Time.time + TouchAimHoldSeconds;
             _yawDeg = Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Euler(0f, _yawDeg, 0f);
             if (View != null)
@@ -414,6 +430,19 @@ namespace RealmOfAshes.Game
                 target.y = View.AimPlaneY > 0.01f ? View.AimPlaneY : target.y;
                 View.SetAim(target, true);
             }
+        }
+
+        /// <summary>
+        /// Множитель пешей скорости по углу между ходом и взглядом: вперёд и вбок — 1,
+        /// прямо спиной — BackpedalSpeedFactor, от бока к спине — линейно по косинусу.
+        /// </summary>
+        public static float BackpedalFactor(Vector3 wish, Vector3 facing)
+        {
+            wish.y = 0f;
+            facing.y = 0f;
+            if (wish.sqrMagnitude < 0.0001f || facing.sqrMagnitude < 0.0001f) return 1f;
+            float along = Vector3.Dot(wish.normalized, facing.normalized);
+            return Mathf.Lerp(1f, BackpedalSpeedFactor, -along);
         }
 
         private void ReadInputAndMove()
@@ -446,7 +475,9 @@ namespace RealmOfAshes.Game
             }
             else
             {
+                bool facingHeld = PointerAimEnabled || Time.time < _touchAimUntil;
                 float speed = Mathf.Min(Speed, ServerSpeedLimit) * (_crouching ? CrouchSpeedFactorValue : 1f)
+                    * (facingHeld ? BackpedalFactor(wish, transform.forward) : 1f)
                     * (Weather != null ? Weather.MoveSpeedMultiplier : 1f);
                 requestedVelocity = wish * speed;
             }

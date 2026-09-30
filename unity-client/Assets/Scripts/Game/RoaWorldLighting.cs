@@ -24,6 +24,7 @@ namespace RealmOfAshes.Game
         private static readonly int ColorId = Shader.PropertyToID("_Color");
         private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
         private static readonly int GlossinessId = Shader.PropertyToID("_Glossiness");
+        private static readonly int WetnessId = Shader.PropertyToID("_Wetness");
 
         /// <summary>Гладкость сухой земли — та же, что ставит ей RoaLocalTerrain.</summary>
         public const float DryGroundSmoothness = 0.015f;
@@ -473,7 +474,13 @@ namespace RealmOfAshes.Game
             float dayMix = ProfileNumber(_effectiveProfile, "groundDayMix", 0f, 0f, 0.65f);
             Color day = Color.Lerp(_groundDayColor, profileDay, dayMix);
             Color night = ProfileColor(_effectiveProfile, "groundNight", 0xb79a70);
-            WetGround(Color.Lerp(day, night, mix), _groundDrySmoothness, _groundWetness, out Color color, out float smoothness);
+            // Шейдер земли (Kromka Ground) мочит себя сам по _Wetness — с учётом рельефа
+            // текстуры; прежней земле URP/Lit темнота и блеск задаются здесь.
+            Color tint = Color.Lerp(day, night, mix);
+            Color color = tint;
+            float smoothness = _groundDrySmoothness;
+            if (!_groundRenderer.sharedMaterial.HasProperty(WetnessId))
+                WetGround(tint, _groundDrySmoothness, _groundWetness, out color, out smoothness);
             WriteGroundTint(color, smoothness);
         }
 
@@ -587,6 +594,7 @@ namespace RealmOfAshes.Game
             if (material.HasProperty(ColorId)) _groundTint.SetColor(ColorId, color);
             if (material.HasProperty(SmoothnessId)) _groundTint.SetFloat(SmoothnessId, smoothness);
             if (material.HasProperty(GlossinessId)) _groundTint.SetFloat(GlossinessId, smoothness);
+            if (material.HasProperty(WetnessId)) _groundTint.SetFloat(WetnessId, _groundWetness);
             _groundRenderer.SetPropertyBlock(_groundTint, 0);
         }
 

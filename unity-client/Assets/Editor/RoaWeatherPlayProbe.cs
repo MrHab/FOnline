@@ -98,6 +98,8 @@ namespace RealmOfAshes.EditorTools
             public float SunIntensity;
             public float FogDensity;
             public float GroundSmoothness;
+            public float GroundWetness;
+            public bool ShaderWetness;
             public Color GroundTint;
             public float GroundLuminance;
             public int Lightning;
@@ -124,6 +126,8 @@ namespace RealmOfAshes.EditorTools
                 await Seconds(4f);
 
                 StateReport clear = await Settle(baseUrl, "clear", weather, bootstrap, camera);
+                // Тот же кадр прежней землёй URP/Lit (та же запечённая карта): «было» рядом со «стало».
+                CaptureLegacyGround(bootstrap, camera);
                 StateReport rain = await Settle(baseUrl, "rain", weather, bootstrap, camera);
                 StateReport storm = await Settle(baseUrl, "storm", weather, bootstrap, camera);
                 // Ливень с самой дальней камеры: струи обязаны укрупниться, а не исчезнуть.
@@ -159,13 +163,19 @@ namespace RealmOfAshes.EditorTools
                 foreach (StateReport row in new[] { clear, rain, storm, wet })
                     lines.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                         "{0}: streaks {1}, ripples {2}, rain volume {3:0.000}, chip '{4}' / HUD '{5}', walk x{6:0.000}, sun {7:0.00}, "
-                        + "fog {8:0.0000}, ground smoothness {9:0.000}, tint {10:0.00}, ground luminance {11:0.000}, lightning {12}",
+                        + "fog {8:0.0000}, ground smoothness {9:0.000}, tint {10:0.00}, ground luminance {11:0.000}, lightning {12}, wetness {13:0.00}",
                         row.Name, row.Streaks, row.Ripples, row.RainVolume, row.Chip, row.HudChip, row.MoveMultiplier,
-                        row.SunIntensity, row.FogDensity, row.GroundSmoothness, row.GroundTint.grayscale, row.GroundLuminance, row.Lightning));
+                        row.SunIntensity, row.FogDensity, row.GroundSmoothness, row.GroundTint.grayscale, row.GroundLuminance, row.Lightning,
+                        row.GroundWetness));
 
                 Require(clear.Streaks == 0 && clear.Chip == "" && Mathf.Approximately(clear.MoveMultiplier, 1f), "в ясную не должно быть дождя и штрафа шага");
-                float materialSmoothness = bootstrap.Loader.CurrentGroundRenderer.sharedMaterial.GetFloat("_Smoothness");
-                Require(Mathf.Abs(clear.GroundSmoothness - materialSmoothness) < 0.002f, "сухая земля не такая, как её материал");
+                Material groundMaterial = bootstrap.Loader.CurrentGroundRenderer.sharedMaterial;
+                if (!clear.ShaderWetness)
+                {
+                    float materialSmoothness = groundMaterial.GetFloat("_Smoothness");
+                    Require(Mathf.Abs(clear.GroundSmoothness - materialSmoothness) < 0.002f, "сухая земля не такая, как её материал");
+                }
+                else Require(clear.GroundWetness == 0f, "в ясную шейдер земли получает влажность");
                 Require(rain.Streaks > 150 && rain.Ripples > 0, "в дождь не видно струй или кругов");
                 Require(rain.Chip == "ДОЖДЬ", "чип дождя: " + rain.Chip);
                 Require(rain.RainVolume > 0.02f, "дождь не слышно");
@@ -176,8 +186,17 @@ namespace RealmOfAshes.EditorTools
                 Require(storm.FogDensity > clear.FogDensity * 3f, "ливень не сгущает дымку");
                 Require(wet.Streaks == 0, "дождь кончился, а струи идут");
                 Require(wet.Chip == "ГРЯЗЬ", "после дождя чип грязи: " + wet.Chip);
-                Require(wet.GroundSmoothness > 0.3f, "мокрая земля не блестит");
-                Require(wet.GroundTint.grayscale < clear.GroundTint.grayscale * 0.8f, "мокрая земля не темнее сухой");
+                if (wet.ShaderWetness)
+                {
+                    // Шейдер земли мочит себя сам: цвет часа не темнеет, влажность уходит в _Wetness.
+                    Require(wet.GroundWetness > 0.5f && storm.GroundWetness > wet.GroundWetness * 0.99f,
+                        "шейдер земли не получает влажность: " + wet.GroundWetness);
+                }
+                else
+                {
+                    Require(wet.GroundSmoothness > 0.3f, "мокрая земля не блестит");
+                    Require(wet.GroundTint.grayscale < clear.GroundTint.grayscale * 0.8f, "мокрая земля не темнее сухой");
+                }
                 Require(wet.GroundLuminance < clear.GroundLuminance, "в кадре мокрая земля не темнее сухой");
                 verdict = "PASS: " + string.Join(" | ", lines);
                 Debug.Log(Tag + " " + verdict);
@@ -219,12 +238,35 @@ namespace RealmOfAshes.EditorTools
             var block = new MaterialPropertyBlock();
             ground.GetPropertyBlock(block, 0);
             report.GroundSmoothness = block.GetFloat("_Smoothness");
+            report.ShaderWetness = ground.sharedMaterial.HasProperty("_Wetness");
+            report.GroundWetness = block.GetFloat("_Wetness");
             report.GroundTint = block.GetColor("_BaseColor");
             Texture2D desktop = Capture(camera, 1600, 900);
             report.GroundLuminance = LowerLuminance(desktop);
             Save(desktop, state + "-desktop.png");
             Save(Capture(camera, 844, 390), state + "-mobile.png");
             return report;
+        }
+
+        private static void CaptureLegacyGround(RoaGameBootstrap bootstrap, Camera camera)
+        {
+            Renderer ground = bootstrap.Loader.CurrentGroundRenderer;
+            Material current = ground.sharedMaterial;
+            if (!current.HasProperty("_SurfaceMask")) return;
+            var legacy = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "ProbeLegacyGround" };
+            legacy.SetTexture("_BaseMap", current.GetTexture("_BaseMap"));
+            legacy.SetColor("_BaseColor", Color.white);
+            legacy.SetFloat("_Smoothness", RoaWorldLighting.DryGroundSmoothness);
+            try
+            {
+                ground.sharedMaterial = legacy;
+                Save(Capture(camera, 1600, 900), "clear-legacy-desktop.png");
+            }
+            finally
+            {
+                ground.sharedMaterial = current;
+                UnityEngine.Object.DestroyImmediate(legacy);
+            }
         }
 
         private static string HudChip()

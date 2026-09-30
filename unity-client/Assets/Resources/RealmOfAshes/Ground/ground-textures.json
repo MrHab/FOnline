@@ -1,0 +1,127 @@
+{
+  "schema": "kromka.ground-textures.v1",
+  "note": "Собирает tools/build-ground-textures.js из source-assets/ground-textures/sources.json: не править руками.",
+  "defaultSet": "gravelly_sand",
+  "pathSet": "rocky_trail",
+  "mudSet": "muddy_tracks",
+  "presets": {
+    "tract_dust": "gravelly_sand",
+    "industrialDust": "gravelly_sand",
+    "scrapDust": "gravelly_sand",
+    "caravanYard": "gravelly_sand",
+    "encounterDust": "gravelly_sand",
+    "river_loam": "dirt",
+    "greenLowland": "dirt",
+    "riverJunction": "dirt",
+    "chalk": "dry_ground_01",
+    "chalkMud": "dry_ground_01",
+    "saltFlat": "dry_ground_01",
+    "zero_soil": "burned_ground_01",
+    "glassAsh": "burned_ground_01",
+    "ashGrove": "burned_ground_01",
+    "ashForest": "burned_ground_01",
+    "iron_scree": "red_laterite_soil_stones",
+    "rockyHills": "rocky_trail",
+    "fused_soil": "mud_cracked_dry_riverbed_002",
+    "dryBasin": "mud_cracked_dry_riverbed_002",
+    "wet_concrete": "dirty_concrete",
+    "concreteFloor": "dirty_concrete",
+    "ashConcrete": "dirty_concrete",
+    "dampConcrete": "dirty_concrete",
+    "ruinedRoad": "dirty_concrete",
+    "relayConcrete": "dirty_concrete",
+    "silent_ring": "moon_01"
+  },
+  "sets": {
+    "gravelly_sand": {
+      "tilingMeters": 3.2,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "saturation": 0.86
+    },
+    "dirt": {
+      "tilingMeters": 3,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "saturation": 0.95
+    },
+    "dry_ground_01": {
+      "tilingMeters": 3.6,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "saturation": 1
+    },
+    "burned_ground_01": {
+      "tilingMeters": 3.2,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "saturation": 1
+    },
+    "red_laterite_soil_stones": {
+      "tilingMeters": 3,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "saturation": 0.78
+    },
+    "mud_cracked_dry_riverbed_002": {
+      "tilingMeters": 3.4,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "saturation": 1
+    },
+    "dirty_concrete": {
+      "tilingMeters": 4,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "saturation": 1
+    },
+    "moon_01": {
+      "tilingMeters": 4,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "saturation": 1
+    },
+    "rocky_trail": {
+      "tilingMeters": 2.6,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "saturation": 1
+    },
+    "muddy_tracks": {
+      "tilingMeters": 3,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "saturation": 1
+    }
+  }
+}

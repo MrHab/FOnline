@@ -73,13 +73,13 @@ namespace RealmOfAshes.Game
             }, completed);
         }
 
-        /// <summary>Диспетчер переноса в столице: другие столицы, расстояние и цена.</summary>
+        /// <summary>Проводник в городе фракции: другие города, расстояние и почему идти пока нельзя (blocked).</summary>
         public static bool RequestFastTravel(RoaSocketClient socket, Action<JObject> completed)
         {
             return Send(socket, "fastTravel", new Dictionary<string, object> { ["action"] = "list" }, completed);
         }
 
-        /// <summary>Отправиться в столицу: марки списывает сервер, переход приходит как serverWorldTransfer.</summary>
+        /// <summary>Пойти с проводником в город: бесплатно, переход приходит как serverWorldTransfer.</summary>
         public static bool UseFastTravel(RoaSocketClient socket, string locationId, Action<JObject> completed)
         {
             return Send(socket, "fastTravel", new Dictionary<string, object>

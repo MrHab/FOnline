@@ -1,20 +1,18 @@
 'use strict';
 
-// Перенос между столицами фракций — единственный быстрый путь в мире зон.
-// Диспетчер в столице отправляет игрока в другую столицу за марки: цена растёт
-// с расстоянием между зонами столиц. Из боя не отправляют, и груз, который
-// выносят из опасных зон ногами (артефакты в рюкзаке), перевезти нельзя —
-// иначе дорога через зоны теряла бы смысл. Модуль чистый: игрок, его рюкзак и
-// время приходят снаружи.
+// Проводник — единственный быстрый путь в мире зон. Он стоит в каждом городе
+// фракции и бесплатно ведёт в любой другой такой город, но только налегке: без
+// экипировки и с пустым рюкзаком (марки лежат на счёте аккаунта и не в счёт).
+// Вещи из города в город носят через зоны своими ногами — иначе дорога теряла бы
+// смысл. Из боя не уводит. Модуль чистый: игрок, его вещи и время приходят снаружи.
 
 const ZONE_KM = 20;
 
 const DEFAULT_RULES = Object.freeze({
-  baseFee: 40,
-  feePerKm: 0.5,
-  combatLockMs: 15000,
-  blockedCategories: Object.freeze(['artifacts'])
+  combatLockMs: 15000
 });
+
+const CONDUCTOR_ONLY_IN_CITIES = 'Проводник есть только в городах фракций.';
 
 function finite(value, fallback, min, max) {
   const number = Number(value);
@@ -23,12 +21,8 @@ function finite(value, fallback, min, max) {
 
 function normalizeFastTravelRules(raw = {}) {
   const src = raw && typeof raw === 'object' ? raw : {};
-  const categories = Array.isArray(src.blockedCategories) ? src.blockedCategories : DEFAULT_RULES.blockedCategories;
   return Object.freeze({
-    baseFee: Math.round(finite(src.baseFee, DEFAULT_RULES.baseFee, 0, 100000)),
-    feePerKm: finite(src.feePerKm, DEFAULT_RULES.feePerKm, 0, 1000),
-    combatLockMs: Math.round(finite(src.combatLockMs, DEFAULT_RULES.combatLockMs, 0, 600000)),
-    blockedCategories: Object.freeze(categories.map(value => String(value || '').replace(/[^a-zA-Z0-9_-]/g, '')).filter(Boolean))
+    combatLockMs: Math.round(finite(src.combatLockMs, DEFAULT_RULES.combatLockMs, 0, 600000))
   });
 }
 
@@ -38,15 +32,11 @@ function zoneDistanceKm(from, to) {
   return Math.hypot(Number(to.col) - Number(from.col), Number(to.row) - Number(from.row)) * ZONE_KM;
 }
 
-function fastTravelFee(rules, fromZone, toZone) {
-  return Math.round(rules.baseFee + rules.feePerKm * zoneDistanceKm(fromZone, toZone));
-}
-
 /**
- * Направления из столицы: остальные столицы с ценой. capitals — [{locationId,
- * name, zone}], где zone — зона столицы в графе ({col, row}).
+ * Куда ведёт проводник этого города: остальные города фракций, ближние первыми.
+ * capitals — [{locationId, name, zone}], где zone — зона города в графе ({col, row}).
  */
-function fastTravelDestinations(rules, capitals = [], fromLocationId = '', feeMultiplier = 1) {
+function fastTravelDestinations(capitals = [], fromLocationId = '') {
   const from = capitals.find(row => row.locationId === fromLocationId);
   if (!from) return [];
   return capitals
@@ -54,38 +44,54 @@ function fastTravelDestinations(rules, capitals = [], fromLocationId = '', feeMu
     .map(row => ({
       locationId: row.locationId,
       name: row.name,
-      distanceKm: Math.round(zoneDistanceKm(from.zone, row.zone)),
-      fee: Math.max(1, Math.round(fastTravelFee(rules, from.zone, row.zone) * Math.max(0, Math.min(1, Number(feeMultiplier) || 1))))
+      distanceKm: Math.round(zoneDistanceKm(from.zone, row.zone))
     }))
-    .sort((a, b) => a.fee - b.fee || a.name.localeCompare(b.name, 'ru'));
+    .sort((a, b) => a.distanceKm - b.distanceKm || a.name.localeCompare(b.name, 'ru'));
 }
 
 /**
- * Почему перенос невозможен ('' — можно). trip: {rules, capitals, fromLocationId,
- * toLocationId, silver, lastCombatAt, now, cargo: [{id, category, name}], feeMultiplier}.
+ * Готов ли игрок идти с проводником ('' — готов): не в бою, ничего не надето и
+ * рюкзак пуст. trip: {rules, lastCombatAt, now, equipment: [{slot, id, name}],
+ * cargo: [{id, qty, name}]} — экипировка и рюкзак уже без пустых слотов и марок.
  */
-function fastTravelRefusal(trip = {}) {
+function fastTravelReadiness(trip = {}) {
   const rules = trip.rules || DEFAULT_RULES;
-  const capitals = Array.isArray(trip.capitals) ? trip.capitals : [];
-  if (!capitals.some(row => row.locationId === trip.fromLocationId)) return 'Диспетчер переноса есть только в столицах фракций.';
-  const destination = fastTravelDestinations(rules, capitals, trip.fromLocationId, trip.feeMultiplier ?? 1).find(row => row.locationId === trip.toLocationId);
-  if (!destination) return 'Туда диспетчер не отправляет: перенос идёт только между столицами.';
   const now = Number(trip.now || Date.now());
-  const since = now - Number(trip.lastCombatAt || 0);
-  if (Number(trip.lastCombatAt || 0) > 0 && since < rules.combatLockMs) {
-    return `Из боя не отправляют. Подождите ${Math.ceil((rules.combatLockMs - since) / 1000)} с без боя.`;
+  const lastCombatAt = Number(trip.lastCombatAt || 0);
+  const since = now - lastCombatAt;
+  if (lastCombatAt > 0 && since < rules.combatLockMs) {
+    return `Из боя проводник не уводит. Подождите ${Math.ceil((rules.combatLockMs - since) / 1000)} с без боя.`;
   }
-  const blocked = (Array.isArray(trip.cargo) ? trip.cargo : []).find(row => rules.blockedCategories.includes(String(row?.category || '')));
-  if (blocked) return `«${blocked.name || blocked.id}» не перевозят: такой груз выносят из зон своими ногами.`;
-  if (Math.floor(Number(trip.silver || 0)) < destination.fee) return `Перенос стоит ${destination.fee} марок — у вас столько нет.`;
+  const worn = Array.isArray(trip.equipment) ? trip.equipment : [];
+  if (worn.length) {
+    return `Снимите экипировку («${worn[0].name || worn[0].id}»${worn.length > 1 ? ` и ещё ${worn.length - 1}` : ''}): проводник ведёт только налегке.`;
+  }
+  const cargo = Array.isArray(trip.cargo) ? trip.cargo : [];
+  if (cargo.length) {
+    return `Рюкзак должен быть пуст («${cargo[0].name || cargo[0].id}»${cargo.length > 1 ? ` и ещё ${cargo.length - 1}` : ''}): вещи оставляют в хранилище города.`;
+  }
   return '';
 }
 
+/**
+ * Почему проводник не поведёт ('' — ведёт). trip: {rules, capitals, fromLocationId,
+ * toLocationId, lastCombatAt, now, equipment, cargo}.
+ */
+function fastTravelRefusal(trip = {}) {
+  const capitals = Array.isArray(trip.capitals) ? trip.capitals : [];
+  if (!capitals.some(row => row.locationId === trip.fromLocationId)) return CONDUCTOR_ONLY_IN_CITIES;
+  if (trip.toLocationId === trip.fromLocationId) return 'Вы уже в этом городе.';
+  const destination = fastTravelDestinations(capitals, trip.fromLocationId).find(row => row.locationId === trip.toLocationId);
+  if (!destination) return 'Туда проводник не ведёт: только в другой город фракции.';
+  return fastTravelReadiness(trip);
+}
+
 module.exports = {
+  CONDUCTOR_ONLY_IN_CITIES,
   DEFAULT_RULES,
   ZONE_KM,
   fastTravelDestinations,
-  fastTravelFee,
+  fastTravelReadiness,
   fastTravelRefusal,
   normalizeFastTravelRules,
   zoneDistanceKm

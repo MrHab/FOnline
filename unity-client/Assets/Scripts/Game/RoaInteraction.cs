@@ -143,6 +143,7 @@ namespace RealmOfAshes.Game
         private bool _worldRequestPending;
         private bool _tradePending;
         private bool _transitionPending;
+        private bool _conductorPending;
 
         /// <summary>Окно подтверждения перехода со сменой правил зоны.</summary>
         private const float ZoneWarningWindowSeconds = 6f;
@@ -319,7 +320,7 @@ namespace RealmOfAshes.Game
                 else if (_candidate["dead"]?.ToObject<bool>() == true)
                     return InteractKey + " — обыскать: " + name + (CorpseHasCarcass(_candidate) ? " · ЛКМ — свежевать" : string.Empty);
                 else if (!string.IsNullOrEmpty(_candidate["stationObjectId"]?.ToString())) action = "заказать работу";
-                else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) action = "поговорить";
+                else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate) || IsConductor(_candidate)) action = "поговорить";
                 else if (NpcHasTrade(_candidate)) action = "торговать";
                 else action = "услуги";
                 return InteractKey + " — " + action + ": " + name;
@@ -2237,6 +2238,7 @@ namespace RealmOfAshes.Game
             if (_candidateKind != TargetKind.Actor) return;
             if (_candidate["dead"]?.ToObject<bool>() == true) InspectCorpse(_candidate);
             else if (TryOpenMasterStation(_candidate)) return;
+            else if (IsConductor(_candidate)) OpenConductor();
             else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) OpenNpc(_candidate);
             else if (NpcHasTrade(_candidate))
             {
@@ -2438,6 +2440,26 @@ namespace RealmOfAshes.Game
             _panel = PanelKind.Npc;
             _scroll = Vector2.zero;
             FocusNpc(true);
+        }
+
+        /// <summary>
+        /// Проводник: разговор с ним открывает карту мира с городами, куда он ведёт.
+        /// Города и то, пустит ли он сейчас (blocked), присылает сервер.
+        /// </summary>
+        private void OpenConductor()
+        {
+            RoaWorldOverviewCanvas map = RoaGameBootstrap.Active != null ? RoaGameBootstrap.Active.WorldOverview : null;
+            if (_conductorPending || map == null) return;
+            _conductorPending = true;
+            bool sent = RoaTerritoryNet.RequestFastTravel(Socket, ack =>
+            {
+                _conductorPending = false;
+                if (ack?["ok"]?.ToObject<bool>() == true) map.OpenForTravel(ack);
+                else Show(ack?["error"]?.ToString() ?? "Проводник не отвечает.", 4f);
+            });
+            if (sent) return;
+            _conductorPending = false;
+            Show("Нет связи с сервером.", 3f);
         }
 
         private void OpenService(JObject actor)
@@ -3361,7 +3383,13 @@ namespace RealmOfAshes.Game
         private static bool HasServiceMenu(JObject actor)
         {
             string service = actor?["service"]?.ToString();
-            return service == "registrar" || service == "artifactLab" || service == "fastTravel";
+            return service == "registrar" || service == "artifactLab";
+        }
+
+        /// <summary>Проводник города: вместо окна услуг у него карта мира.</summary>
+        public static bool IsConductor(JObject actor)
+        {
+            return actor?["service"]?.ToString() == "fastTravel";
         }
 
         public static string DisplayNpcName(JObject actor)

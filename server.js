@@ -286,7 +286,7 @@ const { createZoneRuntime } = require('./src/server/zone-runtime');
 const { TILES: CITY_TILES, WALL_HALF: CITY_WALL_HALF } = require('./src/server/city-builder');
 // Город — внутри стены (клетки CENTRE ± WALL_HALF), с запасом на её толщину.
 const CITY_INNER_TILE_MARGIN = CITY_TILES / 2 - CITY_WALL_HALF + 3;
-const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
+const { CONDUCTOR_ONLY_IN_CITIES, fastTravelDestinations, fastTravelReadiness, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
 const { PLACES_REVISION, ZONE_FRAME_REVISION, migrateSaveStateToZones } = require('./src/server/zone-migration');
 const { zoneAtPoint, zoneById, zoneLocationId, zoneOfLocation, zoneOfPlace, zoneRecipe } = require('./src/server/zone-graph');
 const { portalSignature, zonePortals } = require('./src/server/zone-portals');
@@ -431,7 +431,6 @@ const {
   benefitOrdersForProfile: serverClanBenefitOrders,
   claimWeeklyBaseGrant: serverClaimWeeklyClanBaseGrant,
   commitClanCraftBenefit: serverCommitClanCraftBenefit,
-  clanFastTravelFeeMultiplier,
   markBenefitOrderCompleted: serverMarkClanBenefitOrderCompleted,
   ownedClanBaseContext: serverOwnedClanBaseContext,
   previewClanCraftBenefit: serverPreviewClanCraftBenefit,
@@ -935,7 +934,6 @@ for (const item of KROMKA_ITEM_CATALOG.items) {
   KROMKA_APOCALYPSE_WEAPON_COMBATS.set(item.id, KROMKA_APOCALYPSE_WEAPON_COMBATS.get(item.variantOf) || item.variantOf);
 }
 const KROMKA_ITEM_INDEXES = itemCatalogIndexes(KROMKA_ITEM_CATALOG);
-const SERVER_ITEM_CATEGORY = new Map(KROMKA_ITEM_CATALOG.items.map(item => [item.id, String(item.category || '')]));
 const SERVER_ITEM_NAME = new Map(KROMKA_ITEM_CATALOG.items.map(item => [item.id, String(item.name || item.id)]));
 
 /** Строки оружия PolygonApocalypse для тировых вариантов: облик и боевая основа исходника. */
@@ -18078,14 +18076,14 @@ function spawnAuthoredLocationActors(room, loc, only = null) {
 }
 
 /**
- * Диспетчер переноса: в каждой столице фракции сервер ставит его у точки входа
- * (авторские сцены столиц не трогаются). Разговор с ним — список других столиц с
- * ценой; поездку ведёт обработчик fastTravel.
+ * Проводник: в каждом городе фракции сервер ставит его на площади (авторские
+ * сцены городов не трогаются). Разговор с ним открывает карту мира с городами,
+ * куда он ведёт; саму дорогу ведёт обработчик fastTravel.
  */
 function serverSpawnFastTravelDispatcher(room, loc) {
   if (!room || !loc || !(ZONE_RUNTIME.graph.capitals || []).includes(loc.id)) return 0;
   const dims = locationTileDims(loc);
-  // В городе-секторе диспетчер стоит у площади, а не у точки входа.
+  // В городе-секторе проводник стоит у площади, а не у точки входа.
   const anchor = loc.cityPlan?.dispatcher || loc.entryFromWorld || loc.spawn
     || { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
   const actor = spawnServerEnemy(room, {
@@ -18096,17 +18094,27 @@ function serverSpawnFastTravelDispatcher(room, loc) {
     maxSpawnSearchRadius: 6,
     minEnemyDistance: 0.65,
     minPlayerDistance: 0,
+    // Вид — человек. Без него спавнер брал случайный вид, чаще мутанта, а у
+    // мутанта сервер снимает разговор, услугу, облик и наряд: проводник стоял
+    // голым и не отвечал.
+    typeIndex: 0,
     visual: 'wastelandSettler',
     modelKey: 'wastelandSettler',
+    tags: ['npc', 'living', 'friendly', 'service', 'city-conductor'],
     npcSeed: `${loc.id}:fastTravelDispatcher`,
     npcId: `${loc.id}_dispatcher`,
     service: 'fastTravel',
     canDialogue: true,
-    name: 'Диспетчер переноса',
+    name: 'Проводник',
     role: 'npc',
     faction: 'neutral',
     hostileToPlayer: false,
-    stationary: true
+    stationary: true,
+    // Бывалый ходок: седой, в куртке, сапогах и с рюкзаком «Странник».
+    appearance: sanitizeCharacterAppearance({ sex: 'male', hairId: 'short_crop', hairColorId: 'hair_07', skinToneId: 'skin_03' }),
+    authoredEquipment: { weapon: 'fists', armor: 'leather', helmet: '', boots: 'boots', backpack: 'backpack' },
+    dropEquipment: false,
+    loot: []
   });
   if (!actor) return 0;
   actor.authoredLocationId = loc.id;
@@ -27593,7 +27601,22 @@ function serverShowZoneFirstHints(p = {}) {
   return sent;
 }
 
-/** Столицы фракций для переноса: место, его имя для игрока и его зона. */
+/**
+ * Что на игроке и в его рюкзаке: проводник ведёт только без этого. Марки — счёт
+ * аккаунта, а не вещь рюкзака (клиент тоже не кладёт их в сетку), и не мешают.
+ */
+function serverFastTravelLoad(p = {}) {
+  const equipment = Object.entries(p.equipment || {})
+    .map(([slot, raw]) => ({ slot, id: serverBaseItemId(raw || '') }))
+    .filter(row => row.id && row.id !== 'fists')
+    .map(row => ({ ...row, name: SERVER_ITEM_NAME.get(row.id) || row.id }));
+  const cargo = sanitizeServerInventorySnapshot(p.inventory || [], { includeEquipped: true })
+    .filter(row => row.id !== 'silver')
+    .map(row => ({ id: row.id, qty: row.qty, name: SERVER_ITEM_NAME.get(row.id) || row.id }));
+  return { equipment, cargo };
+}
+
+/** Города фракций, между которыми ведёт проводник: место, его имя для игрока и его зона. */
 function serverFastTravelCapitals() {
   return (ZONE_RUNTIME.graph.capitals || []).map(locationId => ({
     locationId,
@@ -31881,40 +31904,45 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Диспетчер переноса в столице: куда можно и за сколько, и сама поездка —
-  // марки списываются, персонаж переходит в столицу назначения.
+  // Проводник в городе фракции: карта с городами, куда он ведёт, и сама дорога —
+  // бесплатно, но только налегке: без экипировки и с пустым рюкзаком.
   socket.on('fastTravel', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     const capitals = serverFastTravelCapitals();
-    // Клан‑владелец депо платит за перенос меньше: цена в списке — уже со скидкой.
-    const discount = clanFastTravelFeeMultiplier(serverClanBaseContextForPlayer(p) || {});
-    const destinations = fastTravelDestinations(FAST_TRAVEL_RULES, capitals, p.locationId, discount);
-    if (String(data.action || 'list') !== 'go') {
-      if (typeof ack === 'function') ack({ ok: destinations.length > 0, destinations, error: destinations.length ? '' : 'Диспетчер переноса есть только в столицах фракций.' });
-      return;
-    }
-    // Отправляет только сам диспетчер: заказ издалека по столице не принимается.
-    if (!serverNearbyServiceActor(p, 'fastTravel')) return fail('Диспетчер переноса должен быть рядом.');
-    const to = normalizeLocationId(data.to || '');
-    const refusal = fastTravelRefusal({
-      rules: FAST_TRAVEL_RULES, capitals, fromLocationId: p.locationId, toLocationId: to, feeMultiplier: discount,
-      silver: serverInventoryQty(p.inventory || [], 'silver'),
+    const destinations = fastTravelDestinations(capitals, p.locationId);
+    const traveller = {
+      rules: FAST_TRAVEL_RULES,
       lastCombatAt: Math.max(Number(p.lastServerDamageAt || 0), Number(p.serverCombat?.lastAttackAt || 0)),
       now: Date.now(),
-      cargo: sanitizeServerInventorySnapshot(p.inventory || [], { includeEquipped: false })
-        .map(row => ({ id: row.id, category: SERVER_ITEM_CATEGORY.get(row.id) || '', name: SERVER_ITEM_NAME.get(row.id) || row.id }))
-    });
+      ...serverFastTravelLoad(p)
+    };
+    if (String(data.action || 'list') !== 'go') {
+      // Список городов приходит и тогда, когда идти пока нельзя: карта сразу
+      // говорит почему (blocked), а не только после клика по городу.
+      if (typeof ack === 'function') {
+        ack({
+          ok: destinations.length > 0,
+          from: p.locationId,
+          destinations,
+          blocked: destinations.length ? fastTravelReadiness(traveller) : '',
+          error: destinations.length ? '' : CONDUCTOR_ONLY_IN_CITIES
+        });
+      }
+      return;
+    }
+    // Ведёт только сам проводник: заказ издалека по городу не принимается.
+    if (!serverNearbyServiceActor(p, 'fastTravel')) return fail('Проводник должен быть рядом.');
+    const to = normalizeLocationId(data.to || '');
+    const refusal = fastTravelRefusal({ ...traveller, capitals, fromLocationId: p.locationId, toLocationId: to });
     if (refusal) return fail(refusal);
     const trip = destinations.find(row => row.locationId === to);
     const room = chooseRoomForLocation(to);
-    serverInventoryRemove(p, 'silver', trip.fee);
-    if (!transferPlayerToServerRoom(p, room, { entryKey: 'entryFromWorld', reason: 'fastTravel', message: `Перенос в ${trip.name} — ${trip.fee} марок.` })) {
-      serverInventoryAdd(p, 'silver', trip.fee);
-      return fail('Перенос сорвался: попробуйте ещё раз.');
+    if (!transferPlayerToServerRoom(p, room, { entryKey: 'entryFromWorld', reason: 'fastTravel', message: `Проводник привёл вас в ${trip.name}.` })) {
+      return fail('Дорога сорвалась: попробуйте ещё раз.');
     }
-    if (typeof ack === 'function') ack({ ok: true, to, fee: trip.fee, self: publicAuthoritativePlayerState(p) });
+    if (typeof ack === 'function') ack({ ok: true, to, self: publicAuthoritativePlayerState(p) });
   });
 
   // Сквозная проверка кампании (tools/check-kromka-live-journey) переезжает между местами

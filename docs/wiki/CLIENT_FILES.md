@@ -157,15 +157,17 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 **Рынок и сетевые обёртки** — `RoaAuctionCanvas` и `RoaAuctionNet` (рынок
 фракции: книга ордеров), `RoaAccountSinNet` (синь на счёте аккаунта, премиум,
 обменник синь↔марки), `RoaTerritoryNet` (принадлежность к фракции, сервисы
-базы и диспетчер переноса), `RoaTerritoryContractCanvas` (окно контракта у
+базы и проводник), `RoaTerritoryContractCanvas` (окно контракта у
 ворот Сердцевины), `RoaPveAreaNet` (PvE-области, «Искать следы»).
 
 **Карта мира и активности** — `RoaWorldOverviewCanvas` (окно «КАРТА МИРА»:
 подписи зон и мест, путь и строка пути под миникартой; плоская сетка —
-запасной вид; partial `.ZoneWindow` — окно зоны в духе Albion и компас),
+запасной вид; partial `.ZoneWindow` — окно зоны в духе Albion и компас;
+partial `.Travel` — карта у проводника: подсвеченные города-кнопки и условие дороги),
 `RoaWorldMap3D` (3D-вид: сцена `KromkaGlobalMap` поверх зоны в
 своём слое и своей камерой, сетка зон по `GET /api/world-map` на рельефе,
-флажок, выбор, путь и снимок местности зоны сверху для окна; `.Storm` —
+флажок, выбор, путь, подсветка городов проводника и снимок местности зоны
+сверху для окна; `.Storm` —
 полоса бури выброса на рельефе), partial `RoaWorldOverviewCanvas.Storm`
 (полоса и подпись бури в окне), `RoaWorldMapRoute` (путь по зонам через открытые ворота),
 `RoaMapWindowCanvas` (карта локации), `RoaWorldActivityCanvas`

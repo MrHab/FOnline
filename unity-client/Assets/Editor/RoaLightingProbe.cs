@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using RealmOfAshes.World;
@@ -70,12 +71,22 @@ namespace RealmOfAshes.EditorTools
                 Require(Mathf.Abs(authoredNoon.FogDensity - 0.0019f) < 0.00001f,
                         "авторская плотность тумана Старого Клима потеряна");
 
+                RequireBaseProfile(new LocationDefinition { Kind = "settlement", Safe = true }, "settlement_warm");
+                RequireBaseProfile(new LocationDefinition { Kind = "production", Safe = false }, "settlement_warm");
+                RequireBaseProfile(new LocationDefinition { Kind = "tutorial", Safe = true }, "settlement_warm");
+                RequireBaseProfile(new LocationDefinition { Kind = "zone", Safe = true }, "settlement_warm");
+                RequireBaseProfile(new LocationDefinition { Kind = "zone", Safe = false }, "hostile_cold");
+                RequireBaseProfile(new LocationDefinition { Kind = "lair", Safe = true }, "hostile_cold");
+                RequireBaseProfile(new LocationDefinition { Kind = "resource", Safe = true }, "resource_dust");
+                int safePlaces = CheckSafePlacesAreNotBlue();
+
                 CaptureProfilesIfRequested();
 
                 Debug.Log("[ДЕНЬ/НОЧЬ] готово: полдень sun=" + noon.SunIntensity.ToString("0.00")
                     + ", полночь moon=" + midnight.MoonIntensity.ToString("0.00")
                     + ", рассвет twilight=" + dawn.Twilight.ToString("0.00")
-                    + ", web " + fixedWeb.Hour.ToString("0.0") + "h daylight=" + fixedWeb.Daylight.ToString("0.00"));
+                    + ", web " + fixedWeb.Hour.ToString("0.0") + "h daylight=" + fixedWeb.Daylight.ToString("0.00")
+                    + ", безопасных мест без чужой синевы: " + safePlaces);
             }
             catch (Exception error)
             {
@@ -238,11 +249,11 @@ namespace RealmOfAshes.EditorTools
 
                 LocationDefinition[] locations =
                 {
-                    new LocationDefinition { Id = "probe_wasteland", Kind = "wasteland", Safe = true },
+                    new LocationDefinition { Id = "probe_yard", Kind = "tutorial", Safe = true },
                     new LocationDefinition { Id = "probe_resource", Kind = "resource", Safe = true },
                     new LocationDefinition { Id = "probe_hostile", Kind = "lair", Safe = false, EncounterOnly = true }
                 };
-                string[] profileIds = { "wasteland_neutral", "resource_dust", "hostile_cold" };
+                string[] profileIds = { "settlement_warm", "resource_dust", "hostile_cold" };
                 var profileMetrics = new CaptureMetrics[profileIds.Length];
                 for (int i = 0; i < locations.Length; i++)
                 {
@@ -274,8 +285,8 @@ namespace RealmOfAshes.EditorTools
                 }
                 Require(ColorDistance(profileMetrics[1].MeanColor, profileMetrics[2].MeanColor) > 0.075f,
                     "ресурсная и опасная зоны снова выглядят одинаково");
-                Require(ColorDistance(profileMetrics[0].MeanColor, profileMetrics[1].MeanColor) > 0.075f,
-                    "нейтральная пустошь не отличается от ресурсной зоны");
+                Require(ColorDistance(profileMetrics[0].MeanColor, profileMetrics[2].MeanColor) > 0.075f,
+                    "обжитое место не отличается от опасной зоны");
             }
             finally
             {
@@ -366,6 +377,57 @@ namespace RealmOfAshes.EditorTools
                 RenderTexture.active = previousActive;
                 if (readback != null) UnityEngine.Object.DestroyImmediate(readback);
             }
+        }
+
+        private static void RequireBaseProfile(LocationDefinition location, string expected)
+        {
+            string id = RoaWorldLighting.ResolveVisualProfile(location)?["id"]?.ToString();
+            Require(id == expected, "локация '" + location.Kind + "' (safe=" + location.Safe + ") взяла профиль "
+                + id + " вместо " + expected);
+        }
+
+        /// <summary>
+        /// Базовый профиль безопасного места не приносит синевы, которой нет в его
+        /// авторском visualProfile: свет, падающий на сцену, — солнце, рассеянный
+        /// свет неба, земли и заполняющий, — и оттенок земли в час web-клиента, если
+        /// локация не задала их сама, краснее, чем синее. Фон неба и дымка сюда не
+        /// входят: серо-голубое небо над пыльным местом — это атмосфера, а не
+        /// окраска. Так учебный двор каравана однажды целиком ушёл в синеву.
+        /// </summary>
+        private static int CheckSafePlacesAreNotBlue()
+        {
+            string folder = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "data", "locations"));
+            string[] keys = { "sunDay", "hemiSkyDay", "hemiGroundDay", "fillDay", "groundDay" };
+            int places = 0;
+            foreach (string file in Directory.GetFiles(folder, "*.json"))
+            {
+                LocationDefinition location;
+                try
+                {
+                    location = JsonConvert.DeserializeObject<LocationDefinition>(File.ReadAllText(file));
+                }
+                catch (Exception error)
+                {
+                    throw new InvalidOperationException(Path.GetFileName(file) + " не читается как локация: " + error.Message);
+                }
+                if (location == null || !location.Safe) continue;
+                JObject profile = RoaWorldLighting.ResolveVisualProfile(location);
+                RoaWorldLighting.LightingSample sample = RoaWorldLighting.Evaluate(RoaWorldLighting.WebFixedWorldHour, profile);
+                Color[] colors =
+                {
+                    sample.SunColor, sample.HemiSkyColor, sample.HemiGroundColor, sample.FillColor,
+                    Html(profile["groundDay"]?.ToString() ?? "#ffffff")
+                };
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    if (location.VisualProfile?[keys[i]] != null) continue;
+                    Require(colors[i].r >= colors[i].b, location.Id + ": базовый профиль " + profile["id"]
+                        + " красит " + keys[i] + " в синий #" + ColorUtility.ToHtmlStringRGB(colors[i]));
+                }
+                places++;
+            }
+            Require(places > 0, "в data/locations не нашлось безопасных мест");
+            return places;
         }
 
         private static float ColorDistance(Color a, Color b)

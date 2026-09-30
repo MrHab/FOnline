@@ -308,6 +308,7 @@ namespace RealmOfAshes.Game
                 if (visible)
                 {
                     _shiftText.text = line;
+                    ResizeShiftBanner();
                     // Красная — когда бьёт: буря над игроком вне укрытия (без бури в
                     // ответе — активная фаза, как раньше).
                     bool danger = here != null
@@ -319,6 +320,34 @@ namespace RealmOfAshes.Game
                 }
             }
             if (shift["storm"] == null && previous != "active" && _shiftPhase == "active") StartShiftWave();
+        }
+
+        /// <summary>
+        /// Баннер Сдвига вверху по центру, в единицах своей канвы 1600×900. Сдвиг
+        /// или буря вместе с разбуженными полями не помещаются в одну строку, а у
+        /// подписи обрезание, и хвост «ПОЛЯ АКТИВНЫ: …» пропадал или ужимался до
+        /// 15 пт. Поэтому баннер растёт до двух строк (около 55 ед. Noto Sans в
+        /// 20 пт). Верх поднят с 18 до 10: выросший баннер обязан кончиться выше
+        /// баннера режима зоны HUD (RoaHudCanvas.ZoneBannerTop) — это меряет
+        /// RoaMobileLayoutProbe.
+        /// </summary>
+        public const float ShiftBannerTop = 10f;
+        public const float ShiftBannerMinHeight = 48f;
+        public const float ShiftBannerMaxHeight = 70f;
+        private const float ShiftTextInsetX = 12f;
+        private const float ShiftTextInsetY = 5f;
+
+        private void ResizeShiftBanner()
+        {
+            RectTransform panel = _shiftPanel.rectTransform;
+            // Высота в полном кегле: с подгонкой preferredHeight считал бы уже
+            // ужатую строку, и баннер не рос бы никогда.
+            TextGenerationSettings settings = _shiftText.GetGenerationSettings(new Vector2(_shiftText.rectTransform.rect.width, 0f));
+            settings.resizeTextForBestFit = false;
+            settings.fontSize = _shiftText.resizeTextForBestFit ? _shiftText.resizeTextMaxSize : _shiftText.fontSize;
+            float lines = _shiftText.cachedTextGeneratorForLayout.GetPreferredHeight(_shiftText.text, settings) / _shiftText.pixelsPerUnit;
+            float needed = Mathf.Ceil(lines) + ShiftTextInsetY * 2f;
+            panel.sizeDelta = new Vector2(panel.sizeDelta.x, Mathf.Clamp(needed, ShiftBannerMinHeight, ShiftBannerMaxHeight));
         }
 
         private void Update()
@@ -555,15 +584,14 @@ namespace RealmOfAshes.Game
             scaler.referenceResolution = new Vector2(1600f, 900f);
             scaler.matchWidthOrHeight = 0.5f;
 
-            _shiftPanel = Panel(canvasObject.transform, "ShiftWarning", new Vector2(0.5f, 1f), new Vector2(0f, -18f), new Vector2(760f, 48f), new Color(0.42f, 0.28f, 0.08f, 0.9f));
+            _shiftPanel = Panel(canvasObject.transform, "ShiftWarning", new Vector2(0.5f, 1f), new Vector2(0f, -ShiftBannerTop), new Vector2(760f, ShiftBannerMinHeight), new Color(0.42f, 0.28f, 0.08f, 0.9f));
             _shiftText = Label(_shiftPanel.transform, "ShiftText", 20, TextAnchor.MiddleCenter, Color.white);
-            Stretch(_shiftText.rectTransform, 12f);
-            // Строка Noto Sans в 20 пт — 27 ед.: в рамке 48 − 2 × 12 = 24 ед. она
-            // не помещалась, и подгонка ужимала до 17 пт даже короткую строку.
-            _shiftText.rectTransform.offsetMin = new Vector2(12f, 6f);
-            _shiftText.rectTransform.offsetMax = new Vector2(-12f, -6f);
+            // Строка Noto Sans в 20 пт — 27–28 ед.: прежний отступ 12 со всех
+            // сторон оставлял ей 24 ед., и обрезание гасило её целиком.
+            Stretch(_shiftText.rectTransform, ShiftTextInsetX, ShiftTextInsetY);
             // Строка бури длиннее прежней (откуда, сколько км, через сколько):
-            // лучше чуть мельче, чем обрезанный хвост.
+            // баннер сперва растёт до двух строк (ResizeShiftBanner), а если не
+            // хватит и их — лучше чуть мельче, чем обрезанный хвост.
             _shiftText.resizeTextForBestFit = true;
             _shiftText.resizeTextMinSize = 15;
             _shiftText.resizeTextMaxSize = 20;
@@ -623,8 +651,13 @@ namespace RealmOfAshes.Game
 
         private static void Stretch(RectTransform rect, float inset)
         {
+            Stretch(rect, inset, inset);
+        }
+
+        private static void Stretch(RectTransform rect, float insetX, float insetY)
+        {
             rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
-            rect.offsetMin = new Vector2(inset, inset); rect.offsetMax = new Vector2(-inset, -inset);
+            rect.offsetMin = new Vector2(insetX, insetY); rect.offsetMax = new Vector2(-insetX, -insetY);
         }
     }
 }

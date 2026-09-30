@@ -96,6 +96,25 @@ function attack(account, event, target, self, extra) {
 
 const selfOf = account => ({ x: Number(account.join.self.x), z: Number(account.join.self.z) });
 
+/** Подойти к цели пакетами движения на reach метров; state {x, z} обновляется по ответам сервера. */
+async function approach(account, state, target, reach = 1.4) {
+  let seq = Number(state.seq || 1);
+  for (let frame = 0; frame < 60 && distance(state, target) > reach; frame += 1) {
+    const dx = target.x - state.x, dz = target.z - state.z, length = Math.hypot(dx, dz);
+    const result = await h.socketAck(account.socket, 'state', {
+      seq: seq++, x: target.x - dx / length * reach * 0.8, z: target.z - dz / length * reach * 0.8,
+      angle: Math.atan2(dx, dz), moving: true, turning: false, crouching: false,
+      vx: 5.5 * dx / length, vz: 5.5 * dz / length
+    });
+    const self = result?.self || result || {};
+    if (Number.isFinite(Number(self.x))) state.x = Number(self.x);
+    if (Number.isFinite(Number(self.z))) state.z = Number(self.z);
+    await wait(58);
+  }
+  state.seq = seq;
+  return distance(state, target) <= reach + 0.6;
+}
+
 async function empty(account, view, bag) {
   const opened = await h.socketAck(account.socket, 'openWorldContainer', { containerId: bag.id });
   assert(opened.ok && opened.container?.lootBag, `${bag.id} opens: ` + JSON.stringify(opened).slice(0, 300));
@@ -168,6 +187,9 @@ async function empty(account, view, bag) {
     await h.connectAndJoin(accounts.harvest);
     const victim = selfOf(accounts.harvest);
     const hunter = selfOf(accounts.trade);
+    // Игроки не стоят друг в друге: охотник подходит к жертве на длину кирки.
+    assert(await approach(accounts.trade, hunter, victim, 1.6), 'the hunter reaches the victim: '
+      + JSON.stringify({ hunter, victim }));
     let hit = null;
     for (let attempt = 0; attempt < 12 && !hit?.killed; attempt += 1) {
       hit = await attack(accounts.trade, 'playerHit', victim, hunter, { targetId: accounts.harvest.socket.id });

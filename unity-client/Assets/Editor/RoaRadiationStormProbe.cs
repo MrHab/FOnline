@@ -12,7 +12,7 @@ namespace RealmOfAshes.EditorTools
     /// параметрам сервера, поэтому формула обязана совпадать с серверной до
     /// метров: снимок бури и ожидаемые выборки ниже получены из
     /// src/server/radiation-storm.js (shift_7, зона z_08_06). Дальше — рамка
-    /// сектора (север — −Z, как северные ворота), оси бури в сцене, строка
+    /// сектора (север — +Z, как северные ворота и компас), оси бури в сцене, строка
     /// панели, слой карты и подпись полосы на карте мира.
     /// </summary>
     public static class RoaRadiationStormProbe
@@ -20,7 +20,7 @@ namespace RealmOfAshes.EditorTools
         private const string Fixture = @"{'id':'shift_7','strength':1,'phase':'active','dirX':-0.940999,'dirY':-0.338409,'headingDeg':199.78,'widthKm':60,'waveKm':10,
             'waves':[{'amp':6,'k':0.041888,'lead':5.469,'trail':5.297},{'amp':3,'k':0.098175,'lead':1.195,'trail':1.023},{'amp':1,'k':0.232711,'lead':3.204,'trail':1.279}],
             'lead0Km':-469.1024,'speedKmPerSec':0.299501,'warningStartAt':54000000,'activeStartAt':54600000,'activeEndAt':56400000,'afterglowEndAt':57600000,
-            'bounds':{'minX':0,'minY':0,'maxX':380,'maxY':300},'frame':{'ox':170,'oy':130,'kx':0.0625,'kz':0.0625}}";
+            'bounds':{'minX':0,'minY':0,'maxX':380,'maxY':300},'frame':{'ox':170,'oy':130,'kx':0.0625,'kz':-0.0625}}";
 
         // x, y, серверное время, под бурей, сила, км до фронта, мс до фронта, передняя линия — из сервера.
         private static readonly (double x, double y, double now, bool inside, float intensity, double ahead, double eta, double line)[] Expected =
@@ -50,15 +50,15 @@ namespace RealmOfAshes.EditorTools
                 Require(Math.Abs(sample.EtaMs - row.eta) < 2d, where + ": ETA " + sample.EtaMs + " vs server " + row.eta);
             }
 
-            // Рамка сектора z_08_06: центр сцены — центр клетки, север — −Z.
+            // Рамка сектора z_08_06: центр сцены — центр клетки, север — +Z.
             RoaRadiationStormFrame frame = RoaRadiationStormFrame.Parse(storm["frame"] as JObject);
             Require(frame.Valid, "The sector frame parses");
             Vector2 centre = frame.LocalToGlobal(0f, 0f);
             Require(Mathf.Abs(centre.x - 170f) < 1e-3f && Mathf.Abs(centre.y - 130f) < 1e-3f, "The scene centre is the sector centre: " + centre);
-            Vector2 northGate = frame.LocalToGlobal(0f, -150f);
-            Require(northGate.y < centre.y - 9f, "The north gate (small tz, −Z) lies on the north side of the sector on the map: " + northGate);
+            Vector2 northGate = frame.LocalToGlobal(0f, 150f);
+            Require(northGate.y < centre.y - 9f, "The north gate (large tz, +Z) lies on the north side of the sector on the map: " + northGate);
             Vector3 back = frame.GlobalToLocal(northGate.x, northGate.y);
-            Require(Mathf.Abs(back.z + 150f) < 1e-2f && Mathf.Abs(back.x) < 1e-2f, "Scene ↔ map conversion round-trips: " + back);
+            Require(Mathf.Abs(back.z - 150f) < 1e-2f && Mathf.Abs(back.x) < 1e-2f, "Scene ↔ map conversion round-trips: " + back);
 
             // Оси бури в сцене: шаг вдоль dl идёт по ходу бури на kmPerMetre за метр.
             var go = new GameObject("RadiationStormProbe");
@@ -111,7 +111,7 @@ namespace RealmOfAshes.EditorTools
             string label = RoaWorldOverviewCanvas.StormLabelText(path, path.SampleAt(170, 130, 55200000));
             Require(label.StartsWith("БУРЯ С ") && label.Contains("сила 1") && label.Contains("до вас 4 мин"), "The world map names the storm and when it reaches the player: " + label);
 
-            Debug.Log("[RADIATION STORM] OK: client storm path matches the server at 6 points, sector frame north is −Z like the gates, scene axes follow the storm, shift line/map overlay/world-map label describe the storm at the player.");
+            Debug.Log("[RADIATION STORM] OK: client storm path matches the server at 6 points, sector frame north is +Z like the gates, scene axes follow the storm, shift line/map overlay/world-map label describe the storm at the player.");
         }
 
         private static void Require(bool condition, string message)

@@ -114,7 +114,7 @@
           "id": "contour-mute-01",
           "type": "mute",
           "x": 14,
-          "z": 8,
+          "z": -6,
           "radius": 2.8,
           "dischargeMs": 5000,
           "training": false,

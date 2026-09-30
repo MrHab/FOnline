@@ -186,7 +186,7 @@ async function leaveByEdge(account, state, zoneId, tileWidth, tileDepth) {
     const clerkState = { x: Number(clerk.join.self?.x ?? clerk.join.x ?? 0), z: Number(clerk.join.self?.z ?? clerk.join.z ?? 0) };
     // Улица от площади к северным воротам свободна по построению: по ней и выходим.
     const gate = zoneWalk.cityWorld('settlement', northPortal);
-    assert(await zoneWalk.driveTo(h, clerk, clerkState, gate.x, gate.z + 2, 700), 'the player walks to the north gate of Keys: ' + JSON.stringify(clerkState));
+    assert(await zoneWalk.driveTo(h, clerk, clerkState, gate.x, gate.z - 2, 700), 'the player walks to the north gate of Keys: ' + JSON.stringify(clerkState));
     const faraway = await changeLocation(clerk, { locationId: 'wasteland' });
     assert.equal(faraway.ok, false, 'the gate of a city does not carry the player across the world');
     const outOfKeys = await changeLocation(clerk, { locationId: keysNorth.id });

@@ -212,10 +212,8 @@ namespace RealmOfAshes.Game
                 _previewMargin = 0f;
                 _preview.texture = baked;
                 _preview.color = Color.white;
-                // Снимок зоны снят сверху с +Z вверху, а север сектора — −Z (там северные
-                // ворота): кадр переворачивается, чтобы север был вверху, как у ворот,
-                // мест, флажка и бури.
-                _preview.uvRect = new Rect(0f, 1f, 1f, -1f);
+                // Снимок зоны снят сверху с +Z (севером) вверху — как ворота, места, флажок и буря.
+                _preview.uvRect = new Rect(0f, 0f, 1f, 1f);
             }
             else
             {

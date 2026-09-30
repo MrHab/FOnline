@@ -175,16 +175,16 @@ function createRadiationStorm(cycle, config = {}, bounds = {}) {
 
 // Рамка сцены: как точка (x, z) сцены ложится на карту. gx = ox + x·kx,
 // gy = oy + z·kz. Сектор (зона 320 м, город 160 м) занимает свою клетку
-// графа 20×20 км; север сектора — малые tz, то есть −Z (так стоят ворота и так
-// сервер переводит через край), поэтому kz > 0. Место — точка карты со своей
-// Unity-сценой (север = +Z), в масштабе зоны.
+// графа 20×20 км. Север любой сцены — +Z (там северные ворота, туда смотрит
+// компас), а y карты растёт к югу, поэтому kz < 0. Место — точка карты со своей
+// Unity-сценой, в масштабе зоны.
 function sectorFrame(col, row, zoneKm = 20, widthM = 320, depthM = 320) {
   const size = Math.max(1, Number(zoneKm) || 20);
   return {
     ox: round((Number(col) + 0.5) * size, 4),
     oy: round((Number(row) + 0.5) * size, 4),
     kx: round(size / Math.max(1, Number(widthM) || 320), 6),
-    kz: round(size / Math.max(1, Number(depthM) || 320), 6)
+    kz: round(-size / Math.max(1, Number(depthM) || 320), 6)
   };
 }
 

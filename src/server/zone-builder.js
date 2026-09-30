@@ -9,7 +9,10 @@
 const crypto = require('node:crypto');
 const { SLOT_METRES, chunkFits, rotatePoint, rotatedHalfExtents } = require('./zone-chunks');
 
-const BUILDER_VERSION = 4;
+const BUILDER_VERSION = 5;
+// Север зоны — +Z (большие tz), как у компаса, миникарты и карты мира; восток — +X.
+// Метку несёт каждое определение: закреплённая зона без неё собрана ещё зеркально.
+const COMPASS_NORTH = '+z';
 const TILE = 2;
 const TILES = 160;
 const HALF_METRES = TILES * TILE / 2;
@@ -23,9 +26,10 @@ const WALK_MIN = 2;
 const WALK_MAX = TILES - 3;
 const KEY_POINT_CLEAR_METRES = 6;
 const SPAWN_CLEAR_METRES = 40;
+// `near` — ворота у малых координат оси: запад (−X) и юг (−Z).
 const DIRECTIONS = Object.freeze({
-  north: { axis: 'z', near: true, targetEntry: 'entryFromSouth', entry: 'entryFromNorth' },
-  south: { axis: 'z', near: false, targetEntry: 'entryFromNorth', entry: 'entryFromSouth' },
+  north: { axis: 'z', near: false, targetEntry: 'entryFromSouth', entry: 'entryFromNorth' },
+  south: { axis: 'z', near: true, targetEntry: 'entryFromNorth', entry: 'entryFromSouth' },
   west: { axis: 'x', near: true, targetEntry: 'entryFromEast', entry: 'entryFromWest' },
   east: { axis: 'x', near: false, targetEntry: 'entryFromWest', entry: 'entryFromEast' }
 });
@@ -119,7 +123,10 @@ function normalizeRecipe(recipe = {}) {
 
 function gateGeometry(gate) {
   const dir = DIRECTIONS[gate.dir];
-  const along = clamp(Math.round(gate.along * (TILES - 1)), 12, TILES - 13);
+  // `along` — доля стороны клетки карты мира: у северной и южной — к востоку (tx),
+  // у западной и восточной — к югу, а в зоне юг — малые tz.
+  const share = dir.axis === 'x' ? 1 - gate.along : gate.along;
+  const along = clamp(Math.round(share * (TILES - 1)), 12, TILES - 13);
   const edge = dir.near ? GATE_TRIGGER_TILE : TILES - 1 - GATE_TRIGGER_TILE;
   const inner = dir.near ? GATE_ENTRY_TILE : TILES - 1 - GATE_ENTRY_TILE;
   const trigger = dir.axis === 'z' ? { tx: along, tz: edge } : { tx: edge, tz: along };
@@ -128,8 +135,9 @@ function gateGeometry(gate) {
 }
 
 function placeGeometry(place, hub, taken) {
+  // u, v — доли клетки карты мира, где v растёт к югу, а в зоне юг — малые tz.
   let tx = clamp(Math.round(place.u * (TILES - 1)), 24, TILES - 25);
-  let tz = clamp(Math.round(place.v * (TILES - 1)), 24, TILES - 25);
+  let tz = clamp(Math.round((1 - place.v) * (TILES - 1)), 24, TILES - 25);
   // Портал места не садится на центр зоны, на ворота и на другой портал.
   for (let guard = 0; guard < 8 && taken.some(p => Math.hypot(p.tx - tx, p.tz - tz) < 14); guard++) {
     tx = clamp(tx + 14, 24, TILES - 25);
@@ -467,7 +475,7 @@ function buildZone(recipeInput, catalog) {
   for (const place of places) entries[place.entryKey] = { ...place.entry };
   const definition = {
     schema: 'realm.location.v1', version: 1, id: recipe.zoneId, name: recipe.name, seed: recipe.seed,
-    kind: 'zone', generated: true, builderVersion: BUILDER_VERSION, revision: '',
+    kind: 'zone', generated: true, builderVersion: BUILDER_VERSION, compassNorth: COMPASS_NORTH, revision: '',
     safe: recipe.mode === 'peaceful', pvpMode: recipe.mode, noRespawn: true, enemyCap: 0, spawnCount: 0,
     allowGlobalMapExit: false, noGlobalMapEntry: true, runtimeMode: 'generated', macroRegion: recipe.biome,
     ground: { preset: recipe.groundPreset }, map: { width: TILES * TILE, depth: TILES * TILE, origin: 'center' },
@@ -498,6 +506,6 @@ function buildZone(recipeInput, catalog) {
 }
 
 module.exports = {
-  BUILDER_VERSION, DIRECTIONS, GATE_ENTRY_TILE, GATE_TRIGGER_TILE, TILES, WALK_MAX, WALK_MIN,
+  BUILDER_VERSION, COMPASS_NORTH, DIRECTIONS, GATE_ENTRY_TILE, GATE_TRIGGER_TILE, TILES, WALK_MAX, WALK_MIN,
   buildZone, normalizeRecipe, rasterize, reachable, zoneRevision
 };

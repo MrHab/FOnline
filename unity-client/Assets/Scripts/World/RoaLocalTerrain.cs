@@ -27,6 +27,11 @@ namespace RealmOfAshes.World
         private Material _material;
         private Texture2D _albedo;
         private Texture2D _microDetail;
+        private Texture2D _surfaceMask;
+        // Маска поверхности на время покраски: R — тропа, G — гарь, B — вода (шейдер земли).
+        private Color32[] _maskPixels;
+        private static readonly int SurfaceMaskId = Shader.PropertyToID("_SurfaceMask");
+        private static readonly int MacroMeanId = Shader.PropertyToID("_MacroMean");
         private int _textureSize;
         private float _visualWidth;
         private float _visualDepth;
@@ -45,6 +50,9 @@ namespace RealmOfAshes.World
         public int DetailVertexCount { get { return _groundDressing != null ? _groundDressing.VertexCount : 0; } }
         public int MicroDetailTextureSize { get { return _microDetail != null ? _microDetail.width : 0; } }
         public int AlbedoTextureSize { get { return _albedo != null ? _albedo.width : 0; } }
+        /// <summary>Земля нарисована шейдером Kromka Ground (бесшовные наборы по пресету грунта).</summary>
+        public bool UsesGroundTextures { get { return _material != null && _material.HasProperty(SurfaceMaskId); } }
+        public Texture2D SurfaceMaskTexture { get { return _surfaceMask; } }
         public int PathConnectionCount { get; private set; }
         public bool UsesAuthoredEnvironment { get { return _groundDressing != null && _groundDressing.UsesAuthoredPrefabs; } }
         public int AuthoredEnvironmentPrefabCount { get { return _groundDressing != null ? _groundDressing.AuthoredPrefabCount : 0; } }
@@ -81,7 +89,10 @@ namespace RealmOfAshes.World
             _groundDressing = gameObject.GetComponent<RoaGroundDressing>();
             if (_groundDressing == null) _groundDressing = gameObject.AddComponent<RoaGroundDressing>();
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            _material = RoaGroundTextures.CreateMaterial(location?.Ground?.Preset,
+                "RuntimeLocalGround:" + (location?.Id ?? "unknown"), Application.isMobilePlatform);
+            if (_material != null) renderer.sharedMaterial = _material;
+            Shader shader = _material != null ? null : (Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
             if (shader != null)
             {
                 _material = new Material(shader) { name = "RuntimeLocalGround:" + (location?.Id ?? "unknown") };
@@ -122,13 +133,19 @@ namespace RealmOfAshes.World
             // Материал — копия авторского: сохраняются шейдер и его настройки, а
             // цвет уходит в белый, иначе URP помножил бы запечённое альбедо на
             // заливку региона и погасил бы его.
-            Material source = target.sharedMaterial;
-            Shader shader = source != null
-                ? source.shader
-                : (Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
-            if (shader == null) return;
-            _material = source != null ? new Material(source) : new Material(shader);
-            _material.name = "AuthoredLocalGround:" + (location?.Id ?? "unknown");
+            // Шейдер земли с бесшовными наборами, если он есть; иначе — копия авторского.
+            _material = RoaGroundTextures.CreateMaterial(location?.Ground?.Preset,
+                "AuthoredLocalGround:" + (location?.Id ?? "unknown"), Application.isMobilePlatform);
+            if (_material == null)
+            {
+                Material source = target.sharedMaterial;
+                Shader shader = source != null
+                    ? source.shader
+                    : (Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+                if (shader == null) return;
+                _material = source != null ? new Material(source) : new Material(shader);
+                _material.name = "AuthoredLocalGround:" + (location?.Id ?? "unknown");
+            }
             SetMaterialColor(_material, Color.white);
             if (_material.HasProperty("_Smoothness")) _material.SetFloat("_Smoothness", 0.015f);
             if (_material.HasProperty("_Glossiness")) _material.SetFloat("_Glossiness", 0.015f);
@@ -172,10 +189,16 @@ namespace RealmOfAshes.World
             }
 
             Color32[] pixels = BuildBasePixels();
+            bool withMask = _material != null && _material.HasProperty(SurfaceMaskId);
+            _maskPixels = withMask ? new Color32[pixels.Length] : null;
             if (IsSettlement) PaintSettlementLayers(pixels);
             else PaintAuthoritativeTiles(pixels, stateMap, mapWidth, mapDepth);
             PaintAmbientAge(pixels);
-            if (_mirrorAlbedoX || _mirrorAlbedoZ) MirrorPixels(pixels, _textureSize, _mirrorAlbedoX, _mirrorAlbedoZ);
+            if (_mirrorAlbedoX || _mirrorAlbedoZ)
+            {
+                MirrorPixels(pixels, _textureSize, _mirrorAlbedoX, _mirrorAlbedoZ);
+                if (_maskPixels != null) MirrorPixels(_maskPixels, _textureSize, _mirrorAlbedoX, _mirrorAlbedoZ);
+            }
 
             _albedo.SetPixels32(pixels);
             _albedo.Apply(true, false);
@@ -183,8 +206,46 @@ namespace RealmOfAshes.World
             {
                 if (_material.HasProperty("_BaseMap")) _material.SetTexture("_BaseMap", _albedo);
                 if (_material.HasProperty("_MainTex")) _material.SetTexture("_MainTex", _albedo);
+                if (_maskPixels != null)
+                {
+                    UploadSurfaceMask();
+                    _material.SetTexture(SurfaceMaskId, _surfaceMask);
+                    _material.SetColor(MacroMeanId, MeanColor(pixels));
+                }
             }
+            _maskPixels = null;
             return true;
+        }
+
+        private void UploadSurfaceMask()
+        {
+            if (_surfaceMask == null || _surfaceMask.width != _textureSize)
+            {
+                DestroyRuntime(_surfaceMask);
+                _surfaceMask = new Texture2D(_textureSize, _textureSize, TextureFormat.RGBA32, true, true)
+                {
+                    name = "RuntimeLocalGroundSurfaceMask:" + (_location?.Id ?? "unknown"),
+                    filterMode = FilterMode.Bilinear,
+                    wrapMode = TextureWrapMode.Clamp
+                };
+            }
+            for (int i = 0; i < _maskPixels.Length; i++) _maskPixels[i].a = 255;
+            _surfaceMask.SetPixels32(_maskPixels);
+            _surfaceMask.Apply(true, false);
+        }
+
+        /// <summary>Средний цвет запечённой карты: шейдер берёт от неё только отклонения.</summary>
+        private static Color MeanColor(Color32[] pixels)
+        {
+            long r = 0, g = 0, b = 0;
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                r += pixels[i].r;
+                g += pixels[i].g;
+                b += pixels[i].b;
+            }
+            float n = Mathf.Max(1, pixels.Length) * 255f;
+            return new Color(r / n, g / n, b / n, 1f);
         }
 
         /// <summary>
@@ -393,7 +454,7 @@ namespace RealmOfAshes.World
                         PaintEllipse(pixels, center.x, center.z, 2.36f, 1.84f, rotation + 0.34f,
                             Hex(0x695334), 0.42f, tx * 97 + tz * 193);
                         PaintEllipse(pixels, center.x, center.z, 1.88f, 1.48f, rotation,
-                            Hex(0x1c5361), 0.82f, tx * 101 + tz * 197);
+                            Hex(0x1c5361), 0.82f, tx * 101 + tz * 197, MaskWater);
                     }
                     else if (type == Path)
                     {
@@ -402,7 +463,7 @@ namespace RealmOfAshes.World
                     else if (type == Dark)
                     {
                         PaintEllipse(pixels, center.x, center.z, 2.12f, 1.72f, rotation,
-                            Hex(0x33261b), 0.38f, tx * 107 + tz * 211);
+                            Hex(0x33261b), 0.38f, tx * 107 + tz * 211, MaskScorch);
                     }
 
                     float h = Hash01(tx, tz, locationSeed);
@@ -429,7 +490,7 @@ namespace RealmOfAshes.World
             PaintEllipse(pixels, center.x, center.z, 2.46f, 2.18f, 0f,
                 Hex(0x73583a), 0.16f, tx * 101 + tz * 197);
             PaintEllipse(pixels, center.x, center.z, 2.18f, 1.92f, 0f,
-                Hex(0xb99764), 0.34f, tx * 103 + tz * 199);
+                Hex(0xb99764), 0.34f, tx * 103 + tz * 199, MaskPath);
 
             if (TileType(stateMap, tx + 1, tz, mapWidth, mapDepth) == Path)
                 PaintPathConnection(pixels, center,
@@ -445,7 +506,7 @@ namespace RealmOfAshes.World
             PaintLine(pixels, from.x, from.z, to.x, to.z, 1.12f,
                 Hex(0x705538), 0.18f);
             PaintLine(pixels, from.x, from.z, to.x, to.z, 0.88f,
-                Hex(0xb79561), 0.42f);
+                Hex(0xb79561), 0.42f, MaskPath);
             Vector2 direction = new Vector2(to.x - from.x, to.z - from.z).normalized;
             Vector2 side = new Vector2(-direction.y, direction.x) * 0.29f;
             PaintLine(pixels, from.x + side.x, from.z + side.y,
@@ -594,8 +655,12 @@ namespace RealmOfAshes.World
         }
 
 
+        private const int MaskPath = 0;
+        private const int MaskScorch = 1;
+        private const int MaskWater = 2;
+
         private void PaintLine(Color32[] pixels, float x1, float z1, float x2, float z2,
-            float width, Color32 color, float opacity)
+            float width, Color32 color, float opacity, int maskChannel = -1)
         {
             float distance = Vector2.Distance(new Vector2(x1, z1), new Vector2(x2, z2));
             int steps = Mathf.Max(2, Mathf.CeilToInt(distance / Mathf.Max(0.04f, width)));
@@ -603,13 +668,19 @@ namespace RealmOfAshes.World
             {
                 float t = i / (float)steps;
                 PaintEllipse(pixels, Mathf.Lerp(x1, x2, t), Mathf.Lerp(z1, z2, t),
-                    width * 2f, width * 2f, 0f, color, opacity, i + steps * 17);
+                    width * 2f, width * 2f, 0f, color, opacity, i + steps * 17, maskChannel);
             }
         }
 
+        /// <summary>
+        /// Пятно на запечённой карте. maskChannel ≥ 0 — то же пятно пишется в маску
+        /// поверхности (тропа, гарь, вода) покрытием, а не прозрачностью.
+        /// </summary>
         private void PaintEllipse(Color32[] pixels, float centerX, float centerZ,
-            float sizeX, float sizeZ, float rotation, Color32 color, float opacity, int seed)
+            float sizeX, float sizeZ, float rotation, Color32 color, float opacity, int seed,
+            int maskChannel = -1)
         {
+            bool mask = maskChannel >= 0 && _maskPixels != null;
             if (sizeX <= 0.001f || sizeZ <= 0.001f || opacity <= 0.001f) return;
             float pixelsPerX = (_textureSize - 1f) / _visualWidth;
             float pixelsPerZ = (_textureSize - 1f) / _visualDepth;
@@ -640,8 +711,19 @@ namespace RealmOfAshes.World
                     if (coverage <= 0f) continue;
                     int index = py * _textureSize + px;
                     pixels[index] = Lerp(pixels[index], color, opacity * coverage);
+                    if (mask) RaiseMask(index, maskChannel, coverage);
                 }
             }
+        }
+
+        private void RaiseMask(int index, int channel, float coverage)
+        {
+            byte value = (byte)Mathf.RoundToInt(Mathf.Clamp01(coverage) * 255f);
+            Color32 current = _maskPixels[index];
+            if (channel == MaskPath) current.r = (byte)Mathf.Max(current.r, value);
+            else if (channel == MaskScorch) current.g = (byte)Mathf.Max(current.g, value);
+            else current.b = (byte)Mathf.Max(current.b, value);
+            _maskPixels[index] = current;
         }
 
         private Mesh BuildReliefMesh(float width, float depth, int segments, long seedValue, bool relief)
@@ -814,10 +896,12 @@ namespace RealmOfAshes.World
         {
             DestroyRuntime(_albedo);
             DestroyRuntime(_microDetail);
+            DestroyRuntime(_surfaceMask);
             DestroyRuntime(_material);
             DestroyRuntime(_mesh);
             _albedo = null;
             _microDetail = null;
+            _surfaceMask = null;
             _material = null;
             _mesh = null;
         }

@@ -428,7 +428,7 @@ async function connect() {
   northGate.title = String(northGate.label || '').replace(/^Выход: /, '');
   // Город — сектор целиком: от площади идём улицей к северным воротам, в их портал.
   const keysTiles = Number(keysDefinition.map?.width || 160) / 2;
-  await moveNear((Number(northGate.tx) - keysTiles / 2 + 0.5) * 2, (Number(northGate.tz) - keysTiles / 2 + 0.5) * 2 + 2, 2.5, 'Keys north gate portal');
+  await moveNear((Number(northGate.tx) - keysTiles / 2 + 0.5) * 2, (Number(northGate.tz) - keysTiles / 2 + 0.5) * 2 - 2, 2.5, 'Keys north gate portal');
   enemies = [];
   update(assertOk(await ack(socket, 'changeLocation', { locationId: northGate.to, entryKey: northGate.entryKey || '' }),
     'walk out of Keys into the neighbouring sector'));

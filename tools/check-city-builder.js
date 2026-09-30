@@ -58,11 +58,13 @@ for (const city of cities) {
     const entry = built[{ north: 'entryFromNorth', south: 'entryFromSouth', west: 'entryFromWest', east: 'entryFromEast' }[side]];
     assert(entry, `${city.locationId}: no entry point for arrivals from the ${side}`);
     const depth = side === 'north' || side === 'south' ? entry.tz : entry.tx;
-    const outside = side === 'north' || side === 'west' ? depth < CENTRE - WALL_HALF : depth > CENTRE + WALL_HALF;
+    // Север — +Z (большие tz), восток — +X.
+    const outside = side === 'south' || side === 'west' ? depth < CENTRE - WALL_HALF : depth > CENTRE + WALL_HALF;
+    assert.equal(depth > CENTRE, side === 'north' || side === 'east', `${city.locationId}: the ${side} arrival stands on its own side`);
     assert(!outside, `${city.locationId}: the ${side} arrival stands outside the city wall`);
     // Проём ворот: в створе стены секций нет.
     const gateTile = { tx: side === 'west' ? CENTRE - WALL_HALF : side === 'east' ? CENTRE + WALL_HALF : CENTRE,
-                       tz: side === 'north' ? CENTRE - WALL_HALF : side === 'south' ? CENTRE + WALL_HALF : CENTRE };
+                       tz: side === 'north' ? CENTRE + WALL_HALF : side === 'south' ? CENTRE - WALL_HALF : CENTRE };
     const blocked = walls.some(object => Math.hypot(object.position.x - (gateTile.tx - CENTRE + 0.5) * 2,
       object.position.z - (gateTile.tz - CENTRE + 0.5) * 2) < 4);
     assert(!blocked, `${city.locationId}: the ${side} gate is walled up`);

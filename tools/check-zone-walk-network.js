@@ -61,8 +61,9 @@ const getJson = route => new Promise((resolve, reject) => {
 (async () => {
   await h.bootstrapCharacters(accounts);
   const gatePoint = world(cityGate);
-  placeInZone('untargeted', home.id, { x: gatePoint.x, z: gatePoint.z - 2 });
-  placeInZone('harvest', 'settlement', { x: 0, z: -22 });
+  // Южные ворота — у малых z: шаг внутрь зоны — к +Z.
+  placeInZone('untargeted', home.id, { x: gatePoint.x, z: gatePoint.z + 2 });
+  placeInZone('harvest', 'settlement', zoneWalk.cityWorld('settlement', zoneWalk.cityDefinition('settlement').spawn));
   const portal = outpostDef.transitions.find(row => row.to === 'roadOutpost');
   placeInZone('target', outpostZone.id, world(portal));
   // Ходок краем стоит у точки входа восточных ворот: коридор от неё к краю свободен.
@@ -169,7 +170,7 @@ const getJson = route => new Promise((resolve, reject) => {
     const earlyCity = await h.socketAck(walker.socket, 'changeLocation', { locationId: home.id });
     assert.equal(earlyCity.ok, false, 'the zone opens only from the gate portal');
     const gatePortal = zoneWalk.cityWorld('settlement', northGate);
-    assert(await driveTo(walker, state, gatePortal.x, gatePortal.z + 2, 420), 'walked to the north gate of the city: ' + JSON.stringify(state));
+    assert(await driveTo(walker, state, gatePortal.x, gatePortal.z - 2, 420), 'walked to the north gate of the city: ' + JSON.stringify(state));
     const back = await h.socketAck(walker.socket, 'changeLocation', { locationId: home.id });
     assert(back.ok && back.locationId === home.id, 'the north gate portal leads back into the zone: ' + JSON.stringify(back).slice(0, 300));
     const homeLanding = world(homeDef.entryFromSouth);

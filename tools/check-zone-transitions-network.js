@@ -63,17 +63,17 @@ const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const inBand = (def, point, side) => {
   const d = tiles(def);
   const tile = tileOf(def, point);
-  if (side === 'north') return tile.tz <= BAND;
-  if (side === 'south') return tile.tz >= d.h - 1 - BAND;
+  if (side === 'north') return tile.tz >= d.h - 1 - BAND;
+  if (side === 'south') return tile.tz <= BAND;
   if (side === 'west') return tile.tx <= BAND;
   return tile.tx >= d.w - 1 - BAND;
 };
-/** Точка полосы стороны `side` на доле `along` её длины (крайняя клетка). */
+/** Точка полосы стороны `side` на доле `along` её длины (крайняя клетка). Север — +Z. */
 function bandPoint(def, side, along) {
   const halfW = Number(def.map.width) / 2;
   const halfH = Number(def.map.depth) / 2;
-  if (side === 'north') return { x: -halfW + along * halfW * 2, z: -halfH + 1 };
-  if (side === 'south') return { x: -halfW + along * halfW * 2, z: halfH - 1 };
+  if (side === 'north') return { x: -halfW + along * halfW * 2, z: halfH - 1 };
+  if (side === 'south') return { x: -halfW + along * halfW * 2, z: -halfH + 1 };
   if (side === 'west') return { x: -halfW + 1, z: -halfH + along * halfH * 2 };
   return { x: halfW - 1, z: -halfH + along * halfH * 2 };
 }
@@ -82,8 +82,8 @@ function expectedArrival(def, side, crossedAt) {
   const halfW = Number(def.map.width) / 2;
   const halfH = Number(def.map.depth) / 2;
   const clampAlong = (value, half) => Math.max(-half + INSET_M, Math.min(half - INSET_M, value));
-  if (side === 'north') return { x: clampAlong(crossedAt.x, halfW), z: halfH - INSET_M };
-  if (side === 'south') return { x: clampAlong(crossedAt.x, halfW), z: -halfH + INSET_M };
+  if (side === 'north') return { x: clampAlong(crossedAt.x, halfW), z: -halfH + INSET_M };
+  if (side === 'south') return { x: clampAlong(crossedAt.x, halfW), z: halfH - INSET_M };
   if (side === 'west') return { x: halfW - INSET_M, z: clampAlong(crossedAt.z, halfH) };
   return { x: -halfW + INSET_M, z: clampAlong(crossedAt.z, halfH) };
 }

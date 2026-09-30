@@ -11,7 +11,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { SIDES, zoneById, zoneLocationId, zoneOfLocation, zoneRecipe } = require('./zone-graph');
 const { loadZoneCatalog } = require('./zone-chunks');
-const { TILES, buildZone } = require('./zone-builder');
+const { COMPASS_NORTH, TILES, buildZone } = require('./zone-builder');
 const { buildCity, cityStationObjects, withoutBuiltPlotFences } = require('./city-builder');
 const { designateFiberNodes } = require('./kromka-tiers');
 
@@ -21,13 +21,13 @@ const SIDE_ENTRY = Object.freeze({ north: 'entryFromNorth', south: 'entryFromSou
 // города, но за выходной полосой (2 тайла), иначе его тут же вынесет обратно.
 const CITY_ENTRY_INSET = 5;
 
-/** Точки входа города по сторонам: север — малые tz, запад — малые tx. */
+/** Точки входа города по сторонам: север — большие tz (+Z), запад — малые tx. */
 function cityEntryPoints(bounds = {}) {
   const midX = Math.round((Number(bounds.minX || 0) + Number(bounds.maxX || 0)) / 2);
   const midZ = Math.round((Number(bounds.minZ || 0) + Number(bounds.maxZ || 0)) / 2);
   return {
-    entryFromNorth: { tx: midX, tz: Math.min(midZ, Number(bounds.minZ || 0) + CITY_ENTRY_INSET) },
-    entryFromSouth: { tx: midX, tz: Math.max(midZ, Number(bounds.maxZ || 0) - CITY_ENTRY_INSET) },
+    entryFromNorth: { tx: midX, tz: Math.max(midZ, Number(bounds.maxZ || 0) - CITY_ENTRY_INSET) },
+    entryFromSouth: { tx: midX, tz: Math.min(midZ, Number(bounds.minZ || 0) + CITY_ENTRY_INSET) },
     entryFromWest: { tx: Math.min(midX, Number(bounds.minX || 0) + CITY_ENTRY_INSET), tz: midZ },
     entryFromEast: { tx: Math.max(midX, Number(bounds.maxX || 0) - CITY_ENTRY_INSET), tz: midZ }
   };
@@ -42,11 +42,16 @@ function frozenZoneProblems(graph, definition) {
   const zone = zoneById(graph, definition?.id);
   if (!zone) return [`${definition?.id}: not a zone of the graph`];
   const problems = [];
+  // Зона, собранная до «север = +Z», — зеркало карты мира: её ворота ведут не туда, куда смотрят.
+  if (definition.compassNorth !== COMPASS_NORTH) problems.push(`${zone.id}: laid out with north at -Z (node tools/mirror-zones-north-up.js)`);
   const gates = (definition.transitions || []).filter(row => row.type === 'zoneGate');
+  const half = Number(definition.map?.depth || TILES * 2) / 4;
+  const onSide = { north: gate => gate.tz > half, south: gate => gate.tz < half, east: gate => gate.tx > half, west: gate => gate.tx < half };
   for (const [side, edge] of Object.entries(zone.edges || {})) {
     const gate = gates.find(row => row.direction === side);
     const target = zoneLocationId(zoneById(graph, edge.to));
     if (edge.open && (!gate || gate.to !== target)) problems.push(`${zone.id}: the ${side} gate must lead to ${target}`);
+    if (gate && !onSide[side]?.(gate)) problems.push(`${zone.id}: the ${side} gate stands on the far side (tx ${gate.tx}, tz ${gate.tz})`);
     if (!edge.open && gate) problems.push(`${zone.id}: the ${side} side is closed in the graph but has a gate`);
     if (edge.open && !definition[SIDE_ENTRY[side]]) problems.push(`${zone.id}: no ${SIDE_ENTRY[side]} for arrivals from the ${side}`);
   }
@@ -146,6 +151,7 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
     // обычная авторская локация: что в сцене — то и в игре, конструктор его
     // больше не трогает (`cityAuthored` ставит tools/bake-city-scene.js).
     if (authored.cityAuthored === true) {
+      if (authored.compassNorth !== COMPASS_NORTH) throw new Error(`city ${locationId}: laid out with north at -Z (node tools/mirror-zones-north-up.js)`);
       // Кроме построенного игроками: станок на выигранном участке — состояние
       // торгов, а не содержимое сцены, и его город обязан собрать по-прежнему.
       if (!catalog) catalog = loadZoneCatalog(zonesDir);

@@ -212,6 +212,10 @@ namespace RealmOfAshes.Game
                 _previewMargin = 0f;
                 _preview.texture = baked;
                 _preview.color = Color.white;
+                // Снимок зоны снят сверху с +Z вверху, а север сектора — −Z (там северные
+                // ворота): кадр переворачивается, чтобы север был вверху, как у ворот,
+                // мест, флажка и бури.
+                _preview.uvRect = new Rect(0f, 1f, 1f, -1f);
             }
             else
             {
@@ -220,8 +224,13 @@ namespace RealmOfAshes.Game
                 bool rendered = Uses3D && _map3D.RenderArea(corner, _zoneKm * (1f + 2f * FallbackMargin), _previewTexture);
                 _preview.texture = rendered ? _previewTexture : null;
                 _preview.color = rendered ? Color.white : Color.Lerp(Void, DangerZoneColor(zone["mode"]?.ToString()), 0.45f);
+                _preview.uvRect = new Rect(0f, 0f, 1f, 1f);
                 if (isActiveAndEnabled) StartCoroutine(LoadZoneMap(id));
             }
+
+            // Буря выброса над этим квадратом карты — там же, где полоса на 3D-карте.
+            if (_previewStorm != null)
+                _previewStorm.ShowMapArea(new Vector2((col - _previewMargin) * _zoneKm, (row - _previewMargin) * _zoneKm), _zoneKm * (1f + 2f * _previewMargin));
 
             // Ворота — у края зоны: на запасном кадре край отступает от рамки на полосу соседей.
             float edge = Mathf.Max(5f, _previewMargin / (1f + 2f * _previewMargin) * PreviewSize);
@@ -541,6 +550,8 @@ namespace RealmOfAshes.Game
             var previewOutline = frameRect.gameObject.AddComponent<Outline>();
             previewOutline.effectColor = PanelBorder;
             previewOutline.effectDistance = new Vector2(2f, -2f);
+            // Буря — поверх местности и под воротами, местами и флажком.
+            _previewStorm = RoaStormMapOverlay.Attach(frameRect);
             Vector2[] letterAt = { new Vector2(0.5f, 1f), new Vector2(1f, 0.5f), new Vector2(0.5f, 0f), new Vector2(0f, 0.5f) };
             Vector2[] letterOff = { new Vector2(0f, 14f), new Vector2(14f, 0f), new Vector2(0f, -14f), new Vector2(-14f, 0f) };
             for (int i = 0; i < CompassLetters.Length; i++)

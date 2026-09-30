@@ -53,6 +53,8 @@ namespace RealmOfAshes.Game
         private Material _scuffMaterial;
         private Texture2D _softParticle;
         private uint _randomState = 0x9e3779b9u;
+        private float _wetness;
+        private float _mud;
 
         public int ActorStepCount { get; private set; }
         public bool Ready { get { return _puffs != null && _scuffs != null; } }
@@ -63,6 +65,19 @@ namespace RealmOfAshes.Game
         {
             get { return (_puffs != null ? _puffs.particleCount : 0)
                 + (_scuffs != null ? _scuffs.particleCount : 0); }
+        }
+
+        public float GroundWetness { get { return _wetness; } }
+        public float GroundMud { get { return _mud; } }
+
+        /// <summary>
+        /// Состояние земли по погоде (RoaWeather): мокрая земля не пылит, из-под
+        /// ног летят брызги, а следы в грязи темнее и держатся дольше.
+        /// </summary>
+        public void SetGround(float wetness, float mud)
+        {
+            _wetness = Mathf.Clamp01(wetness);
+            _mud = Mathf.Clamp01(mud);
         }
 
         public void Configure(RoaAudio audio)
@@ -257,8 +272,11 @@ namespace RealmOfAshes.Game
             Vector3 side = Vector3.Cross(Vector3.up, forward).normalized;
             Vector3 origin = cue.Position + FootOffset(planar, cue.RightFoot) + Vector3.up * 0.018f;
             float pace = Mathf.InverseLerp(0.35f, 6.6f, cue.Speed);
+            float dry = 1f - _wetness;
+            int dustCount = Mathf.RoundToInt(plan.PuffCount * dry * dry);
+            int splashCount = _wetness > 0.35f && !cue.Crouching ? Mathf.Max(1, plan.PuffCount / 2) : 0;
 
-            for (int i = 0; i < plan.PuffCount; i++)
+            for (int i = 0; i < dustCount; i++)
             {
                 float lateral = SignedRandom() * Mathf.Lerp(0.035f, 0.13f, pace);
                 float rear = Mathf.Lerp(0.015f, 0.16f, pace) * Next01();
@@ -283,15 +301,34 @@ namespace RealmOfAshes.Game
                 _puffs.Emit(emit, 1);
             }
 
+            for (int i = 0; i < splashCount; i++)
+            {
+                Vector3 velocity = side * SignedRandom() * Mathf.Lerp(0.2f, 0.55f, pace)
+                    - forward * Mathf.Lerp(0.05f, 0.3f, pace) * Next01()
+                    + Vector3.up * Mathf.Lerp(0.5f, 1.1f, Next01());
+                var splash = new ParticleSystem.EmitParams
+                {
+                    position = origin + side * SignedRandom() * 0.06f,
+                    velocity = velocity,
+                    startLifetime = Mathf.Lerp(0.16f, 0.26f, Next01()),
+                    startSize = plan.PuffSize * Mathf.Lerp(0.22f, 0.34f, Next01()),
+                    rotation = SignedRandom() * 180f,
+                    startColor = new Color(0.70f, 0.74f, 0.78f, Mathf.Min(1f, plan.Alpha * 1.3f) * _wetness)
+                };
+                _puffs.Emit(splash, 1);
+            }
+
             if (plan.ScuffCount > 0)
             {
+                Color scuffColor = Color.Lerp(new Color(0.66f, 0.49f, 0.30f), new Color(0.24f, 0.19f, 0.14f), _mud);
+                scuffColor.a = plan.Alpha * Mathf.Lerp(0.72f, 0.95f, _mud);
                 var scuff = new ParticleSystem.EmitParams
                 {
                     position = origin + Vector3.up * 0.004f,
                     velocity = Vector3.zero,
-                    startLifetime = Mathf.Lerp(0.28f, 0.44f, pace),
+                    startLifetime = Mathf.Lerp(0.28f, 0.44f, pace) * (1f + 2.5f * _mud),
                     startSize = plan.ScuffSize,
-                    startColor = new Color(0.66f, 0.49f, 0.30f, plan.Alpha * 0.72f)
+                    startColor = scuffColor
                 };
                 _scuffs.Emit(scuff, 1);
             }
@@ -425,7 +462,8 @@ namespace RealmOfAshes.Game
             return texture;
         }
 
-        private static Material CreateParticleMaterial(string name, Texture2D texture)
+        /// <summary>Прозрачный материал частиц; им же рисуется дождь (RoaRainFx) — один вариант шейдера на сборку.</summary>
+        internal static Material CreateParticleMaterial(string name, Texture2D texture)
         {
             Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
                 ?? Shader.Find("Particles/Standard Unlit")

@@ -169,6 +169,8 @@ async function startServer() {
     cwd: PROJECT_ROOT,
     env: {
       ...process.env,
+      // Живая погода меняет скорость и меткость; проверки идут в ясную, если не просят иной.
+      KROMKA_WEATHER: process.env.KROMKA_WEATHER || 'clear',
       PORT: String(REQUESTED_PORT),
       DATA_DIR,
       SESSION_LOCK_MS: '500',
@@ -1761,8 +1763,8 @@ async function assertTimedGathering(accounts) {
     invariant(resourceUpdates.length === 0,
       'A refused gather cycle emitted a resource mutation', resourceUpdates);
 
-    // Инструмент не обязателен: кирка лежит в сумке, в руках пистолет, и она
-    // только ускоряет цикл тира 1 (cycleMs × toolSpeed).
+    // На T1 инструмент не обязателен: кирка лежит в сумке, в руках пистолет, и
+    // она только ускоряет цикл тира 1 (cycleMs × toolSpeed).
     const started = await socketAck(account.socket, 'startGather', { id: resource.id });
     invariant(started.ok === true
       && Number(started.cycleMs) === GATHER_T1_TOOL_CYCLE_MS

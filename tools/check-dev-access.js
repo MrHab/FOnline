@@ -68,6 +68,8 @@ function spawnServer(label, overrides = {}) {
     cwd: PROJECT_ROOT,
     env: {
       ...process.env,
+      // Живая погода меняет скорость и меткость; проверки идут в ясную, если не просят иной.
+      KROMKA_WEATHER: process.env.KROMKA_WEATHER || 'clear',
       // Let the OS reserve and assign the listening port atomically. Choosing
       // a random number first leaves a TOCTOU window for another process.
       PORT: '0',

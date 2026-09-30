@@ -173,7 +173,7 @@ namespace RealmOfAshes.EditorTools
             var go = new GameObject("Measure", typeof(RectTransform));
             go.transform.SetParent(host.transform, false);
             var text = go.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = RoaUiFont.Default;
             text.fontSize = fontSize;
             text.supportRichText = true;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;

@@ -73,6 +73,8 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnEnemyActivityDelta;
         public event Action<JObject> OnWorldState;
         public event Action<JObject> OnAnomalyState;
+        /// <summary>Погода комнаты (kromka.weather.v1): рассылка при заметной смене; при входе она же приходит в worldState.weather.</summary>
+        public event Action<JObject> OnWeatherState;
         /// <summary>Локация комнаты изменилась на сервере (застроили или снесли участок).</summary>
         public event Action<JObject> OnLocationRevision;
         public event Action<JObject> OnBoltThrown;
@@ -465,6 +467,13 @@ namespace RealmOfAshes.Net
                 JObject state = payload?["state"] as JObject ?? payload;
                 if (state != null && IsForCurrentRoom(state["roomId"]?.ToString()))
                     OnAnomalyState?.Invoke(state);
+            }));
+
+            _connection.On("weatherState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
+                    OnWeatherState?.Invoke(payload["weather"] as JObject);
             }));
 
             _connection.On("boltThrown", args => _mainThread.Enqueue(() =>

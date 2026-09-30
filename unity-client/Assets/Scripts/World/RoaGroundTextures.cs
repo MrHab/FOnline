@@ -101,6 +101,10 @@ namespace RealmOfAshes.World
                 Debug.LogWarning("[ROA] Текстуры земли для пресета '" + preset + "' не найдены — земля остаётся прежней.");
                 return null;
             }
+            // Грязь — необязательный набор: без него земля просто не раскисает.
+            string mudSet = MudSet;
+            if (!string.IsNullOrEmpty(mudSet) && !ApplySet(material, "_Mud", mudSet))
+                Debug.LogWarning("[ROA] Набор грязи '" + mudSet + "' не найден — лужи будут без грязи.");
             if (mobile) material.EnableKeyword(LiteKeyword);
             return material;
         }

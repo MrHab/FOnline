@@ -2,8 +2,8 @@
 
 // Сбор ресурсов как в Albion Online: игрок кликает по узлу, и сбор идёт циклами.
 // Каждый цикл длится по тиру узла, даёт единицу сырья и снимает один заряд узла.
-// Инструмент не обязателен — подходящий инструмент не ниже тира узла только
-// ускоряет цикл. Шаг в сторону или полученный урон прерывают сбор.
+// Узлы T1 берут голыми руками, выше нужен инструмент своей группы не ниже тира
+// узла; он же ускоряет цикл. Шаг в сторону или полученный урон прерывают сбор.
 // Модуль чистый: сервер передаёт ему конфиг тиров, узел, игрока и время.
 
 // Сервер принимает цикл чуть раньше клиентского таймера: сеть и кадр клиента
@@ -31,6 +31,11 @@ function nodeCharges(config, nodeTier) {
 /** Инструмент помогает, только если он своего семейства и не ниже тира узла. */
 function toolHelps(tool, nodeTier) {
   return !!tool && Number(tool.tier || 0) >= clampTier(nodeTier);
+}
+
+/** Узлы до toolFreeTier (T1) берут голыми руками, выше нужен инструмент тира узла. */
+function toolRequired(config, nodeTier) {
+  return clampTier(nodeTier) > config.gathering.toolFreeTier;
 }
 
 /**
@@ -98,6 +103,7 @@ module.exports = {
   gatherCycleMs,
   nodeCharges,
   toolHelps,
+  toolRequired,
   beginGatherSession,
   checkGatherCycle,
   advanceGatherSession,

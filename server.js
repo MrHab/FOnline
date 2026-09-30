@@ -15430,8 +15430,9 @@ function serverBestGatherTool(p = {}, group = '') {
 }
 
 /**
- * Общие проверки сбора: узел жив, игрок рядом и видит его, навык открыл тир.
- * Инструмент не обязателен: найденный инструмент своей группы только ускоряет.
+ * Общие проверки сбора: узел жив, игрок рядом и видит его, навык открыл тир,
+ * а для узла выше T1 в сумке или в руках есть инструмент его группы не ниже
+ * тира узла. На T1 инструмент не нужен и только ускоряет.
  */
 function serverGatherContext(p, data = {}) {
   if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return { error: 'Игрок недоступен.' };
@@ -15465,6 +15466,10 @@ function serverGatherContext(p, data = {}) {
       || (activeActivity.allowedItemIds || []).includes(yieldItemId));
   // Полевой набор экспедиции работает как инструмент любого тира и не изнашивается.
   const tool = activityFieldKit ? { id: '', tier: 5, fieldKit: true } : serverBestGatherTool(p, resourceDef.toolId);
+  if (resourceTier && gathering.toolRequired(KROMKA_TIER_CONFIG, resourceTier) && !gathering.toolHelps(tool, resourceTier)) {
+    const have = Number(tool.tier || 0) > 0 ? ` У вас — тира ${tool.tier}.` : '';
+    return { error: `${resourceDef.needTool.replace(/\.$/, '')} тира ${resourceTier} или выше.${have}` };
+  }
   return { room, resource, resourceDef, yieldItemId, tierFamily, resourceTier, gatherSkill, tool };
 }
 
@@ -16146,7 +16151,8 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   // Опыт профессии — за каждую израсходованную единицу тирового материала.
   const profession = recipeDef?.profession
     ? serverGrantProfessionXp(player, recipeDef.profession, kromkaTiers.professionXpForWork(
-      KROMKA_TIER_CONFIG, recipeDef.tier || 1, serverCraftTierMaterialUnits(crafted.requirements || {})))
+      KROMKA_TIER_CONFIG, recipeDef.tier || 1, serverCraftTierMaterialUnits(crafted.requirements || {})),
+      recipeDef.tier || 1)
     : null;
   sanitizeCarrySnapshot(player);
   if (tutorialBench) {
@@ -16817,8 +16823,9 @@ function serverProfessionXpOf(p = {}, skillId = '') {
   return Math.max(0, Number(serverPlayerProfessionXp(p)[skillId] || 0));
 }
 
-function serverGrantProfessionXp(p = {}, skillId = '', amount = 0) {
-  return kromkaTiers.grantProfessionXp(KROMKA_TIER_CONFIG, serverPlayerProfessionXp(p), skillId, amount);
+/** Опыт профессии за работу тира tier: не выше уровня, открывающего следующий тир. */
+function serverGrantProfessionXp(p = {}, skillId = '', amount = 0, tier = 1) {
+  return kromkaTiers.grantProfessionXp(KROMKA_TIER_CONFIG, serverPlayerProfessionXp(p), skillId, amount, { tier });
 }
 
 function serverProfessionTierRefusal(p = {}, skillId = '', tier = 1) {
@@ -32738,7 +32745,8 @@ io.on('connection', (socket) => {
     const xp = serverGrantXp(p, serverHarvestXp(workUnits)).gained;
     // Опыт профессии — за каждую добытую единицу, по тиру узла (как fame в Albion).
     const profession = gatherSkill
-      ? serverGrantProfessionXp(p, gatherSkill.id, kromkaTiers.professionXpForWork(KROMKA_TIER_CONFIG, resourceTier || 1, workUnits))
+      ? serverGrantProfessionXp(p, gatherSkill.id, kromkaTiers.professionXpForWork(KROMKA_TIER_CONFIG, resourceTier || 1, workUnits),
+        resourceTier || 1)
       : null;
     const activityUpdate = recordServerWorldActivityHarvest(room, p, item, now);
     const depleted = Number(resource.hp || 0) <= 0;

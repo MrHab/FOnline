@@ -135,6 +135,8 @@ namespace RealmOfAshes.Game
             }
             HideUnder(FindObjectsByType<RoaFogOfWar>(FindObjectsSortMode.None), hidden);
             HideUnder(FindObjectsByType<RoaZoneGroundCover>(FindObjectsSortMode.None), hidden);
+            // Буря выброса идёт сквозь локацию и в снимок земли не запекается.
+            if (RoaRadiationStorm.Active != null) RoaRadiationStorm.Active.HideForSnapshot(hidden);
             return hidden;
         }
 

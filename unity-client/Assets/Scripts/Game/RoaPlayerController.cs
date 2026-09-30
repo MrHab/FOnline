@@ -100,6 +100,9 @@ namespace RealmOfAshes.Game
         [Tooltip("Скорость из характеристик. Пересчитывается по авторитетному состоянию, вручную не задавать.")]
         public float Speed = DefaultSpeed;
 
+        /// <summary>Погода комнаты: грязь замедляет шаг тем же множителем, что и бюджет шага сервера.</summary>
+        public RoaWeather Weather;
+
         [Tooltip("Скорость доворота корпуса к прицелу, град/с.")]
         public float TurnSpeedDeg = 900f;
 
@@ -443,7 +446,8 @@ namespace RealmOfAshes.Game
             }
             else
             {
-                float speed = Mathf.Min(Speed, ServerSpeedLimit) * (_crouching ? CrouchSpeedFactorValue : 1f);
+                float speed = Mathf.Min(Speed, ServerSpeedLimit) * (_crouching ? CrouchSpeedFactorValue : 1f)
+                    * (Weather != null ? Weather.MoveSpeedMultiplier : 1f);
                 requestedVelocity = wish * speed;
             }
             _requestedVelocity = requestedVelocity;

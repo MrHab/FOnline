@@ -122,6 +122,8 @@ function runJourney() {
     cwd: ROOT,
     env: {
       ...process.env,
+      // Живая погода меняет скорость и меткость; проверки идут в ясную, если не просят иной.
+      KROMKA_WEATHER: process.env.KROMKA_WEATHER || 'clear',
       NODE_ENV: 'test',
       PORT: '0',
       DATA_DIR,

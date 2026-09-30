@@ -257,6 +257,8 @@ namespace RealmOfAshes.Game
         private Text _mapTitle;
         private GameObject _tierChip;
         private Text _tierChipText;
+        private GameObject _weatherChip;
+        private Text _weatherChipText;
         private Text _cellText;
         private RectTransform _markerLayer;
         private Image _playerArrow;
@@ -562,6 +564,8 @@ namespace RealmOfAshes.Game
             _mapImage = map.gameObject.AddComponent<RawImage>();
             _mapImage.color = Color.white;
             _mapImage.raycastTarget = false;
+            // Буря выброса поверх снимка локации, под метками: фронт там же, где стена в сцене.
+            RoaStormMapOverlay.Attach(map).ShowScene();
             _markerLayer = Rect("Markers", map, Vector2.zero, Vector2.one,
                                 new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             BuildGrid(map);
@@ -576,6 +580,16 @@ namespace RealmOfAshes.Game
                                   TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
             _tierChip = chip.gameObject;
             _tierChip.SetActive(false);
+            // Погода, которая меняет игру (дождь, ливень, грязь), — чип рядом с тиром.
+            RectTransform weatherChip = Rect("Weather", frame, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                                             new Vector2(0f, 1f), new Vector2(30f, -3f), new Vector2(56f, 15f));
+            Image weatherBack = weatherChip.gameObject.AddComponent<Image>();
+            weatherBack.color = new Color(0.03f, 0.04f, 0.05f, 0.82f);
+            weatherBack.raycastTarget = false;
+            _weatherChipText = Label("Text", weatherChip, Vector2.zero, new Vector2(56f, 15f), 11,
+                                     TextAnchor.MiddleCenter, new Color(0.66f, 0.8f, 0.95f), FontStyle.Bold);
+            _weatherChip = weatherChip.gameObject;
+            _weatherChip.SetActive(false);
             _markerLayer.SetAsLastSibling();
             for (int i = 0; i < _markers.Length; i++)
             {
@@ -1487,6 +1501,7 @@ namespace RealmOfAshes.Game
                 _mapTitle.text = "\u041a\u0410\u0420\u0422\u0410: \u0417\u0410\u0413\u0420\u0423\u0417\u041a";
                 _cellText.text = string.Empty;
                 _tierChip.SetActive(false);
+                _weatherChip.SetActive(false);
                 for (int i = 0; i < _markers.Length; i++) _markers[i].gameObject.SetActive(false);
                 _playerArrow.gameObject.SetActive(false);
                 return;
@@ -1508,6 +1523,9 @@ namespace RealmOfAshes.Game
                 _tierChipText.text = "T" + _minimap.LocationTier;
                 _tierChipText.color = RoaTierData.TierColor(_minimap.LocationTier);
             }
+            string weatherChip = RoaGameBootstrap.Active?.Weather?.ChipLabel;
+            _weatherChip.SetActive(!string.IsNullOrEmpty(weatherChip));
+            if (_weatherChip.activeSelf && _weatherChipText.text != weatherChip) _weatherChipText.text = weatherChip;
             Vector2 focus = _minimap.HasPlayer ? _minimap.PlayerMapNormalized : new Vector2(0.5f, 0.5f);
             float zoom = ApplyMinimapZoom(focus);
             Vector3 pinScale = Vector3.one / zoom;

@@ -45,6 +45,7 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaAuthStepsLayoutProbe),
             typeof(RoaUiPrefabProbe),
             typeof(RoaLightingProbe),
+            typeof(RoaWeatherProbe),
             typeof(RoaCameraProbe),
             typeof(RoaModelPrefabCatalogProbe),
             typeof(RoaVisualCohesionProbe),

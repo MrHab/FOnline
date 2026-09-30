@@ -121,7 +121,8 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 зону с потерями показывает её правила и пропускает только со второго шага.
 
 **Камера, свет и видимость** — `RoaCameraRig` (+`.Presentation`),
-`RoaWorldLighting` (день/ночь и авторские профили), `RoaFogOfWar`,
+`RoaWorldLighting` (день/ночь, авторские профили, погода и мокрая земля),
+`RoaWeather` (снимок погоды сервера), `RoaRainFx` (струи, круги, молнии), `RoaFogOfWar`,
 `RoaAuthoredVision`, `RoaVisibilityGate`, `RoaRoofCutaway`, `RoaMinimap`.
 Подробнее: [камера и видимость](CAMERA_AND_VISION.md).
 

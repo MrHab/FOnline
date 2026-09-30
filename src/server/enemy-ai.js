@@ -166,7 +166,9 @@ function npcAttackHitChance(actor = {}, target = {}, weapon = {}, distance = 0, 
   if (weapon.automatic) chance -= 0.075;
   if (moving) chance -= 0.065;
   if (target.crouching) chance -= 0.04;
-  return clamp(chance, 0.24, 0.91);
+  // Погода (дождь) сбивает прицел стрелку-NPC так же, как игроку.
+  const accuracy = clamp(Number(options.accuracyMultiplier ?? 1), 0.5, 1);
+  return clamp(chance, 0.24, 0.91) * accuracy;
 }
 
 function segmentIntersectsRotatedBlocker(fromX, fromZ, toX, toZ, blocker, radius = 0.04, options = {}) {

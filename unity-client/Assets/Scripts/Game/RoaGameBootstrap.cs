@@ -77,6 +77,7 @@ namespace RealmOfAshes.Game
         public RoaAudio Audio;
         public RoaRadio Radio;
         public RoaMovementFx MovementFx;
+        public RoaWeather Weather;
         public RoaAnomalyFieldRenderer Anomalies;
         public RoaSettlementLifePresentation SettlementLifePresentation;
         public RoaBoltThrower BoltThrower;
@@ -226,6 +227,15 @@ namespace RealmOfAshes.Game
             if (MovementFx == null) MovementFx = GetComponent<RoaMovementFx>();
             if (MovementFx == null) MovementFx = gameObject.AddComponent<RoaMovementFx>();
             MovementFx.Configure(Audio);
+
+            // Погода комнаты: свет, мокрая земля, дождь, звук и шаг — по снимку сервера.
+            if (Weather == null) Weather = GetComponent<RoaWeather>();
+            if (Weather == null) Weather = gameObject.AddComponent<RoaWeather>();
+            Weather.Lighting = Lighting;
+            Weather.Audio = Audio;
+            Weather.MovementFx = MovementFx;
+            Weather.Combat = Combat;
+            Weather.ViewCamera = CameraRig != null ? CameraRig.GetComponent<Camera>() : Camera.main;
 
             if (Minimap == null) Minimap = GetComponent<RoaMinimap>();
             if (Minimap == null) Minimap = gameObject.AddComponent<RoaMinimap>();
@@ -927,6 +937,7 @@ namespace RealmOfAshes.Game
             Socket.OnDisconnected += HandleDisconnected;
             Socket.OnAuthoritativeSelf += HandleAuthoritativeSelf;
             Socket.OnWorldState += HandleWorldStateVisuals;
+            Socket.OnWeatherState += HandleWeatherState;
             Socket.OnLocationRevision += HandleLocationRevision;
         }
 
@@ -939,6 +950,7 @@ namespace RealmOfAshes.Game
             Socket.OnDisconnected -= HandleDisconnected;
             Socket.OnAuthoritativeSelf -= HandleAuthoritativeSelf;
             Socket.OnWorldState -= HandleWorldStateVisuals;
+            Socket.OnWeatherState -= HandleWeatherState;
             Socket.OnLocationRevision -= HandleLocationRevision;
         }
 
@@ -1222,8 +1234,14 @@ namespace RealmOfAshes.Game
             }));
         }
 
+        private void HandleWeatherState(JObject weather)
+        {
+            Weather?.Apply(weather);
+        }
+
         private void HandleWorldStateVisuals(JObject state)
         {
+            Weather?.ApplyWorldState(state);
             Anomalies?.ApplyWorldState(state);
             SettlementLifePresentation?.ApplyWorldState(state);
             if (!(state?["map"] is JArray map)) return;
@@ -1588,6 +1606,7 @@ namespace RealmOfAshes.Game
                 Lighting.SetLocalWorldActive(false);
                 Lighting.SetLocation(null, null);
             }
+            Weather?.SetActive(false);
             SettlementLifePresentation?.SetLocalWorldActive(false);
             Anomalies?.SetLocalWorldActive(false);
             if (Minimap != null)
@@ -1791,6 +1810,9 @@ namespace RealmOfAshes.Game
                 Lighting.SetLocation(location, Loader.CurrentGroundRenderer);
                 Lighting.SetLocalWorldActive(true);
             }
+            // Новая комната — сразу её погода, без перетекания из прошлой.
+            Weather?.SetActive(true);
+            Weather?.ApplyWorldState(ack.WorldState);
             SettlementLifePresentation?.SetLocalWorldActive(true);
             Anomalies?.SetLocalWorldActive(true);
             if (Minimap != null)
@@ -1930,6 +1952,7 @@ namespace RealmOfAshes.Game
                 _controller.Pipboy = Pipboy;
                 _controller.Inventory = Inventory;
                 _controller.Audio = Audio;
+                _controller.Weather = Weather;
 
                 // Бой и подбор знают о персонаже только после спавна: до входа
                 // в мир стрелять не из чего и подбирать некому.
@@ -1959,6 +1982,7 @@ namespace RealmOfAshes.Game
                 _controller.Pipboy = Pipboy;
                 _controller.Inventory = Inventory;
                 _controller.Audio = Audio;
+                _controller.Weather = Weather;
             }
             if (Fog != null) Fog.Observer = _controller;
             if (Interaction != null) Interaction.SetPlayer(_controller);

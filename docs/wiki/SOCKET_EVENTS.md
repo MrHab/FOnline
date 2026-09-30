@@ -181,6 +181,7 @@ reconnect не дублирует награду, приглашение, дру
 | `playerVehicle` | Всей комнате, включая седока: игрок `id` сел на транспорт (`vehicle` — `itemId`, `kind`, `speed`) или спешился (`vehicle: null`, `reason` — `request`, `hit`, `downed`, `stunned`, `unequipped`, `death`). То же поле `vehicle` есть в публичном состоянии игрока (`snapshot`, `playerJoined`, `self`). |
 | `playerGathering` | Всей комнате: игрок `id` начал собирать ресурс (`type` — `ore`, `wood`, `fiber`, `oil` или `hide`, `cycleMs` — длительность цикла) или закончил (`type` пуст). Другие клиенты играют его анимацию сбора, пока он стоит на месте. То же поле `gathering` есть в публичном состоянии игрока (`snapshot`, `playerJoined`). |
 | `anomalyState` | Всей комнате снимок аномальных полей после разрядки (`kromka.anomaly-state.v1`): `fields` с `active`, `dischargedUntil`, `permanentlyDischarged` и `revision`, параметры болта `bolt`. Тот же снимок приходит в состоянии комнаты полем `anomalies`. |
+| `weatherState` | Всей комнате `{roomId, weather}`, когда погода заметно изменилась (сервер пересчитывает её раз в 5 с). `weather` (`kromka.weather.v1`): `state` (`clear`, `overcast`, `rain`, `storm`), `rain`, `cloud`, `wetness`, `mud`, `puddles` в 0..1, `trend`, `wind` (`x`, `z`, `speed`), `sheltered`, `forced` и `effects` — множители сервера `moveSpeedMultiplier`, `hearingMultiplier`, `visionMultiplier`, `rangedAccuracyMultiplier`. Тот же снимок приходит в состоянии комнаты полем `weather`. |
 
 ### Личное убежище, кланы и осады
 

@@ -16901,12 +16901,15 @@ function serverGrantProfessionXp(p = {}, skillId = '', amount = 0, tier = 1) {
   return kromkaTiers.grantProfessionXp(KROMKA_TIER_CONFIG, serverPlayerProfessionXp(p), skillId, amount, { tier });
 }
 
+/** Отказ по навыку: сбор добывает на тир выше открытого (professionGatherLevel), остальное — открытый тир. */
 function serverProfessionTierRefusal(p = {}, skillId = '', tier = 1) {
   const skill = KROMKA_TIER_CONFIG.professions.skills.find(row => row.id === skillId);
   if (!skill) return '';
-  if (kromkaTiers.professionAllowsTier(KROMKA_TIER_CONFIG, serverProfessionXpOf(p, skillId), tier)) return '';
-  const need = kromkaTiers.tierRow(KROMKA_TIER_CONFIG, tier).level;
+  const need = skill.kind === 'gather'
+    ? kromkaTiers.professionGatherLevel(KROMKA_TIER_CONFIG, tier)
+    : kromkaTiers.tierRow(KROMKA_TIER_CONFIG, tier).level;
   const have = kromkaTiers.professionLevel(KROMKA_TIER_CONFIG, serverProfessionXpOf(p, skillId));
+  if (have >= need) return '';
   return `Тир ${tier} требует навык «${skill.name}» ${need} (сейчас ${have}).`;
 }
 

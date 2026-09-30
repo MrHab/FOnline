@@ -98,6 +98,25 @@ assert.equal(tiers.grantProfessionXp(config, veteran, 'gatherMetal', 60, { tier:
 assert.equal(veteran.gatherMetal, t2Xp + 900, 'experience above the cap earned earlier is kept, never cut back');
 console.log(`PASS T1 work teaches up to level ${tiers.tierRow(config, 2).level}, then only the next tier does`);
 
+// Навык сбора добывает на тир выше открытого: с нулём — T2, после уровня тира N — T(N+1).
+assert.equal(config.gathering.skillTierAhead, 1, 'gathering runs one tier ahead of the skill');
+assert.equal(tiers.professionGatherMaxTier(config, 0), 2, 'a skill-less gatherer takes T2 nodes');
+for (let tier = 2; tier <= 5; tier++) {
+  const level = tiers.professionGatherLevel(config, tier);
+  assert.equal(level, tiers.tierRow(config, tier - 1).level, `T${tier} nodes open with the T${tier - 1} level`);
+  const xp = tiers.professionXpForLevel(config, level);
+  assert.equal(tiers.professionGatherMaxTier(config, xp), tier, `level ${level} gathers up to T${tier}`);
+  if (xp > 0) assert.equal(tiers.professionGatherMaxTier(config, xp - 1), tier - 1, `one xp short of ${level} stops at T${tier - 1}`);
+}
+assert.equal(tiers.professionGatherLevel(config, 1), 0);
+const topXp = tiers.professionXpForLevel(config, config.professions.maxLevel);
+assert.equal(tiers.professionGatherMaxTier(config, topXp), 5, 'the ladder ends at T5');
+const gatherView = tiers.publicProfessions(config, {}).find(row => row.id === 'gatherMetal');
+assert.deepEqual([gatherView.maxTier, gatherView.gatherTier], [1, 2], 'the profession card shows the open and the gathered tier');
+assert.equal(tiers.publicProfessions(config, {}).find(row => row.kind !== 'gather').gatherTier, undefined,
+  'refining and crafting professions keep the open tier only');
+console.log('PASS the gathering skill takes nodes one tier above its open tier');
+
 // Туша: временный узел шкуры тира зоны, не занимает клетку и истлевает.
 const carcass = gathering.carcassResource(config, { enemyId: 'gari_7', tx: 4, tz: 9, tier: 4, charges: 3, now: 100 });
 assert.equal(carcass.type, 'hide');

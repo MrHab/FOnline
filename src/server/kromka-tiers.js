@@ -160,6 +160,7 @@ function normalizeTierConfig(raw = {}) {
       charges: tierArray(gathering.charges, 5, 1, 100),
       moveToleranceM: finite(gathering.moveToleranceM, 0.9, 0.1, 5),
       toolFreeTier: Math.floor(finite(gathering.toolFreeTier, 1, 0, TIER_COUNT)),
+      skillTierAhead: Math.floor(finite(gathering.skillTierAhead, 1, 0, TIER_COUNT - 1)),
       carcassMs: Math.floor(finite(gathering.carcassMs, 180000, 10000, 3600000))
     })
   });
@@ -527,6 +528,20 @@ function professionAllowsTier(config, xp = 0, tier = 1) {
   return professionLevel(config, xp) >= tierRow(config, tier).level;
 }
 
+/**
+ * Профессия сбора добывает на gathering.skillTierAhead тиров выше открытого:
+ * с нулевым навыком — T2, после уровня тира 2 — T3 и так далее. Так сырьё
+ * следующего тира доступно раньше, чем его переработка и изделия.
+ */
+function professionGatherMaxTier(config, xp = 0) {
+  return clampTier(professionMaxTier(config, xp) + config.gathering.skillTierAhead);
+}
+
+/** Уровень профессии сбора, с которого добывается тир. */
+function professionGatherLevel(config, tier = 1) {
+  return tierRow(config, clampTier(tier) - config.gathering.skillTierAhead).level;
+}
+
 /** Опыт за единицу работы тира (добытая единица, переработка, изделие). */
 function professionXpForWork(config, tier = 1, units = 1) {
   return Math.max(0, Math.round(tierRow(config, tier).xp * Math.max(0, Number(units) || 0)));
@@ -587,7 +602,8 @@ function publicProfessions(config, xpMap = {}) {
       level,
       levelXp: professionXpForLevel(config, level),
       nextLevelXp: level >= config.professions.maxLevel ? xp : professionXpForLevel(config, level + 1),
-      maxTier: professionMaxTier(config, xp)
+      maxTier: professionMaxTier(config, xp),
+      ...(skill.kind === 'gather' ? { gatherTier: professionGatherMaxTier(config, xp) } : {})
     };
   });
 }
@@ -658,6 +674,8 @@ module.exports = {
   sanitizeProfessionXp,
   professionMaxTier,
   professionAllowsTier,
+  professionGatherMaxTier,
+  professionGatherLevel,
   professionXpForWork,
   professionXpCapForTier,
   grantProfessionXp,

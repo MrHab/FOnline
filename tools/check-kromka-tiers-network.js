@@ -2,7 +2,8 @@
 'use strict';
 
 // Тиры на настоящем сервере: в локации тира 3 рудная жила даёт только руду
-// тира 3, навык «Рудокоп» ниже 30 получает отказ, кирка T1 сбор не начинает,
+// тира 3, навык «Рудокоп» ниже 10 (тир 2 не открыт) получает отказ — сбор идёт
+// на тир выше открытого, и жилу T2 новичок берёт киркой T1. Кирка T1 жилу T3 не начинает,
 // кирка T2 (тир ниже) добывает с базовым циклом, а кирка T3 ускоряет его, добыча идёт циклами (как в
 // Albion) и начисляет опыт профессии по тиру. Жилу T1 берут голыми руками, и её
 // опыт идёт только до уровня, открывающего T2. А враждебный
@@ -25,6 +26,8 @@ const LOCATION = 'tierArena';
 const TIER = 3;
 // Такая же арена тира 1: голые руки и потолок опыта T1.
 const LOCATION_T1 = 'tierArenaT1';
+// И тира 2 без налётчика: новичок без навыка добывает на тир выше открытого.
+const LOCATION_T2 = 'tierArenaT2';
 const TOOL_GROUPS = new Set(['pickaxe', 'axe', 'sickle', 'handPump', 'skinningKnife']);
 // Город фракции: первый тир и узлы семейств своих угодий у стен.
 const CITY = 'relayStation';
@@ -33,7 +36,7 @@ const { config, itemCatalog } = tiers.readTieredCatalogs(path.join(ROOT, 'data')
 const itemTier = id => itemCatalog.items.find(item => item.id === id)?.tier || 0;
 const accounts = {};
 
-function arenaWithTier(tier = TIER, id = LOCATION) {
+function arenaWithTier(tier = TIER, id = LOCATION, { raider: withRaider = true } = {}) {
   const arena = JSON.parse(fs.readFileSync(path.join(h.DATA_DIR, 'locations', 'combatRuntimeArena.json'), 'utf8'));
   const depot = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'locations', 'oldDepot.json'), 'utf8'));
   const raider = depot.objects.find(row => row.id === 'depot_raider_01');
@@ -42,7 +45,7 @@ function arenaWithTier(tier = TIER, id = LOCATION) {
     ? { ...row, resourceType: 'ore', tags: [...new Set([...(row.tags || []).filter(tag => tag !== 'scrap'), 'resource', 'ore'])] }
     : row);
   assert(objects.some(row => row.id === NODE_ID && row.resourceType === 'ore'), 'the arena lost its resource node');
-  return { ...arena, id, name: `Tier ${tier} arena`, tier, objects: [...objects, raider] };
+  return { ...arena, id, name: `Tier ${tier} arena`, tier, objects: withRaider ? [...objects, raider] : objects };
 }
 
 function seed(state, tool, professionXp = {}, location = LOCATION) {
@@ -70,18 +73,23 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   await h.bootstrapCharacters(accounts);
   fs.writeFileSync(path.join(h.DATA_DIR, 'locations', `${LOCATION}.json`), JSON.stringify(arenaWithTier(), null, 2));
   fs.writeFileSync(path.join(h.DATA_DIR, 'locations', `${LOCATION_T1}.json`), JSON.stringify(arenaWithTier(1, LOCATION_T1), null, 2));
+  fs.writeFileSync(path.join(h.DATA_DIR, 'locations', `${LOCATION_T2}.json`), JSON.stringify(arenaWithTier(2, LOCATION_T2, { raider: false }), null, 2));
   const users = JSON.parse(fs.readFileSync(path.join(h.DATA_DIR, 'users.json'), 'utf8'));
   const savesPath = path.join(h.DATA_DIR, 'saves.json');
   const saves = JSON.parse(fs.readFileSync(savesPath, 'utf8'));
   const stateFor = role => saves.characters[users.users[accounts[role].login].id][accounts[role].characterId].state;
-  const miner = tiers.professionXpForLevel(config, tiers.tierRow(config, TIER).level);
+  // Рудокоп, открывший T2 (уровень 10), уже добывает T3.
+  const minerLevel = tiers.professionGatherLevel(config, TIER);
+  assert.equal(minerLevel, tiers.tierRow(config, TIER - 1).level, 'gathering runs one tier ahead of the open tier');
+  const miner = tiers.professionXpForLevel(config, minerLevel);
   seed(stateFor('target'), 'pickaxeT1', { gatherMetal: miner });
   seed(stateFor('legacyMix'), 'pickaxe', { gatherMetal: miner });
-  seed(stateFor('harvest'), 'pickaxeT3');
+  seed(stateFor('harvest'), 'pickaxeT3', { gatherMetal: miner - 1 });
   seed(stateFor('trade'), 'pickaxeT3', { gatherMetal: miner });
   const t2Unlock = tiers.professionXpForLevel(config, tiers.tierRow(config, 2).level);
   seed(stateFor('modification'), 'fists', {}, LOCATION_T1);
   seed(stateFor('cadence'), 'fists', { gatherMetal: t2Unlock }, LOCATION_T1);
+  seed(stateFor('persistence'), 'pickaxeT1', {}, LOCATION_T2);
   const citizen = stateFor('progression');
   citizen.currentLocationId = CITY;
   citizen.serverLocationContext = { locationId: CITY };
@@ -98,6 +106,8 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
       await h.connectAndJoin(accounts[role]);
       assert.equal(accounts[role].join.roomId, LOCATION_T1, `${role} did not join the T1 arena`);
     }
+    await h.connectAndJoin(accounts.persistence);
+    assert.equal(accounts.persistence.join.roomId, LOCATION_T2, 'persistence did not join the T2 arena');
     const node = (accounts.trade.join.worldState?.resources || []).find(row => row.id === NODE_ID);
     assert(node && node.type === 'ore' && node.tier === TIER, 'the ore node carries the location tier: ' + JSON.stringify(node));
     assert.equal(accounts.trade.join.worldState?.tier, TIER, 'the room state names the location tier');
@@ -179,11 +189,11 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     await h.socketAck(accounts.legacyMix.socket, 'stopGather', {});
     console.log('PASS a T3 vein refuses a T1 pickaxe and takes a T2 one at the base pace');
 
-    // Кирка T3 есть, но «Рудокоп» ниже 30.
+    // Кирка T3 есть, но «Рудокоп» на единицу опыта не дотянул до 10 (тир 2 не открыт).
     const lowSkill = await startGather(accounts.harvest);
-    assert(!lowSkill.ok && /Тир 3 требует навык «Рудокоп» 30/.test(lowSkill.error),
-      'mining T3 needs Miner 30: ' + JSON.stringify(lowSkill).slice(0, 200));
-    console.log('PASS the profession level gates the node tier');
+    assert(!lowSkill.ok && lowSkill.error === `Тир 3 требует навык «Рудокоп» ${minerLevel} (сейчас ${minerLevel - 1}).`,
+      `mining T3 needs Miner ${minerLevel}: ` + JSON.stringify(lowSkill).slice(0, 200));
+    console.log(`PASS the profession level gates the node tier: T3 needs level ${minerLevel}`);
 
     // Всё сходится: кирка T3 ускоряет цикл, руда тира 3 и опыт профессии по тиру.
     // Сосед по комнате видит сбор: событие начала и конца и поле снимка.
@@ -204,7 +214,8 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     assert.equal(mined.profession.gained, tiers.professionXpForWork(config, TIER, mined.item.qty), 'xp follows the node tier');
     const miningView = (mined.self?.professions || []).find(row => row.id === 'gatherMetal');
     assert.equal(miningView?.xp, miner + mined.profession.gained, 'the player sees the profession xp');
-    assert.equal(miningView?.maxTier, TIER);
+    assert.equal(miningView?.maxTier, TIER - 1, 'the miner has T2 open');
+    assert.equal(miningView?.gatherTier, TIER, 'and gathers up to T3');
     assert(Number(mined.self?.itemConditions?.pickaxeT3) < 100, 'a gather cycle wears the helping tool');
     console.log('PASS a T3 miner gets T3 ore and tiered profession xp');
     await h.socketAck(accounts.trade.socket, 'stopGather', {});
@@ -243,6 +254,22 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     await h.socketAck(accounts.cadence.socket, 'stopGather', {});
     console.log(`PASS T1 work teaches only up to level ${tiers.tierRow(config, 2).level}, where T2 opens`);
 
+    // Жила T2: новичок без навыка добывает её киркой T1 и учится по тиру T2.
+    const t2Node = (accounts.persistence.join.worldState?.resources || []).find(row => row.id === NODE_ID);
+    assert(t2Node && t2Node.tier === 2, 'the T2 arena vein is tier 2: ' + JSON.stringify(t2Node));
+    const noviceStart = await startGather(accounts.persistence);
+    assert(noviceStart.ok && noviceStart.cycleMs === gathering.gatherCycleMs(config, 2, 0),
+      'a novice mines a T2 vein with a T1 pickaxe: ' + JSON.stringify(noviceStart).slice(0, 200));
+    await wait(noviceStart.cycleMs);
+    const noviceMined = await harvest(accounts.persistence);
+    const oreT2 = config.families.find(family => family.resourceType === 'ore').raw.ids[1];
+    assert(noviceMined.ok && noviceMined.item.id === oreT2, 'the novice gets T2 ore: ' + JSON.stringify(noviceMined).slice(0, 300));
+    assert.equal(noviceMined.profession?.gained, tiers.professionXpForWork(config, 2, noviceMined.item.qty), 'T2 work teaches the novice');
+    const noviceView = (noviceMined.self?.professions || []).find(row => row.id === 'gatherMetal');
+    assert.deepEqual([noviceView?.maxTier, noviceView?.gatherTier], [1, 2], 'a novice has T1 open and gathers T2');
+    await h.socketAck(accounts.persistence.socket, 'stopGather', {});
+    console.log('PASS a skill-less novice mines a T2 vein with a T1 pickaxe');
+
     // Налётчик локации тира 3: сила и снаряжение этого тира.
     const enemies = accounts.trade.join.worldState?.enemies || accounts.trade.join.enemies || [];
     const raider = enemies.find(row => row.tier === TIER);
@@ -265,7 +292,7 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   const xp = saved.characters[users.users[accounts.trade.login].id][accounts.trade.characterId].state.professionXp;
   assert(Number(xp?.gatherMetal) > miner, 'profession xp survives the save: ' + JSON.stringify(xp));
   h.cleanupSync();
-  console.log('Kromka tiers network OK: node tier from the location, only tiered nodes with every family, tier on the world map and in the room state, profession gate, a tool one tier below the node above T1 and bare hands on T1, timed tiered yield and the xp ladder, saved professions, tier-scaled raiders.');
+  console.log('Kromka tiers network OK: node tier from the location, only tiered nodes with every family, tier on the world map and in the room state, profession gate one tier ahead of the open tier (a novice mines T2), a tool one tier below the node above T1 and bare hands on T1, timed tiered yield and the xp ladder, saved professions, tier-scaled raiders.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

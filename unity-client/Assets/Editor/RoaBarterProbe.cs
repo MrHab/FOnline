@@ -215,7 +215,7 @@ namespace RealmOfAshes.EditorTools
 
                 // Окно скупщика Чёрного рынка: заголовок, касса и отказ словами.
                 Set(interaction, "_market", JObject.Parse(
-                    "{\"stock\":[],\"caps\":900,\"buyInterests\":[\"weapons\",\"armor\"],\"blackMarket\":{\"treasury\":900},\"sellPrices\":{\"pistol\":17}}"));
+                    "{\"stock\":[],\"caps\":900,\"buyInterests\":[\"weapons\",\"armor\"],\"blackMarket\":{\"treasury\":900,\"orders\":{\"pistol\":1},\"buyOrders\":[{\"id\":\"pistol\",\"qty\":1,\"price\":17}]},\"sellPrices\":{\"pistol\":17}}"));
                 var sells = (Dictionary<string, int>)Get(interaction, "_tradeSells");
                 sells.Clear();
                 sells["medkit"] = 1;
@@ -224,9 +224,17 @@ namespace RealmOfAshes.EditorTools
                 string skill = ((Text)Get(canvas, "_skillLine")).text;
                 string warning = ((Text)Get(canvas, "_warning")).text;
                 report.Append("black market: ").Append(title).Append(" | ").Append(skill).Append(" | ").Append(warning).Append('\n');
-                Require(title.EndsWith("ТОЛЬКО СКУПКА", StringComparison.Ordinal), "окно скупщика не подписано «Только скупка»: " + title);
+                Require(title.EndsWith("ЗАЯВКИ НА СКУПКУ", StringComparison.Ordinal), "окно скупщика не показывает заявки: " + title);
                 Require(skill.StartsWith("Касса скупщика: 900", StringComparison.Ordinal), "окно скупщика не показывает кассу: " + skill);
-                Require(warning.StartsWith("Скупщик не берёт", StringComparison.Ordinal), "отказ скупщика не объяснён: " + warning);
+                Require(warning.StartsWith("Нет заявки", StringComparison.Ordinal), "отказ скупщика не объяснён: " + warning);
+                rows = (List<GameObject>)vendor.GetType().GetField("Rows").GetValue(vendor);
+                Require(rows.Count == 1 && rows[0].name == "Row:pistol" && rows[0].GetComponent<Button>() == null,
+                    "публичная заявка должна быть видна, но не должна продавать предмет игроку");
+                sells.Clear();
+                sells["ui_pistol_a1_b2"] = 2;
+                Call(canvas, "Refresh");
+                warning = ((Text)Get(canvas, "_warning")).text;
+                Require(warning.StartsWith("Заявка на", StringComparison.Ordinal), "окно разрешило превысить объём заявки: " + warning);
                 sells.Clear();
                 ClearRowsImmediate(canvas, player, vendor);
 

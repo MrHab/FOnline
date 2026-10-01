@@ -7,7 +7,7 @@
     "role": "Обычная торговая единица: цены, награды, комиссии и расчёты между игроками. Лежат на счёте аккаунта, общие для его персонажей, не выпадают и не выбрасываются."
   },
   "worldModel": {
-    "npcTraders": true,
+    "npcTraders": false,
     "wildTraders": false,
     "npcStations": false,
     "npcGearDrops": false,

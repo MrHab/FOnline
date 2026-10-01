@@ -11449,6 +11449,9 @@ function serverBlackMarketAccepts(itemId = '') {
   return WORLD_ECONOMY.blackMarket.categories.includes(category);
 }
 
+const SERVER_BLACK_MARKET_CANDIDATES = Object.keys(SERVER_ITEM_BASE_PRICES)
+  .filter(serverBlackMarketAccepts);
+
 function serverIsBlackMarketActor(actor = null) {
   return !!actor && WORLD_ECONOMY.worldModel.blackMarket
     && String(actor.service || '') === WORLD_ECONOMY.blackMarket.service;
@@ -11473,7 +11476,7 @@ function serverBlackMarketTradeMarket(player = null) {
   const capShare = serverBlackMarketCapShare();
   const priceAt = (itemId, condition) => (condition < config.minCondition
     ? 0
-    : blackMarketUnitPrice(market, config, serverBlackMarketItemPrice(itemId), condition, capShare));
+    : blackMarketUnitPrice(market, config, serverBlackMarketItemPrice(itemId), condition, capShare, itemId));
   // Цена по виду предмета и отдельно по экземпляру оружия: у каждого
   // экземпляра своё состояние, и сломанный не должен запрещать продажу целого.
   const sellPrices = {};
@@ -11498,7 +11501,7 @@ function serverBlackMarketTradeMarket(player = null) {
     stock: [],
     caps: market.treasury,
     buyInterests: config.categories.slice(),
-    blackMarket: publicBlackMarketState(market, config),
+    blackMarket: publicBlackMarketState(market, config, serverBlackMarketItemPrice, capShare),
     sellPrices,
     sellPricesByItem
   };
@@ -11573,7 +11576,7 @@ function serverMarkBlackMarketDirty() {
 function serverTickBlackMarket(now = Date.now()) {
   if (!WORLD_ECONOMY.worldModel.blackMarket) return 0;
   const result = decayBlackMarket(serverBlackMarketStore(now), WORLD_ECONOMY.blackMarket, serverBlackMarketItemPrice, now);
-  if (result.destroyed > 0 || serverBlackMarketDirty) {
+  if (result.destroyed > 0 || result.pricesChanged || serverBlackMarketDirty) {
     serverBlackMarketDirty = false;
     scheduleServerPublicEventPersist();
   }
@@ -11625,7 +11628,8 @@ function serverApplyNpcCorpseEconomy(rows = [], room = null, random = Math.rando
       const fatigue = blackMarketFatigueFactor(tracker, config, Date.now());
       if (random() < config.dropChance) {
         const budget = Math.max(config.minBudget, Number(enemy.xp || 0) * config.budgetPerXp) * multiplier * fatigue;
-        const loot = takeBlackMarketLoot(market, config, budget, serverBlackMarketItemPrice);
+        const loot = takeBlackMarketLoot(market, config, budget, serverBlackMarketItemPrice,
+          SERVER_BLACK_MARKET_CANDIDATES, random);
         if (loot && SERVER_ITEM_IDS.has(loot.itemId)) {
           kept.push({ id: loot.itemId, qty: 1 });
           enemy.blackMarketLoot = { itemId: loot.itemId, condition: loot.condition };
@@ -17171,9 +17175,8 @@ function serverNpcHasDialogue(actor = null) {
 }
 
 /**
- * Открыта ли торговля с NPC. В экономике v3 торгуют только торговцы-люди
- * (роль merchant или trader) в столицах фракций и на базах Сердцевины, а
- * также скупщик Чёрного рынка; остальные мирные NPC не торгуют.
+ * Открыта ли торговля с NPC. Сейчас доступен только скупщик Чёрного рынка;
+ * полки остальных торговцев закрыты флагом worldModel.npcTraders.
  */
 function serverNpcTradeOpen(actor = null, locationId = '') {
   if (!actor || serverNpcIsNaturalCreature(actor, actor) || serverNpcHasQuestDialogue(actor)) return false;

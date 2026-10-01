@@ -48,7 +48,12 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   placeInHub(stranger, 0, 5);
   stranger.territoryFaction = { version: 1, factionId: '', joinedAt: 0, changeAllowedAt: 0, history: [] };
 
-  delete saves.blackMarket;
+  saves.blackMarket = {
+    version: 2,
+    treasury: 3000,
+    orders: { laserPistol: { qty: 1, multiplier: 1 } },
+    stock: {}
+  };
   fs.writeFileSync(savesPath, JSON.stringify(saves));
 
   await h.startServer();
@@ -66,6 +71,8 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     assert(view.market.blackMarket && view.market.caps === view.market.blackMarket.treasury, 'The window shows the market treasury.');
     const pistolPrice = Number(view.market.sellPrices?.laserPistol || 0);
     assert(pistolPrice > 0, 'The server names a price for a whole weapon: ' + JSON.stringify(view.market.sellPrices));
+    assert.deepEqual(view.market.blackMarket.buyOrders.find(row => row.id === 'laserPistol'),
+      { id: 'laserPistol', qty: 1, price: pistolPrice }, 'all players can see the open buy order');
     assert.equal(view.market.sellPrices.medkit, undefined, 'The broker names no price for medicine.');
     assert.equal(view.market.sellPricesByItem?.ui_laserPistol_trade_2, pistolPrice, 'Each weapon instance has its own price.');
     const treasuryBefore = Number(view.market.caps);
@@ -104,6 +111,8 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     assert.equal(sale.self?.equipmentRuntime?.weapon, 'ui_laserPistol_trade_1', 'Selling a bag weapon keeps the equipped one.');
     const after = await h.socketAck(accounts.trade.socket, 'syncNpcTradeState', { enemyId: broker.id });
     assert.equal(Number(after.market.caps), treasuryBefore - pistolPrice, 'The price leaves the treasury.');
+    assert.equal(after.market.blackMarket.orders.laserPistol, undefined, 'The filled order disappears.');
+    assert.equal(Number(after.market.sellPrices?.laserPistol || 0), 0, 'The broker no longer quotes an item without an order.');
     console.log('PASS black market sale (' + pistolPrice + ' marks)');
 
     // --- доступ и подъём -----------------------------------------------------------------

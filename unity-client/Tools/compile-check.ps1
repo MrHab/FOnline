@@ -1,5 +1,6 @@
 param(
-    [string]$UnityData = 'D:\Games\6000.5.8f1\Editor\Data'
+    [string]$UnityData = 'D:\Games\6000.5.8f1\Editor\Data',
+    [string]$ReferenceLibrary = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,7 +16,8 @@ foreach ($required in @($csc, $dotnet, $netstandard)) {
     }
 }
 
-$scriptAssemblies = Join-Path $client 'Library\ScriptAssemblies'
+$library = if ($ReferenceLibrary) { [System.IO.Path]::GetFullPath($ReferenceLibrary) } else { Join-Path $client 'Library' }
+$scriptAssemblies = Join-Path $library 'ScriptAssemblies'
 if (-not (Test-Path -LiteralPath $scriptAssemblies)) {
     throw 'Library\ScriptAssemblies is missing. Open the project in Unity once.'
 }
@@ -40,7 +42,7 @@ try {
         (Join-Path $UnityData 'Managed\UnityEngine\UnityEngine*.dll'),
         (Join-Path $UnityData 'Managed\UnityEngine\UnityEditor*.dll'),
         (Join-Path $UnityData 'Managed\UnityEngine\Unity.Scripting.dll'),
-        (Join-Path $client 'Library\PackageCache\com.unity.nuget.newtonsoft-json@*\Runtime\Newtonsoft.Json.dll'),
+        (Join-Path $library 'PackageCache\com.unity.nuget.newtonsoft-json@*\Runtime\Newtonsoft.Json.dll'),
         (Join-Path $scriptAssemblies 'glTFast*.dll'),
         (Join-Path $scriptAssemblies 'Unity.TextMeshPro.dll'),
         (Join-Path $scriptAssemblies 'Unity.RenderPipelines*.dll')

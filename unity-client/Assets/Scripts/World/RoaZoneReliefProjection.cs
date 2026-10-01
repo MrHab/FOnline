@@ -34,7 +34,10 @@ namespace RealmOfAshes.World
             if (_active == null || _active._relief == null) return 0f;
             if (Mathf.Abs(localX) > _active._width * 0.5f
                 || Mathf.Abs(localZ) > _active._depth * 0.5f) return 0f;
-            return HeightAt(_active._relief, localX, localZ, _active._width, _active._depth);
+            float height = HeightAt(_active._relief, localX, localZ, _active._width, _active._depth);
+            return RoaDamRoadWaterProjection.IsBridgeDeck(localX, localZ)
+                ? height + RoaDamRoadWaterProjection.CanalDepthAt(localX, localZ)
+                : height;
         }
 
         public static bool Supports(string locationId) =>
@@ -61,7 +64,8 @@ namespace RealmOfAshes.World
             float t = Mathf.Clamp01(new Vector2(dx, dz).magnitude / BlendWidth);
             float apronBlend = t * t * (3f - 2f * t);
             return (relief.HeightAt(point.x, point.y)
-                    - relief.HeightAt(origin.x, origin.y)) * VerticalGain * apronBlend;
+                    - relief.HeightAt(origin.x, origin.y)) * VerticalGain * apronBlend
+                - RoaDamRoadWaterProjection.CanalDepthAt(localX, localZ);
         }
 
         public static void Project(Renderer ground, float worldWidth, float worldDepth)
@@ -86,6 +90,7 @@ namespace RealmOfAshes.World
             MeshCollider surface = ground.gameObject.AddComponent<MeshCollider>();
             surface.sharedMesh = projection._mesh;
             _active = projection;
+            RoaDamRoadWaterProjection.Build(ground, relief, worldWidth, worldDepth);
 
             // Static models elsewhere in the zone follow the projected surface.
             // The checkpoint and bridge lie on the level apron, so their authored
@@ -95,6 +100,7 @@ namespace RealmOfAshes.World
             {
                 if (placed == null || placed.gameObject == ground.gameObject) continue;
                 if (placed.GetComponentInParent<RoaZoneReliefProjection>() != null) continue;
+                if (placed.StableObjectId.StartsWith("roadOutpost_", StringComparison.Ordinal)) continue;
                 KromkaPlacedObjectAuthoring parentPlaced = placed.transform.parent != null
                     ? placed.transform.parent.GetComponentInParent<KromkaPlacedObjectAuthoring>() : null;
                 if (parentPlaced != null) continue;

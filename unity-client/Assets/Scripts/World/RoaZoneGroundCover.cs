@@ -145,6 +145,7 @@ namespace RealmOfAshes.World
                         var point = new Vector2(x, z);
                         if (walled.HasValue && walled.Value.Contains(point)) continue;
                         if (RoaZoneSites.Contains(zone.Sites, point.x, point.y, 2f)) continue;
+                        if (RoaDamRoadWaterProjection.Contains(x, z)) continue;
                         if (Blocked(blockers, point) || NearTrail(point, nodes, trails)) continue;
                         float radius = Mathf.Lerp(Kinds[kind].MinRadius, Kinds[kind].MaxRadius, size * size);
                         float scale = radius / kindRadius[kind];

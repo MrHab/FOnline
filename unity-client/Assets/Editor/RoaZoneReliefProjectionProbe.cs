@@ -31,7 +31,9 @@ namespace RealmOfAshes.EditorTools
             Require(Mathf.Abs(RoaZoneReliefProjection.HeightAt(relief, 120f, 120f, 320f, 320f)
                 - mapDelta * 160f) < 0.001f, "Local height does not match the map's visual scale.");
 
+            var host = new GameObject("ProjectionProbeRoot");
             GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            ground.transform.SetParent(host.transform, false);
             try
             {
                 ground.transform.position = new Vector3(0f, -0.3f, 0f);
@@ -52,10 +54,32 @@ namespace RealmOfAshes.EditorTools
                     max = Mathf.Max(max, vertex.y);
                 }
                 Require((max - min) * 0.5f > 12f, "Relief remains visually flat.");
+                var water = host.GetComponentInChildren<RoaDamRoadWaterProjection>();
+                Require(water != null && water.transform.Find("OutpostSpillway") != null,
+                    "The outpost spillway water is missing.");
+                Require(RoaDamRoadWaterProjection.Contains(-104.755f, -106f),
+                    "The outpost bridge does not cross water.");
+                Require(RoaDamRoadWaterProjection.CanalDepthAt(-104.755f, -106f) > 1.6f,
+                    "The outpost spillway has no recessed bed.");
+                Require(Mathf.Abs(RoaZoneReliefProjection.GroundHeightAt(-104.755f, -106f)) < 0.01f,
+                    "The bridge deck is not at the authored walk height.");
+                Require(water.transform.Find("OutpostBridgeWalkSurface")?.GetComponent<BoxCollider>() != null,
+                    "The outpost bridge cannot be crossed.");
+                Physics.SyncTransforms();
+                bool crossesBridge = false;
+                foreach (RaycastHit hit in Physics.RaycastAll(new Vector3(-104.755f, 3f, -106f),
+                             Vector3.down, 6f))
+                    crossesBridge |= hit.collider.name == "OutpostBridgeWalkSurface"
+                        && Mathf.Abs(hit.point.y) < 0.01f;
+                Require(crossesBridge, "The bridge collider does not cover the carved channel.");
+                Require(RoaDamRoadWaterProjection.InWater(new Vector3(-104.755f, -1f, -106f)),
+                    "The spillway does not register as water.");
+                Require(!RoaDamRoadWaterProjection.InWater(new Vector3(-104.755f, 0.3f, -106f)),
+                    "The bridge deck is incorrectly underwater.");
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(ground);
+                UnityEngine.Object.DestroyImmediate(host);
             }
             Require(Mathf.Abs(RoaCoords.ToUnity(120f, 120f).y) < 0.001f,
                 "The old zone's terrain is still active after unload.");

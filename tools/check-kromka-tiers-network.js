@@ -28,6 +28,7 @@ const TIER = 3;
 const LOCATION_T1 = 'tierArenaT1';
 // И тира 2 без налётчика: новичок без навыка добывает на тир выше открытого.
 const LOCATION_T2 = 'tierArenaT2';
+const LOCATION_RAIDER = 'tierArenaRaider';
 const TOOL_GROUPS = new Set(['pickaxe', 'axe', 'sickle', 'handPump', 'skinningKnife']);
 // Город фракции: первый тир и узлы семейств своих угодий у стен.
 const CITY = 'relayStation';
@@ -45,7 +46,8 @@ function arenaWithTier(tier = TIER, id = LOCATION, { raider: withRaider = true }
     ? { ...row, resourceType: 'ore', tags: [...new Set([...(row.tags || []).filter(tag => tag !== 'scrap'), 'resource', 'ore'])] }
     : row);
   assert(objects.some(row => row.id === NODE_ID && row.resourceType === 'ore'), 'the arena lost its resource node');
-  return { ...arena, id, name: `Tier ${tier} arena`, tier, objects: withRaider ? [...objects, raider] : objects };
+  return { ...arena, id, name: `Tier ${tier} arena`, tier, anomalyDensity: 0,
+    objects: withRaider ? [...objects, raider] : objects };
 }
 
 function seed(state, tool, professionXp = {}, location = LOCATION) {
@@ -71,9 +73,10 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 (async () => {
   await h.bootstrapCharacters(accounts);
-  fs.writeFileSync(path.join(h.DATA_DIR, 'locations', `${LOCATION}.json`), JSON.stringify(arenaWithTier(), null, 2));
-  fs.writeFileSync(path.join(h.DATA_DIR, 'locations', `${LOCATION_T1}.json`), JSON.stringify(arenaWithTier(1, LOCATION_T1), null, 2));
+  fs.writeFileSync(path.join(h.DATA_DIR, 'locations', `${LOCATION}.json`), JSON.stringify(arenaWithTier(TIER, LOCATION, { raider: false }), null, 2));
+  fs.writeFileSync(path.join(h.DATA_DIR, 'locations', `${LOCATION_T1}.json`), JSON.stringify(arenaWithTier(1, LOCATION_T1, { raider: false }), null, 2));
   fs.writeFileSync(path.join(h.DATA_DIR, 'locations', `${LOCATION_T2}.json`), JSON.stringify(arenaWithTier(2, LOCATION_T2, { raider: false }), null, 2));
+  fs.writeFileSync(path.join(h.DATA_DIR, 'locations', `${LOCATION_RAIDER}.json`), JSON.stringify(arenaWithTier(TIER, LOCATION_RAIDER), null, 2));
   const users = JSON.parse(fs.readFileSync(path.join(h.DATA_DIR, 'users.json'), 'utf8'));
   const savesPath = path.join(h.DATA_DIR, 'saves.json');
   const saves = JSON.parse(fs.readFileSync(savesPath, 'utf8'));
@@ -90,6 +93,7 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   seed(stateFor('modification'), 'fists', {}, LOCATION_T1);
   seed(stateFor('cadence'), 'fists', { gatherMetal: t2Unlock }, LOCATION_T1);
   seed(stateFor('persistence'), 'pickaxeT1', {}, LOCATION_T2);
+  seed(stateFor('untargeted'), 'fists', {}, LOCATION_RAIDER);
   const citizen = stateFor('progression');
   citizen.currentLocationId = CITY;
   citizen.serverLocationContext = { locationId: CITY };
@@ -271,7 +275,9 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     console.log('PASS a skill-less novice mines a T2 vein with a T1 pickaxe');
 
     // Налётчик локации тира 3: сила и снаряжение этого тира.
-    const enemies = accounts.trade.join.worldState?.enemies || accounts.trade.join.enemies || [];
+    await h.connectAndJoin(accounts.untargeted);
+    assert.equal(accounts.untargeted.join.roomId, LOCATION_RAIDER, 'the scout joined the raider arena');
+    const enemies = accounts.untargeted.join.worldState?.enemies || accounts.untargeted.join.enemies || [];
     const raider = enemies.find(row => row.tier === TIER);
     assert(raider, 'a hostile raider of the tier arena carries its tier: '
       + JSON.stringify(enemies.map(row => ({ id: row.id, tier: row.tier, name: row.name, hostile: row.hostileToPlayer }))));

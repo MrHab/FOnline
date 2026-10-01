@@ -223,7 +223,11 @@ async function standStill(account, state) {
       return row && row.aiState !== 'flee' && row.aiState !== 'return' && distance(row, slot) <= config.wanderRadius * 2 ? row : null;
     }, 15000, () => `slot ${slot.x.toFixed(1)},${slot.z.toFixed(1)}; trail ${trail(view, rat.id)}`);
     let blow = null;
-    for (let attempt = 0; attempt < 14 && !blow?.killed; attempt += 1) {
+    // Промах тоже пугает крысу. Считаем именно удары, а не циклы ожидания,
+    // иначе один промах может исчерпать лимит, пока зверёк возвращается.
+    let strikes = 0;
+    const huntDeadline = Date.now() + 90000;
+    while (strikes < 14 && Date.now() < huntDeadline && !blow?.killed) {
       const current = view.rows.get(rat.id);
       assert(current, 'the wounded rat is still in the room');
       if (current.aiState === 'flee' || current.aiState === 'return') { await wait(700); continue; }
@@ -231,6 +235,7 @@ async function standStill(account, state) {
       blow = await strike(accounts.trade, view.rows.get(rat.id) || current, 'pickaxe', hunterSelf);
       if (blow.error === 'Цель слишком далеко.') { await wait(100); continue; }
       assert(blow.ok && !blow.protected, 'the hunter strikes the rat: ' + JSON.stringify(blow).slice(0, 300));
+      strikes += 1;
       if (!blow.killed) await wait(1300);
     }
     assert(blow?.killed, 'a pickaxe kills the rat: ' + JSON.stringify(blow).slice(0, 300));

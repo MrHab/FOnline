@@ -130,10 +130,13 @@ namespace RealmOfAshes.World
         /// вызывался только там, где авторской сцены нет, то есть нигде. Здесь
         /// берётся ровно покраска: запечённое по авторитетной карте альбедо с
         /// тропами, водой и рудой плюс микродеталь. Геометрия, коллизии и
-        /// обстановка остаются авторскими — их сцена уже несёт сама.
+        /// обстановка остаются авторскими — их сцена уже несёт сама. Для
+        /// Дамбового проезда перед покраской проецируется рельеф глобальной
+        /// карты вместе с поверхностью для ходьбы.
         ///
         /// Границы текстуры совпадают с картой без запаса по краям: развёртка
-        /// верхней грани куба идёт 0..1 ровно по площадке, тогда как собственный
+        /// верхней грани или её рельефной сетки идёт 0..1 ровно по площадке,
+        /// тогда как собственный
         /// рельефный меш рисуется с полем вокруг.
         /// </summary>
         public void InitializeAuthoredSurface(LocationDefinition location, JArray stateMap, Renderer target)
@@ -144,6 +147,8 @@ namespace RealmOfAshes.World
             _visualWidth = location != null ? location.WorldWidth : 76f;
             _visualDepth = location != null ? location.WorldDepth : 76f;
             _textureSize = AlbedoResolution(Application.isMobilePlatform);
+            if (RoaZoneReliefProjection.Supports(location?.Id))
+                RoaZoneReliefProjection.Project(target, _visualWidth, _visualDepth);
             GroundUvMirror(target, out _mirrorAlbedoX, out _mirrorAlbedoZ);
 
             // Материал — копия авторского: сохраняются шейдер и его настройки, а

@@ -624,6 +624,459 @@
       "worldRevision": "kromka-1"
     },
     {
+      "id": "roadOutpost_approach_broken_barrier",
+      "name": "roadOutpost approach broken barrier",
+      "position": {
+        "x": -36.4,
+        "y": 0.0,
+        "z": -96.8
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.309,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 2.191,
+        "z": 1.354
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -0.132,
+            "z": -0.141
+          },
+          "size": {
+            "x": 0.75,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.368,
+            "z": 0.109
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": -0.007,
+            "z": 0.859
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_approach_road_1",
+      "name": "roadOutpost approach road 1",
+      "position": {
+        "x": -49.0,
+        "y": 0.0,
+        "z": -103.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5,
+        "z": 5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_approach_road_2",
+      "name": "roadOutpost approach road 2",
+      "position": {
+        "x": -44.0,
+        "y": 0.0,
+        "z": -103.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5,
+        "z": 5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_approach_road_3",
+      "name": "roadOutpost approach road 3",
+      "position": {
+        "x": -39.0,
+        "y": 0.0,
+        "z": -103.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5,
+        "z": 5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_approach_road_4",
+      "name": "roadOutpost approach road 4",
+      "position": {
+        "x": -34.0,
+        "y": 0.0,
+        "z": -103.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5,
+        "z": 5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_approach_road_5",
+      "name": "roadOutpost approach road 5",
+      "position": {
+        "x": -29.0,
+        "y": 0.0,
+        "z": -103.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5,
+        "z": 5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_approach_stop_sign",
+      "name": "roadOutpost approach stop sign",
+      "position": {
+        "x": -50.8,
+        "y": 0.0,
+        "z": -97.4
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "checkpoint",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.069,
+            "z": -0.023
+          },
+          "size": {
+            "x": 1.0,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_apron_wear_1",
+      "name": "roadOutpost apron wear 1",
+      "position": {
+        "x": -92.0,
+        "y": 0.065,
+        "z": -102.3
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.977,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 2.509,
+        "z": 2.499
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_apron_wear_2",
+      "name": "roadOutpost apron wear 2",
+      "position": {
+        "x": -79.2,
+        "y": 0.065,
+        "z": -104.9
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.209,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 2.125,
+        "z": 2.153
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_apron_wear_3",
+      "name": "roadOutpost apron wear 3",
+      "position": {
+        "x": -66.7,
+        "y": 0.065,
+        "z": -101.9
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.693,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 2.026,
+        "z": 1.994
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_apron_wear_kpp",
+      "name": "roadOutpost apron wear kpp",
+      "position": {
+        "x": -56.5,
+        "y": 0.065,
+        "z": -105.2
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.593,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 2.499,
+        "z": 2.509
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_apron_wear_w",
+      "name": "roadOutpost apron wear w",
+      "position": {
+        "x": -109.0,
+        "y": 0.065,
+        "z": -104.65
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.471,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 2.418,
+        "z": 2.434
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
       "id": "roadOutpost_armband_line",
       "name": "Верёвка с повязками",
       "tags": [
@@ -981,6 +1434,40 @@
       "footprint": {
         "x": 5,
         "z": 5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_caution_sign",
+      "name": "roadOutpost bridge caution sign",
+      "position": {
+        "x": -94.7,
+        "y": 1.25,
+        "z": -110.6
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 1.018
       },
       "vision": {
         "blocks": false
@@ -3082,6 +3569,40 @@
       "worldRevision": "kromka-1"
     },
     {
+      "id": "roadOutpost_convoy_ground_wear",
+      "name": "roadOutpost convoy ground wear",
+      "position": {
+        "x": -72.9,
+        "y": 0.01,
+        "z": -119.7
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.396,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 2.569,
+        "z": 3.553
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
       "id": "roadOutpost_convoy_rations",
       "name": "Пайки колонны: по описи",
       "tags": [
@@ -4260,6 +4781,76 @@
       ],
       "vision": {
         "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_gate_military_sign",
+      "name": "roadOutpost gate military sign",
+      "position": {
+        "x": -53.25,
+        "y": 2.25,
+        "z": -97.25
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "landmark",
+      "tags": [
+        "checkpoint",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 1.139
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_gate_warning_sign",
+      "name": "roadOutpost gate warning sign",
+      "position": {
+        "x": -53.25,
+        "y": 1.4,
+        "z": -109.2
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "checkpoint",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.318
+      },
+      "vision": {
+        "blocks": false
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
@@ -6229,6 +6820,108 @@
       "worldRevision": "kromka-1"
     },
     {
+      "id": "roadOutpost_old_bridge_rubble_e",
+      "name": "roadOutpost old bridge rubble e",
+      "position": {
+        "x": -98.5,
+        "y": 0.0,
+        "z": -135.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.292,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "scenery",
+      "tags": [
+        "old-bridge",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 1.408,
+        "z": 1.477
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.109,
+            "z": -0.103
+          },
+          "size": {
+            "x": 0.75,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -0.391,
+            "z": 0.022
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.609,
+            "z": -0.228
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.5
+          }
+        }
+      ],
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_old_bridge_rubble_w",
+      "name": "roadOutpost old bridge rubble w",
+      "position": {
+        "x": -111.0,
+        "y": 0.0,
+        "z": -132.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "old-bridge",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 3.557,
+        "z": 3.636
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
       "id": "roadOutpost_old_pier_east",
       "name": "roadOutpost old pier east",
       "position": {
@@ -6736,16 +7429,16 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "roadOutpost_ring_barrel_1",
-      "name": "roadOutpost ring barrel 1",
+      "id": "roadOutpost_queue_tires",
+      "name": "roadOutpost queue tires",
       "position": {
-        "x": -92.0,
+        "x": -47.6,
         "y": 0.0,
-        "z": -86.4
+        "z": -121.2
       },
       "rotation": {
         "x": 0.0,
-        "y": 0.0,
+        "y": 0.332,
         "z": 0.0
       },
       "scale": {
@@ -6754,391 +7447,48 @@
         "z": 1.0
       },
       "collision": "solid",
-      "role": "cover",
-      "tags": [
-        "barrel-ring",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 0.75,
-        "z": 0.75
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -0.011,
-            "z": 0.002
-          },
-          "size": {
-            "x": 0.75,
-            "z": 0.75
-          }
-        }
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_ring_barrel_2",
-      "name": "roadOutpost ring barrel 2",
-      "position": {
-        "x": -82.0,
-        "y": 0.0,
-        "z": -86.4
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.646,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "cover",
-      "tags": [
-        "barrel-ring",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 1.05,
-        "z": 1.05
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -0.007,
-            "z": 0.009
-          },
-          "size": {
-            "x": 0.75,
-            "z": 0.75
-          }
-        }
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_ring_barrel_3",
-      "name": "roadOutpost ring barrel 3",
-      "position": {
-        "x": -72.0,
-        "y": 0.0,
-        "z": -86.4
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 1.292,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "cover",
-      "tags": [
-        "barrel-ring",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 0.928,
-        "z": 0.928
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -0.011,
-            "z": 0.002
-          },
-          "size": {
-            "x": 0.75,
-            "z": 0.75
-          }
-        }
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_ring_barrel_4",
-      "name": "roadOutpost ring barrel 4",
-      "position": {
-        "x": -62.0,
-        "y": 0.0,
-        "z": -86.4
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 1.937,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "cover",
-      "tags": [
-        "barrel-ring",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 0.969,
-        "z": 0.969
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -0.007,
-            "z": 0.009
-          },
-          "size": {
-            "x": 0.75,
-            "z": 0.75
-          }
-        }
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_ring_barrel_5",
-      "name": "roadOutpost ring barrel 5",
-      "position": {
-        "x": -92.0,
-        "y": 0.0,
-        "z": -125.8
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 2.583,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "cover",
-      "tags": [
-        "barrel-ring",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 1.033,
-        "z": 1.033
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -0.011,
-            "z": 0.002
-          },
-          "size": {
-            "x": 0.75,
-            "z": 0.75
-          }
-        }
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_ring_barrel_6",
-      "name": "roadOutpost ring barrel 6",
-      "position": {
-        "x": -82.0,
-        "y": 0.0,
-        "z": -125.8
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 3.229,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "cover",
-      "tags": [
-        "barrel-ring",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 0.813,
-        "z": 0.813
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -0.007,
-            "z": 0.009
-          },
-          "size": {
-            "x": 0.75,
-            "z": 0.75
-          }
-        }
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_ring_barrel_7",
-      "name": "roadOutpost ring barrel 7",
-      "position": {
-        "x": -72.0,
-        "y": 0.0,
-        "z": -125.8
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 3.875,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "cover",
-      "tags": [
-        "barrel-ring",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 1.059,
-        "z": 1.059
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -0.011,
-            "z": 0.002
-          },
-          "size": {
-            "x": 0.75,
-            "z": 0.75
-          }
-        }
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_ring_barrel_8",
-      "name": "roadOutpost ring barrel 8",
-      "position": {
-        "x": -62.0,
-        "y": 0.0,
-        "z": -125.8
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 4.52,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "cover",
-      "tags": [
-        "barrel-ring",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 0.879,
-        "z": 0.879
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -0.007,
-            "z": 0.009
-          },
-          "size": {
-            "x": 0.75,
-            "z": 0.75
-          }
-        }
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_ring_fire_1",
-      "name": "roadOutpost ring fire 1",
-      "position": {
-        "x": -92.0,
-        "y": 0.8,
-        "z": -86.4
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "none",
       "role": "dressing",
       "tags": [
+        "queue",
         "site",
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 0.2,
-        "z": 0.2
+        "x": 1.426,
+        "z": 1.507
       },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.192,
+            "z": -0.135
+          },
+          "size": {
+            "x": 0.75,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -0.308,
+            "z": -0.01
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.692,
+            "z": -0.135
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.75
+          }
+        }
+      ],
       "vision": {
         "blocks": false
       },
@@ -7146,12 +7496,12 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "roadOutpost_ring_fire_3",
-      "name": "roadOutpost ring fire 3",
+      "id": "roadOutpost_road_faded_lines",
+      "name": "roadOutpost road faded lines",
       "position": {
-        "x": -72.0,
-        "y": 0.8,
-        "z": -86.4
+        "x": -54.0,
+        "y": 0.068,
+        "z": -103.5
       },
       "rotation": {
         "x": 0.0,
@@ -7170,76 +7520,8 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 0.2,
-        "z": 0.2
-      },
-      "vision": {
-        "blocks": false
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_ring_fire_5",
-      "name": "roadOutpost ring fire 5",
-      "position": {
-        "x": -92.0,
-        "y": 0.8,
-        "z": -125.8
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "none",
-      "role": "dressing",
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 0.2,
-        "z": 0.2
-      },
-      "vision": {
-        "blocks": false
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_ring_fire_7",
-      "name": "roadOutpost ring fire 7",
-      "position": {
-        "x": -72.0,
-        "y": 0.8,
-        "z": -125.8
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "none",
-      "role": "dressing",
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 0.2,
-        "z": 0.2
+        "x": 5,
+        "z": 5
       },
       "vision": {
         "blocks": false
@@ -8581,6 +8863,40 @@
       "footprint": {
         "x": 5,
         "z": 5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_yard_ground_wear",
+      "name": "roadOutpost yard ground wear",
+      "position": {
+        "x": -93.0,
+        "y": 0.01,
+        "z": -94.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.611,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 4.187,
+        "z": 4.067
       },
       "vision": {
         "blocks": false

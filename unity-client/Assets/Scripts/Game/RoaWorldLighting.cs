@@ -16,12 +16,31 @@ namespace RealmOfAshes.Game
     /// Server time can be enabled for diagnostics or a future live cycle without
     /// changing the authoritative Node simulation.
     /// </summary>
-    public sealed class RoaWorldLighting : MonoBehaviour
+    public sealed partial class RoaWorldLighting : MonoBehaviour
     {
         public const float WebFixedWorldHour = 16.2f;
         private const float GameDayRealSeconds = 60f * 60f;
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId = Shader.PropertyToID("_Color");
+        private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
+        private static readonly int GlossinessId = Shader.PropertyToID("_Glossiness");
+        private static readonly int WetnessId = Shader.PropertyToID("_Wetness");
+        private static readonly int PuddlesId = Shader.PropertyToID("_Puddles");
+        private static readonly int MudId = Shader.PropertyToID("_Mud");
+        private static readonly int RainId = Shader.PropertyToID("_Rain");
+
+        /// <summary>Гладкость сухой земли — та же, что ставит ей RoaLocalTerrain.</summary>
+        public const float DryGroundSmoothness = 0.015f;
+        public const float WetGroundSmoothness = 0.52f;
+        /// <summary>Во сколько раз темнеет насквозь мокрая земля: вода заполняет поры.</summary>
+        public const float WetGroundDarkening = 0.68f;
+        /// <summary>
+        /// Верх коробки отражения мокрой земли над полом, м. Проба отдаёт небо тем
+        /// рендерам, чей центр ниже: самой земле и мелкому щебню, но не постройкам,
+        /// кустам и персонажам — они отражают прежнее окружение сцены.
+        /// </summary>
+        public const float WetReflectionTop = 0.05f;
+        private const int SkyCubeSize = 16;
 
         [Header("Clock")]
         [Tooltip("Matches the current web client when disabled. When enabled, reads worldHour from /api/wasteland.")]
@@ -40,6 +59,14 @@ namespace RealmOfAshes.Game
         public string VisualProfileId { get; private set; } = "default";
         public LightingSample CurrentSample { get; private set; }
         public bool LocalWorldActive { get { return _localWorldActive; } }
+        public float WeatherCloud { get { return _weatherCloud; } }
+        public float WeatherRain { get { return _weatherRain; } }
+        public float GroundWetness { get { return _groundWetness; } }
+        public float GroundPuddles { get { return _groundPuddles; } }
+        public float GroundMud { get { return _groundMud; } }
+        public float LightningFlash { get { return _lightningFlash; } }
+        public Light LightningLight { get { return _lightning; } }
+        public ReflectionProbe WetReflection { get { return _wetReflection; } }
 
         public struct LightingSample
         {
@@ -74,6 +101,7 @@ namespace RealmOfAshes.Game
         private Renderer _groundRenderer;
         private MaterialPropertyBlock _groundTint;
         private Color _groundDayColor = Color.white;
+        private float _groundDrySmoothness = DryGroundSmoothness;
         private bool _localWorldActive;
         private bool _sceneStateCaptured;
         private bool _ownsSun;
@@ -84,6 +112,17 @@ namespace RealmOfAshes.Game
         private float _lastApplyRealtime = float.NegativeInfinity;
         private float _lastRequestedHour = float.NaN;
         private string _lastPollError = string.Empty;
+        private float _weatherCloud;
+        private float _weatherRain;
+        private float _groundWetness;
+        private float _groundPuddles;
+        private float _groundMud;
+        private float _lightningFlash;
+        private float _lastWeatherApplyRealtime = float.NegativeInfinity;
+        private float _appliedExposure = 1f;
+        private Light _lightning;
+        private ReflectionProbe _wetReflection;
+        private Cubemap _skyCube;
 
         private bool _initialFog;
         private Color _initialFogColor;
@@ -135,12 +174,17 @@ namespace RealmOfAshes.Game
             RestoreSceneState();
             if (_postVolume != null) DestroyRuntime(_postVolume.gameObject);
             if (_runtimeVolumeProfile != null) DestroyRuntime(_runtimeVolumeProfile);
+            if (_stormVolume != null) DestroyRuntime(_stormVolume.gameObject);
+            if (_stormProfile != null) DestroyRuntime(_stormProfile);
             if (_ownsSun && Sun != null) DestroyRuntime(Sun.gameObject);
+            if (_wetReflection != null) DestroyRuntime(_wetReflection.gameObject);
+            if (_skyCube != null) DestroyRuntime(_skyCube);
         }
 
         private void Update()
         {
             if (!_localWorldActive) return;
+            ApplyLightningFlash();
 
             if (FollowServerWorldHour)
             {
@@ -168,10 +212,51 @@ namespace RealmOfAshes.Game
             _effectiveProfile = ResolveVisualProfile(location);
             _groundRenderer = groundRenderer;
             if (_groundRenderer != null && _groundRenderer.sharedMaterial != null)
+            {
                 _groundDayColor = ReadMaterialColor(_groundRenderer.sharedMaterial);
+                // Сухая гладкость — своя у материала земли: в ясную кадр обязан совпадать с прежним.
+                _groundDrySmoothness = _groundRenderer.sharedMaterial.HasProperty(SmoothnessId)
+                    ? _groundRenderer.sharedMaterial.GetFloat(SmoothnessId) : DryGroundSmoothness;
+            }
 
             VisualProfileId = _effectiveProfile?["id"]?.ToString() ?? "default";
             ApplyCurrentHour(true);
+        }
+
+        /// <summary>
+        /// Дождь поверх часа (RoaWeather): облака гасят солнце и тени, дождь
+        /// сгущает дымку, мокрая земля темнеет и блестит. Входит в CurrentSample,
+        /// поэтому буря выброса (SetWeather, .Weather) ложится уже поверх дождя.
+        /// Лужи и грязь уходят шейдеру земли (Kromka Ground). Вызывается каждый кадр
+        /// сглаженными числами; свет пересчитывается не чаще четырёх раз в секунду.
+        /// </summary>
+        public void SetRain(float cloud, float rain, float wetness, float puddles = 0f, float mud = 0f)
+        {
+            cloud = Mathf.Clamp01(cloud);
+            rain = Mathf.Clamp01(rain);
+            wetness = Mathf.Clamp01(wetness);
+            puddles = Mathf.Clamp01(puddles);
+            mud = Mathf.Clamp01(mud);
+            float change = Mathf.Max(Mathf.Max(Mathf.Abs(cloud - _weatherCloud), Mathf.Abs(rain - _weatherRain)),
+                Mathf.Max(Mathf.Abs(wetness - _groundWetness),
+                    Mathf.Max(Mathf.Abs(puddles - _groundPuddles), Mathf.Abs(mud - _groundMud))));
+            if (change <= 0f) return;
+            _weatherCloud = cloud;
+            _weatherRain = rain;
+            _groundWetness = wetness;
+            _groundPuddles = puddles;
+            _groundMud = mud;
+            bool settled = cloud <= 0f && rain <= 0f && wetness <= 0f && puddles <= 0f && mud <= 0f;
+            if (!settled && change < 0.02f && Time.unscaledTime - _lastWeatherApplyRealtime < 0.25f) return;
+            _lastWeatherApplyRealtime = Time.unscaledTime;
+            ApplyCurrentHour(true);
+        }
+
+        /// <summary>Вспышка молнии 0..1: на миг пересвечивает кадр поверх экспозиции часа.</summary>
+        public void SetLightningFlash(float amount)
+        {
+            _lightningFlash = Mathf.Clamp01(amount);
+            if (_localWorldActive) ApplyLightningFlash();
         }
 
         public void SetLocalWorldActive(bool active)
@@ -193,6 +278,8 @@ namespace RealmOfAshes.Game
             if (Sun != null) Sun.enabled = false;
             if (Moon != null) Moon.enabled = false;
             if (ReliefRim != null) ReliefRim.enabled = false;
+            if (_lightning != null) _lightning.enabled = false;
+            if (_wetReflection != null) _wetReflection.enabled = false;
         }
 
         /// <summary>Pure version of the web formula, also used by the editor probe.</summary>
@@ -294,7 +381,44 @@ namespace RealmOfAshes.Game
                 return;
             }
             _lastRequestedHour = hour;
-            Apply(Evaluate(hour, _effectiveProfile, Application.isMobilePlatform));
+            Apply(WithWeather(Evaluate(hour, _effectiveProfile, Application.isMobilePlatform),
+                _weatherCloud, _weatherRain));
+        }
+
+        /// <summary>
+        /// Погода поверх расчёта часа — чистая функция, её проверяет проба. В
+        /// сплошной облачности свет рассеянный: солнце слабое и без теней, небо и
+        /// дымка серые, а дождь сгущает дымку так, что дальний край кадра тонет.
+        /// </summary>
+        public static LightingSample WithWeather(LightingSample sample, float cloud, float rain)
+        {
+            cloud = Mathf.Clamp01(cloud);
+            rain = Mathf.Clamp01(rain);
+            if (cloud <= 0f && rain <= 0f) return sample;
+            float light = Mathf.Lerp(0.5f, 1f, sample.Daylight);
+            sample.SunIntensity *= 1f - 0.68f * cloud;
+            sample.RimIntensity *= 1f - 0.4f * cloud;
+            sample.SunShadows = sample.SunShadows && cloud < 0.72f;
+            sample.HemiIntensity *= 1f + 0.08f * cloud;
+            sample.FillIntensity *= 1f + 0.25f * cloud;
+            sample.SkyColor = Color.Lerp(sample.SkyColor, new Color(0.29f, 0.31f, 0.34f) * light, cloud * 0.8f);
+            sample.FogColor = Color.Lerp(sample.FogColor, new Color(0.37f, 0.39f, 0.41f) * light, cloud * 0.75f);
+            sample.HemiSkyColor = Color.Lerp(sample.HemiSkyColor, new Color(0.72f, 0.76f, 0.80f), cloud * 0.6f);
+            sample.SunColor = Color.Lerp(sample.SunColor, new Color(0.86f, 0.89f, 0.93f), cloud * 0.7f);
+            sample.FogDensity += 0.0025f * cloud + 0.016f * rain;
+            // Под сплошной облачностью темнеет всё, а не только мокрая земля.
+            sample.Exposure *= 1f - 0.18f * cloud;
+            return sample;
+        }
+
+        /// <summary>Цвет и гладкость земли при данной влажности, от сухого цвета и сухой гладкости материала.</summary>
+        public static void WetGround(Color dry, float drySmoothness, float wetness, out Color color, out float smoothness)
+        {
+            wetness = Mathf.Clamp01(wetness);
+            float darken = Mathf.Lerp(1f, WetGroundDarkening, wetness);
+            color = new Color(dry.r * darken, dry.g * darken, dry.b * darken, dry.a);
+            // Блеск приходит раньше потемнения: тонкая плёнка воды уже отражает.
+            smoothness = Mathf.Lerp(drySmoothness, Mathf.Max(drySmoothness, WetGroundSmoothness), Mathf.Sqrt(wetness));
         }
 
         private void Apply(LightingSample sample)
@@ -339,6 +463,7 @@ namespace RealmOfAshes.Game
             ApplyDirectional(ReliefRim, sample.RimColor, sample.RimIntensity,
                              new Vector3(28f, 24f, -36f), LightShadows.None);
             ApplyGroundTint(sample.GroundTintMix);
+            ApplyWetReflection(sample);
         }
 
         private static void ApplyDirectional(Light light, Color color, float intensity,
@@ -361,7 +486,109 @@ namespace RealmOfAshes.Game
             float dayMix = ProfileNumber(_effectiveProfile, "groundDayMix", 0f, 0f, 0.65f);
             Color day = Color.Lerp(_groundDayColor, profileDay, dayMix);
             Color night = ProfileColor(_effectiveProfile, "groundNight", 0xb79a70);
-            WriteGroundTint(Color.Lerp(day, night, mix));
+            // Шейдер земли (Kromka Ground) мочит себя сам по _Wetness — с учётом рельефа
+            // текстуры; прежней земле URP/Lit темнота и блеск задаются здесь.
+            Color tint = Color.Lerp(day, night, mix);
+            Color color = tint;
+            float smoothness = _groundDrySmoothness;
+            if (!_groundRenderer.sharedMaterial.HasProperty(WetnessId))
+                WetGround(tint, _groundDrySmoothness, _groundWetness, out color, out smoothness);
+            WriteGroundTint(color, smoothness);
+        }
+
+        /// <summary>
+        /// Молния — настоящий свет: бело-голубой удар сверху на всю сцену, а не
+        /// только пересвет кадра. Лёгкая экспозиция добавляет ослепление.
+        /// </summary>
+        private void ApplyLightningFlash()
+        {
+            if (_lightning != null)
+            {
+                bool on = _lightningFlash > 0.01f;
+                if (_lightning.enabled != on) _lightning.enabled = on;
+                if (on)
+                {
+                    _lightning.intensity = _lightningFlash * 2f;
+                    _lightning.color = new Color(0.80f, 0.86f, 1f);
+                }
+            }
+            if (_colorAdjustments == null) return;
+            float exposure = Mathf.Log(Mathf.Max(0.01f, _appliedExposure), 2f) + _lightningFlash * 0.4f;
+            if (Mathf.Abs(_colorAdjustments.postExposure.value - exposure) > 0.001f)
+                _colorAdjustments.postExposure.Override(exposure);
+        }
+
+        /// <summary>
+        /// Мокрой земле нужно что отражать: гладкая поверхность без окружения лишь
+        /// темнеет. Отражение — маленький кубик неба текущего часа и погоды (светлое
+        /// пасмурное небо сверху, тёмная земля снизу) в тонкой коробке у пола.
+        /// </summary>
+        private void ApplyWetReflection(LightingSample sample)
+        {
+            if (_groundWetness <= 0.001f)
+            {
+                if (_wetReflection != null) _wetReflection.enabled = false;
+                return;
+            }
+            if (_skyCube == null)
+            {
+                _skyCube = new Cubemap(SkyCubeSize, TextureFormat.RGBA32, true) { name = "RuntimeWetSky" };
+                var probeObject = new GameObject("Wet Ground Reflection");
+                probeObject.transform.SetParent(transform, false);
+                _wetReflection = probeObject.AddComponent<ReflectionProbe>();
+                _wetReflection.mode = ReflectionProbeMode.Custom;
+                _wetReflection.customBakedTexture = _skyCube;
+                _wetReflection.importance = 10;
+                _wetReflection.boxProjection = false;
+                _wetReflection.blendDistance = 0f;
+                _wetReflection.size = new Vector3(4000f, 3f, 4000f);
+                _wetReflection.center = new Vector3(0f, WetReflectionTop - 1.5f, 0f);
+            }
+            _wetReflection.transform.position = Vector3.zero;
+            _wetReflection.enabled = true;
+            _wetReflection.intensity = 1f;
+            FillSkyCube(_skyCube, sample);
+        }
+
+        /// <summary>Кубик неба: горизонт — цвет дымки, зенит — рассеянный свет неба, низ — тёмная земля.</summary>
+        public static void FillSkyCube(Cubemap cube, LightingSample sample)
+        {
+            int size = cube.width;
+            Color zenith = sample.HemiSkyColor * Mathf.Lerp(0.35f, 0.95f, sample.Daylight);
+            Color horizon = Color.Lerp(sample.FogColor, zenith, 0.35f) * 1.15f;
+            Color below = sample.HemiGroundColor * 0.25f;
+            var pixels = new Color[size * size];
+            for (int face = 0; face < 6; face++)
+            {
+                for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    float u = (x + 0.5f) / size * 2f - 1f;
+                    float v = (y + 0.5f) / size * 2f - 1f;
+                    Vector3 direction = CubeDirection((CubemapFace)face, u, v).normalized;
+                    float elevation = direction.y;
+                    Color color = elevation >= 0f
+                        ? Color.Lerp(horizon, zenith, Mathf.Sqrt(elevation))
+                        : Color.Lerp(horizon * 0.6f, below, Mathf.Clamp01(-elevation * 4f));
+                    color.a = 1f;
+                    pixels[y * size + x] = color;
+                }
+                cube.SetPixels(pixels, (CubemapFace)face);
+            }
+            cube.Apply(true, false);
+        }
+
+        private static Vector3 CubeDirection(CubemapFace face, float u, float v)
+        {
+            switch (face)
+            {
+                case CubemapFace.PositiveX: return new Vector3(1f, -v, -u);
+                case CubemapFace.NegativeX: return new Vector3(-1f, -v, u);
+                case CubemapFace.PositiveY: return new Vector3(u, 1f, v);
+                case CubemapFace.NegativeY: return new Vector3(u, -1f, -v);
+                case CubemapFace.PositiveZ: return new Vector3(u, -v, 1f);
+                default: return new Vector3(-u, -v, -1f);
+            }
         }
 
         /// <summary>
@@ -370,13 +597,19 @@ namespace RealmOfAshes.Game
         /// Kromka_Local_*.mat), and a Play Mode write to it lands in the .mat on disk.
         /// Only the first material is tinted, as the old sharedMaterial write did.
         /// </summary>
-        private void WriteGroundTint(Color color)
+        private void WriteGroundTint(Color color, float smoothness)
         {
             Material material = _groundRenderer.sharedMaterial;
             if (_groundTint == null) _groundTint = new MaterialPropertyBlock();
             _groundRenderer.GetPropertyBlock(_groundTint, 0);
             if (material.HasProperty(BaseColorId)) _groundTint.SetColor(BaseColorId, color);
             if (material.HasProperty(ColorId)) _groundTint.SetColor(ColorId, color);
+            if (material.HasProperty(SmoothnessId)) _groundTint.SetFloat(SmoothnessId, smoothness);
+            if (material.HasProperty(GlossinessId)) _groundTint.SetFloat(GlossinessId, smoothness);
+            if (material.HasProperty(WetnessId)) _groundTint.SetFloat(WetnessId, _groundWetness);
+            if (material.HasProperty(PuddlesId)) _groundTint.SetFloat(PuddlesId, _groundPuddles);
+            if (material.HasProperty(MudId)) _groundTint.SetFloat(MudId, _groundMud);
+            if (material.HasProperty(RainId)) _groundTint.SetFloat(RainId, _weatherRain);
             _groundRenderer.SetPropertyBlock(_groundTint, 0);
         }
 
@@ -387,9 +620,13 @@ namespace RealmOfAshes.Game
             _postVolume.enabled = _localWorldActive;
             bool mobile = Application.isMobilePlatform;
 
-            _colorAdjustments.postExposure.Override(Mathf.Log(Mathf.Max(0.01f, sample.Exposure), 2f));
-            _colorAdjustments.contrast.Override(ProfileNumber(_effectiveProfile, "postContrast", 13f, -40f, 40f));
-            _colorAdjustments.saturation.Override(ProfileNumber(_effectiveProfile, "postSaturation", -8f, -50f, 30f));
+            _appliedExposure = sample.Exposure;
+            _colorAdjustments.postExposure.Override(Mathf.Log(Mathf.Max(0.01f, sample.Exposure), 2f)
+                + _lightningFlash * 0.4f);
+            _colorAdjustments.contrast.Override(ProfileNumber(_effectiveProfile, "postContrast", 13f, -40f, 40f)
+                - 5f * _weatherCloud);
+            _colorAdjustments.saturation.Override(ProfileNumber(_effectiveProfile, "postSaturation", -8f, -50f, 30f)
+                - 24f * _weatherCloud);
             _colorAdjustments.colorFilter.Override(ProfileColor(_effectiveProfile, "postTint", Color.white));
             _tonemapping.mode.Override(TonemappingMode.ACES);
 
@@ -464,6 +701,13 @@ namespace RealmOfAshes.Game
             if (ReliefRim == null) ReliefRim = FindOrCreateChildLight("Relief Rim Light");
             Moon.shadows = LightShadows.None;
             ReliefRim.shadows = LightShadows.None;
+            if (_lightning == null)
+            {
+                _lightning = FindOrCreateChildLight("Lightning Light");
+                _lightning.shadows = LightShadows.None;
+                _lightning.transform.rotation = Quaternion.Euler(68f, 20f, 0f);
+                _lightning.enabled = false;
+            }
         }
 
         private Light FindOrCreateChildLight(string objectName)
@@ -639,32 +883,16 @@ namespace RealmOfAshes.Game
             return fallback;
         }
 
-        private static JObject ResolveVisualProfile(LocationDefinition location)
+        /// <summary>
+        /// Базовый профиль по типу локации и поверх него авторский visualProfile.
+        /// Открыт для редакторской пробы: она проверяет им реальные локации.
+        /// </summary>
+        public static JObject ResolveVisualProfile(LocationDefinition location)
         {
             string kind = (location?.Kind ?? string.Empty).Trim().ToLowerInvariant();
+            bool inhabited = kind == "settlement" || kind == "production";
             JObject profile;
-            if (kind == "settlement" || kind == "production")
-            {
-                profile = new JObject
-                {
-                    ["id"] = "settlement_warm",
-                    ["skyDay"] = "#5b5146",
-                    ["fogDay"] = "#625548",
-                    ["fogDensityDay"] = 0.0020f,
-                    ["exposureDay"] = 1.04f,
-                    ["sunDawn"] = "#ff9b58",
-                    ["fillDay"] = "#e7d0b0",
-                    ["groundDay"] = "#b29370",
-                    ["groundDayMix"] = 0.10f,
-                    ["groundNight"] = "#8e735a",
-                    ["postTint"] = "#f4f1ea",
-                    ["postContrast"] = 13f,
-                    ["postSaturation"] = -2f,
-                    ["vignette"] = 0.14f,
-                    ["bloom"] = 0.16f
-                };
-            }
-            else if (kind == "resource")
+            if (kind == "resource")
             {
                 profile = new JObject
                 {
@@ -685,7 +913,7 @@ namespace RealmOfAshes.Game
                     ["bloom"] = 0.10f
                 };
             }
-            else if (kind == "lair" || location?.EncounterOnly == true || location?.Safe == false)
+            else if (!inhabited && (kind == "lair" || location?.EncounterOnly == true || location?.Safe == false))
             {
                 profile = new JObject
                 {
@@ -712,28 +940,28 @@ namespace RealmOfAshes.Game
             }
             else
             {
+                // Посёлки и производства, а с ними всё остальное безопасное: учебный двор
+                // каравана, рынок территории, личная база. Отдельного «нейтрального»
+                // профиля больше нет: он был синим (земля на 65 % #0033ff, голубое
+                // солнце) под открытую пустошь, а пустошь теперь вся опасная и берёт
+                // hostile_cold — синева доставалась только обжитым местам.
                 profile = new JObject
                 {
-                    ["id"] = "wasteland_neutral",
-                    ["skyDay"] = "#4e5961",
-                    ["fogDay"] = "#5f5b55",
-                    ["fogDensityDay"] = 0.00205f,
-                    ["exposureDay"] = 0.82f,
-                    ["hemiSkyDay"] = "#76aad0",
-                    ["hemiGroundDay"] = "#365b78",
-                    ["fillDay"] = "#8ebbd2",
-                    ["sunDay"] = "#90cff7",
-                    ["sunDawn"] = "#c3c4bd",
-                    ["sunIntensityScale"] = 0.72f,
-                    ["hemiIntensityScale"] = 0.75f,
-                    ["fillIntensityScale"] = 0.82f,
-                    ["groundDay"] = "#0033ff",
-                    ["groundDayMix"] = 0.65f,
-                    ["postTint"] = "#7fc4ff",
-                    ["postContrast"] = 16f,
-                    ["postSaturation"] = -28f,
+                    ["id"] = "settlement_warm",
+                    ["skyDay"] = "#5b5146",
+                    ["fogDay"] = "#625548",
+                    ["fogDensityDay"] = 0.0020f,
+                    ["exposureDay"] = 1.04f,
+                    ["sunDawn"] = "#ff9b58",
+                    ["fillDay"] = "#e7d0b0",
+                    ["groundDay"] = "#b29370",
+                    ["groundDayMix"] = 0.10f,
+                    ["groundNight"] = "#8e735a",
+                    ["postTint"] = "#f4f1ea",
+                    ["postContrast"] = 13f,
+                    ["postSaturation"] = -2f,
                     ["vignette"] = 0.14f,
-                    ["bloom"] = 0.12f
+                    ["bloom"] = 0.16f
                 };
             }
 

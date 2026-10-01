@@ -58,7 +58,7 @@ namespace RealmOfAshes.EditorTools
                     ["waveCount"] = 3,
                     ["lanes"] = new JArray
                     {
-                        new JObject { ["id"] = "north", ["label"] = "СЕВЕР", ["x"] = 0f, ["z"] = -20f },
+                        new JObject { ["id"] = "north", ["label"] = "СЕВЕР", ["x"] = 0f, ["z"] = 20f },
                         new JObject { ["id"] = "east", ["label"] = "ВОСТОК", ["x"] = 20f, ["z"] = 0f }
                     }
                 },

@@ -9,7 +9,7 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const { normalizeItemCatalog } = require('../src/server/kromka-items');
+const { readTieredCatalogs } = require('../src/server/kromka-tiers');
 const { normalizeVehicleCatalog } = require('../src/server/vehicles');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -70,12 +70,15 @@ function worldNodes(gltf) {
 const manifest = json(path.join(DIR, 'manifest.json'));
 assert.equal(manifest.schema, 'realm.vehicle-model-manifest.v1');
 assert.match(manifest.version, /^vehicles-1-[0-9a-f]{8}$/);
-const items = normalizeItemCatalog(json(path.join(ROOT, 'data', 'kromka', 'items.json')));
+const items = readTieredCatalogs(path.join(ROOT, 'data')).itemCatalog;
 const vehicles = normalizeVehicleCatalog(json(path.join(ROOT, 'data', 'kromka', 'vehicles.json')), items);
 const licenses = fs.readFileSync(LICENSES, 'utf8');
 
-assert.deepEqual(manifest.models.map(row => row.itemId).sort(), vehicles.vehicles.map(row => row.itemId).sort(),
-  'every vehicle needs exactly one runtime model');
+// GLB с узлами седока нужен мотоциклу (одна модель на все его тиры); мопед, пикап
+// и грузовик собираются из префабов пакета по разметке RoaVehicleRigs на клиенте.
+const glbGroups = [...new Set(vehicles.vehicles.filter(row => row.kind === 'motorcycle').map(row => row.group))].sort();
+assert.deepEqual(manifest.models.map(row => row.itemId).sort(), glbGroups,
+  'every motorcycle group needs exactly one runtime model');
 for (const model of manifest.models) {
   const file = path.join(DIR, model.file);
   const { data, gltf } = parseGlb(file);

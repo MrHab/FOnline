@@ -89,16 +89,22 @@ for (const mode of MODES) {
       assert(entry, `${def.id}: arrivals from the ${gate.dir} have an entry point`);
       const edgeOf = tile => (DIRECTIONS[gate.dir].axis === 'z' ? tile.tz : tile.tx);
       const alongOf = tile => (DIRECTIONS[gate.dir].axis === 'z' ? tile.tx : tile.tz);
-      const near = DIRECTIONS[gate.dir].near;
-      assert.equal(edgeOf(row), near ? GATE_TRIGGER_TILE : TILES - 1 - GATE_TRIGGER_TILE);
+      // Север — +Z (большие tz), восток — +X, как у компаса и карты мира.
+      const near = gate.dir === 'south' || gate.dir === 'west';
+      assert.equal(edgeOf(row), near ? GATE_TRIGGER_TILE : TILES - 1 - GATE_TRIGGER_TILE, `${gate.dir} gate stands on its own side`);
       assert.equal(edgeOf(entry), near ? GATE_ENTRY_TILE : TILES - 1 - GATE_ENTRY_TILE);
       assert.equal(alongOf(row), alongOf(entry), 'the entry point sits straight inside its gate');
-      assert(Math.abs(alongOf(row) - Math.round(gate.along * (TILES - 1))) <= 1, 'the gate follows the shared edge position');
+      // `along` у западной и восточной стороны идёт к югу карты, а юг зоны — малые tz.
+      const share = DIRECTIONS[gate.dir].axis === 'x' ? 1 - gate.along : gate.along;
+      assert(Math.abs(alongOf(row) - Math.round(share * (TILES - 1))) <= 1, 'the gate follows the shared edge position');
       assert(edgeOf(row) >= WALK_MIN && edgeOf(row) <= WALK_MAX, 'the gate is inside the walkable band');
     }
     for (const place of input.places) {
       const portal = def.transitions.find(t => t.to === place.locationId);
       assert(portal && portal.type === 'location' && portal.entryKey === 'entryFromWorld');
+      // v растёт к югу карты: место из северной половины клетки стоит в северной половине зоны.
+      assert.equal(portal.tz > TILES / 2, place.v < 0.5, `${place.locationId} stands in the ${place.v < 0.5 ? 'north' : 'south'} of the zone`);
+      assert.equal(portal.tx > TILES / 2, place.u > 0.5, `${place.locationId} stands in the ${place.u > 0.5 ? 'east' : 'west'} of the zone`);
       assert(def[`entryFromPlace_${place.locationId}`], `${def.id}: leaving ${place.locationId} has an entry point in the zone`);
     }
     assert.equal(new Set(def.transitions.map(t => t.id)).size, def.transitions.length, 'transition ids are unique');
@@ -173,7 +179,7 @@ const tinyCatalog = {
     tiny('t_resource', 'resource')
   ]
 };
-const GOLDEN = { pve: 'b4-e5a7d783', pvpBlack: 'b4-fd77f493' };
+const GOLDEN = { pve: 'b5-8834984e', pvpBlack: 'b5-0c7a9306' };
 for (const [mode, expected] of Object.entries(GOLDEN)) {
   const revision = buildZone(recipe(mode, 20260920), tinyCatalog).revision;
   assert.equal(revision, expected, `constructor rules changed for ${mode}: bump BUILDER_VERSION and update GOLDEN (got ${revision})`);

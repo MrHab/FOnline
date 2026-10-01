@@ -13,6 +13,7 @@ const {
   normalizeCityAuctionConfig,
   normalizeCityMarkets,
   migrateLegacyMarket,
+  retireCityBooks,
   cityBook,
   adoptLegacyShelf,
   sellerTaxPct,
@@ -141,4 +142,26 @@ assert.equal(rulesForSeller(config, {}).setupFeePct, 0.025);
   assert.equal(markets.migratedAt, 3);
 }
 
-console.log('City auctions OK: a book per capital, 8%/4% tax with the resident discount, 2.5% setup fee, up to 30-day orders, the seller rate kept in the order, and a one-time migration of the shared book onto owner shelves.');
+// --- книга бывшего города («Баланс») закрывается ----------------------------------------
+{
+  const markets = normalizeCityMarkets({ migratedAt: 1 }, null, 1);
+  const book = cityBook(markets, 'balanceBunker');
+  market.placeSellOrder(book, {
+    ownerCharacterId: 'seller', ownerName: 'Продавец', itemId: 'leather', category: 'armor', qty: 1, price: 40,
+    durationMs: 24 * HOUR, records: [{ id: 'rt_2', baseId: 'leather' }]
+  }, market.normalizeMarketRules({}), 2);
+  market.placeBuyOrder(book, {
+    ownerCharacterId: 'buyer', ownerName: 'Покупатель', itemId: 'ammo9', category: 'ammo', qty: 2, price: 5, durationMs: 24 * HOUR
+  }, market.normalizeMarketRules({}), 2);
+  cityBook(markets, 'scrapTown').shelves.keep = { silver: 4, items: [], sales: 0 };
+  const moved = retireCityBooks(markets, ['balanceBunker'], 3);
+  assert.deepEqual(plain(moved), { books: 1, orders: 2, shelves: 2 });
+  assert.equal(markets.books.balanceBunker, undefined, 'the former city has no book');
+  assert.equal(markets.legacyShelves.buyer.silver, 10, 'frozen marks wait for the buyer');
+  assert.deepEqual(plain(markets.legacyShelves.seller.items.map(row => [row.itemId, row.qty])), [['leather', 1]], 'the listed item waits for the seller');
+  assert.equal(market.shelfFor(cityBook(markets, 'scrapTown'), 'keep').silver, 4, 'books of the living cities stay');
+  assert.deepEqual(plain(retireCityBooks(markets, ['balanceBunker'], 4)), { books: 0, orders: 0, shelves: 0 }, 'a second start changes nothing');
+  assert.equal(adoptLegacyShelf(markets, 'caravanCamp', 'buyer'), true, 'the owner takes the shelf at another auctioneer');
+}
+
+console.log('City auctions OK: a book per capital, 8%/4% tax with the resident discount, 2.5% setup fee, up to 30-day orders, the seller rate kept in the order, a one-time migration of the shared book onto owner shelves, and the book of a former city closed onto owner shelves.');

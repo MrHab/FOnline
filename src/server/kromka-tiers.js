@@ -124,6 +124,7 @@ function normalizeTierConfig(raw = {}) {
     enemySpecies[id] = Object.freeze({ baseTier: clampTier(row.baseTier), tiers: Object.freeze([...new Set(tiersOfSpecies)]) });
   }
   const qty = Array.isArray(hideDrops.qty) ? hideDrops.qty : [1, 2];
+  const gathering = raw.gathering || {};
   return Object.freeze({
     schema: 'kromka.tiers.v1',
     version: Math.max(1, Math.floor(Number(raw.version || 1))),
@@ -152,6 +153,15 @@ function normalizeTierConfig(raw = {}) {
     hideDrops: Object.freeze({
       qty: Object.freeze([Math.floor(finite(qty[0], 1, 0, 50)), Math.floor(finite(qty[1], 2, 0, 50))]),
       species: Object.freeze((Array.isArray(hideDrops.species) ? hideDrops.species : []).map(safeId).filter(Boolean))
+    }),
+    gathering: Object.freeze({
+      cycleMs: tierArray(gathering.cycleMs, 2500, 200, 60000),
+      toolSpeed: finite(gathering.toolSpeed, 0.6, 0.1, 1),
+      charges: tierArray(gathering.charges, 5, 1, 100),
+      moveToleranceM: finite(gathering.moveToleranceM, 0.9, 0.1, 5),
+      toolFreeTier: Math.floor(finite(gathering.toolFreeTier, 1, 0, TIER_COUNT)),
+      skillTierAhead: Math.floor(finite(gathering.skillTierAhead, 1, 0, TIER_COUNT - 1)),
+      carcassMs: Math.floor(finite(gathering.carcassMs, 180000, 10000, 3600000))
     })
   });
 }
@@ -199,6 +209,21 @@ function materialItem(family, kind, tier, existing, basePrice) {
 }
 
 /**
+ * Тиры, в которых предмет существует: все пять или авторский диапазон tierRange
+ * [от, до] (мопед — только T1, грузовик — T2–T5). Авторский тир обязан в него входить.
+ */
+function itemTierRange(item = {}, authoredTier = 1) {
+  if (item.tierRange === undefined) return [1, TIER_COUNT];
+  const range = Array.isArray(item.tierRange) ? item.tierRange.map(Number) : [];
+  const [min, max] = range;
+  if (range.length !== 2 || !Number.isInteger(min) || !Number.isInteger(max)
+    || min < 1 || max > TIER_COUNT || min > max || authoredTier < min || authoredTier > max) {
+    throw new Error(`Kromka item ${item.id} has an invalid tierRange: ${JSON.stringify(item.tierRange)}`);
+  }
+  return [min, max];
+}
+
+/**
  * Разворачивает авторский каталог предметов: семейства материалов T1–T5 и
  * варианты оружия, брони и инструментов во всех тирах. Возвращает сырой каталог
  * той же схемы — его затем проверяет normalizeItemCatalog.
@@ -224,13 +249,15 @@ function expandItemCatalogSource(rawCatalog = {}, config) {
       continue;
     }
     const slots = Array.isArray(item.modificationSlots) ? item.modificationSlots : [];
-    for (let tier = 1; tier <= TIER_COUNT; tier += 1) {
+    const [minTier, maxTier] = itemTierRange(item, authoredTier);
+    const { tierRange: _tierRange, ...authored } = item;
+    for (let tier = minTier; tier <= maxTier; tier += 1) {
       const variantId = tierVariantId(id, tier, authoredTier);
       if (tier !== authoredTier && byId.has(variantId)) {
         throw new Error(`Kromka item ${variantId} collides with a generated tier variant`);
       }
       const variant = {
-        ...item,
+        ...authored,
         id: variantId,
         tier,
         tierGroup: id,
@@ -307,6 +334,8 @@ function expandFieldRecipeSource(rawRecipes = {}, itemIndex = {}, config) {
     const profession = professionForCraftLine(config, String(recipe.line || ''));
     if (!profession) throw new Error(`Kromka recipe ${recipe.id} has no craft line`);
     for (let tier = 1; tier <= TIER_COUNT; tier += 1) {
+      // Рецепт есть только у тех тиров, в которых существует сам предмет (tierRange).
+      if (!itemIndex[tierVariantId(output.tierGroup, tier, authoredTier)]) continue;
       const inputs = {};
       for (const [key, qty] of Object.entries(recipe.inputs || {})) {
         let itemId = key;
@@ -518,22 +547,59 @@ function professionAllowsTier(config, xp = 0, tier = 1) {
   return professionLevel(config, xp) >= tierRow(config, tier).level;
 }
 
+/**
+ * Профессия сбора добывает на gathering.skillTierAhead тиров выше открытого:
+ * с нулевым навыком — T2, после уровня тира 2 — T3 и так далее. Так сырьё
+ * следующего тира доступно раньше, чем его переработка и изделия.
+ */
+function professionGatherMaxTier(config, xp = 0) {
+  return clampTier(professionMaxTier(config, xp) + config.gathering.skillTierAhead);
+}
+
+/** Уровень профессии сбора, с которого добывается тир. */
+function professionGatherLevel(config, tier = 1) {
+  return tierRow(config, clampTier(tier) - config.gathering.skillTierAhead).level;
+}
+
 /** Опыт за единицу работы тира (добытая единица, переработка, изделие). */
 function professionXpForWork(config, tier = 1, units = 1) {
   return Math.max(0, Math.round(tierRow(config, tier).xp * Math.max(0, Number(units) || 0)));
 }
 
-/** Начисляет опыт профессии в словарь xp; возвращает сводку для ответа клиенту. */
-function grantProfessionXp(config, xpMap, skillId, amount) {
+/**
+ * Потолок опыта от работы тира: тир N учит профессию до уровня, открывающего
+ * тир N+1 (T1 — до 10), последний тир — до предела профессии. Дальше расти
+ * можно только работой следующего тира.
+ */
+function professionXpCapForTier(config, tier = 1) {
+  const n = clampTier(tier);
+  const level = n >= TIER_COUNT ? config.professions.maxLevel : tierRow(config, n + 1).level;
+  return professionXpForLevel(config, level);
+}
+
+/**
+ * Начисляет опыт профессии в словарь xp; возвращает сводку для ответа клиенту.
+ * С tier опыт не поднимается выше потолка этого тира (professionXpCapForTier):
+ * capped — работа тира упёрлась в него, capTier — тир, который учит дальше.
+ */
+function grantProfessionXp(config, xpMap, skillId, amount, { tier = 0 } = {}) {
   const skill = config.professions.skills.find(row => row.id === skillId);
   if (!skill || !xpMap || typeof xpMap !== 'object') return null;
   const before = Math.max(0, Math.floor(Number(xpMap[skillId] || 0)));
-  const cap = professionXpForLevel(config, config.professions.maxLevel);
-  const after = Math.min(cap, before + Math.max(0, Math.floor(Number(amount) || 0)));
+  const cap = Number(tier) >= 1
+    ? professionXpCapForTier(config, tier)
+    : professionXpForLevel(config, config.professions.maxLevel);
+  const wanted = before + Math.max(0, Math.floor(Number(amount) || 0));
+  const after = Math.max(before, Math.min(cap, wanted));
   xpMap[skillId] = after;
   const levelBefore = professionLevel(config, before);
   const level = professionLevel(config, after);
-  return { id: skillId, name: skill.name, gained: after - before, xp: after, level, leveledUp: level > levelBefore };
+  const summary = { id: skillId, name: skill.name, gained: after - before, xp: after, level, leveledUp: level > levelBefore };
+  if (Number(tier) >= 1 && wanted > after && clampTier(tier) < TIER_COUNT) {
+    summary.capped = true;
+    summary.capTier = clampTier(tier) + 1;
+  }
+  return summary;
 }
 
 /** Шанс лишней единицы добычи от уровня профессии. */
@@ -555,7 +621,8 @@ function publicProfessions(config, xpMap = {}) {
       level,
       levelXp: professionXpForLevel(config, level),
       nextLevelXp: level >= config.professions.maxLevel ? xp : professionXpForLevel(config, level + 1),
-      maxTier: professionMaxTier(config, xp)
+      maxTier: professionMaxTier(config, xp),
+      ...(skill.kind === 'gather' ? { gatherTier: professionGatherMaxTier(config, xp) } : {})
     };
   });
 }
@@ -626,7 +693,10 @@ module.exports = {
   sanitizeProfessionXp,
   professionMaxTier,
   professionAllowsTier,
+  professionGatherMaxTier,
+  professionGatherLevel,
   professionXpForWork,
+  professionXpCapForTier,
   grantProfessionXp,
   professionGatherBonus,
   publicProfessions,

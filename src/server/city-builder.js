@@ -22,8 +22,9 @@
 // байт. Меняя правила сборки, поднимайте CITY_BUILDER_VERSION.
 
 const crypto = require('node:crypto');
+const { COMPASS_NORTH } = require('./zone-builder');
 
-const CITY_BUILDER_VERSION = 2;
+const CITY_BUILDER_VERSION = 3;
 const TILE = 2;
 // Город компактный, как в Albion: 160 × 160 м, от ворот до ворот ≈30 с бега. Зона
 // пустоши вдвое больше (320 м) — сектор с городом просто меньше остальных.
@@ -36,21 +37,15 @@ const STREET_HALF = 3;
 const PLAZA_HALF = 8;
 const RING_RADIUS = 10;
 const WALL_STEP = 3.6; // длина секции стены из лома в тайлах (7,2 м)
+// Север города — +Z (большие tz), как у зон, компаса и карты мира; восток — +X.
 const DIRECTIONS = Object.freeze({
-  north: { entry: 'entryFromNorth', dx: 0, dz: -1 },
-  south: { entry: 'entryFromSouth', dx: 0, dz: 1 },
+  north: { entry: 'entryFromNorth', dx: 0, dz: 1 },
+  south: { entry: 'entryFromSouth', dx: 0, dz: -1 },
   west: { entry: 'entryFromWest', dx: -1, dz: 0 },
   east: { entry: 'entryFromEast', dx: 1, dz: 0 }
 });
 const DISTRICT_NAMES = Object.freeze({
   bank: 'Банковский квартал', market: 'Рынок', workshop: 'Мастерские', homes: 'Жилой квартал'
-});
-const DISTRICTS = Object.freeze({
-  // Прямоугольники кварталов в тайлах от центра: [dx0, dz0, dx1, dz1].
-  bank: [6, -28, 26, -8],
-  market: [-26, -28, -6, -8],
-  workshop: [6, 8, 26, 28],
-  homes: [-26, 8, -6, 28]
 });
 
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
@@ -107,12 +102,30 @@ function normalizeCityRecipe(recipe = {}) {
   };
 }
 
-// Станки игроков: ключ ремесла → префаб набора. Город своих станков не ставит,
-// они появляются только на выигранном участке.
-const STATION_PREFABS = Object.freeze({
-  ammo_bench: 'craft_station_ammo', weapon_bench: 'craft_station_weapon', tool_bench: 'craft_station_tools',
-  repair_bench: 'craft_station_repair', energy_bench: 'craft_station_energy', chem_station: 'craft_station_chem'
+// Станки игроков. Город своих станков не ставит: на выигранном участке встаёт
+// мастерская ремесла, как здание в Albion, а перед входом — её мастер.
+// `model` — ключ станка, по которому сервер узнаёт его при крафте.
+const STATION_WORKSHOPS = Object.freeze({
+  ammo_bench: { model: 'craftStationAmmo', prefab: 'plot_workshop_ammo', master: 'Патронщик', masterAt: [2.2, 2.1],
+    appearance: { sex: 'male', hairId: 'short_crop', hairColorId: 'hair_02' }, armor: 'leather' },
+  weapon_bench: { model: 'craftStationWeapon', prefab: 'plot_workshop_weapon', master: 'Оружейник', masterAt: [0.9, 1.7],
+    appearance: { sex: 'male', hairId: 'short_crop', hairColorId: 'hair_08' }, armor: 'leather' },
+  tool_bench: { model: 'craftStationTools', prefab: 'plot_workshop_tools', master: 'Инструментальщица', masterAt: [2.2, 1.4],
+    appearance: { sex: 'female', hairId: 'tied_back', hairColorId: 'hair_04' }, armor: 'leather' },
+  repair_bench: { model: 'craftStationRepair', prefab: 'plot_workshop_repair', master: 'Механик', masterAt: [2.4, 1.7],
+    appearance: { sex: 'male', hairId: 'short_crop', hairColorId: 'hair_06' }, armor: 'leather' },
+  energy_bench: { model: 'craftStationEnergy', prefab: 'plot_workshop_energy', master: 'Энергетик', masterAt: [2.2, 1.8],
+    appearance: { sex: 'female', hairId: 'tied_back', hairColorId: 'hair_06' }, armor: 'leather' },
+  chem_station: { model: 'craftStationChem', prefab: 'plot_workshop_chem', master: 'Химик', masterAt: [2.4, 1.6],
+    appearance: { sex: 'female', hairId: 'tied_back', hairColorId: 'hair_08' }, armor: 'leather' }
 });
+
+/** Лицо участка — сторона, обращённая к площади: оттуда к нему и подходят. */
+function plotFacing(plot) {
+  return Math.abs(plot.tx - CENTRE) > Math.abs(plot.tz - CENTRE)
+    ? { dx: plot.tx > CENTRE ? -1 : 1, dz: 0 }
+    : { dx: 0, dz: plot.tz > CENTRE ? -1 : 1 };
+}
 
 /** Объект города из префаба набора: его же кладут и конструктор, и авторский город. */
 function cityKitObject(kit, cityId, id, prefab, tx, tz, degrees = 0, tags = [], shape = null) {
@@ -133,12 +146,14 @@ function cityKitObject(kit, cityId, id, prefab, tx, tz, degrees = 0, tags = [], 
     // без него игрок проходил бы сквозь стену и курсор не находил бы постройку.
     // Часть задаётся в осях самого объекта: масштаб на неё накладывает сервер,
     // и умножь мы здесь ещё раз — преграда встала бы шире постройки.
+    // Префаб из нескольких масс (мастерская и штабели у двора) перечисляет их в
+    // `parts`: одна общая коробка закрыла бы и двор, где стоит мастер.
     ...(entry.solid ? {
-      collisionParts: [{
-        center: { x: round2(entry.center?.[0] || 0), z: round2(entry.center?.[1] || 0) },
-        size: { x: round2(entry.size[0]), z: round2(entry.size[1]) },
-        height: round2(Math.max(0.4, Number(entry.height) || 1))
-      }]
+      collisionParts: (Array.isArray(entry.parts) && entry.parts.length ? entry.parts : [entry]).map(part => ({
+        center: { x: round2(part.center?.[0] || 0), z: round2(part.center?.[1] || 0) },
+        size: { x: round2(part.size[0]), z: round2(part.size[1]) },
+        height: round2(Math.max(0.4, Number(part.height) || 1))
+      }))
     } : {}),
     collisionSize: { width, depth },
     footprint: { x: width, z: depth },
@@ -147,6 +162,19 @@ function cityKitObject(kit, cityId, id, prefab, tx, tz, degrees = 0, tags = [], 
     tags: [...new Set([...tags, 'city-kit'])],
     ...(shape?.hover ? { hover: shape.hover } : {})
   };
+}
+
+/**
+ * Пролёты ограды застроенных участков (`plot_N_edge…`): мастерская занимает
+ * участок целиком, и забор свободного участка ей не нужен — ни вида, ни преграды.
+ */
+function withoutBuiltPlotFences(objects, stations) {
+  const built = new Set((stations || []).map(row => String(row?.interactive?.plotId || '')).filter(Boolean));
+  if (!built.size) return objects;
+  return (objects || []).filter(row => {
+    const match = /^(plot_\d+)_edge/.exec(String(row?.id || ''));
+    return !match || !built.has(match[1]);
+  });
 }
 
 /**
@@ -159,15 +187,47 @@ function cityStationObjects(plan, built, kit) {
   const rows = [];
   for (const row of Array.isArray(built) ? built : []) {
     const plot = plots.get(String(row?.plotId || ''));
-    const prefab = STATION_PREFABS[String(row?.station || '')];
-    if (!plot || !prefab) continue;
-    const station = cityKitObject(kit, plan?.cityId || '', `station_${plot.id}`, prefab, plot.tx, plot.tz, 0,
+    const workshop = STATION_WORKSHOPS[String(row?.station || '')];
+    if (!plot || !workshop) continue;
+    // Мастерская стоит задом к дальнему забору, входом — к лицу участка.
+    const face = plotFacing(plot);
+    const degrees = (Math.round(Math.atan2(face.dx, face.dz) * 180 / Math.PI) + 360) % 360;
+    const station = cityKitObject(kit, plan?.cityId || '', `station_${plot.id}`, workshop.prefab, plot.tx, plot.tz, degrees,
       ['city-station', 'crafting-station', row.station, `city-${plot.district}`]);
-    // Участок назван в самом станке: по нему сервер берёт плату и владельца.
+    // Мастерская и есть станок: по ключу модели сервер узнаёт его при крафте,
+    // а участок, названный в самой постройке, даёт плату и владельца.
+    station.model = workshop.model;
     station.interactive = { kind: 'craftingStation', craftingStations: [row.station],
                             stationSiteId: plan?.cityId || '', plotId: plot.id };
     station.role = 'cover';
     rows.push(station);
+    // Мастер стоит у рабочего места мастерской, сбоку от таблички торгов: точка
+    // `masterAt` — в осях мастерской (x вдоль фасада, z к лицу участка), как у префаба.
+    const turn = degrees * Math.PI / 180;
+    const [localX, localZ] = workshop.masterAt;
+    const master = {
+      x: localX * Math.cos(turn) + localZ * Math.sin(turn),
+      z: -localX * Math.sin(turn) + localZ * Math.cos(turn)
+    };
+    // Мастер — живой служащий: его ставит сервер, префаба у строки нет. Разговор
+    // с ним открывает станок мастерской. Ремесла в его тегах нет — иначе клиент
+    // принял бы и самого мастера за станок.
+    rows.push({
+      id: `master_${plot.id}`,
+      model: 'wastelandSettler',
+      name: workshop.master,
+      position: { x: round2(tileCentre(plot.tx) + master.x), y: 0, z: round2(tileCentre(plot.tz) + master.z) },
+      rotation: { x: 0, y: round2(degrees * Math.PI / 180), z: 0 },
+      scale: { x: 1, y: 1, z: 1 },
+      collision: 'solid',
+      tags: ['npc', 'friendly', 'service', 'city-station-master', `city-${plot.district}`],
+      entity: {
+        kind: 'npc', role: 'npc', hostileToPlayer: false, stationary: true,
+        service: 'stationMaster', stationObjectId: station.id,
+        appearance: { schema: 'realm.character-appearance.v1', skinToneId: 'skin_03', ...workshop.appearance },
+        equipment: { weapon: 'fists', armor: workshop.armor, helmet: '', boots: 'boots', backpack: '' }
+      }
+    });
   }
   return rows;
 }
@@ -213,7 +273,7 @@ function buildCity(recipe, kit) {
   const gateDirs = new Set(plan.gates.map(gate => gate.dir));
   let wallIndex = 0;
   for (const [side, fixedTile, along] of [
-    ['north', wall.min, 'x'], ['south', wall.max, 'x'], ['west', wall.min, 'z'], ['east', wall.max, 'z']
+    ['north', wall.max, 'x'], ['south', wall.min, 'x'], ['west', wall.min, 'z'], ['east', wall.max, 'z']
   ]) {
     const hasGate = gateDirs.has(side);
     for (let t = wall.min; t <= wall.max; t += WALL_STEP) {
@@ -245,7 +305,7 @@ function buildCity(recipe, kit) {
   const building = (id, rect, doorSide, tags, hover = null) => {
     const [x0, z0, x1, z1] = rect;
     const door = { tx: doorSide === 'west' || doorSide === 'east' ? (doorSide === 'west' ? x0 : x1) : Math.round((x0 + x1) / 2),
-                   tz: doorSide === 'north' || doorSide === 'south' ? (doorSide === 'north' ? z0 : z1) : Math.round((z0 + z1) / 2) };
+                   tz: doorSide === 'north' || doorSide === 'south' ? (doorSide === 'north' ? z1 : z0) : Math.round((z0 + z1) / 2) };
     // Ряд секций центрируем по стороне: иначе стена выступает за участок и
     // слипается с соседним домом, а дом перестаёт читаться отдельным зданием.
     const run = (from, to) => {
@@ -259,7 +319,7 @@ function buildCity(recipe, kit) {
     let index = 0;
     for (const tile of run(x0, x1)) {
       for (const tz of [z0, z1]) {
-        const side = tz === z0 ? 'north' : 'south';
+        const side = tz === z1 ? 'north' : 'south';
         if (side === doorSide && Math.abs(tile - door.tx) <= 2) continue;
         put(`${id}_w${index++}`, 'scrap_wall_segment', tile, tz, 0, tags, hover ? { hover } : null);
       }
@@ -280,10 +340,10 @@ function buildCity(recipe, kit) {
   const PLOT_HALF = 3;
   const PLOT_ROWS = [14, 22, 30];
   const QUARTERS = Object.freeze([
-    { key: 'bank', dx: 1, dz: -1 },
-    { key: 'market', dx: -1, dz: -1 },
-    { key: 'workshop', dx: 1, dz: 1 },
-    { key: 'homes', dx: -1, dz: 1 }
+    { key: 'bank', dx: 1, dz: 1 },
+    { key: 'market', dx: -1, dz: 1 },
+    { key: 'workshop', dx: 1, dz: -1 },
+    { key: 'homes', dx: -1, dz: -1 }
   ]);
   const plots = [];
   const markPlot = (centre, district, built) => {
@@ -345,8 +405,8 @@ function buildCity(recipe, kit) {
   // взаимодействия перекрывают друг друга — до обеих меньше пяти метров.
   anchors.bank = {
     door: bank.door,
-    storage: { tx: bankRect[2] - 2, tz: bankRect[3] - 2 },
-    auction: { tx: bankRect[0] + 2, tz: bankRect[1] + 2 },
+    storage: { tx: bankRect[2] - 2, tz: bankRect[1] + 2 },
+    auction: { tx: bankRect[0] + 2, tz: bankRect[3] - 2 },
     rect: bankRect
   };
   put('bank_vault', 'storage_chest', anchors.bank.storage.tx, anchors.bank.storage.tz, 0, ['bank', 'vault']);
@@ -366,8 +426,8 @@ function buildCity(recipe, kit) {
     const plot = markPlot(marketGrid[index], 'market', trades);
     if (!trades) continue;
     put(`market_awning_${stall}`, 'trader_awning', plot.tx, plot.tz, stall % 2 ? 90 : 0, ['city-market', 'stall']);
-    put(`market_crate_${stall}`, 'cargo_stack', plot.tx + 1, plot.tz + 1, 0, ['city-market']);
-    anchors.market.traders.push({ tx: plot.tx, tz: plot.tz + 1 });
+    put(`market_crate_${stall}`, 'cargo_stack', plot.tx + 1, plot.tz - 1, 0, ['city-market']);
+    anchors.market.traders.push({ tx: plot.tx, tz: plot.tz - 1 });
     stall += 1;
   }
 
@@ -391,25 +451,28 @@ function buildCity(recipe, kit) {
     const plot = markPlot(homeGrid[index], 'homes', lived);
     if (!lived) continue;
     put(`home_${index}`, 'wasteland_shack', plot.tx, plot.tz, index % 2 ? 90 : 0, ['city-home']);
-    anchors.homes.push({ tx: plot.tx, tz: plot.tz + 2 });
+    anchors.homes.push({ tx: plot.tx, tz: plot.tz - 2 });
   }
   put('homes_fire', 'campfire_rest', anchors.homes[0].tx + 3, anchors.homes[0].tz, 0, ['city-home', 'rest']);
 
   // --- построенное игроками: станок на выигранном участке ------------------------------------
-  objects.push(...cityStationObjects({ cityId: plan.cityId, plots }, plan.built, kit));
+  const playerStations = cityStationObjects({ cityId: plan.cityId, plots }, plan.built, kit);
+  const unfenced = withoutBuiltPlotFences(objects, playerStations).slice();
+  objects.length = 0;
+  objects.push(...unfenced, ...playerStations);
 
   // --- площадь: ориентир, доска работ, диспетчер, лазарет ------------------------------------
   const landmark = plan.mode === 'peaceful' && plan.region === 'northern_sluices' ? 'water_tank' : 'relay_antenna';
-  put('plaza_landmark', landmark, CENTRE, CENTRE - 4, 0, ['city-plaza', 'landmark']);
+  put('plaza_landmark', landmark, CENTRE, CENTRE + 4, 0, ['city-plaza', 'landmark']);
   anchors.plaza = { tx: CENTRE, tz: CENTRE };
-  anchors.board = { tx: CENTRE - 5, tz: CENTRE + 5 };
-  anchors.dispatcher = { tx: CENTRE + 6, tz: CENTRE - 2 };
-  anchors.medic = { tx: CENTRE - 6, tz: CENTRE - 2 };
+  anchors.board = { tx: CENTRE - 5, tz: CENTRE - 5 };
+  anchors.dispatcher = { tx: CENTRE + 6, tz: CENTRE + 2 };
+  anchors.medic = { tx: CENTRE - 6, tz: CENTRE + 2 };
   // Доска работ — настоящая доска: у неё игрок берёт вылазки.
-  put('plaza_board', 'job_board', anchors.board.tx, anchors.board.tz - 1, 0, ['city-plaza', 'board']);
-  put('plaza_well', 'water_tank', CENTRE + 5, CENTRE + 3, 0, ['city-plaza']);
-  put('plaza_medic_post', 'cot_bed', anchors.medic.tx, anchors.medic.tz - 2, 0, ['city-plaza', 'medic']);
-  put('plaza_dispatch_post', 'trader_awning', anchors.dispatcher.tx, anchors.dispatcher.tz - 2, 0, ['city-plaza', 'dispatcher']);
+  put('plaza_board', 'job_board', anchors.board.tx, anchors.board.tz + 1, 0, ['city-plaza', 'board']);
+  put('plaza_well', 'water_tank', CENTRE + 5, CENTRE - 3, 0, ['city-plaza']);
+  put('plaza_medic_post', 'cot_bed', anchors.medic.tx, anchors.medic.tz + 2, 0, ['city-plaza', 'medic']);
+  put('plaza_dispatch_post', 'trader_awning', anchors.dispatcher.tx, anchors.dispatcher.tz + 2, 0, ['city-plaza', 'dispatcher']);
 
   // Дороги: кольцо вокруг площади и улицы от него к каждым воротам. Плита
   // набора — 4 × 4 м; берём её вдвое крупнее (масштаб по всем осям, иначе
@@ -448,10 +511,10 @@ function buildCity(recipe, kit) {
   // остальное интерактивное — на рынок. Позицию меняем, всё прочее оставляем как есть:
   // квесты, крафт и торговля ссылаются на эти объекты по id.
   const plazaRing = [
-    { tx: CENTRE - 7, tz: CENTRE - 7 }, { tx: CENTRE + 7, tz: CENTRE - 7 },
     { tx: CENTRE - 7, tz: CENTRE + 7 }, { tx: CENTRE + 7, tz: CENTRE + 7 },
-    { tx: CENTRE - 3, tz: CENTRE + 7 }, { tx: CENTRE + 3, tz: CENTRE + 7 },
-    { tx: CENTRE - 7, tz: CENTRE - 2 }, { tx: CENTRE + 7, tz: CENTRE - 2 }
+    { tx: CENTRE - 7, tz: CENTRE - 7 }, { tx: CENTRE + 7, tz: CENTRE - 7 },
+    { tx: CENTRE - 3, tz: CENTRE - 7 }, { tx: CENTRE + 3, tz: CENTRE - 7 },
+    { tx: CENTRE - 7, tz: CENTRE + 2 }, { tx: CENTRE + 7, tz: CENTRE + 2 }
   ];
   const districtOf = object => {
     const kind = String(object?.interactive?.kind || '');
@@ -479,10 +542,10 @@ function buildCity(recipe, kit) {
     bank: [
       { tx: anchors.bank.auction.tx, tz: anchors.bank.auction.tz },
       { tx: anchors.bank.storage.tx, tz: anchors.bank.storage.tz },
-      { tx: anchors.bank.storage.tx - 3, tz: anchors.bank.storage.tz + 3 }
+      { tx: anchors.bank.storage.tx - 3, tz: anchors.bank.storage.tz - 3 }
     ],
     plaza: plazaRing,
-    market: anchors.market.traders.map(trader => ({ tx: trader.tx + 2, tz: trader.tz - 2 }))
+    market: anchors.market.traders.map(trader => ({ tx: trader.tx + 2, tz: trader.tz + 2 }))
   };
   // Вид авторского объекта в собранном городе. Клиент строит такую локацию из
   // набора префабов, поэтому у каждой вещи должен быть ключ набора: берём одноимённый
@@ -530,11 +593,11 @@ function buildCity(recipe, kit) {
       tz: CENTRE + dir.dz * (WALL_HALF - 6)
     };
   }
-  const hub = { tx: CENTRE, tz: CENTRE + 6 };
+  const hub = { tx: CENTRE, tz: CENTRE - 6 };
 
   const definition = {
     schema: 'realm.location.v1', version: 1, id: plan.cityId, name: plan.name, seed: plan.seed,
-    kind: 'zone', generated: true, cityZone: true, builderVersion: CITY_BUILDER_VERSION, revision: '',
+    kind: 'zone', generated: true, cityZone: true, builderVersion: CITY_BUILDER_VERSION, compassNorth: COMPASS_NORTH, revision: '',
     safe: plan.mode === 'peaceful', pvpMode: plan.mode, noRespawn: false, enemyCap: 0, spawnCount: 0,
     allowGlobalMapExit: true, runtimeMode: 'generated', macroRegion: plan.region,
     ground: { preset: plan.groundPreset }, map: { width: TILES * TILE, depth: TILES * TILE, origin: 'center' },
@@ -577,4 +640,4 @@ function cityRevision(definition) {
 }
 
 module.exports = { CITY_BUILDER_VERSION, DIRECTIONS, TILES, WALL_HALF, buildCity, cityKitObject,
-  cityRevision, cityStationObjects, normalizeCityRecipe };
+  cityRevision, cityStationObjects, normalizeCityRecipe, withoutBuiltPlotFences };

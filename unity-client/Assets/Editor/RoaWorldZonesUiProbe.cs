@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RealmOfAshes.EditorTools
 {
@@ -91,8 +92,6 @@ namespace RealmOfAshes.EditorTools
             opening["contested"] = true;
             Require(RoaWorldEventsPresentation.ChestButtonLabel(opening).Contains("ОСПАРИВАЕТСЯ"),
                 "A contested channel is announced on the button");
-            publicEvent["rejoinInSeconds"] = 70;
-            Require(RoaWorldEventsPresentation.DescribePublicEvent(publicEvent, "randomAshGrove#pubev_1", 10).Contains("через 60 с"), "Death rejoin delay is shown");
 
             var boss = JObject.Parse(@"{'roomId':'coreLabCenterReactor','displayName':'Хранитель Нуля','phase':'shielded','phaseLabel':'Щит активен','nodesAlive':2,'nodesTotal':4,'pulseInSeconds':12,'pulseTelegraph':false,'bossHp':1800,'bossMaxHp':1800,'pulseRadius':9,'hazards':[{'id':'hazard_0','x':9,'z':0,'radius':5},{'id':'hazard_2','x':-4.5,'z':7.8,'radius':5}]}");
             string bossText = RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 2);
@@ -351,8 +350,38 @@ namespace RealmOfAshes.EditorTools
                 var presentation = go.AddComponent<RoaWorldEventsPresentation>();
                 presentation.Configure(null);
                 Require(go.GetComponentInChildren<Canvas>(true) != null, "World events presentation builds its canvas without a socket");
+                // В WebGL у LegacyRuntime.ttf нет кириллицы: панель рисовала одни цифры.
+                foreach (Text text in go.GetComponentsInChildren<Text>(true))
+                    Require(text.font == RoaUiFont.Default, "World events " + text.name + " is drawn with the bundled Cyrillic font");
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
+
+            // Баннер сдвига: вложенный шрифт и строка целиком. Строка Noto Sans
+            // выше, чем у LegacyRuntime: в прежней рамке она пропадала вся, а
+            // с подгонкой размера ужималась даже короткая.
+            var shiftHost = new GameObject("ShiftBannerProbe");
+            try
+            {
+                shiftHost.AddComponent<RoaKromkaShiftAndDetector>().Configure(null, null);
+                Text shiftText = shiftHost.GetComponentInChildren<Canvas>(true).transform.Find("ShiftWarning/ShiftText").GetComponent<Text>();
+                Require(shiftText.font == RoaUiFont.Default, "The shift banner is drawn with the bundled Cyrillic font");
+                Vector2 box = shiftText.rectTransform.rect.size;
+                foreach (string line in new[] { activeLine, earlyLine, excitedLine })
+                {
+                    var inBox = new TextGenerator();
+                    TextGenerationSettings settings = shiftText.GetGenerationSettings(box);
+                    inBox.Populate(line, settings);
+                    var unbounded = new TextGenerator();
+                    unbounded.Populate(line, shiftText.GetGenerationSettings(new Vector2(box.x, 4000f)));
+                    Require(inBox.characterCountVisible == unbounded.characterCountVisible,
+                        "The shift banner cuts its line — " + inBox.characterCountVisible + " of " + unbounded.characterCountVisible
+                        + " characters in a " + box + " box: " + line);
+                    if (line == earlyLine)
+                        Require(!settings.resizeTextForBestFit || inBox.fontSizeUsedForBestFit == settings.resizeTextMaxSize,
+                            "A short shift line keeps its full size, not " + inBox.fontSizeUsedForBestFit + ": " + line);
+                }
+            }
+            finally { UnityEngine.Object.DestroyImmediate(shiftHost); }
             Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, transition zone warnings, artifact tier cards, list rows, belt caps, excited fields, detector readout and the outpost/base difference, preview deltas and the faction contract window.");
         }
 

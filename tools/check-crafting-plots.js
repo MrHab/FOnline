@@ -29,13 +29,16 @@ assert.equal(plots.plotIdFor('', 'x'), '');
 
 // --- возврат материалов --------------------------------------------------------------
 {
-  const base = plots.plotReturnRate(config, 'sluiceCity', 'weapon_bench');
+  const base = plots.plotReturnRate(config, 'settlement', 'weapon_bench');
   assert.equal(Number(base.toFixed(4)), Number((1 - 1 / 1.18).toFixed(4)), 'a plot returns 15.25% of materials');
   const regionalLocation = Object.keys(config.regions)[0];
   const regionalStation = config.regions[regionalLocation][0];
   assert.equal(Number(plots.plotReturnRate(config, regionalLocation, regionalStation).toFixed(4)), Number((1 - 1 / 1.33).toFixed(4)),
     'a profile region adds +15 bonus');
   assert.equal(Number(plots.plotReturnRate(config, 'x', 'y', true).toFixed(4)), Number((1 - 1 / 1.77).toFixed(4)), 'premium focus adds +59');
+  // Ремесло города (угодья, библия 4.5): переработка его семейства — профильный бонус на любом станке.
+  assert.equal(Number(plots.plotReturnRate(config, 'settlement', 'tool_bench', false, true).toFixed(4)), Number((1 - 1 / 1.33).toFixed(4)),
+    'the city craft adds the profile bonus on any bench');
   const rows = plots.rollPlotReturns([{ id: 'scrap', qty: 10 }, { id: 'silver', qty: 5 }, { id: 'wood', qty: 1 }], 0.25, () => 0.4);
   assert.deepEqual(plain(rows), [{ id: 'scrap', qty: 3 }], '2.5 scrap → 2 + roll; marks never return; 0.25 wood fails the roll');
 }
@@ -130,4 +133,20 @@ assert.equal(plots.plotIdFor('', 'x'), '');
   assert.deepEqual(plain(state.payouts), { good: 12 });
 }
 
-console.log('Crafting plots OK: lease auctions with refunds, late-bid extension, renewal and expiry, lessee fees and burned settlement fees, 15–43% material returns, and a clean saved state.');
+// --- участки бывшего города («Баланс») закрываются с возвратами ------------------------
+{
+  const state = plots.normalizeCraftingPlotState(null, config);
+  const plot = plots.ensurePlot(state, config, { locationId: 'balanceBunker', objectId: 'yard', station: 'weapon_bench' });
+  plot.stationOwner = { characterId: 'builder', name: 'Строитель' };
+  plot.stationCost = { scrap: 20, weaponParts: 6 };
+  assert(plots.placePlotBid(state, config, plot.id, { characterId: 'bidder', name: 'Ставящий' }, config.minBid, DAY).ok);
+  const kept = plots.ensurePlot(state, config, { locationId: 'scrapTown', objectId: 'bench', station: 'tool_bench' });
+  const changes = plots.retireLocationPlots(state, config, ['balanceBunker'], () => 2);
+  assert.deepEqual(changes.map(row => row.kind), ['bidReturned', 'stationRefunded', 'retired']);
+  assert.equal(state.payouts.bidder, config.minBid, 'the bid returns to the bidder');
+  assert.equal(state.payouts.builder, Math.floor(26 * 2 * config.stationRefundPct), 'the builder gets the station refund');
+  assert.deepEqual(Object.keys(state.plots), [kept.id], 'only plots of the former city disappear');
+  assert.deepEqual(plots.retireLocationPlots(state, config, ['balanceBunker'], () => 2), [], 'a second start changes nothing');
+}
+
+console.log('Crafting plots OK: lease auctions with refunds, late-bid extension, renewal and expiry, lessee fees and burned settlement fees, 15–43% material returns, plots of a former city closed with refunds, and a clean saved state.');

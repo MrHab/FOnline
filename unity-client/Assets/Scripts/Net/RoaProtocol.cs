@@ -181,6 +181,8 @@ namespace RealmOfAshes.Net
         [JsonProperty("crouching")] public bool Crouching;
         [JsonProperty("moving")] public bool Moving;
         [JsonProperty("turning")] public bool Turning;
+        /// <summary>Что игрок сейчас собирает (ore, wood, fiber, oil, hide); пусто — не собирает.</summary>
+        [JsonProperty("gathering")] public string Gathering;
         /// <summary>На чём игрок едет: itemId, kind, speed. Пешком — null.</summary>
         [JsonProperty("vehicle")] public JObject Vehicle;
         [JsonProperty("hp")] public int Hp;

@@ -8,6 +8,7 @@ const { canonicalKromkaFactionId } = require('../src/server/kromka-faction-contr
 const { ZONE_MODE_SET, normalizeZoneMode, zoneModeAllowsPvp } = require('../src/server/zone-rules');
 const { deathLootPolicy } = require('../src/server/kromka-death-loot');
 const { publicMountedVehicle, normalizeDismountReason } = require('../src/server/vehicles');
+const { normalizeSites, siteAt: zoneSiteAt, safeSiteAt: zoneSafeSiteAt } = require('../src/server/zone-sites');
 const source = fs.readFileSync(path.join(__dirname, '../server.js'), 'utf8');
 function functionSource(name) {
   const start = source.indexOf(`function ${name}(`);
@@ -108,7 +109,7 @@ function fixture(mode = 'pvp') {
     livePlayersInRoom: () => [...players.values()], sanitizeInjuries: value => value,
     normalizeDeviceType: () => 'desktop', normalizeControlType: () => 'keyboard_mouse',
     sanitizeEquipment: value => value,
-    publicMountedVehicle, normalizeDismountReason
+    publicMountedVehicle, normalizeDismountReason, zoneSiteAt, zoneSafeSiteAt
   });
   // Седок: попадание выбивает из седла, верхом не стреляют.
   for (const name of ['VEHICLE_DISMOUNT_GRACE_MS', 'VEHICLE_ATTACK_REFUSAL']) vm.runInContext(constSource(name), context);
@@ -126,7 +127,9 @@ function fixture(mode = 'pvp') {
     // Учёт попаданий по токену, безопасное чтение здоровья и лимит косметических
     // событий: обработчики боя зовут их напрямую, заглушки здесь не годятся.
     'serverMarkAttackTargetHit', 'serverCurrentHp', 'serverAllowCosmeticRelay',
-    'serverEmitPlayerVehicle', 'serverDismountVehicle', 'serverVehicleHitDismount'
+    'serverEmitPlayerVehicle', 'serverDismountVehicle', 'serverVehicleHitDismount',
+    // Безопасный островок места в зоне (zone-sites.js): по месту стоящего, не по комнате.
+    'serverRoomSites', 'serverPlayerSite', 'serverPlayerSafeSite', 'serverSafeSiteBlockLabel'
   ]) vm.runInContext(functionSource(name), context);
   vm.runInContext('let handleEnemyHit; let handlePlayerHit;', context);
   for (const event of ['shoot', 'melee', 'combatAttack', 'enemyHit', 'playerHit', 'explosionAttack'])
@@ -196,6 +199,27 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
   assert.equal(f.target.hp, 100);
 }
 
+// Безопасный островок места в красной зоне: пока стрелок или цель внутри его черты,
+// выстрел принимается без урона и называет место; за чертой — обычная красная зона.
+{
+  const f = fixture('pvpFullDrop');
+  f.room.loc.sites = normalizeSites([{ id: 'roadOutpost', name: 'Застава 17', safe: true, x: 10, z: 0, halfX: 4, halfZ: 4 }]);
+  const inside = f.attack('playerHit');
+  assert(inside.ok && inside.protected && inside.damage === 0, 'a target on a safe island takes no damage');
+  assert(inside.protectedReason.includes('Застава 17'), 'the refusal names the island');
+  f.target.x = 30;
+  f.p.x = 9;
+  assert(f.attack('playerHit').protected, 'a shooter on a safe island cannot fire out of it');
+  f.enemy.faction = 'raiders';
+  f.enemy.hostileToPlayer = true;
+  assert(!f.context.serverActorHostileToPlayer(f.enemy, f.p), 'nobody is hostile to a player standing on the island');
+  assert(!f.context.serverPlayerCanDamageNpc(f.p, f.enemy, f.room), 'a player on the island cannot fight from it');
+  f.p.x = 0;
+  f.target.x = 20;
+  assert(f.context.serverPlayerCanDamagePlayer(f.p, f.target, f.room), 'outside the line the red zone rules apply again');
+  assert(f.context.serverActorHostileToPlayer(f.enemy, f.p));
+}
+
 // A single explosion contains both a friendly guard/player and hostile targets.
 {
   const f = fixture('pvpFullDrop');
@@ -227,6 +251,14 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
   f.p.attachment = { party: { id: 'escort', playerMembers: [] } };
   f.enemy.onsitePartyId = 'escort';
   assert(!f.context.serverPlayerCanDamageNpc(f.p, f.enemy, f.room), 'Escorted party NPCs must be protected');
+}
+
+{
+  const f = fixture();
+  f.enemy.faction = 'raiders'; f.enemy.hostileToPlayer = true;
+  f.enemy.service = 'stationMaster';
+  assert(!f.context.serverPlayerCanDamageNpc(f.p, f.enemy, f.room),
+    'A plot workshop master is staff, not a combatant, even when his faction turns hostile');
 }
 
 // --- правила Сердцевины называются словами ------------------------------------
@@ -278,7 +310,7 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
   f.p.mountedVehicle = ride();
   const spent = f.spends();
   const refused = f.attack('explosionAttack', { impactX: 10, impactZ: 0 });
-  assert(refused && refused.ok === false && /Верхом/.test(refused.error), 'A rider cannot fire a rocket');
+  assert(refused && refused.ok === false && /За рулём/.test(refused.error), 'A rider cannot fire a rocket');
   assert.equal(f.spends(), spent, 'A refused rocket spends nothing');
   assert(f.p.mountedVehicle, 'Refusal leaves the rider in the saddle');
 }

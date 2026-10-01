@@ -3,7 +3,8 @@
 
 // Временные публичные события: шаблоны, появление по расписанию, время
 // жизни с предупреждением, спорный сундук через 45–60 с после зачистки,
-// задержка возврата 60–90 с после смерти, зона симуляции и серверные крючки.
+// зона симуляции и серверные крючки. Событие стоит в самой зоне
+// (tools/check-zone-events-network.js).
 // Всё под управляемым временем — без ожидания.
 
 const assert = require('node:assert/strict');
@@ -23,7 +24,7 @@ const items = new Set(JSON.parse(read('data/kromka/items.json')).items.map(row =
 assert(catalog.templates.length >= 4, 'At least four event templates.');
 assert.deepEqual(catalog.rules, {
   maxActive: 3, spawnIntervalMs: 900000, initialSpawnDelayMs: 60000, minLifetimeMs: 1800000, maxLifetimeMs: 2700000,
-  expiryWarningMs: 300000, chestOpenDelayMs: [45000, 60000], deathRejoinDelayMs: [60000, 90000], zoneRadius: 9,
+  expiryWarningMs: 300000, chestOpenDelayMs: [45000, 60000], zoneRadius: 9,
   // Вскрытие тайника: длительность канала, дистанция удержания и радиус, с
   // которого чужой игрок останавливает прогресс.
   chestChannelMs: 8000, chestChannelRangeM: 2.5, chestContestRangeM: 14
@@ -76,7 +77,6 @@ assert.deepEqual(events.tickPublicEvent(event, rules, event.warningAt + 1), { wa
 assert.equal(events.publicEvent(event, event.warningAt).remainingSeconds, rules.expiryWarningMs / 1000);
 assert.deepEqual(events.tickPublicEvent(event, rules, event.expiresAt), { warned: false, expired: true });
 assert.equal(event.status, 'expired');
-assert.equal(events.publicEventEntryError(event, 'anyone', event.expiresAt + 1), 'Событие уже завершилось.');
 assert.equal(events.publicEvents(store, event.expiresAt + 1).length, 2, 'Expired events leave the public list.');
 assert.equal(events.purgeExpiredPublicEvents(store, event.expiresAt + 1000), 0, 'Expired events linger briefly for late clients.');
 assert.equal(events.purgeExpiredPublicEvents(store, event.expiresAt + 600000), 1);
@@ -121,15 +121,6 @@ assert.equal(lair.chest.opening.characterId, '', 'A claimed chest closes its cha
 assert.equal(events.claimPublicEventChest(lair, 'char-b', openAt + 20001, rules).error, 'Тайник уже забрали.');
 assert(events.claimPublicEventChest(lair, 'char-a', openAt + 20002, rules).repeat, 'The owner may re-open his own chest.');
 assert.equal(events.publicEvent(lair, openAt + 20002).chestClaimed, true);
-
-// --- задержка возврата после смерти --------------------------------------------------
-const until = events.recordPublicEventDeath(lair, 'char-b', rules, clearAt, () => 0);
-assert.equal(until, clearAt + rules.deathRejoinDelayMs[0]);
-assert.equal(events.recordPublicEventDeath(lair, 'char-c', rules, clearAt, () => 0.9999999), clearAt + rules.deathRejoinDelayMs[1]);
-assert.equal(events.publicEventRejoinBlockedMs(lair, 'char-b', clearAt + 1000), 59000);
-assert(events.publicEventEntryError(lair, 'char-b', clearAt + 1000).includes('59 с'));
-assert.equal(events.publicEventEntryError(lair, 'char-b', clearAt + 60000), '', 'The block lifts after the delay.');
-assert.equal(events.publicEventEntryError(lair, 'char-a', clearAt + 1000), '', 'Living players are never blocked.');
 
 // --- сохранение и зона симуляции ----------------------------------------------------------
 const restored = events.normalizePublicEventStore(JSON.parse(JSON.stringify(store)));
@@ -213,12 +204,10 @@ for (const needle of [
   'savesDb.publicEvents = normalizePublicEventStore(savesDb.publicEvents)',
   'serverTickPublicEvents(Date.now())',
   'serverRestorePublicEventZones();',
-  'const transitionPublicEvent = serverPublicEventForZone(activeTransitionZone);',
   'serverNotePublicEventDeath(oldRoom, p, now);',
   'const eventChestError = serverPublicEventChestError(room, container, p, Date.now());',
   'publicEvents: publicPublicEvents(serverPublicEventStore(), now)',
   "emit('publicEventState', payload)",
-  'function serverEvictPublicEventRoom(event, now = Date.now())',
   'WASTELAND_SIM.upsertWorldZone(publicEventZone(event, KROMKA_PUBLIC_EVENT_CATALOG.rules'
 ]) assert(server.includes(needle), `server.js is missing the public event contract: ${needle}`);
 const socketClient = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
@@ -332,16 +321,7 @@ for (const needle of [
   'function serverAdvancePublicEventScenario(',
   'function serverApplyPublicEventStrike(',
   'function serverSpawnPublicEventReinforcement(',
-  'if (enemy?.publicEventBossId && serverPublicEventDamageBlocked(room, enemy)) return 0;',
-  // Комната события, созданная заново после перезапуска, должна снова получить
-  // своих обитателей — иначе зачищать некого и тайник не открывается никогда.
-  'function serverEnsurePublicEventEncounter(room, now = Date.now()) {',
-  'if (room && serverEnsurePublicEventEncounter(room, now)) changed = true;',
-  'serverEnsurePublicEventEncounter(room, Date.now());',
-  'room.encounterSetupDone = false;',
-  // Ровно один раз на комнату: перебитое игроками логово не наполняется снова.
-  "if (String(room.publicEventEncounterId || '') === String(event.id || '')) return false;",
-  "room.publicEventEncounterId = String(event.id || '').slice(0, 64);"
+  'if (enemy?.publicEventBossId && serverPublicEventDamageBlocked(room, enemy)) return 0;'
 ]) assert(scenarioServer.includes(needle), `server.js must run the scenario mechanics: ${needle}`);
 
 // --- несколько подходов к цели ---------------------------------------------------
@@ -401,6 +381,9 @@ for (const template of catalog.templates) {
     scheduleServerPublicEventPersist: () => persisted.push(1),
     serverEmitPublicEventState: (event, extra) => emitted.push(extra),
     ensureRoomWorld: () => {},
+    // Событие стоит у своей точки в зоне.
+    serverPublicEventAnchor: () => ({ tx: 20, tz: 20 }),
+    serverPublicEventAnchorWorld: () => ({ x: 20, z: 20 }),
     roomTileDims: () => ({ w: 40, h: 40 }),
     tileToWorld: (tx, tz) => ({ x: tx, z: tz }),
     worldToTile: (x, z) => ({ tx: Math.round(x), tz: Math.round(z) }),
@@ -417,7 +400,7 @@ for (const template of catalog.templates) {
     functionSource('serverNotePublicEventBossKill'),
     functionSource('serverEnsurePublicEventSupports')
   ].join('\n'), context);
-  const newRoom = () => ({ id: 'randomAshGrove#pit', enemies: new Map() });
+  const newRoom = () => ({ id: 'z_07_05', enemies: new Map() });
   const bossIn = (room, event) => [...room.enemies.values()].find(enemy => enemy.publicEventBossId === event.id);
   const supportsIn = (room, event) => [...room.enemies.values()].filter(enemy => enemy.publicEventId === event.id && enemy.publicEventSupportId);
 
@@ -486,4 +469,4 @@ for (const template of catalog.templates) {
     'After a restart the rebuilt room gets its intact supports back.');
 }
 
-console.log(`Public events OK: ${catalog.templates.length} templates, scheduled spawns, lifetime with warning and eviction, contested chest 45–60 s, death rejoin 60–90 s, persisted store and simulation zones, boss and support deaths counted after the body is gone.`);
+console.log(`Public events OK: ${catalog.templates.length} templates, scheduled spawns, lifetime with warning, contested chest 45–60 s, persisted store and simulation zones, boss and support deaths counted after the body is gone.`);

@@ -278,8 +278,9 @@ for (const file of files.sort()) {
     const tx = key % MAP_W;
     const tz = Math.floor(key / MAP_W);
     let inBand = false;
-    if (tz <= minZ + inner) { sides.north = true; inBand = true; }
-    if (tz >= maxZ - inner) { sides.south = true; inBand = true; }
+    // Север локации — +Z (старшие tz), как у компаса.
+    if (tz >= maxZ - inner) { sides.north = true; inBand = true; }
+    if (tz <= minZ + inner) { sides.south = true; inBand = true; }
     if (tx <= minX + inner) { sides.west = true; inBand = true; }
     if (tx >= maxX - inner) { sides.east = true; inBand = true; }
     if (inBand) bandReached++;

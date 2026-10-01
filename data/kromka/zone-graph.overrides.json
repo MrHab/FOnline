@@ -1,12 +1,14 @@
 {
   "cities": [
-    "balanceBunker",
     "caravanCamp",
     "relayStation",
     "scrapTown",
     "secondHaven",
     "settlement",
     "sluiceCity"
+  ],
+  "retiredCities": [
+    "balanceBunker"
   ],
   "names": {
     "z_01_05": "Край насыпи",
@@ -206,5 +208,10 @@
     "z_17_07": "Солнечные панели",
     "z_17_08": "Сломанный горизонт",
     "z_17_09": "Ретрансляторная гора"
+  },
+  "sites": {
+    "roadOutpost": {
+      "safe": true
+    }
   }
 }

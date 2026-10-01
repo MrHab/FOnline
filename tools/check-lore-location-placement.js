@@ -47,15 +47,22 @@ for (const r of seed.routes) {
 assert(at('sluiceCity').y > at('settlement').y && at('settlement').y > at('cascadeRegenerator').y,
   'Cascade must descend north to south');
 assert(at('scrapTown').x < at('settlement').x && at('relayStation').x > at('settlement').x);
-assert(at('vectorLab').x > at('relayStation').x + 30, 'Vector belongs deeper in the Glasslands than the safe K-3 entrance');
+// «Вектор» — в красном клине глубоко в Стеколье, вдали от безопасного Контура-3.
+assert(Math.hypot(at('vectorLab').x-at('relayStation').x, at('vectorLab').y-at('relayStation').y) > 40,
+  'Vector belongs deep in the Glasslands, far from the safe K-3 city');
 assert(at('relayOutpost').x < at('relayStation').x, 'K-3 perimeter must control the western approach');
 assert(distance(at('relayStation'), route('ore_freight_rail')) < 12, 'K-3 safe entry needs freight access');
 assert(distance(at('roadOutpost'), route('ore_freight_rail')) < 4, 'Outpost 17 must guard the rail bridge approach');
 assert(Math.hypot(at('roadOutpost').x-199,at('roadOutpost').y-217) < 13, 'Outpost 17 drifted from the actual Tesma crossing');
 for (const id of ['resourceDryWaterPump','clanFilterT6'])
   assert(distance(at(id),route('cascade_canal')) < 5, `${id}: disconnected from Cascade water infrastructure`);
-assert(at('resourceDryWaterPump').y > at('settlement').y && at('clanFilterT6').y < at('settlement').y);
-for (const id of ['caravanCamp','resourceTireDepot','clanDepotBypass'])
+// Ключи — центр карты (библия, 4.4): Т-6 фильтрует воду у самого города.
+assert(at('resourceDryWaterPump').y > at('settlement').y);
+assert(Math.hypot(at('clanFilterT6').x-at('settlement').x, at('clanFilterT6').y-at('settlement').y) < 40,
+  'Filter T-6 must stay by the free city of Keys');
+// Перекрёсток стоит в Нулевой котловине, где тракт переходит в Нижний обход к рампе.
+assert(distance(at('caravanCamp'),route('fuel_ramp_access')) < 12, 'Crossroads must stand on the Lower Bypass');
+for (const id of ['resourceTireDepot','clanDepotBypass'])
   assert(distance(at(id),route('tract_main')) < 12, `${id}: disconnected from the Tract`);
 assert(distance(at('resourceOilPump'),route('fuel_ramp_access')) < 1, 'Fuel yard entrance disconnected');
 for (const id of ['balanceBunker','clanFortZero'])

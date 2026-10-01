@@ -9,12 +9,14 @@
   "cellsPerZone": 2
  },
  "capitals": [
-  "balanceBunker",
   "caravanCamp",
   "relayStation",
   "scrapTown",
   "secondHaven",
   "sluiceCity"
+ ],
+ "retiredCities": [
+  "balanceBunker"
  ],
  "zones": [
   {
@@ -25,8 +27,8 @@
    "name": "Пыльный горизонт",
    "title": "Пыльный горизонт №1",
    "region": "silent_ring",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "silent_ring",
    "seed": 2125659631,
    "edges": {
@@ -48,8 +50,8 @@
    "name": "Чёрная чаша",
    "title": "Чёрная чаша №2",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "zero_soil",
    "seed": 1627434918,
    "edges": {
@@ -76,8 +78,8 @@
    "name": "Химический туман",
    "title": "Химический туман №3",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "zero_soil",
    "seed": 2004699225,
    "edges": {
@@ -109,8 +111,8 @@
    "name": "Дальние отстойники",
    "title": "Дальние отстойники №4",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "zero_soil",
    "seed": 3454701764,
    "edges": {
@@ -142,15 +144,16 @@
    "name": "Трубная гряда",
    "title": "Трубная гряда №5",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "zero_soil",
    "seed": 3742868711,
    "edges": {
     "south": {
      "to": "z_08_02",
      "open": true,
-     "along": 0.306
+     "along": 0.309,
+     "road": "fuel_ramp_access"
     },
     "west": {
      "to": "z_07_01",
@@ -163,8 +166,19 @@
      "along": 0.634
     }
    },
-   "roads": [],
-   "places": [],
+   "roads": [
+    "fuel_ramp_access"
+   ],
+   "places": [
+    {
+     "locationId": "resourceOilPump",
+     "kind": "resource",
+     "name": "Топливная рампа",
+     "u": 0.4,
+     "v": 0.7,
+     "road": true
+    }
+   ],
    "authored": false
   },
   {
@@ -175,8 +189,8 @@
    "name": "Мёртвый бассейн",
    "title": "Мёртвый бассейн №6",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "zero_soil",
    "seed": 361020146,
    "edges": {
@@ -208,8 +222,8 @@
    "name": "Слив за дамбой",
    "title": "Слив за дамбой №7",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 2108882012,
    "edges": {
@@ -246,15 +260,16 @@
    "name": "Фортовая дамба",
    "title": "Фортовая дамба №8",
    "region": "zero_basin",
-   "mode": "pve",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 1413163313,
    "edges": {
     "south": {
      "to": "z_11_02",
      "open": true,
-     "along": 0.34
+     "along": 0.15,
+     "road": "zero_admin_access"
     },
     "west": {
      "to": "z_10_01",
@@ -271,16 +286,7 @@
    "roads": [
     "zero_admin_access"
    ],
-   "places": [
-    {
-     "locationId": "clanFortZero",
-     "kind": "clan_base",
-     "name": "Форт 14",
-     "u": 0.6,
-     "v": 0.6,
-     "road": true
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -292,7 +298,7 @@
    "title": "Аварийные огни №9",
    "region": "zero_basin",
    "mode": "pve",
-   "difficulty": 5,
+   "difficulty": 1,
    "ground": "zero_soil",
    "seed": 1035899006,
    "edges": {
@@ -329,7 +335,7 @@
    "title": "Насосная башня №10",
    "region": "zero_basin",
    "mode": "pve",
-   "difficulty": 5,
+   "difficulty": 1,
    "ground": "zero_soil",
    "seed": 3104676691,
    "edges": {
@@ -361,8 +367,8 @@
    "name": "Рыхлая пойма",
    "title": "Рыхлая пойма №11",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "zero_soil",
    "seed": 3488033984,
    "edges": {
@@ -398,8 +404,8 @@
    "name": "Кислая низина",
    "title": "Кислая низина №12",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "zero_soil",
    "seed": 2307074177,
    "edges": {
@@ -426,8 +432,8 @@
    "name": "Шламовое поле",
    "title": "Шламовое поле №13",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "zero_soil",
    "seed": 3075240718,
    "edges": {
@@ -459,8 +465,8 @@
    "name": "Многоярусная дамба",
    "title": "Многоярусная дамба №14",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "zero_soil",
    "seed": 1610657299,
    "edges": {
@@ -497,8 +503,8 @@
    "name": "Пароотвод",
    "title": "Пароотвод №15",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "zero_soil",
    "seed": 1954366368,
    "edges": {
@@ -532,11 +538,11 @@
    "col": 7,
    "row": 2,
    "n": 16,
-   "name": "Топливный подъём",
-   "title": "Топливный подъём №16",
+   "name": "Перекрёсток",
+   "title": "Перекрёсток",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "peaceful",
+   "difficulty": 1,
    "ground": "zero_soil",
    "seed": 3505034621,
    "edges": {
@@ -558,24 +564,13 @@
     "east": {
      "to": "z_08_02",
      "open": true,
-     "along": 0.846,
-     "road": "fuel_ramp_access"
+     "along": 0.557
     }
    },
-   "roads": [
-    "fuel_ramp_access"
-   ],
-   "places": [
-    {
-     "locationId": "resourceOilPump",
-     "kind": "resource",
-     "name": "Топливная рампа",
-     "u": 0.35,
-     "v": 0.8,
-     "road": true
-    }
-   ],
-   "authored": false
+   "roads": [],
+   "places": [],
+   "authored": false,
+   "city": "caravanCamp"
   },
   {
    "id": "z_08_02",
@@ -585,15 +580,16 @@
    "name": "Трубный коридор",
    "title": "Трубный коридор №17",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "zero_soil",
    "seed": 3759646330,
    "edges": {
     "north": {
      "to": "z_08_01",
      "open": true,
-     "along": 0.306
+     "along": 0.309,
+     "road": "fuel_ramp_access"
     },
     "south": {
      "to": "z_08_03",
@@ -604,8 +600,7 @@
     "west": {
      "to": "z_07_02",
      "open": true,
-     "along": 0.846,
-     "road": "fuel_ramp_access"
+     "along": 0.557
     },
     "east": {
      "to": "z_09_02",
@@ -627,8 +622,8 @@
    "name": "Смоляные ямы",
    "title": "Смоляные ямы №18",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 344242527,
    "edges": {
@@ -666,7 +661,7 @@
    "title": "Нижний отстойник №19",
    "region": "zero_basin",
    "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "difficulty": 4,
    "ground": "zero_soil",
    "seed": 2159214869,
    "edges": {
@@ -688,11 +683,23 @@
     "east": {
      "to": "z_11_02",
      "open": true,
-     "along": 0.496
+     "along": 0.15,
+     "road": "zero_admin_access"
     }
    },
-   "roads": [],
-   "places": [],
+   "roads": [
+    "zero_admin_access"
+   ],
+   "places": [
+    {
+     "locationId": "clanFortZero",
+     "kind": "clan_base",
+     "name": "Форт 14",
+     "u": 0.9,
+     "v": 0.2,
+     "road": true
+    }
+   ],
    "authored": false
   },
   {
@@ -703,15 +710,16 @@
    "name": "Бетонные чаши",
    "title": "Бетонные чаши №20",
    "region": "zero_basin",
-   "mode": "pve",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 1362830456,
    "edges": {
     "north": {
      "to": "z_11_01",
      "open": true,
-     "along": 0.34
+     "along": 0.15,
+     "road": "zero_admin_access"
     },
     "south": {
      "to": "z_11_03",
@@ -721,7 +729,8 @@
     "west": {
      "to": "z_10_02",
      "open": true,
-     "along": 0.496
+     "along": 0.15,
+     "road": "zero_admin_access"
     },
     "east": {
      "to": "z_12_02",
@@ -729,7 +738,9 @@
      "along": 0.407
     }
    },
-   "roads": [],
+   "roads": [
+    "zero_admin_access"
+   ],
    "places": [],
    "authored": false
   },
@@ -738,11 +749,11 @@
    "col": 12,
    "row": 2,
    "n": 21,
-   "name": "Бункер «Баланс»",
-   "title": "Бункер «Баланс»",
+   "name": "Балансовый спуск",
+   "title": "Балансовый спуск №21",
    "region": "zero_basin",
-   "mode": "peaceful",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 1019121387,
    "edges": {
@@ -772,9 +783,17 @@
    "roads": [
     "zero_admin_access"
    ],
-   "places": [],
-   "authored": false,
-   "city": "balanceBunker"
+   "places": [
+    {
+     "locationId": "balanceBunker",
+     "kind": "complex",
+     "name": "Бункер «Баланс»",
+     "u": 0.35,
+     "v": 0.45,
+     "road": true
+    }
+   ],
+   "authored": false
   },
   {
    "id": "z_13_02",
@@ -785,7 +804,7 @@
    "title": "Командный вал №22",
    "region": "zero_basin",
    "mode": "pve",
-   "difficulty": 5,
+   "difficulty": 2,
    "ground": "zero_soil",
    "seed": 3121454310,
    "edges": {
@@ -826,8 +845,8 @@
    "name": "Белые обрывы",
    "title": "Белые обрывы №23",
    "region": "chalk_lowland",
-   "mode": "pvp",
-   "difficulty": 4,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "chalk",
    "seed": 3538366841,
    "edges": {
@@ -870,8 +889,8 @@
    "name": "Меловая пыль",
    "title": "Меловая пыль №24",
    "region": "chalk_lowland",
-   "mode": "pvp",
-   "difficulty": 3,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "chalk",
    "seed": 1748395324,
    "edges": {
@@ -901,8 +920,8 @@
    "name": "Гиблая топь",
    "title": "Гиблая топь №25",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 3866391415,
    "edges": {
@@ -929,8 +948,8 @@
    "name": "Глухая падь",
    "title": "Глухая падь №26",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 2290296558,
    "edges": {
@@ -976,8 +995,8 @@
    "name": "Ржавая градирня",
    "title": "Ржавая градирня №27",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 3092018337,
    "edges": {
@@ -1014,8 +1033,8 @@
    "name": "Шипящие трубы",
    "title": "Шипящие трубы №28",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 1593879680,
    "edges": {
@@ -1052,8 +1071,8 @@
    "name": "Солевая корка",
    "title": "Солевая корка №29",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "zero_soil",
    "seed": 1971143987,
    "edges": {
@@ -1090,8 +1109,8 @@
    "name": "Отравленный ручей",
    "title": "Отравленный ручей №30",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "zero_soil",
    "seed": 3488257002,
    "edges": {
@@ -1128,8 +1147,8 @@
    "name": "Регенераторная трасса",
    "title": "Регенераторная трасса №31",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "zero_soil",
    "seed": 3776423949,
    "edges": {
@@ -1170,8 +1189,8 @@
    "name": "Сливной канал",
    "title": "Сливной канал №32",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 327464908,
    "edges": {
@@ -1212,7 +1231,7 @@
    "title": "Регенераторный двор №33",
    "region": "zero_basin",
    "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "difficulty": 4,
    "ground": "zero_soil",
    "seed": 2142437250,
    "edges": {
@@ -1261,8 +1280,8 @@
    "name": "Тихие насосы",
    "title": "Тихие насосы №34",
    "region": "zero_basin",
-   "mode": "pve",
-   "difficulty": 5,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "zero_soil",
    "seed": 1379608075,
    "edges": {
@@ -1299,8 +1318,8 @@
    "name": "Резервная дамба",
    "title": "Резервная дамба №35",
    "region": "zero_basin",
-   "mode": "pve",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 1002343768,
    "edges": {
@@ -1338,7 +1357,7 @@
    "title": "Старый пульт №36",
    "region": "zero_basin",
    "mode": "pve",
-   "difficulty": 5,
+   "difficulty": 2,
    "ground": "zero_soil",
    "seed": 3138231929,
    "edges": {
@@ -1372,11 +1391,11 @@
    "col": 14,
    "row": 3,
    "n": 37,
-   "name": "Карстовые окна",
-   "title": "Карстовые окна №37",
+   "name": "Меловой двор",
+   "title": "Меловой двор",
    "region": "chalk_lowland",
-   "mode": "pvp",
-   "difficulty": 3,
+   "mode": "peaceful",
+   "difficulty": 1,
    "ground": "chalk",
    "seed": 3521589222,
    "edges": {
@@ -1407,7 +1426,8 @@
     "zero_service_line"
    ],
    "places": [],
-   "authored": false
+   "authored": false,
+   "city": "secondHaven"
   },
   {
    "id": "z_15_03",
@@ -1417,8 +1437,8 @@
    "name": "Провальное поле",
    "title": "Провальное поле №38",
    "region": "chalk_lowland",
-   "mode": "pvp",
-   "difficulty": 3,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "chalk",
    "seed": 1765172943,
    "edges": {
@@ -1455,8 +1475,8 @@
    "name": "Слепой ключ",
    "title": "Слепой ключ №39",
    "region": "chalk_lowland",
-   "mode": "pvp",
-   "difficulty": 3,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "chalk",
    "seed": 4083785148,
    "edges": {
@@ -1483,7 +1503,7 @@
    "name": "Грязевые бугры",
    "title": "Грязевые бугры №40",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
+   "mode": "pvp",
    "difficulty": 3,
    "ground": "tract_dust",
    "seed": 3816058558,
@@ -1516,7 +1536,7 @@
    "name": "Чёрный берег",
    "title": "Чёрный берег №41",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
+   "mode": "pvp",
    "difficulty": 3,
    "ground": "tract_dust",
    "seed": 2340629415,
@@ -1554,8 +1574,8 @@
    "name": "Пенные ванны",
    "title": "Пенные ванны №42",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 3108795956,
    "edges": {
@@ -1592,8 +1612,8 @@
    "name": "Трубный завал",
    "title": "Трубный завал №43",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 1711323013,
    "edges": {
@@ -1630,8 +1650,8 @@
    "name": "Затопленные цеха",
    "title": "Затопленные цеха №44",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 2055032082,
    "edges": {
@@ -1668,8 +1688,8 @@
    "name": "Стоковая балка",
    "title": "Стоковая балка №45",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 3404368907,
    "edges": {
@@ -1715,8 +1735,8 @@
    "name": "Верхний сток",
    "title": "Верхний сток №46",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 3658980616,
    "edges": {
@@ -1757,8 +1777,8 @@
    "name": "Коллекторный вал",
    "title": "Коллекторный вал №47",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 310687289,
    "edges": {
@@ -1800,7 +1820,7 @@
    "title": "Магистральный канал №48",
    "region": "zero_basin",
    "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "difficulty": 4,
    "ground": "zero_soil",
    "seed": 2058549155,
    "edges": {
@@ -1842,7 +1862,7 @@
    "title": "Шлюзовая лестница №49",
    "region": "zero_basin",
    "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "difficulty": 4,
    "ground": "zero_soil",
    "seed": 1463496170,
    "edges": {
@@ -1883,8 +1903,8 @@
    "name": "Задвижки",
    "title": "Задвижки №50",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 1119787101,
    "edges": {
@@ -1926,7 +1946,7 @@
    "title": "Шлюзовая протока №51",
    "region": "chalk_lowland",
    "mode": "pve",
-   "difficulty": 3,
+   "difficulty": 2,
    "ground": "chalk",
    "seed": 3155009548,
    "edges": {
@@ -1956,16 +1976,7 @@
    "roads": [
     "zero_service_line"
    ],
-   "places": [
-    {
-     "locationId": "clanChalkSluice",
-     "kind": "clan_base",
-     "name": "Меловой шлюз",
-     "u": 0.35,
-     "v": 0.4,
-     "road": true
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -1977,7 +1988,7 @@
    "title": "Утопленные дворы №52",
    "region": "chalk_lowland",
    "mode": "pve",
-   "difficulty": 3,
+   "difficulty": 2,
    "ground": "chalk",
    "seed": 3571922079,
    "edges": {
@@ -2019,7 +2030,7 @@
    "title": "Голубая промоина №53",
    "region": "chalk_lowland",
    "mode": "pve",
-   "difficulty": 3,
+   "difficulty": 2,
    "ground": "chalk",
    "seed": 1714840086,
    "edges": {
@@ -2056,8 +2067,8 @@
    "name": "Слушающий овраг",
    "title": "Слушающий овраг №54",
    "region": "chalk_lowland",
-   "mode": "pvp",
-   "difficulty": 3,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "chalk",
    "seed": 4067007529,
    "edges": {
@@ -2107,8 +2118,8 @@
    "name": "Тканевые фильтры",
    "title": "Тканевые фильтры №55",
    "region": "chalk_lowland",
-   "mode": "pvp",
-   "difficulty": 3,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "chalk",
    "seed": 2364934840,
    "edges": {
@@ -2138,7 +2149,7 @@
    "name": "Край насыпи",
    "title": "Край насыпи №56",
    "region": "tract_isthmus",
-   "mode": "pvp",
+   "mode": "pve",
    "difficulty": 1,
    "ground": "tract_dust",
    "seed": 883682334,
@@ -2167,7 +2178,7 @@
    "title": "Солончаковая кромка №57",
    "region": "tract_isthmus",
    "mode": "pvp",
-   "difficulty": 1,
+   "difficulty": 3,
    "ground": "tract_dust",
    "seed": 3832836177,
    "edges": {
@@ -2205,7 +2216,7 @@
    "title": "Гнилая низина №58",
    "region": "tract_isthmus",
    "mode": "pvp",
-   "difficulty": 1,
+   "difficulty": 3,
    "ground": "tract_dust",
    "seed": 2323851796,
    "edges": {
@@ -2243,7 +2254,7 @@
    "title": "Водопропуски №59",
    "region": "tract_isthmus",
    "mode": "pvp",
-   "difficulty": 1,
+   "difficulty": 3,
    "ground": "tract_dust",
    "seed": 3125573575,
    "edges": {
@@ -2281,7 +2292,7 @@
    "title": "Мазутное болото №60",
    "region": "zero_basin",
    "mode": "pvpFullDrop",
-   "difficulty": 3,
+   "difficulty": 4,
    "ground": "tract_dust",
    "seed": 1694545394,
    "edges": {
@@ -2357,7 +2368,7 @@
    "title": "Нижние чаши №62",
    "region": "zero_basin",
    "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "difficulty": 4,
    "ground": "zero_soil",
    "seed": 3387591288,
    "edges": {
@@ -2395,7 +2406,7 @@
    "title": "Отводной трубопровод №63",
    "region": "zero_basin",
    "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "difficulty": 4,
    "ground": "zero_soil",
    "seed": 3675758235,
    "edges": {
@@ -2438,8 +2449,8 @@
    "name": "Бетонная гать",
    "title": "Бетонная гать №64",
    "region": "zero_basin",
-   "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "zero_soil",
    "seed": 293909670,
    "edges": {
@@ -2527,7 +2538,7 @@
    "title": "Главный коллектор №66",
    "region": "zero_basin",
    "mode": "pvpFullDrop",
-   "difficulty": 5,
+   "difficulty": 4,
    "ground": "zero_soil",
    "seed": 1480273789,
    "edges": {
@@ -2572,7 +2583,7 @@
    "title": "Известковый карьер №67",
    "region": "chalk_lowland",
    "mode": "pvp",
-   "difficulty": 4,
+   "difficulty": 3,
    "ground": "chalk",
    "seed": 1103009482,
    "edges": {
@@ -2613,7 +2624,7 @@
    "name": "Мягкий камень",
    "title": "Мягкий камень №68",
    "region": "chalk_lowland",
-   "mode": "pve",
+   "mode": "pvp",
    "difficulty": 3,
    "ground": "chalk",
    "seed": 3171787167,
@@ -2648,10 +2659,10 @@
    "col": 14,
    "row": 5,
    "n": 69,
-   "name": "Меловой двор",
-   "title": "Меловой двор",
+   "name": "Меловая долина",
+   "title": "Меловая долина №69",
    "region": "chalk_lowland",
-   "mode": "peaceful",
+   "mode": "pvp",
    "difficulty": 3,
    "ground": "chalk",
    "seed": 3555144460,
@@ -2683,8 +2694,7 @@
     "tract_main"
    ],
    "places": [],
-   "authored": false,
-   "city": "secondHaven"
+   "authored": false
   },
   {
    "id": "z_15_05",
@@ -2694,7 +2704,7 @@
    "name": "Подземные родники",
    "title": "Подземные родники №70",
    "region": "chalk_lowland",
-   "mode": "pve",
+   "mode": "pvp",
    "difficulty": 3,
    "ground": "chalk",
    "seed": 1731617705,
@@ -2811,7 +2821,7 @@
    "name": "Старая бетонка",
    "title": "Старая бетонка №73",
    "region": "tract_isthmus",
-   "mode": "pvp",
+   "mode": "pve",
    "difficulty": 1,
    "ground": "tract_dust",
    "seed": 866904715,
@@ -2844,8 +2854,8 @@
    "name": "Кладбище машин",
    "title": "Кладбище машин №74",
    "region": "tract_isthmus",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "tract_dust",
    "seed": 3782503320,
    "edges": {
@@ -2882,8 +2892,8 @@
    "name": "Дорожный вал",
    "title": "Дорожный вал №75",
    "region": "tract_isthmus",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "tract_dust",
    "seed": 2374184653,
    "edges": {
@@ -2921,7 +2931,7 @@
    "title": "Верстовые столбы №76",
    "region": "tract_isthmus",
    "mode": "pvp",
-   "difficulty": 1,
+   "difficulty": 3,
    "ground": "tract_dust",
    "seed": 3142351194,
    "edges": {
@@ -2958,8 +2968,8 @@
    "name": "Придорожная крепость",
    "title": "Придорожная крепость №77",
    "region": "tract_isthmus",
-   "mode": "pve",
-   "difficulty": 1,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "tract_dust",
    "seed": 1677767775,
    "edges": {
@@ -2996,8 +3006,8 @@
    "name": "Привал",
    "title": "Привал №78",
    "region": "tract_isthmus",
-   "mode": "pve",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "tract_dust",
    "seed": 2021476844,
    "edges": {
@@ -3034,8 +3044,8 @@
    "name": "Шоссейный уступ",
    "title": "Шоссейный уступ №79",
    "region": "tract_isthmus",
-   "mode": "pve",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "tract_dust",
    "seed": 3437924145,
    "edges": {
@@ -3076,8 +3086,8 @@
    "name": "Отводной канал",
    "title": "Отводной канал №80",
    "region": "tract_isthmus",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "tract_dust",
    "seed": 3692535854,
    "edges": {
@@ -3118,8 +3128,8 @@
    "name": "Опалённый путепровод",
    "title": "Опалённый путепровод №81",
    "region": "tract_isthmus",
-   "mode": "pvpBlack",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
    "ground": "tract_dust",
    "seed": 277132051,
    "edges": {
@@ -3160,8 +3170,8 @@
    "name": "Дальний откос",
    "title": "Дальний откос №82",
    "region": "tract_isthmus",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
    "ground": "tract_dust",
    "seed": 2092104393,
    "edges": {
@@ -3187,7 +3197,17 @@
     }
    },
    "roads": [],
-   "places": [],
+   "places": [
+    {
+     "locationId": "coreBaseLeague",
+     "kind": "settlement",
+     "name": "Узел Лиги",
+     "u": 0.5,
+     "v": 0.35,
+     "road": true,
+     "hidden": true
+    }
+   ],
    "authored": false
   },
   {
@@ -3198,8 +3218,8 @@
    "name": "Складские ряды",
    "title": "Складские ряды №83",
    "region": "tract_isthmus",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
    "ground": "tract_dust",
    "seed": 1429940932,
    "edges": {
@@ -3240,8 +3260,8 @@
    "name": "Тупиковая ветка",
    "title": "Тупиковая ветка №84",
    "region": "tract_isthmus",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "tract_dust",
    "seed": 1086231863,
    "edges": {
@@ -3278,8 +3298,8 @@
    "name": "Керамическая гряда",
    "title": "Керамическая гряда №85",
    "region": "tract_isthmus",
-   "mode": "pve",
-   "difficulty": 2,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "tract_dust",
    "seed": 3188564786,
    "edges": {
@@ -3329,8 +3349,8 @@
    "name": "Обходная вода",
    "title": "Обходная вода №86",
    "region": "chalk_lowland",
-   "mode": "pve",
-   "difficulty": 3,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "chalk",
    "seed": 3605477317,
    "edges": {
@@ -3360,7 +3380,16 @@
    "roads": [
     "tract_main"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "clanChalkSluice",
+     "kind": "clan_base",
+     "name": "Меловой шлюз",
+     "u": 0.5,
+     "v": 0.5,
+     "road": true
+    }
+   ],
    "authored": false
   },
   {
@@ -3371,7 +3400,7 @@
    "name": "Стеклянная кромка",
    "title": "Стеклянная кромка №87",
    "region": "glasslands",
-   "mode": "pve",
+   "mode": "pvpFullDrop",
    "difficulty": 4,
    "ground": "chalk",
    "seed": 1681284848,
@@ -3409,8 +3438,8 @@
    "name": "Спёкшийся наст",
    "title": "Спёкшийся наст №88",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "chalk",
    "seed": 4033452291,
    "edges": {
@@ -3447,8 +3476,8 @@
    "name": "Блёсткое поле",
    "title": "Блёсткое поле №89",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "chalk",
    "seed": 2398490078,
    "edges": {
@@ -3480,7 +3509,7 @@
    "name": "Разбитая полоса",
    "title": "Разбитая полоса №90",
    "region": "tract_isthmus",
-   "mode": "pvp",
+   "mode": "pve",
    "difficulty": 1,
    "ground": "tract_dust",
    "seed": 850127096,
@@ -3516,8 +3545,8 @@
    "name": "Мостовые быки",
    "title": "Мостовые быки №91",
    "region": "tract_isthmus",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "tract_dust",
    "seed": 3799280939,
    "edges": {
@@ -3558,8 +3587,8 @@
    "name": "Грузовая стоянка",
    "title": "Грузовая стоянка №92",
    "region": "tract_isthmus",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "tract_dust",
    "seed": 2357407034,
    "edges": {
@@ -3600,8 +3629,8 @@
    "name": "Полимерные ангары",
    "title": "Полимерные ангары №93",
    "region": "tract_isthmus",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "tract_dust",
    "seed": 3159128813,
    "edges": {
@@ -3651,8 +3680,8 @@
    "name": "Насыпной тракт",
    "title": "Насыпной тракт №94",
    "region": "tract_isthmus",
-   "mode": "pve",
-   "difficulty": 1,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "tract_dust",
    "seed": 1660990156,
    "edges": {
@@ -3690,11 +3719,11 @@
    "col": 6,
    "row": 7,
    "n": 95,
-   "name": "Перекрёсток",
-   "title": "Перекрёсток",
+   "name": "Перекрёстная равнина",
+   "title": "Перекрёстная равнина №95",
    "region": "tract_isthmus",
-   "mode": "peaceful",
-   "difficulty": 1,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "tract_dust",
    "seed": 2038254463,
    "edges": {
@@ -3727,8 +3756,7 @@
     "zero_service_line"
    ],
    "places": [],
-   "authored": false,
-   "city": "caravanCamp"
+   "authored": false
   },
   {
    "id": "z_07_07",
@@ -3738,8 +3766,8 @@
    "name": "Артельный подъём",
    "title": "Артельный подъём №96",
    "region": "tract_isthmus",
-   "mode": "pve",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "tract_dust",
    "seed": 3421146526,
    "edges": {
@@ -3790,8 +3818,8 @@
    "name": "Выжженная кромка",
    "title": "Выжженная кромка №97",
    "region": "tract_isthmus",
-   "mode": "pvpBlack",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
    "ground": "tract_dust",
    "seed": 3709313473,
    "edges": {
@@ -3828,8 +3856,8 @@
    "name": "Преддверие Сердцевины",
    "title": "Преддверие Сердцевины №98",
    "region": "tract_isthmus",
-   "mode": "pvpBlack",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
    "ground": "tract_dust",
    "seed": 260354432,
    "edges": {
@@ -3876,10 +3904,10 @@
    "col": 10,
    "row": 7,
    "n": 99,
-   "name": "Лигин спуск",
-   "title": "Лигин спуск №99",
+   "name": "Ключи",
+   "title": "Ключи",
    "region": "tract_isthmus",
-   "mode": "pvpBlack",
+   "mode": "peaceful",
    "difficulty": 1,
    "ground": "tract_dust",
    "seed": 2075326774,
@@ -3910,18 +3938,9 @@
    "roads": [
     "cascade_canal"
    ],
-   "places": [
-    {
-     "locationId": "coreBaseLeague",
-     "kind": "settlement",
-     "name": "Узел Лиги",
-     "u": 0.3,
-     "v": 0.08,
-     "road": true,
-     "hidden": true
-    }
-   ],
-   "authored": false
+   "places": [],
+   "authored": false,
+   "city": "settlement"
   },
   {
    "id": "z_11_07",
@@ -3931,8 +3950,8 @@
    "name": "Контурная застава",
    "title": "Контурная застава №100",
    "region": "tract_isthmus",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
    "ground": "tract_dust",
    "seed": 1446718551,
    "edges": {
@@ -3983,8 +4002,8 @@
    "name": "Деповской разъезд",
    "title": "Деповской разъезд №101",
    "region": "tract_isthmus",
-   "mode": "pvp",
-   "difficulty": 2,
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
    "ground": "tract_dust",
    "seed": 1069454244,
    "edges": {
@@ -4103,7 +4122,16 @@
     }
    },
    "roads": [],
-   "places": [],
+   "places": [
+    {
+     "locationId": "vectorLab",
+     "kind": "complex",
+     "name": "Объект «Вектор»",
+     "u": 0.5,
+     "v": 0.5,
+     "road": false
+    }
+   ],
    "authored": false
   },
   {
@@ -4161,8 +4189,8 @@
    "name": "Сухая гроза",
    "title": "Сухая гроза №105",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "fused_soil",
    "seed": 4016674672,
    "edges": {
@@ -4199,8 +4227,8 @@
    "name": "Солнечные панели",
    "title": "Солнечные панели №106",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "fused_soil",
    "seed": 2415267697,
    "edges": {
@@ -4241,7 +4269,7 @@
    "name": "Пустой пикет",
    "title": "Пустой пикет №107",
    "region": "tract_isthmus",
-   "mode": "pvp",
+   "mode": "pve",
    "difficulty": 1,
    "ground": "tract_dust",
    "seed": 833349477,
@@ -4274,7 +4302,7 @@
    "name": "Пыльные терриконы",
    "title": "Пыльные терриконы №108",
    "region": "ore_arc",
-   "mode": "pvp",
+   "mode": "pve",
    "difficulty": 2,
    "ground": "iron_scree",
    "seed": 3748948082,
@@ -4318,11 +4346,11 @@
    "col": 3,
    "row": 8,
    "n": 109,
-   "name": "Красная порода",
-   "title": "Красная порода №109",
+   "name": "Раздолье",
+   "title": "Раздолье",
    "region": "ore_arc",
-   "mode": "pvp",
-   "difficulty": 2,
+   "mode": "peaceful",
+   "difficulty": 1,
    "ground": "iron_scree",
    "seed": 2139297987,
    "edges": {
@@ -4349,7 +4377,8 @@
    },
    "roads": [],
    "places": [],
-   "authored": false
+   "authored": false,
+   "city": "scrapTown"
   },
   {
    "id": "z_04_08",
@@ -4359,7 +4388,7 @@
    "name": "Канатная дорога",
    "title": "Канатная дорога №110",
    "region": "ore_arc",
-   "mode": "pvp",
+   "mode": "pve",
    "difficulty": 2,
    "ground": "iron_scree",
    "seed": 2907464528,
@@ -4435,8 +4464,8 @@
    "name": "Нижний съезд",
    "title": "Нижний съезд №112",
    "region": "tract_isthmus",
-   "mode": "pve",
-   "difficulty": 1,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "tract_dust",
    "seed": 2122142558,
    "edges": {
@@ -4477,8 +4506,8 @@
    "name": "Арсенальный спуск",
    "title": "Арсенальный спуск №113",
    "region": "middle_vein",
-   "mode": "pve",
-   "difficulty": 1,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "river_loam",
    "seed": 3337258431,
    "edges": {
@@ -4529,8 +4558,8 @@
    "name": "Канальная развилка",
    "title": "Канальная развилка №114",
    "region": "middle_vein",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "river_loam",
    "seed": 3591870140,
    "edges": {
@@ -4560,7 +4589,16 @@
    "roads": [
     "tract_main"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "clanOreExchange",
+     "kind": "clan_base",
+     "name": "Рудный перевал",
+     "u": 0.5,
+     "v": 0.5,
+     "road": false
+    }
+   ],
    "authored": false
   },
   {
@@ -4571,8 +4609,8 @@
    "name": "Горелая дамба",
    "title": "Горелая дамба №115",
    "region": "middle_vein",
-   "mode": "pvpBlack",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
    "ground": "river_loam",
    "seed": 512018717,
    "edges": {
@@ -4613,8 +4651,8 @@
    "name": "Лесополоса",
    "title": "Лесополоса №116",
    "region": "middle_vein",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
    "ground": "river_loam",
    "seed": 2259880583,
    "edges": {
@@ -4655,8 +4693,8 @@
    "name": "Мостовой переезд",
    "title": "Мостовой переезд №117",
    "region": "middle_vein",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
    "ground": "river_loam",
    "seed": 1262164742,
    "edges": {
@@ -4697,8 +4735,8 @@
    "name": "Оплавленная насыпь",
    "title": "Оплавленная насыпь №118",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "fused_soil",
    "seed": 918455673,
    "edges": {
@@ -4739,8 +4777,8 @@
    "name": "Зеркальный луг",
    "title": "Зеркальный луг №119",
    "region": "glasslands",
-   "mode": "pve",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "fused_soil",
    "seed": 3222120024,
    "edges": {
@@ -4777,8 +4815,8 @@
    "name": "Тихие пластины",
    "title": "Тихие пластины №120",
    "region": "glasslands",
-   "mode": "pve",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "fused_soil",
    "seed": 3639032555,
    "edges": {
@@ -4815,8 +4853,8 @@
    "name": "Звонкий грунт",
    "title": "Звонкий грунт №121",
    "region": "glasslands",
-   "mode": "pve",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "fused_soil",
    "seed": 1916171514,
    "edges": {
@@ -4853,8 +4891,8 @@
    "name": "Неверные тени",
    "title": "Неверные тени №122",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "fused_soil",
    "seed": 4268338957,
    "edges": {
@@ -4891,8 +4929,8 @@
    "name": "Сломанный горизонт",
    "title": "Сломанный горизонт №123",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "fused_soil",
    "seed": 2297824364,
    "edges": {
@@ -4924,8 +4962,8 @@
    "name": "Западный разрез",
    "title": "Западный разрез №124",
    "region": "ore_arc",
-   "mode": "pvp",
-   "difficulty": 2,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "iron_scree",
    "seed": 816571858,
    "edges": {
@@ -4979,7 +5017,16 @@
     }
    },
    "roads": [],
-   "places": [],
+   "places": [
+    {
+     "locationId": "resourceScrapFields",
+     "kind": "resource",
+     "name": "Сортировочные поля",
+     "u": 0.5,
+     "v": 0.5,
+     "road": true
+    }
+   ],
    "authored": false
   },
   {
@@ -5067,7 +5114,7 @@
    "title": "Сортировочная горка №128",
    "region": "ore_arc",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "iron_scree",
    "seed": 1761655870,
    "edges": {
@@ -5093,16 +5140,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "resourceScrapFields",
-     "kind": "resource",
-     "name": "Сортировочные поля",
-     "u": 0.9,
-     "v": 0.8,
-     "road": true
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -5114,7 +5152,7 @@
    "title": "Горелый карьер №129",
    "region": "ore_arc",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "iron_scree",
    "seed": 2138920177,
    "edges": {
@@ -5151,8 +5189,8 @@
    "name": "Панельный посёлок",
    "title": "Панельный посёлок №130",
    "region": "middle_vein",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "river_loam",
    "seed": 3320480812,
    "edges": {
@@ -5195,8 +5233,8 @@
    "name": "Дальние огороды",
    "title": "Дальние огороды №131",
    "region": "middle_vein",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "river_loam",
    "seed": 3608647759,
    "edges": {
@@ -5249,8 +5287,8 @@
    "name": "Управская дорога",
    "title": "Управская дорога №132",
    "region": "middle_vein",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "river_loam",
    "seed": 495241098,
    "edges": {
@@ -5303,8 +5341,8 @@
    "name": "Фильтровая балка",
    "title": "Фильтровая балка №133",
    "region": "middle_vein",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
    "ground": "river_loam",
    "seed": 2243102964,
    "edges": {
@@ -5356,8 +5394,8 @@
    "name": "Водонапорная",
    "title": "Водонапорная №134",
    "region": "middle_vein",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "river_loam",
    "seed": 1278942361,
    "edges": {
@@ -5399,7 +5437,7 @@
    "title": "Искривлённый путь №135",
    "region": "glasslands",
    "mode": "pvpFullDrop",
-   "difficulty": 3,
+   "difficulty": 4,
    "ground": "fused_soil",
    "seed": 901678054,
    "edges": {
@@ -5429,7 +5467,16 @@
    "roads": [
     "ore_freight_rail"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "clanRelayEast",
+     "kind": "clan_base",
+     "name": "Ретранслятор В-9",
+     "u": 0.5,
+     "v": 0.5,
+     "road": false
+    }
+   ],
    "authored": false
   },
   {
@@ -5440,8 +5487,8 @@
    "name": "Контурный подъезд",
    "title": "Контурный подъезд №136",
    "region": "glasslands",
-   "mode": "pve",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "fused_soil",
    "seed": 3238897643,
    "edges": {
@@ -5464,7 +5511,8 @@
     "east": {
      "to": "z_14_09",
      "open": true,
-     "along": 0.579
+     "along": 0.429,
+     "road": "ore_freight_rail"
     }
    },
    "roads": [
@@ -5478,11 +5526,11 @@
    "col": 14,
    "row": 9,
    "n": 137,
-   "name": "Контур-3",
-   "title": "Контур-3",
+   "name": "Контурная долина",
+   "title": "Контурная долина №137",
    "region": "glasslands",
-   "mode": "peaceful",
-   "difficulty": 4,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "fused_soil",
    "seed": 3622254936,
    "edges": {
@@ -5494,12 +5542,14 @@
     "south": {
      "to": "z_14_10",
      "open": true,
-     "along": 0.36
+     "along": 0.8,
+     "road": "ore_freight_rail"
     },
     "west": {
      "to": "z_13_09",
      "open": true,
-     "along": 0.579
+     "along": 0.429,
+     "road": "ore_freight_rail"
     },
     "east": {
      "to": "z_15_09",
@@ -5507,10 +5557,11 @@
      "along": 0.402
     }
    },
-   "roads": [],
+   "roads": [
+    "ore_freight_rail"
+   ],
    "places": [],
-   "authored": false,
-   "city": "relayStation"
+   "authored": false
   },
   {
    "id": "z_15_09",
@@ -5521,7 +5572,7 @@
    "title": "Лабораторный двор №138",
    "region": "glasslands",
    "mode": "pve",
-   "difficulty": 4,
+   "difficulty": 2,
    "ground": "fused_soil",
    "seed": 1932949133,
    "edges": {
@@ -5558,8 +5609,8 @@
    "name": "Опытные корпуса",
    "title": "Опытные корпуса №139",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "fused_soil",
    "seed": 4251561338,
    "edges": {
@@ -5605,8 +5656,8 @@
    "name": "Ретрансляторная гора",
    "title": "Ретрансляторная гора №140",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "fused_soil",
    "seed": 2314601983,
    "edges": {
@@ -5622,16 +5673,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "clanRelayEast",
-     "kind": "clan_base",
-     "name": "Ретранслятор В-9",
-     "u": 0.9,
-     "v": 0.2,
-     "road": false
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -5643,7 +5685,7 @@
    "title": "Чёрный откос №141",
    "region": "ore_arc",
    "mode": "pve",
-   "difficulty": 2,
+   "difficulty": 1,
    "ground": "iron_scree",
    "seed": 1299665971,
    "edges": {
@@ -5672,10 +5714,10 @@
    "col": 3,
    "row": 10,
    "n": 142,
-   "name": "Раздолье",
-   "title": "Раздолье",
+   "name": "Раздольная долина",
+   "title": "Раздольная долина №142",
    "region": "ore_arc",
-   "mode": "peaceful",
+   "mode": "pve",
    "difficulty": 2,
    "ground": "iron_scree",
    "seed": 2172706130,
@@ -5707,8 +5749,7 @@
     "ore_freight_rail"
    ],
    "places": [],
-   "authored": false,
-   "city": "scrapTown"
+   "authored": false
   },
   {
    "id": "z_04_10",
@@ -5718,8 +5759,8 @@
    "name": "Рудный тракт",
    "title": "Рудный тракт №143",
    "region": "ore_arc",
-   "mode": "pve",
-   "difficulty": 2,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "iron_scree",
    "seed": 3142498289,
    "edges": {
@@ -5761,7 +5802,7 @@
    "title": "Вагонеточный спуск №144",
    "region": "ore_arc",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "iron_scree",
    "seed": 1543399728,
    "edges": {
@@ -5802,8 +5843,8 @@
    "name": "Сторожевой холм",
    "title": "Сторожевой холм №145",
    "region": "ore_arc",
-   "mode": "pvp",
-   "difficulty": 2,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "iron_scree",
    "seed": 2088734415,
    "edges": {
@@ -5853,8 +5894,8 @@
    "name": "Железная насыпь",
    "title": "Железная насыпь №146",
    "region": "middle_vein",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "river_loam",
    "seed": 3370666574,
    "edges": {
@@ -5885,7 +5926,16 @@
    "roads": [
     "ore_freight_rail"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "clanFactoryCycle",
+     "kind": "clan_base",
+     "name": "Цех обратного цикла",
+     "u": 0.5,
+     "v": 0.5,
+     "road": false
+    }
+   ],
    "authored": false
   },
   {
@@ -5897,7 +5947,7 @@
    "title": "Полевой стан №147",
    "region": "middle_vein",
    "mode": "pvp",
-   "difficulty": 1,
+   "difficulty": 3,
    "ground": "river_loam",
    "seed": 3826903901,
    "edges": {
@@ -5936,11 +5986,11 @@
    "col": 9,
    "row": 10,
    "n": 148,
-   "name": "Ключи",
-   "title": "Ключи",
+   "name": "Ключевская долина",
+   "title": "Ключевская долина №148",
    "region": "middle_vein",
-   "mode": "peaceful",
-   "difficulty": 1,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "river_loam",
    "seed": 276984956,
    "edges": {
@@ -5975,8 +6025,7 @@
     "tract_main"
    ],
    "places": [],
-   "authored": false,
-   "city": "settlement"
+   "authored": false
   },
   {
    "id": "z_10_10",
@@ -5986,8 +6035,8 @@
    "name": "Дамбовый проезд",
    "title": "Дамбовый проезд №149",
    "region": "middle_vein",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "river_loam",
    "seed": 4172278886,
    "edges": {
@@ -6028,7 +6077,9 @@
      "name": "Застава 17",
      "u": 0.25,
      "v": 0.9,
-     "road": true
+     "road": true,
+     "site": true,
+     "safe": true
     }
    ],
    "authored": false
@@ -6041,8 +6092,8 @@
    "name": "Сухие грядки",
    "title": "Сухие грядки №150",
    "region": "middle_vein",
-   "mode": "pvp",
-   "difficulty": 1,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "river_loam",
    "seed": 1497198503,
    "edges": {
@@ -6072,7 +6123,16 @@
    "roads": [
     "ore_freight_rail"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "clanHydroNode2",
+     "kind": "clan_base",
+     "name": "ГЭС-2",
+     "u": 0.5,
+     "v": 0.5,
+     "road": false
+    }
+   ],
    "authored": false
   },
   {
@@ -6084,7 +6144,7 @@
    "title": "Стекольный разъезд №151",
    "region": "glasslands",
    "mode": "pvpFullDrop",
-   "difficulty": 3,
+   "difficulty": 4,
    "ground": "fused_soil",
    "seed": 951863816,
    "edges": {
@@ -6125,8 +6185,8 @@
    "name": "Периметровый вал",
    "title": "Периметровый вал №152",
    "region": "glasslands",
-   "mode": "pve",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "fused_soil",
    "seed": 1041279817,
    "edges": {
@@ -6173,14 +6233,15 @@
    "title": "Стеклянные грядки №153",
    "region": "glasslands",
    "mode": "pve",
-   "difficulty": 4,
+   "difficulty": 2,
    "ground": "fused_soil",
    "seed": 3940882602,
    "edges": {
     "north": {
      "to": "z_14_09",
      "open": true,
-     "along": 0.36
+     "along": 0.8,
+     "road": "ore_freight_rail"
     },
     "south": {
      "to": "z_14_11",
@@ -6195,10 +6256,13 @@
     "east": {
      "to": "z_15_10",
      "open": true,
-     "along": 0.384
+     "along": 0.15,
+     "road": "ore_freight_rail"
     }
    },
-   "roads": [],
+   "roads": [
+    "ore_freight_rail"
+   ],
    "places": [],
    "authored": false
   },
@@ -6207,11 +6271,11 @@
    "col": 15,
    "row": 10,
    "n": 154,
-   "name": "Мерцающий лог",
-   "title": "Мерцающий лог №154",
+   "name": "Контур-3",
+   "title": "Контур-3",
    "region": "glasslands",
-   "mode": "pve",
-   "difficulty": 4,
+   "mode": "peaceful",
+   "difficulty": 1,
    "ground": "fused_soil",
    "seed": 1882763371,
    "edges": {
@@ -6228,7 +6292,8 @@
     "west": {
      "to": "z_14_10",
      "open": true,
-     "along": 0.384
+     "along": 0.15,
+     "road": "ore_freight_rail"
     },
     "east": {
      "to": "z_16_10",
@@ -6236,9 +6301,12 @@
      "along": 0.485
     }
    },
-   "roads": [],
+   "roads": [
+    "ore_freight_rail"
+   ],
    "places": [],
-   "authored": false
+   "authored": false,
+   "city": "relayStation"
   },
   {
    "id": "z_16_10",
@@ -6248,8 +6316,8 @@
    "name": "Разломы",
    "title": "Разломы №155",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "fused_soil",
    "seed": 4033305196,
    "edges": {
@@ -6282,7 +6350,7 @@
    "title": "Литейный двор №156",
    "region": "ore_arc",
    "mode": "pve",
-   "difficulty": 2,
+   "difficulty": 1,
    "ground": "iron_scree",
    "seed": 1282888352,
    "edges": {
@@ -6326,8 +6394,8 @@
    "name": "Сорбентные склады",
    "title": "Сорбентные склады №157",
    "region": "ore_arc",
-   "mode": "pve",
-   "difficulty": 2,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "iron_scree",
    "seed": 2189483749,
    "edges": {
@@ -6368,8 +6436,8 @@
    "name": "Паровая лощина",
    "title": "Паровая лощина №158",
    "region": "ore_arc",
-   "mode": "pve",
-   "difficulty": 2,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "iron_scree",
    "seed": 3125720670,
    "edges": {
@@ -6407,7 +6475,7 @@
    "title": "Оползень №159",
    "region": "ore_arc",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "iron_scree",
    "seed": 1560177347,
    "edges": {
@@ -6445,7 +6513,7 @@
    "title": "Старая штольня №160",
    "region": "ore_arc",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "iron_scree",
    "seed": 2071956796,
    "edges": {
@@ -6483,7 +6551,7 @@
    "title": "Мокрый откос №161",
    "region": "northern_sluices",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "river_loam",
    "seed": 3387444193,
    "edges": {
@@ -6520,7 +6588,7 @@
    "name": "Сбросной канал",
    "title": "Сбросной канал №162",
    "region": "northern_sluices",
-   "mode": "pvp",
+   "mode": "pve",
    "difficulty": 2,
    "ground": "river_loam",
    "seed": 3810126282,
@@ -6563,7 +6631,7 @@
    "title": "Речной брод №163",
    "region": "middle_vein",
    "mode": "pvp",
-   "difficulty": 1,
+   "difficulty": 3,
    "ground": "river_loam",
    "seed": 293762575,
    "edges": {
@@ -6605,7 +6673,7 @@
    "title": "Заборная протока №164",
    "region": "middle_vein",
    "mode": "pvp",
-   "difficulty": 1,
+   "difficulty": 3,
    "ground": "river_loam",
    "seed": 4189056505,
    "edges": {
@@ -6655,8 +6723,8 @@
    "name": "Холодный плёс",
    "title": "Холодный плёс №165",
    "region": "northern_sluices",
-   "mode": "pvp",
-   "difficulty": 2,
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
    "ground": "wet_concrete",
    "seed": 1480420884,
    "edges": {
@@ -6731,8 +6799,8 @@
    "name": "Пепельный блеск",
    "title": "Пепельный блеск №167",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "fused_soil",
    "seed": 1024502198,
    "edges": {
@@ -6769,8 +6837,8 @@
    "name": "Чёрные зеркала",
    "title": "Чёрные зеркала №168",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "fused_soil",
    "seed": 3957660221,
    "edges": {
@@ -6807,8 +6875,8 @@
    "name": "Поле искажений",
    "title": "Поле искажений №169",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pve",
+   "difficulty": 2,
    "ground": "fused_soil",
    "seed": 1865985752,
    "edges": {
@@ -6845,8 +6913,8 @@
    "name": "Подступы к «Вектору»",
    "title": "Подступы к «Вектору» №170",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "fused_soil",
    "seed": 4050082815,
    "edges": {
@@ -6862,16 +6930,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "vectorLab",
-     "kind": "complex",
-     "name": "Объект «Вектор»",
-     "u": 0.9,
-     "v": 0.25,
-     "road": false
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -6882,8 +6941,8 @@
    "name": "Шахтный посёлок",
    "title": "Шахтный посёлок №171",
    "region": "ore_arc",
-   "mode": "pvp",
-   "difficulty": 2,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "iron_scree",
    "seed": 1333221209,
    "edges": {
@@ -6920,7 +6979,7 @@
    "title": "Глубокий разрез №172",
    "region": "ore_arc",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "iron_scree",
    "seed": 2139150892,
    "edges": {
@@ -6953,7 +7012,7 @@
    "title": "Каменные зубья №173",
    "region": "ore_arc",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "iron_scree",
    "seed": 3108943051,
    "edges": {
@@ -6991,7 +7050,7 @@
    "title": "Карьерная выемка №174",
    "region": "northern_sluices",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "iron_scree",
    "seed": 1576954966,
    "edges": {
@@ -7037,7 +7096,7 @@
    "name": "Цеховой затон",
    "title": "Цеховой затон №175",
    "region": "northern_sluices",
-   "mode": "pvp",
+   "mode": "pve",
    "difficulty": 2,
    "ground": "wet_concrete",
    "seed": 2122289653,
@@ -7064,16 +7123,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "clanFactoryCycle",
-     "kind": "clan_base",
-     "name": "Цех обратного цикла",
-     "u": 0.4,
-     "v": 0.2,
-     "road": false
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -7084,7 +7134,7 @@
    "name": "Патронная дамба",
    "title": "Патронная дамба №176",
    "region": "northern_sluices",
-   "mode": "pvp",
+   "mode": "pve",
    "difficulty": 2,
    "ground": "wet_concrete",
    "seed": 3337111336,
@@ -7211,8 +7261,8 @@
    "name": "Водоприёмник",
    "title": "Водоприёмник №179",
    "region": "northern_sluices",
-   "mode": "pve",
-   "difficulty": 2,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "wet_concrete",
    "seed": 4138723648,
    "edges": {
@@ -7254,7 +7304,7 @@
    "title": "Линия опор №180",
    "region": "northern_sluices",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "wet_concrete",
    "seed": 1530753741,
    "edges": {
@@ -7292,7 +7342,7 @@
    "title": "Затопленные крыши №181",
    "region": "northern_sluices",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "wet_concrete",
    "seed": 985419054,
    "edges": {
@@ -7329,8 +7379,8 @@
    "name": "Застывшая волна",
    "title": "Застывшая волна №182",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pvp",
+   "difficulty": 3,
    "ground": "fused_soil",
    "seed": 1007724579,
    "edges": {
@@ -7367,8 +7417,8 @@
    "name": "Хрустальный овраг",
    "title": "Хрустальный овраг №183",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "fused_soil",
    "seed": 3907327364,
    "edges": {
@@ -7400,8 +7450,8 @@
    "name": "Край Стеколья",
    "title": "Край Стеколья №184",
    "region": "glasslands",
-   "mode": "pvpFullDrop",
-   "difficulty": 4,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "fused_soil",
    "seed": 1916318609,
    "edges": {
@@ -7428,8 +7478,8 @@
    "name": "Перевальная падь",
    "title": "Перевальная падь №185",
    "region": "northern_sluices",
-   "mode": "pvp",
-   "difficulty": 2,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "wet_concrete",
    "seed": 3092165432,
    "edges": {
@@ -7445,16 +7495,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "clanOreExchange",
-     "kind": "clan_base",
-     "name": "Рудный перевал",
-     "u": 0.2,
-     "v": 0.25,
-     "road": false
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -7465,8 +7506,8 @@
    "name": "Каменный порог",
    "title": "Каменный порог №186",
    "region": "northern_sluices",
-   "mode": "pvp",
-   "difficulty": 2,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "wet_concrete",
    "seed": 1593732585,
    "edges": {
@@ -7498,8 +7539,8 @@
    "name": "Ржавый затвор",
    "title": "Ржавый затвор №187",
    "region": "northern_sluices",
-   "mode": "pvp",
-   "difficulty": 2,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "wet_concrete",
    "seed": 2105512034,
    "edges": {
@@ -7531,8 +7572,8 @@
    "name": "Пенная чаша",
    "title": "Пенная чаша №188",
    "region": "northern_sluices",
-   "mode": "pvp",
-   "difficulty": 2,
+   "mode": "pve",
+   "difficulty": 1,
    "ground": "wet_concrete",
    "seed": 3353888955,
    "edges": {
@@ -7561,11 +7602,11 @@
    "col": 8,
    "row": 13,
    "n": 189,
-   "name": "Нижний бьеф",
-   "title": "Нижний бьеф №189",
+   "name": "Створ",
+   "title": "Створ",
    "region": "northern_sluices",
-   "mode": "pve",
-   "difficulty": 2,
+   "mode": "peaceful",
+   "difficulty": 1,
    "ground": "wet_concrete",
    "seed": 3776571044,
    "edges": {
@@ -7596,17 +7637,18 @@
     "tesma_service_road"
    ],
    "places": [],
-   "authored": false
+   "authored": false,
+   "city": "sluiceCity"
   },
   {
    "id": "z_09_13",
    "col": 9,
    "row": 13,
    "n": 190,
-   "name": "Створ",
-   "title": "Створ",
+   "name": "Створная долина",
+   "title": "Створная долина №190",
    "region": "northern_sluices",
-   "mode": "peaceful",
+   "mode": "pve",
    "difficulty": 2,
    "ground": "wet_concrete",
    "seed": 327317813,
@@ -7638,8 +7680,7 @@
     "tesma_service_road"
    ],
    "places": [],
-   "authored": false,
-   "city": "sluiceCity"
+   "authored": false
   },
   {
    "id": "z_10_13",
@@ -7692,7 +7733,7 @@
    "title": "Турбинный откос №192",
    "region": "northern_sluices",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "wet_concrete",
    "seed": 1513976122,
    "edges": {
@@ -7713,16 +7754,7 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "clanHydroNode2",
-     "kind": "clan_base",
-     "name": "ГЭС-2",
-     "u": 0.6,
-     "v": 0.15,
-     "road": false
-    }
-   ],
+   "places": [],
    "authored": false
   },
   {
@@ -7734,7 +7766,7 @@
    "title": "Тёмная заводь №193",
    "region": "northern_sluices",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "wet_concrete",
    "seed": 1002196673,
    "edges": {
@@ -7767,7 +7799,7 @@
    "title": "Высоковольтная гать №194",
    "region": "northern_sluices",
    "mode": "pvp",
-   "difficulty": 2,
+   "difficulty": 3,
    "ground": "wet_concrete",
    "seed": 990946960,
    "edges": {
@@ -7795,7 +7827,7 @@
    "title": "Оплавленный лес №195",
    "region": "silent_ring",
    "mode": "pve",
-   "difficulty": 5,
+   "difficulty": 1,
    "ground": "silent_ring",
    "seed": 3759793425,
    "edges": {
@@ -7823,7 +7855,7 @@
    "title": "Сезонный вход №196",
    "region": "silent_ring",
    "mode": "pve",
-   "difficulty": 5,
+   "difficulty": 1,
    "ground": "silent_ring",
    "seed": 209874480,
    "edges": {
@@ -7859,7 +7891,7 @@
    "title": "Кратерное поле №197",
    "region": "silent_ring",
    "mode": "pve",
-   "difficulty": 5,
+   "difficulty": 1,
    "ground": "silent_ring",
    "seed": 4239389362,
    "edges": {

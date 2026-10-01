@@ -21,6 +21,9 @@ MonoBehaviour:
   backpackAttachment: {fileID: 1564870888801122, guid: ac097a787546bb24ebc0fce58ca8224d, type: 3}
   helmetAttachment: {fileID: 1262996259358930, guid: 7dea907e69fa1db4888c36ce5482a775, type: 3}
   motorbike: {fileID: 1217920854927372, guid: 32684c090c48c8b40bfc7d8845741599, type: 3}
+  moped: {fileID: 1702731598481262, guid: c0926a94d8691c54d90385593fcfafc0, type: 3}
+  pickupTruck: {fileID: 1364802344601326, guid: 0ecf00181b469b2438043da6adbb8de7, type: 3}
+  armyTruck: {fileID: 1594861037966584, guid: 0450a127987e4124aa4c55845a477bf0, type: 3}
   weapons:
   - itemId: assaultRifle
     prefab: {fileID: 1900586067242068, guid: ad49a19d2c4adc94b838606a5d459f85, type: 3}
@@ -869,7 +872,7 @@ MonoBehaviour:
       rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
       scale: {x: 0.095072635, y: 0.23627271, z: 0.09507323}
   - itemId: polygonAAGun01
-    prefab: {fileID: 1638244575166490, guid: e10c556d4d4596f40b7d9dbc793c966d, type: 3}
+    prefab: {fileID: 1752639783993144, guid: c27d602dadf567a4ea306c40543331ea, type: 3}
     rigId: machineGun
     combatId: machineGun
     displayName: "\u0417\u0435\u043D\u0438\u0442\u043D\u0430\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430
@@ -877,10 +880,10 @@ MonoBehaviour:
     weight: 15.84
     mark:
       valid: 1
-      shape: 0
-      position: {x: 0.03394407, y: 0.30410552, z: -0.11642653}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1.4025704, y: 0.12804443, z: 2.197546}
+      shape: 1
+      position: {x: -0.00003059581, y: 0.24920943, z: 0.4743831}
+      rotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
+      scale: {x: 0.118032224, y: 0.2145703, z: 0.10355163}
   - itemId: polygonVehAA01
     prefab: {fileID: 1752639783993144, guid: c27d602dadf567a4ea306c40543331ea, type: 3}
     rigId: machineGun
@@ -1328,13 +1331,13 @@ MonoBehaviour:
       rotation: {x: 0, y: 0, z: 0, w: 1}
       scale: {x: 0.13323031, y: 0.13323031, z: 0.13323031}
   - itemId: tacticalHelmet
-    prefab: {fileID: 1262996259358930, guid: 7dea907e69fa1db4888c36ce5482a775, type: 3}
+    prefab: {fileID: 1483239078204140884, guid: b37479e7fa0574e4aa00c30a96405d3a, type: 3}
     mark:
       valid: 1
       shape: 0
-      position: {x: 0.001023367, y: -0.109792165, z: 0.2042974}
+      position: {x: 0.00000008940697, y: -0.08699553, z: 0.1931777}
       rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 0.3513908, y: 0.030395519, z: 0.11085571}
+      scale: {x: 0.35658607, y: 0.030395519, z: 0.09130372}
   - itemId: assaultHelmet
     prefab: {fileID: 1153852152701694, guid: cfe86ff67def9cd4bb8dc14105e1b710, type: 3}
     mark:
@@ -1344,13 +1347,13 @@ MonoBehaviour:
       rotation: {x: 0, y: 0, z: 0, w: 1}
       scale: {x: 0.44788477, y: 0.03, z: 0.15360011}
   - itemId: preWarHelmet
-    prefab: {fileID: 1210444806839874, guid: 27d7347987dcd1f48be7c4b55465a67e, type: 3}
+    prefab: {fileID: 6328359254581566437, guid: 3cc88f2e454707f4394107fc7bd4a250, type: 3}
     mark:
       valid: 1
       shape: 0
-      position: {x: -0.08344154, y: -0.1031606, z: 0.0047345418}
+      position: {x: 0.000000014901161, y: -0.12743573, z: 0.18118554}
       rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 0.048617024, y: 0.03, z: 0.0638807}
+      scale: {x: 0.5271163, y: 0.032842454, z: 0.18265118}
   - itemId: leather
     prefab: {fileID: 1274019000965958, guid: af169be12f376ce46a3e6b4bee8b8ffe, type: 3}
     mark:
@@ -1788,7 +1791,7 @@ MonoBehaviour:
     malePrefab: {fileID: 1274019000965958, guid: af169be12f376ce46a3e6b4bee8b8ffe, type: 3}
     femalePrefab: {fileID: 1297223418881080, guid: 20d863b9f1bb8464f96d58e9319f7088, type: 3}
   - itemId: metalArmor
-    malePrefab: {fileID: 1962457702341656, guid: aab8f459d9f6f1840a3731182032078d, type: 3}
+    malePrefab: {fileID: 1398392053594804, guid: e6c3452fd866c464d897b540cc856c41, type: 3}
     femalePrefab: {fileID: 1904041790429094, guid: 027cd57972e60824ca74f44e0d80ea9a, type: 3}
   - itemId: ballisticVest
     malePrefab: {fileID: 1820416473181658, guid: bb300d8944d3a594f8a617a030409eb4, type: 3}
@@ -1906,17 +1909,17 @@ MonoBehaviour:
   - modelKey: cot_bed
     prefab: {fileID: 1762450614453468, guid: 016ad3349798a984b85484ddf70a27dc, type: 3}
   - modelKey: craft_station_ammo
-    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+    prefab: {fileID: 1623887923129212, guid: f5ad313ca648bc8468d23789d80a70d5, type: 3}
   - modelKey: craft_station_chem
-    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+    prefab: {fileID: 1051052327438898, guid: 491b8f3587293c74d80d7566981beb57, type: 3}
   - modelKey: craft_station_energy
     prefab: {fileID: 1225048615775740, guid: 464f78a898f604d4aa6188472f930185, type: 3}
   - modelKey: craft_station_repair
     prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
   - modelKey: craft_station_tools
-    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+    prefab: {fileID: 1463608583571732, guid: 460021f9062a51b4c8ce90b5741f5775, type: 3}
   - modelKey: craft_station_weapon
-    prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
+    prefab: {fileID: 1278057997903672, guid: 382190a507c261a49b9b165385818adf, type: 3}
   - modelKey: dead_tree_a
     prefab: {fileID: 1796885337435754, guid: 97eeef42e1d4d814db88bb348f6c5315, type: 3}
   - modelKey: dead_tree_b
@@ -1996,7 +1999,7 @@ MonoBehaviour:
   - modelKey: craftStationRepair
     prefab: {fileID: 1846391537875316, guid: 364c964818c66da4aaf23d96ab7f3227, type: 3}
   - modelKey: craftStationChem
-    prefab: {fileID: 1977311790363920, guid: 855aa742b30e06d4598bd9cb0efad304, type: 3}
+    prefab: {fileID: 1051052327438898, guid: 491b8f3587293c74d80d7566981beb57, type: 3}
   - modelKey: relayConsole
     prefab: {fileID: 1252592623594548, guid: 5f0a587201ef70a48836ebd1572c155b, type: 3}
   - modelKey: radioTower

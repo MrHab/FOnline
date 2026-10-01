@@ -77,8 +77,13 @@ for (const region of catalog.regions) {
     `local visual language missing for ${region.id}`);
 }
 
+// Место, стоящее площадкой в своей зоне (zone-sites.js), своей сцены не имеет: его
+// сцена — сцена сектора.
+const zoneGraph = JSON.parse(read('data/kromka/zone-graph.json'));
+const siteZone = new Map(zoneGraph.zones.flatMap(zone => (zone.places || [])
+  .filter(place => place.site).map(place => [place.locationId, zone.id])));
 for (const location of catalog.locations) {
-  const sceneName = location.id === 'wasteland' ? 'KromkaGloomDetour' : location.id;
+  const sceneName = siteZone.get(location.id) || (location.id === 'wasteland' ? 'KromkaGloomDetour' : location.id);
   assert(location.unityScene === `Assets/Scenes/Kromka/Locations/${sceneName}.unity`,
     `location ${location.id} does not own an editable Unity scene path`);
   assert(Array.isArray(location.landmarkTags) && location.landmarkTags.length > 0,
@@ -214,12 +219,13 @@ includes(sovietCc0License, [
 
 const positions = new Map(seed.locations.map(row => [row.id, row]));
 for (const [id, x, z] of [
-  ['sluiceCity', 186, 262],
-  ['settlement', 195, 205],
-  ['scrapTown', 76, 210],
-  ['caravanCamp', 125, 155],
-  ['relayStation', 284, 181],
-  ['secondHaven', 297, 110],
+  // Города — пятиугольником вокруг Ключей (библия, 4.4): центры своих секторов.
+  ['sluiceCity', 170, 270],
+  ['settlement', 210, 150],
+  ['scrapTown', 70, 170],
+  ['caravanCamp', 155, 52],
+  ['relayStation', 310, 210],
+  ['secondHaven', 290, 70],
   ['cascadeRegenerator', 205, 65]
 ]) {
   const point = positions.get(id);
@@ -265,6 +271,9 @@ includes(locationDressing, [
 // Unity batch audit could see it. The practical tutorial yard is bare on purpose.
 for (const location of catalog.locations) {
   if (location.id === 'tutorialCaravanYard') continue;
+  // Площадку места в зоне собирают модели сцены сектора, а её проходимость и вид
+  // проверяют tools/site-report.js и критик; своей сцены с «обвязкой» у неё нет.
+  if (siteZone.has(location.id)) continue;
   const definition = JSON.parse(read(`data/locations/${location.id}.json`));
   if (definition.cityAuthored === true || definition.cityZone === true) continue;
   const dressing = (definition.objects || []).filter(row => row && Array.isArray(row.tags)

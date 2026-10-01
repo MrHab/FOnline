@@ -23,8 +23,9 @@ namespace RealmOfAshes.Game
         private const float MeleeHipsTwistShare = 0.35f;
         // Переход в походное положение ствола и обратно, с.
         private const float CarrySeconds = 0.3f;
-        private const float MeleeKneeDrop = 0.16f;
-        private const float MeleeWeightShift = 0.12f;
+        private const float MeleeKneeDrop = 0.2f;
+        // Выпад: таз уходит вперёд за ударом (~16 см на укол и толчок), стопы стоят.
+        private const float MeleeWeightShift = 0.45f;
 
         private RoaHold _hold;
         private Transform _visualRoot;
@@ -174,7 +175,14 @@ namespace RealmOfAshes.Game
             if (hipsShare > 0f)
             {
                 _hips.rotation = Quaternion.AngleAxis(spine.y * hipsShare * Mathf.Rad2Deg, _frame.up) * _hips.rotation;
-                float lunge = Mathf.Max(0f, spine.x);
+                // На ходу таз ведёт походка: выпад тазом только в ударе стоя.
+                string gaitClip = _characterView != null ? _characterView.CurrentClip ?? string.Empty : string.Empty;
+                bool walking = gaitClip.StartsWith("walk", System.StringComparison.Ordinal)
+                    || gaitClip.StartsWith("run", System.StringComparison.Ordinal)
+                    || gaitClip.StartsWith("strafe", System.StringComparison.Ordinal)
+                    || gaitClip.StartsWith("crouch_walk", System.StringComparison.Ordinal)
+                    || gaitClip.StartsWith("crouch_run", System.StringComparison.Ordinal);
+                float lunge = walking ? 0f : Mathf.Max(0f, spine.x);
                 _hips.position += _frame.up * (-MeleeKneeDrop * lunge) + _frame.forward * (MeleeWeightShift * lunge);
             }
             ApplyMeleeSpine(new Vector3(spine.x, spine.y * (1f - hipsShare), spine.z));
@@ -316,7 +324,37 @@ namespace RealmOfAshes.Game
             // задаёт место кисти, а не точку на древке.
             Vector3 slide = _hold.Right.Axis * RoaHoldStance.TopHandSlide(_hold, SwingPhase());
             PlaceInFrame(_weapon, _visualRoot, _hold, pose, yaw, travel, slide);
+            ArmorShift = Vector3.zero;
         }
+
+        /// <summary>
+        /// Сдвинуть поставленное оружие вместе с местами обеих кистей (скин выносит
+        /// его из объёмной брони, когда запястье у рукояти сидело в торсе).
+        /// </summary>
+        /// <summary>На сколько скин уже вынес оружие из брони с его последней постановки.</summary>
+        internal Vector3 ArmorShift { get; private set; }
+
+        /// <summary>Левая кисть держит само оружие (а не противовес или защиту).</summary>
+        internal bool LeftOnWeapon => _hold != null && _hold.Left.Active;
+
+        internal void ShiftHold(Vector3 delta)
+        {
+            if (_weapon == null) return;
+            _weapon.position += delta;
+            ArmorShift += delta;
+            RoaHandTarget right = HoldRight;
+            right.Centre += delta;
+            HoldRight = right;
+            // Левая кисть едет с оружием, только если держит его: противовес при
+            // ударе одной рукой остаётся у груди.
+            if (_hold != null && _hold.Left.Active)
+            {
+                RoaHandTarget left = HoldLeft;
+                left.Centre += delta;
+                HoldLeft = left;
+            }
+        }
+
 
         /// <summary>Поставить любой предмет (и оружие второй руки) в позу относительно груди этого персонажа.</summary>
         internal void PlaceInFrame(Transform holder, Transform visual, RoaHold hold, RoaHoldPose pose)
@@ -447,7 +485,9 @@ namespace RealmOfAshes.Game
                     left = new RoaHandTarget
                     {
                         Active = true,
-                        Centre = FramePoint(Vector3.Lerp(new Vector3(-0.22f, 0.92f, 0.08f), new Vector3(-0.24f, 1.12f, 0.24f), weight), ChestYaw(), ChestTravel()),
+                        // Кисть впереди бедра и груди, не у бока: на скрутке корпуса предплечье
+                        // иначе проходило сквозь живот.
+                        Centre = FramePoint(Vector3.Lerp(new Vector3(-0.3f, 0.97f, 0.3f), new Vector3(-0.34f, 1.1f, 0.36f), weight), ChestYaw(), ChestTravel()),
                         Axis = _frame.forward, Back = -_frame.right, Radius = 0.03f,
                         Fingers = RoaFingerPose.Relaxed
                     };

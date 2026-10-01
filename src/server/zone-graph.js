@@ -67,7 +67,7 @@ function roadCrossing(points, vertical, line, from, to) {
   return null;
 }
 
-function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, locationNames = {}, locationModes = {}, overrides = {} }) {
+function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, locationNames = {}, locationModes = {}, overrides = {}, belts = {} }) {
   const mapGrid = globalMap.grid;
   const cellKm = Number(mapGrid.cellKm || 10);
   const pointKm = cellKm / Number(mapGrid.cellPoints || 10);
@@ -129,9 +129,16 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
       let mode = dangerModeAt(colourRules, centre, nodesById, region, pointKm);
       if (ring === 0) mode = 'peaceful';
       else if (ring <= BLUE_RING_ZONES && mode !== 'pvpBlack') mode = 'pve';
+      let difficulty = clamp(Math.round(cells.reduce((sum, cell) => sum + Number(cell.difficulty || 1), 0) / Math.max(1, cells.length)), 1, 5);
+      // Пояса канона (Королевский материк Albion) важнее прежних правил цвета.
+      const belt = belts[id];
+      if (belt && belt.mode) {
+        mode = String(belt.mode);
+        difficulty = clamp(Math.round(Number(belt.tier) || difficulty), 1, 5);
+      }
       zones.set(id, {
         id, col, row, n: 0, name: '', title: '', region, mode,
-        difficulty: clamp(Math.round(cells.reduce((sum, cell) => sum + Number(cell.difficulty || 1), 0) / Math.max(1, cells.length)), 1, 5),
+        difficulty,
         ground: majority(cells.map(cell => cell.texture || ''), () => 0) || region,
         seed: hash32(`${globalMap.worldRevision || 'world'}:${id}`),
         edges: {}, roads: [], places, authored: false
@@ -155,6 +162,22 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
     zone.mode = String(locationModes[city.locationId] || zone.mode);
     cityNames.set(zone.id, city.name);
   }
+
+  // Место, перенесённое в свою зону: портала нет, площадка стоит в секторе, правила
+  // на ней — правила зоны, кроме безопасного островка (safe). Список — `sites` в
+  // zone-graph.overrides.json; туда место попадает, когда его площадка построена.
+  const siteRules = overrides.sites && typeof overrides.sites === 'object' ? overrides.sites : {};
+  const siteIds = new Set(Object.keys(siteRules));
+  for (const zone of zones.values()) {
+    for (const place of zone.places) {
+      if (!siteIds.has(place.locationId)) continue;
+      if (place.hidden) throw new Error(`zone graph: hidden place ${place.locationId} cannot stand in its zone as a site`);
+      place.site = true;
+      if (siteRules[place.locationId]?.safe === true) place.safe = true;
+      siteIds.delete(place.locationId);
+    }
+  }
+  if (siteIds.size) throw new Error(`zone graph: sites without a place on the map: ${[...siteIds].join(', ')}`);
 
   [...zones.values()].sort((a, b) => a.row - b.row || a.col - b.col).forEach((zone, index) => {
     zone.n = index + 1;
@@ -208,6 +231,8 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
     schema: SCHEMA, version: GRAPH_VERSION, worldRevision: String(globalMap.worldRevision || ''),
     grid: { cols, rows, zoneKm: ZONE_KM, cellsPerZone },
     capitals: [...capitals].filter(id => nodesById[id]).sort(),
+    // Бывшие города, ставшие местами: по ним миграция будит тех, кто в них сохранился.
+    ...((overrides.retiredCities || []).length ? { retiredCities: [...overrides.retiredCities].sort() } : {}),
     zones: [...zones.values()].sort((a, b) => a.n - b.n)
   };
   const lost = unreachableZones(graph);

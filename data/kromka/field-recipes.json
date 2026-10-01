@@ -1792,6 +1792,78 @@
         "id": "polygonVehSawLauncher01",
         "qty": 1
       }
+    },
+    {
+      "id": "mopedcraft",
+      "name": "Мопед",
+      "station": "repair_bench",
+      "line": "tools",
+      "inputs": {
+        "$metal": 6,
+        "$oil": 3,
+        "electronics": 2
+      },
+      "silverFee": 4,
+      "workSeconds": 10,
+      "output": {
+        "id": "moped",
+        "qty": 1
+      }
+    },
+    {
+      "id": "motorcyclecraft",
+      "name": "Армейский мотоцикл",
+      "station": "repair_bench",
+      "line": "tools",
+      "inputs": {
+        "$metal": 10,
+        "$oil": 5,
+        "$hide": 2,
+        "electronics": 6
+      },
+      "silverFee": 8,
+      "workSeconds": 16,
+      "output": {
+        "id": "motorcycle",
+        "qty": 1
+      }
+    },
+    {
+      "id": "pickupcraft",
+      "name": "Пикап",
+      "station": "repair_bench",
+      "line": "tools",
+      "inputs": {
+        "$metal": 16,
+        "$oil": 8,
+        "$fiber": 4,
+        "electronics": 8
+      },
+      "silverFee": 12,
+      "workSeconds": 22,
+      "output": {
+        "id": "pickup",
+        "qty": 1
+      }
+    },
+    {
+      "id": "armyTruckcraft",
+      "name": "Армейский грузовик",
+      "station": "repair_bench",
+      "line": "tools",
+      "inputs": {
+        "$metal": 22,
+        "$oil": 10,
+        "$fiber": 6,
+        "$wood": 4,
+        "electronics": 10
+      },
+      "silverFee": 16,
+      "workSeconds": 28,
+      "output": {
+        "id": "armyTruck",
+        "qty": 1
+      }
     }
   ]
 }

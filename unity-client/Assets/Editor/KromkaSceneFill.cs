@@ -114,7 +114,10 @@ namespace RealmOfAshes.EditorTools
         private static void AddCollision(GameObject instance, JObject row)
         {
             if (Text(row, "collision") != "solid") return;
-            if (instance.GetComponentInChildren<Collider>(true) != null) return;
+            // Считаются только работающие коллайдеры: префаб набора может нести
+            // выключенный (сухое дерево выключает капсулу модели пака), и тогда
+            // сцена осталась бы без преграды, а экспорт отказал бы.
+            if (instance.GetComponentsInChildren<Collider>(true).Any(collider => collider.enabled && !collider.isTrigger)) return;
             var parts = row["collisionParts"] as JArray;
             if (parts == null || parts.Count == 0) return;
             // Высоту пишет не всякий генератор, и экспорт не пишет её вовсе

@@ -1,0 +1,237 @@
+{
+  "assetId": "creature_rat_v1",
+  "file": "creature_rat_v1.glb",
+  "boundsIdleMetres": {
+    "minimum": [
+      -0.103335,
+      -0.283458,
+      0.0015
+    ],
+    "maximum": [
+      0.103326,
+      0.664263,
+      0.315457
+    ],
+    "size": [
+      0.206661,
+      0.947722,
+      0.313957
+    ]
+  },
+  "collider": {
+    "type": "box",
+    "size": [
+      0.206661,
+      0.947722,
+      0.313957
+    ],
+    "center": [
+      -5e-06,
+      0.190403,
+      0.158478
+    ]
+  },
+  "rig": {
+    "boneCount": 31,
+    "deformingBones": 31
+  },
+  "requiredAnimations": [
+    "idle",
+    "walk",
+    "run",
+    "attack",
+    "hurt",
+    "death"
+  ],
+  "actualGlb": {
+    "meshDefinitions": 1,
+    "positionVertices": 11999,
+    "triangles": 4004,
+    "materials": 5,
+    "textures": 15,
+    "skins": 1,
+    "skinJointCounts": [
+      31
+    ],
+    "animations": [
+      "attack",
+      "death",
+      "hurt",
+      "idle",
+      "run",
+      "walk"
+    ],
+    "nodes": [
+      "FrontFoot.R",
+      "FrontLowLeg.R",
+      "FrontUpLeg.R",
+      "FrontLeg.R",
+      "BackLowLeg.R",
+      "BackUpLeg.R",
+      "BackLeg.R",
+      "FrontLowLeg.L",
+      "FrontUpLeg.L",
+      "FrontLeg.L",
+      "BackLowLeg.L",
+      "BackUpLeg.L",
+      "BackLeg.L",
+      "Tail7",
+      "Tail6",
+      "Tail5",
+      "Tail4",
+      "Tail3",
+      "Tail2",
+      "Tail1",
+      "Back",
+      "Head",
+      "Neck",
+      "Shoulders",
+      "Torso",
+      "Hips",
+      "Body",
+      "BackFoot.R",
+      "FrontFoot.L",
+      "BackFoot.L",
+      "root",
+      "rat_quaternius_body",
+      "rat_quaternius_rig",
+      "creature_rat_v1"
+    ]
+  },
+  "geometryAnalysis": {
+    "weld": {
+      "verticesBefore": 8008,
+      "verticesAfter": 1998,
+      "componentsBefore": 2002,
+      "componentsAfter": 1,
+      "polygons": 4004
+    },
+    "sourceTriangles": 4004,
+    "flatShaded": true,
+    "materialPolygonCounts": {
+      "fur": 1245,
+      "belly": 211,
+      "skin": 2168,
+      "tail": 376,
+      "eyes": 4
+    },
+    "skinInfluenceNormalization": {
+      "verticesLimitedToFourInfluences": 0,
+      "maximumInfluencesBefore": 4,
+      "maximumInfluencesAfter": 4
+    },
+    "donorRigTransform": {
+      "bakedArmatureScale": 5.418242,
+      "unitScale": 0.137,
+      "scaledLocationCurves": 465
+    }
+  },
+  "actions": {
+    "sourceToRuntime": {
+      "idle": "RatArmature|Rat_Idle",
+      "walk": "RatArmature|Rat_Walk",
+      "run": "RatArmature|Rat_Run",
+      "attack": "RatArmature|Rat_Attack",
+      "death": "RatArmature|Rat_Death"
+    },
+    "droppedActions": [
+      "RatArmature|Rat_Jump"
+    ],
+    "restKeyedChannels": 1085,
+    "authored": {
+      "hurt": "flinch: jolt back with body roll, head thrown up and aside and a tail whip at f2, counter-swing f5, settle f9, idle pose at f13"
+    },
+    "runtimeRanges": {
+      "idle": [
+        0.0,
+        57.0
+      ],
+      "walk": [
+        0.0,
+        32.0
+      ],
+      "run": [
+        0.0,
+        12.0
+      ],
+      "attack": [
+        0.0,
+        16.0
+      ],
+      "hurt": [
+        0.0,
+        13.0
+      ],
+      "death": [
+        0.0,
+        26.0
+      ]
+    },
+    "durationsSeconds": {
+      "idle": 2.375,
+      "walk": 1.3333,
+      "run": 0.5,
+      "attack": 0.6667,
+      "hurt": 0.5417,
+      "death": 1.0833
+    }
+  },
+  "groundContactCorrections": {
+    "clearanceMetres": 0.0015,
+    "actions": {
+      "idle": {
+        "sampledFrames": 58,
+        "minimumBeforeMetres": -2e-06,
+        "maximumBeforeMetres": 1.1e-05,
+        "minimumAfterMetres": 0.0015,
+        "maximumAfterMetres": 0.0015
+      },
+      "walk": {
+        "sampledFrames": 33,
+        "minimumBeforeMetres": -0.000384,
+        "maximumBeforeMetres": 1.3e-05,
+        "minimumAfterMetres": 0.0015,
+        "maximumAfterMetres": 0.0015
+      },
+      "run": {
+        "sampledFrames": 13,
+        "minimumBeforeMetres": -0.025906,
+        "maximumBeforeMetres": 0.001873,
+        "minimumAfterMetres": 0.0015,
+        "maximumAfterMetres": 0.0015
+      },
+      "attack": {
+        "sampledFrames": 17,
+        "minimumBeforeMetres": -0.010915,
+        "maximumBeforeMetres": 1.2e-05,
+        "minimumAfterMetres": 0.0015,
+        "maximumAfterMetres": 0.0015
+      },
+      "hurt": {
+        "sampledFrames": 14,
+        "minimumBeforeMetres": -0.0061,
+        "maximumBeforeMetres": 0.0,
+        "minimumAfterMetres": 0.0015,
+        "maximumAfterMetres": 0.0015
+      },
+      "death": {
+        "sampledFrames": 27,
+        "minimumBeforeMetres": -0.043451,
+        "maximumBeforeMetres": -0.0,
+        "minimumAfterMetres": 0.0015,
+        "maximumAfterMetres": 0.0015
+      }
+    }
+  },
+  "provenance": {
+    "donor": "Quaternius Rat (poly.pizza iltq5bVNaV, official glTF)",
+    "donorSha256": "68F67077981102E957059FD00AAF3799E6867C269DE900BD52C9F12CEC1D5F56",
+    "license": "CC0 1.0 Universal",
+    "geometry": "unaltered donor faces; flat-shading vertex split welded",
+    "animations": "Quaternius Rat_Idle, Rat_Walk, Rat_Run, Rat_Attack, Rat_Death; Realm-authored hurt; Rat_Jump dropped",
+    "materials": "original Realm of Ashes B+C packed 512 px PBR textures"
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "1505E433453B4263FFBC87C79A089A84AE318822934E7AEDFD8ED9E97C632A8F"
+}

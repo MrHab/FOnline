@@ -84,6 +84,9 @@ namespace RealmOfAshes.Game
         [SerializeField] private GameObject backpackAttachment;
         [SerializeField] private GameObject helmetAttachment;
         [SerializeField] private GameObject motorbike;
+        [SerializeField] private GameObject moped;
+        [SerializeField] private GameObject pickupTruck;
+        [SerializeField] private GameObject armyTruck;
         [SerializeField] private List<WeaponEntry> weapons = new List<WeaponEntry>();
         [SerializeField] private List<ItemEntry> items = new List<ItemEntry>();
         [SerializeField] private List<ArmorEntry> armor = new List<ArmorEntry>();
@@ -142,8 +145,20 @@ namespace RealmOfAshes.Game
             return femaleBody ? palette.female : palette.male;
         }
 
-        public static GameObject Vehicle(string itemId) =>
-            itemId == "motorcycle" ? Instance?.motorbike : null;
+        /// <summary>Модель пакета по предмету транспорта любого тира (motorcycleT4 — тот же байк).</summary>
+        public static GameObject Vehicle(string itemId)
+        {
+            RoaApocalypseModels palette = Instance;
+            if (palette == null) return null;
+            switch (RoaVehicleCatalog.Kind(itemId))
+            {
+                case "motorcycle": return palette.motorbike;
+                case "moped": return palette.moped;
+                case "pickup": return palette.pickupTruck;
+                case "truck": return palette.armyTruck;
+                default: return null;
+            }
+        }
 
         public static GameObject BackpackAttachment => Instance?.backpackAttachment;
         public static GameObject HelmetAttachment => Instance?.helmetAttachment;
@@ -422,6 +437,15 @@ namespace RealmOfAshes.Game
             _footwear = null;
             _creatures = null;
             _environment = null;
+            _instance = null;
+        }
+
+        /// <summary>Транспорт без GLB-каркаса: разметку седока RoaVehicleView снимает с узлов префаба.</summary>
+        public void ConfigureVehicles(GameObject mopedModel, GameObject pickupModel, GameObject truckModel)
+        {
+            moped = mopedModel;
+            pickupTruck = pickupModel;
+            armyTruck = truckModel;
             _instance = null;
         }
     }

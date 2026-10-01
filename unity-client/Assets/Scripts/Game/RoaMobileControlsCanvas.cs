@@ -24,7 +24,7 @@ namespace RealmOfAshes.Game
             public bool Crouching;
             public bool PingAvailable;
             public bool BoltAiming;
-            /// <summary>В слоте «Транспорт» есть мотоцикл: кнопка «МОТО» имеет смысл.</summary>
+            /// <summary>В слоте «Транспорт» что-то надето: кнопка «ЕХАТЬ» имеет смысл.</summary>
             public bool VehicleAvailable;
             public bool Mounted;
             public string FireMode;
@@ -225,7 +225,7 @@ namespace RealmOfAshes.Game
             // Кнопку транспорта показываем, только когда он надет: пустая кнопка лишь путала бы.
             SetVisible("Vehicle", _gameplayButtonsVisible && (state.VehicleAvailable || state.Mounted));
             SetSelected("Vehicle", state.Mounted, false);
-            SetLabel("Vehicle", state.Mounted ? "СЛЕЗТЬ" : "МОТО");
+            SetLabel("Vehicle", state.Mounted ? "ВЫЙТИ" : "ЕХАТЬ");
             SetSelected("Target", state.TargetSelected, false);
             // Галки U+2713 нет во вложенном Noto Sans, а в WebGL нет системных
             // шрифтов, которые бы её подставили; точка U+2022 в шрифте есть.
@@ -455,7 +455,7 @@ namespace RealmOfAshes.Game
                 () => Controls?.TriggerPlayerOrPing());
             CreateButton("Bolt", "БОЛТ", "ApocalypseHud/ICON_SM_Wep_CrossBow_Bolt_01",
                 () => BoltThrower?.ToggleAim());
-            CreateButton("Vehicle", "МОТО", "ApocalypseHud/ICON_Apocalpyse_Map_Vehicle_01",
+            CreateButton("Vehicle", "ЕХАТЬ", "ApocalypseHud/ICON_Apocalpyse_Map_Vehicle_01",
                 () => Vehicles?.Toggle());
             CreateJoystick();
             Hide();

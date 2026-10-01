@@ -275,12 +275,14 @@ namespace RealmOfAshes.Game
 
         }
 
-        /// <summary>Карточка профессии: уровень, открытый тир и опыт до следующего уровня.</summary>
+        /// <summary>Карточка профессии: уровень, открытый тир (у добычи — до какого тира она добывает) и опыт до следующего уровня.</summary>
         private void AddProfessionCard(JObject profession)
         {
             string id = profession["id"]?.ToString() ?? string.Empty;
             int level = profession["level"]?.ToObject<int?>() ?? 0;
             int maxTier = profession["maxTier"]?.ToObject<int?>() ?? 1;
+            // Добыча берёт узлы на тир выше открытого: сервер присылает её предел отдельно.
+            int gatherTier = profession["gatherTier"]?.ToObject<int?>() ?? 0;
             long xp = profession["xp"]?.ToObject<long?>() ?? 0L;
             long levelXp = profession["levelXp"]?.ToObject<long?>() ?? 0L;
             long nextXp = profession["nextLevelXp"]?.ToObject<long?>() ?? xp;
@@ -301,7 +303,7 @@ namespace RealmOfAshes.Game
             name.text = profession["name"]?.ToString() ?? id;
             Place_(name.rectTransform, 0f, 1f, 1f, 1f, new Vector2(7f, -20f), new Vector2(-7f, -6f));
             Text rank = Label("Rank", rect, 10, TextAnchor.UpperLeft, new Color(0.89f, 0.761f, 0.412f, 1f));
-            rank.text = "Уровень " + level + " · открыт тир T" + maxTier
+            rank.text = "Уровень " + level + (gatherTier > 0 ? " · добыча до T" + gatherTier : " · открыт тир T" + maxTier)
                 + (nextXp > xp ? " · опыт " + (xp - levelXp) + " / " + (nextXp - levelXp) : " · максимум");
             Place_(rank.rectTransform, 0f, 1f, 1f, 1f, new Vector2(7f, -36f), new Vector2(-7f, -22f));
 

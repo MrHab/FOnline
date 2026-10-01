@@ -183,6 +183,27 @@
       "injuryProfile": { "infectionChance": 0.26, "bleedChance": 0.08, "fractureChance": 0.0 },
       "loot": { "trophyQty": 2, "table": "dustling_chitin" },
       "readability": { "silhouette": "segmented low colony under a ribbed shell", "combatTell": "shell vents raise before the abrasive cloud", "color": "#9c8153" }
+    },
+    {
+      "id": "rat",
+      "displayName": "Крысюк",
+      "pluralName": "Крысюки",
+      "classification": "natural_mutant",
+      "description": "Раздобревшая на городских отбросах крыса размером с кошку. Живёт во дворах за стенами городов, людей боится и после первого удара удирает. Шкурка у неё плотная, её снимают на кожу.",
+      "faction": "neutral",
+      "role": "animal",
+      "hostileByDefault": false,
+      "modelKey": "kromkaRat",
+      "visual": "rat",
+      "stats": { "hp": 14, "attack": 2, "speed": 3.1, "xp": 4, "scale": 1.0 },
+      "senses": { "visionRange": 7.0, "hearingShotRange": 12.0, "hearingHarvestRange": 5.0, "memoryMs": 2400, "investigateMs": 1800, "senseIntervalMs": 400, "noiseReaction": 0.9, "noiseScatter": 2.4, "separationRadius": 0.6 },
+      "attacks": [
+        { "id": "cornered_bite", "damageType": "physical", "telegraphMs": 320, "cooldownMs": 1400, "effect": "bleed", "effectChance": 0.1 }
+      ],
+      "resistances": { "physical": 0.0, "ballistic": -0.1, "energy": 0.0, "toxic": 0.3, "radiation": 0.4, "anomaly": 0.0 },
+      "injuryProfile": { "infectionChance": 0.2, "bleedChance": 0.08, "fractureChance": 0.0 },
+      "loot": { "trophyQty": 0, "table": "rat_scraps" },
+      "readability": { "silhouette": "cat-sized rat with a long bare tail", "combatTell": "freezes and squeals before bolting", "color": "#6b6259" }
     }
   ]
 }

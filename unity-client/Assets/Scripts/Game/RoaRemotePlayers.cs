@@ -52,6 +52,9 @@ namespace RealmOfAshes.Game
             public bool Moving;
             public bool PresentationMoving;
             public bool Crouching;
+            /// <summary>Что игрок собирает (ore, wood…); пусто — не собирает.</summary>
+            public string GatherType = string.Empty;
+            public float GatherCycleSeconds = 2.5f;
             public Vector3 AimPoint;
             public float AimUntil;
             public RoaMovementFx.ActorStepState StepFx;
@@ -92,6 +95,7 @@ namespace RealmOfAshes.Game
             Socket.OnPlayerDamaged += HandlePlayerDamaged;
             Socket.OnPlayerHealed += HandlePlayerHealed;
             Socket.OnPlayerVehicle += HandlePlayerVehicle;
+            Socket.OnPlayerGathering += HandlePlayerGathering;
         }
 
         private void OnDisable()
@@ -109,6 +113,7 @@ namespace RealmOfAshes.Game
             Socket.OnPlayerDamaged -= HandlePlayerDamaged;
             Socket.OnPlayerHealed -= HandlePlayerHealed;
             Socket.OnPlayerVehicle -= HandlePlayerVehicle;
+            Socket.OnPlayerGathering -= HandlePlayerGathering;
         }
 
         /// <summary>Другой игрок сел на транспорт или спешился (событие playerVehicle).</summary>
@@ -120,10 +125,25 @@ namespace RealmOfAshes.Game
             ApplyRemoteVehicle(remote);
         }
 
+        /// <summary>Другой игрок начал или закончил сбор: анимацию ведёт Update.</summary>
+        private void HandlePlayerGathering(JObject payload)
+        {
+            string id = payload?["id"]?.ToString();
+            if (string.IsNullOrEmpty(id) || !_remotes.TryGetValue(id, out Remote remote)) return;
+            remote.GatherType = payload["type"]?.ToString() ?? string.Empty;
+            float cycleMs = payload["cycleMs"]?.ToObject<float?>() ?? 0f;
+            if (cycleMs > 0f) remote.GatherCycleSeconds = cycleMs / 1000f;
+            if (!string.IsNullOrEmpty(remote.GatherType) && !remote.PresentationMoving)
+                RoaInteraction.PlayGatherClip(remote.View, remote.GatherType, remote.GatherCycleSeconds + 0.4f);
+        }
+
         private void ApplyRemoteVehicle(Remote remote)
         {
             if (remote?.View == null) return;
             remote.View.SetVehicle(BaseUrl, RemoteVehicleItemId(remote));
+            // Чужая машина твёрдая: сквозь её кузов не пройти и не проехать.
+            if (remote.View.Riding && remote.View.Vehicle != null)
+                remote.View.Vehicle.SetSolidHull(RoaVehicleCatalog.Hull.Parse(remote.Player?.Vehicle?["hull"] as JObject));
         }
 
         private static string RemoteVehicleItemId(Remote remote)
@@ -213,7 +233,8 @@ namespace RealmOfAshes.Game
                 PresentationVelocity = Vector3.zero,
                 Moving = player.Moving,
                 PresentationMoving = false,
-                Crouching = player.Crouching
+                Crouching = player.Crouching,
+                GatherType = player.Gathering ?? string.Empty
             };
             view.OnVisualChanged += remote.Gate.Invalidate;
             _remotes[player.Id] = remote;
@@ -240,6 +261,7 @@ namespace RealmOfAshes.Game
                 if (_remotes.TryGetValue(player.Id, out Remote remote))
                 {
                     remote.Player = player;
+                    remote.GatherType = player.Gathering ?? string.Empty;
                     if (remote.View != null) remote.View.SetDead(player.Downed);
                     if (remote.View != null) remote.View.SetInjuries(player.Injuries);
                     if (!player.Downed) ApplyRemoteVehicle(remote);
@@ -462,6 +484,7 @@ namespace RealmOfAshes.Game
             if (player == null || string.IsNullOrEmpty(player.Id)) return;
             if (!_remotes.TryGetValue(player.Id, out Remote remote)) return;
             remote.Player = player;
+            remote.GatherType = player.Gathering ?? string.Empty;
             if (remote.View != null) remote.View.SetDead(player.Downed);
             if (remote.View != null) remote.View.SetInjuries(player.Injuries);
             if (!player.Downed) ApplyRemoteVehicle(remote);
@@ -705,6 +728,11 @@ namespace RealmOfAshes.Game
                     remote.View.UpdateLocomotion(remote.PresentationVelocity, remote.TargetYawDeg,
                         remote.PresentationMoving, remote.Crouching);
                     remote.View.SetAim(remote.AimPoint, Time.time < remote.AimUntil);
+                    // Пока другой игрок собирает и стоит на месте, он снова берётся за работу,
+                    // когда клип кончился или его оборвал удар.
+                    if (!string.IsNullOrEmpty(remote.GatherType) && !remote.PresentationMoving
+                        && !remote.View.ActionActive)
+                        RoaInteraction.PlayGatherClip(remote.View, remote.GatherType, remote.GatherCycleSeconds + 0.4f);
                 }
 
                 // Туман скрывает рендереры, но сеть, интерполяция и выбор клипа
@@ -723,8 +751,11 @@ namespace RealmOfAshes.Game
                 // Седок не шагает: вместо шагов пыль из-под колёс — без звука шагов.
                 if (_movementFx != null && riding)
                 {
+                    RoaVehicleView vehicle = remote.View != null ? remote.View.Vehicle : null;
                     _movementFx.TrackWheels(ref remote.StepFx, t.position, remote.PresentationVelocity,
-                        remote.PresentationMoving, presentationVisible, observer);
+                        remote.PresentationMoving, presentationVisible, observer,
+                        vehicle != null ? vehicle.RearWheelOffset : RoaMovementFx.RearWheelOffset,
+                        RoaGroundPrints.TwinTrack(RemoteVehicleItemId(remote)));
                 }
                 else if (_movementFx != null)
                 {

@@ -111,7 +111,7 @@
       }
     },
     "regions": {
-      "settlement": [
+      "sluiceCity": [
         "weapon_bench",
         "repair_bench"
       ],
@@ -122,6 +122,10 @@
       "relayStation": [
         "energy_bench",
         "chem_station"
+      ],
+      "secondHaven": [
+        "chem_station",
+        "repair_bench"
       ],
       "caravanCamp": [
         "ammo_bench",
@@ -164,13 +168,8 @@
     }
   },
   "fastTravel": {
-    "note": "Перенос между столицами фракций у диспетчера: цена = baseFee + feePerKm × км между зонами столиц; из боя (combatLockMs после урона или выстрела) и с грузом категорий blockedCategories в рюкзаке не отправляют.",
-    "baseFee": 40,
-    "feePerKm": 0.5,
-    "combatLockMs": 15000,
-    "blockedCategories": [
-      "artifacts"
-    ]
+    "note": "Проводник в каждом городе фракции бесплатно ведёт в другой город фракции, но только налегке: без экипировки и с пустым рюкзаком (марки — счёт аккаунта, не в счёт). Из боя (combatLockMs после урона или выстрела) не уводит.",
+    "combatLockMs": 15000
   },
   "dangerCells": {
     "capitals": [
@@ -178,8 +177,7 @@
       "scrapTown",
       "relayStation",
       "caravanCamp",
-      "secondHaven",
-      "balanceBunker"
+      "secondHaven"
     ],
     "safeRadiusKm": 12,
     "blueRadiusKm": 38,

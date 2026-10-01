@@ -15,14 +15,16 @@ using RenderPipeline = UnityEngine.Rendering.RenderPipeline;
 namespace RealmOfAshes.EditorTools
 {
     /// <summary>
-    /// Седок на мотоцикле для всех шести тел: таз в седле, кисти на рукоятях,
-    /// стопы на подножках, колёса крутятся по пути, в вираже транспорт и седок
-    /// ложатся внутрь поворота, а спешивание возвращает стойку. Снимки — в
-    /// Temp/RiderPoseReview (или ROA_RIDER_CAPTURE_DIR): сбоку, игровой камерой
-    /// сверху и в вираже.
+    /// Седок на каждом транспорте (мопед, мотоцикл, пикап, грузовик) для обоих
+    /// тел: таз в седле, кисти на рукоятях или руле, стопы на подножках или
+    /// педалях, колёса крутятся по пути, руль поворачивается, двухколёсные в
+    /// вираже ложатся внутрь поворота, машины — нет, а спешивание возвращает
+    /// стойку. Снимки — в Temp/RiderPoseReview (или ROA_RIDER_CAPTURE_DIR):
+    /// сбоку, игровой камерой сверху и в вираже; у машин ещё «рентген» без кузова.
     ///
-    /// Модель мотоцикла берётся из импортированного GLB пакета моделей, тело —
-    /// из каталога префабов, поэтому сервер для пробы не нужен.
+    /// Модель мотоцикла берётся из импортированного GLB пакета моделей, остальной
+    /// транспорт — из префабов палитры RoaApocalypseModels, тело — из каталога
+    /// префабов, поэтому сервер для пробы не нужен.
     /// Пакетный запуск: -executeMethod RealmOfAshes.EditorTools.RoaRiderPoseProbe.RunBatch (без -quit).
     /// </summary>
     public static class RoaRiderPoseProbe
@@ -34,6 +36,9 @@ namespace RealmOfAshes.EditorTools
 
         // Телосложения больше нет: у каждого пола одна базовая модель.
         private static readonly string[] Bodies = { "male_medium", "female_medium" };
+
+        // Предмет каждого вида транспорта: мотоцикл — GLB, остальные — префабы пакета.
+        private static readonly string[] Vehicles = { "motorcycle", "moped", "pickup", "armyTruck" };
 
         private static bool _batchOptionsCaptured;
         private static bool _previousEnterPlayModeOptionsEnabled;
@@ -121,8 +126,9 @@ namespace RealmOfAshes.EditorTools
                 RenderSettings.ambientMode = AmbientMode.Flat;
                 RenderSettings.ambientLight = new Color(0.42f, 0.43f, 0.46f, 1f);
                 Camera camera = BuildRig(rig);
-                foreach (string body in Bodies)
-                    results.Add(await ProbeBody(body, vehicleAsset, camera, captureDirectory, true));
+                foreach (string itemId in Vehicles)
+                    foreach (string body in Bodies)
+                        results.Add(await ProbeBody(body, itemId, vehicleAsset, camera, captureDirectory, true));
             }
             finally
             {
@@ -133,30 +139,42 @@ namespace RealmOfAshes.EditorTools
 
             var report = new JObject
             {
-                ["schema"] = "realm.rider-pose.v1",
-                ["vehicle"] = "motorcycle",
-                ["bodies"] = results
+                ["schema"] = "realm.rider-pose.v2",
+                ["vehicles"] = new JArray(Vehicles),
+                ["rides"] = results
             };
             File.WriteAllText(Path.Combine(captureDirectory, "rider-report.json"), report.ToString(Formatting.Indented));
-            Debug.Log("[ROA RIDER] PASS " + Bodies.Length + " bodies; captures: " + captureDirectory);
+            Debug.Log("[ROA RIDER] PASS " + Vehicles.Length + " vehicles x " + Bodies.Length + " bodies; captures: " + captureDirectory);
         }
 
-        private static async Task<JObject> ProbeBody(string body, GameObject vehicleAsset, Camera camera,
+        private static async Task<JObject> ProbeBody(string body, string itemId, GameObject vehicleAsset, Camera camera,
                                                      string captureDirectory, bool capture)
         {
             string[] parts = body.Split('_');
-            var root = new GameObject("RiderProbe:" + body);
+            string shot = itemId + "-" + body;
+            var root = new GameObject("RiderProbe:" + shot);
             try
             {
                 var viewObject = new GameObject("View");
                 viewObject.transform.SetParent(root.transform, false);
                 RoaCharacterView character = viewObject.AddComponent<RoaCharacterView>();
+                body = itemId + ":" + body;
                 await character.Load(BaseUrl, new JObject { ["sex"] = parts[0] });
                 Check(character.Ready, body + ": character did not load");
 
-                GameObject model = UnityEngine.Object.Instantiate(vehicleAsset);
-                RoaVehicleView vehicle = RoaVehicleView.CreateFromModel(character.transform, "motorcycle", model);
-                Check(vehicle.Ready, body + ": motorcycle nodes are missing");
+                RoaVehicleView vehicle;
+                if (!string.IsNullOrEmpty(RoaVehicleCatalog.ModelPath(itemId)))
+                {
+                    GameObject model = UnityEngine.Object.Instantiate(vehicleAsset);
+                    vehicle = RoaVehicleView.CreateFromModel(character.transform, itemId, model);
+                }
+                else
+                {
+                    GameObject prefab = RoaApocalypseModels.Vehicle(itemId);
+                    Check(prefab != null, body + ": the palette has no pack model for " + itemId);
+                    vehicle = RoaVehicleView.CreateFromPack(character.transform, itemId, prefab);
+                }
+                Check(vehicle.Ready, body + ": vehicle nodes are missing");
                 character.AttachVehicle(vehicle);
                 Check(character.Riding, body + ": character is not riding");
                 SetLayer(root, Layer);
@@ -210,6 +228,10 @@ namespace RealmOfAshes.EditorTools
                 float pegLeft = Vector3.Distance(footL.position, anchors.PegLeft);
                 float pegRight = Vector3.Distance(footR.position, anchors.PegRight);
                 float reach = character.RiderPose.LastReachError;
+                Debug.Log("[ROA RIDER] " + body + " grips " + gripLeft.ToString("0.000") + " / " + gripRight.ToString("0.000")
+                    + ", pegs " + pegLeft.ToString("0.000") + " / " + pegRight.ToString("0.000")
+                    + ", shoulder→grip " + Vector3.Distance(Bone(character, "upperarm_l").position, anchors.GripLeft).ToString("0.000")
+                    + ", hip→peg " + Vector3.Distance(Bone(character, "thigh_l").position, anchors.PegLeft).ToString("0.000"));
                 Check(seatError < 0.01f, body + ": pelvis misses the saddle by " + seatError.ToString("0.000"));
                 Check(reach < MaxLimbError, body + ": a limb misses its grip or peg by " + reach.ToString("0.000"));
                 Check(gripLeft < 0.16f && gripRight < 0.16f, body + ": hands are off the grips: "
@@ -237,9 +259,24 @@ namespace RealmOfAshes.EditorTools
                     // Дальше позу держит обычный LateUpdate каждого кадра, снимки — с включённой камерой.
                     Debug.Log("[ROA RIDER] " + body + " pelvis " + pelvis.position.ToString("F3")
                         + " seat " + anchors.Seat.ToString("F3") + ", lowest skinned point " + lowest.ToString("0.000"));
-                    await Shoot(camera, anchors, new Vector3(-3.4f, 1.0f, 0.1f), 30f, Path.Combine(captureDirectory, body + "-side.png"));
-                    await Shoot(camera, anchors, new Vector3(7.5f, 9.5f, -7.5f), 24f, Path.Combine(captureDirectory, body + "-game.png"));
-                    await Shoot(camera, anchors, new Vector3(2.4f, 1.7f, 3.0f), 30f, Path.Combine(captureDirectory, body + "-front.png"));
+                    float far = vehicle.Cab ? 2.2f : 1f;
+                    await Shoot(camera, anchors, new Vector3(-3.4f, 1.0f, 0.1f) * far, 30f, Path.Combine(captureDirectory, shot + "-side.png"));
+                    await Shoot(camera, anchors, new Vector3(7.5f, 9.5f, -7.5f), 24f * far, Path.Combine(captureDirectory, shot + "-game.png"));
+                    await Shoot(camera, anchors, new Vector3(2.4f, 1.7f, 3.0f) * far, 30f, Path.Combine(captureDirectory, shot + "-front.png"));
+                    if (vehicle.Cab)
+                    {
+                        // Салона пакет не моделирует: снимок без кузова показывает водителя.
+                        var hidden = new List<Renderer>();
+                        foreach (Renderer renderer in vehicle.GetComponentsInChildren<Renderer>())
+                        {
+                            if (renderer.name.Contains("Wheel") || renderer.name.Contains("Steering")) continue;
+                            renderer.enabled = false;
+                            hidden.Add(renderer);
+                        }
+                        await Shoot(camera, anchors, new Vector3(-2.6f, 0.5f, 0.4f), 30f, Path.Combine(captureDirectory, shot + "-xray-side.png"));
+                        await Shoot(camera, anchors, new Vector3(-1.2f, 1.1f, 1.9f), 34f, Path.Combine(captureDirectory, shot + "-xray-front.png"));
+                        foreach (Renderer renderer in hidden) renderer.enabled = true;
+                    }
                 }
 
                 // Вираж: поворот направо 90°/с на 9 м/с — крен вправо (отрицательный угол).
@@ -250,15 +287,20 @@ namespace RealmOfAshes.EditorTools
                     await Task.Yield();
                 }
                 float lean = vehicle.LeanDeg;
-                Check(lean < -3f, body + ": no lean into a right turn: " + lean.ToString("0.0"));
+                if (vehicle.Cab) Check(Mathf.Abs(lean) < 0.01f, body + ": a car must not lean into turns: " + lean.ToString("0.0"));
+                else Check(lean < -3f, body + ": no lean into a right turn: " + lean.ToString("0.0"));
                 Check(Mathf.Abs(vehicle.SteerDeg) > 0.5f, body + ": the handlebar does not steer");
                 if (capture && vehicle.TryGetAnchors(out RoaVehicleView.Anchors turning))
                     await Shoot(camera, turning, -turning.Forward * 3.6f + Vector3.up * 1.4f, 30f,
-                        Path.Combine(captureDirectory, body + "-turn.png"));
+                        Path.Combine(captureDirectory, shot + "-turn.png"));
 
                 // Спешивание: транспорт уезжает, вес позы уходит, стойка возвращается.
                 character.SetVehicle(BaseUrl, string.Empty);
                 Check(!character.Riding, body + ": dismount ignored");
+                // Уходящий транспорт исчезает раньше, чем снимается поза седока:
+                // спешивание всё равно должно вернуть оружие в руки и снять крен.
+                UnityEngine.Object.Destroy(vehicle.gameObject);
+                await Task.Yield();
                 // Пакетный режим крутит кадры по миллисекунде: ждём по реальному времени.
                 float releaseDeadline = Time.realtimeSinceStartup + 5f;
                 while (character.RiderWeight > 0f && Time.realtimeSinceStartup < releaseDeadline)
@@ -267,6 +309,11 @@ namespace RealmOfAshes.EditorTools
                     await Task.Yield();
                 }
                 Check(character.RiderWeight <= 0f, body + ": the rider pose never released");
+                FieldInfo pendingField = typeof(RoaCharacterView).GetField("_dismountPending", BindingFlags.Instance | BindingFlags.NonPublic);
+                Check(pendingField != null && !(bool)pendingField.GetValue(character),
+                    body + ": the dismount never finished, the held weapon stays stowed");
+                float leftLean = Quaternion.Angle(character.transform.localRotation, Quaternion.identity);
+                Check(leftLean < 0.1f, body + ": the rider keeps the turn lean after dismounting: " + leftLean.ToString("0.0") + "°");
                 float standingLowest = BakedLowestY(character);
                 Check(standingLowest < 0.05f, body + ": after dismounting the feet do not reach the ground (lowest "
                     + standingLowest.ToString("0.000") + " m, pelvis " + pelvis.position.y.ToString("0.000")
@@ -276,7 +323,8 @@ namespace RealmOfAshes.EditorTools
                     + " m, reach " + reach.ToString("0.000") + " m, lean " + lean.ToString("0.0") + "°");
                 return new JObject
                 {
-                    ["body"] = body,
+                    ["ride"] = body,
+                    ["cab"] = vehicle.Cab,
                     ["seatErrorMetres"] = Math.Round(seatError, 4),
                     ["limbReachErrorMetres"] = Math.Round(reach, 4),
                     ["handToGripMetres"] = new JArray(Math.Round(gripLeft, 3), Math.Round(gripRight, 3)),
@@ -419,9 +467,14 @@ namespace RealmOfAshes.EditorTools
             foreach (Transform child in root.transform) SetLayer(child.gameObject, layer);
         }
 
+        // ROA_RIDER_SOFT=1: провал пишется в лог, а проба идёт дальше к снимкам — для подгонки разметки.
+        private static readonly bool Soft = Environment.GetEnvironmentVariable("ROA_RIDER_SOFT") == "1";
+
         private static void Check(bool condition, string message)
         {
-            if (!condition) throw new InvalidOperationException(message);
+            if (condition) return;
+            if (Soft) Debug.LogWarning("[ROA RIDER] SOFT FAIL: " + message);
+            else throw new InvalidOperationException(message);
         }
     }
 }

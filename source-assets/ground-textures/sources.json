@@ -1,0 +1,474 @@
+{
+  "schema": "kromka.ground-texture-sources.v1",
+  "verifiedDate": "2026-09-30",
+  "note": "Бесшовные PBR-наборы земли зон. Источник — Poly Haven, лицензия CC0 1.0. Карты скачивает и упаковывает tools/build-ground-textures.js (кэш — Build/SourceDownloads/ground-textures); в Unity лежат цвет и нормали как есть и маска: R — высота, G — шероховатость, B — затенение. tint и saturation подгоняют набор под палитру Synty.",
+  "license": "CC0-1.0",
+  "licenseUrl": "https://polyhaven.com/license",
+  "sets": {
+    "gravelly_sand": {
+      "title": "Пыль тракта: песок с мелким гравием",
+      "name": "Gravelly Sand",
+      "page": "https://polyhaven.com/a/gravelly_sand",
+      "authors": [
+        "Dario Barresi"
+      ],
+      "license": "CC0-1.0",
+      "tilingMeters": 3.2,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "maps": {
+        "diff": {
+          "polyhaven": "Diffuse",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravelly_sand/gravelly_sand_diff_1k.jpg",
+          "md5": "16b7593a26ce1bd43f1d95e61dc25f05",
+          "bytes": 1062525
+        },
+        "nor": {
+          "polyhaven": "nor_gl",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravelly_sand/gravelly_sand_nor_gl_1k.jpg",
+          "md5": "92053a3e135c938def2dc974c76e3763",
+          "bytes": 1387739
+        },
+        "arm": {
+          "polyhaven": "arm",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravelly_sand/gravelly_sand_arm_1k.jpg",
+          "md5": "03d07b3466ad0219fb06dc6b8abf0e54",
+          "bytes": 826170
+        },
+        "disp": {
+          "polyhaven": "Displacement",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravelly_sand/gravelly_sand_disp_1k.jpg",
+          "md5": "68bff5c2b245c76ce54f3944a0c258ea",
+          "bytes": 389673
+        }
+      },
+      "saturation": 0.86,
+      "prints": 0.6
+    },
+    "dirt": {
+      "title": "Речной суглинок: плотная бурая почва",
+      "name": "Dirt",
+      "page": "https://polyhaven.com/a/dirt",
+      "authors": [
+        "Charlotte Baglioni"
+      ],
+      "license": "CC0-1.0",
+      "tilingMeters": 3,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "maps": {
+        "diff": {
+          "polyhaven": "Diffuse",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirt/dirt_diff_1k.jpg",
+          "md5": "cb37e24797597b1dd1ae3819fa80f076",
+          "bytes": 730425
+        },
+        "nor": {
+          "polyhaven": "nor_gl",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirt/dirt_nor_gl_1k.jpg",
+          "md5": "362610edf09fd31735958eecec823a84",
+          "bytes": 1202783
+        },
+        "arm": {
+          "polyhaven": "arm",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirt/dirt_arm_1k.jpg",
+          "md5": "b734c3c74da00491da65aff33cd06d2e",
+          "bytes": 653784
+        },
+        "disp": {
+          "polyhaven": "Displacement",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirt/dirt_disp_1k.jpg",
+          "md5": "0148df38efe0dfd31995d541d11746a8",
+          "bytes": 418669
+        }
+      },
+      "saturation": 0.95,
+      "prints": 0.75
+    },
+    "dry_ground_01": {
+      "title": "Мел: бледная растрескавшаяся земля",
+      "name": "Dry Ground 01",
+      "page": "https://polyhaven.com/a/dry_ground_01",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "license": "CC0-1.0",
+      "tilingMeters": 3.6,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "maps": {
+        "diff": {
+          "polyhaven": "Diffuse",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dry_ground_01/dry_ground_01_diff_1k.jpg",
+          "md5": "f928726e24cf06765877ae77b9a04b4a",
+          "bytes": 604799
+        },
+        "nor": {
+          "polyhaven": "nor_gl",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dry_ground_01/dry_ground_01_nor_gl_1k.jpg",
+          "md5": "6088d590e646993784228156696e9948",
+          "bytes": 243523
+        },
+        "arm": {
+          "polyhaven": "arm",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dry_ground_01/dry_ground_01_arm_1k.jpg",
+          "md5": "60e63a0fc45f87ecca09b39fd86ad0ec",
+          "bytes": 184324
+        },
+        "disp": {
+          "polyhaven": "Displacement",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dry_ground_01/dry_ground_01_disp_1k.jpg",
+          "md5": "19f4ceadb51e1e08bcc82690309fb779",
+          "bytes": 153656
+        }
+      },
+      "saturation": 1,
+      "prints": 0.5
+    },
+    "burned_ground_01": {
+      "title": "Нулевая котловина: пепел и гарь",
+      "name": "Burned Ground 01",
+      "page": "https://polyhaven.com/a/burned_ground_01",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "license": "CC0-1.0",
+      "tilingMeters": 3.2,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "maps": {
+        "diff": {
+          "polyhaven": "Diffuse",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/burned_ground_01/burned_ground_01_diff_1k.jpg",
+          "md5": "dade07575754ec311051ff7be8c10af6",
+          "bytes": 1033112
+        },
+        "nor": {
+          "polyhaven": "nor_gl",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/burned_ground_01/burned_ground_01_nor_gl_1k.jpg",
+          "md5": "00ae59e7246e32e0a4e73de49a20f829",
+          "bytes": 366727
+        },
+        "arm": {
+          "polyhaven": "arm",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/burned_ground_01/burned_ground_01_arm_1k.jpg",
+          "md5": "f51eef8d020edfd26b85dea6928a3fcb",
+          "bytes": 227733
+        },
+        "disp": {
+          "polyhaven": "Displacement",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/burned_ground_01/burned_ground_01_disp_1k.jpg",
+          "md5": "7875b1574460b1ae7f1d6099b1adb281",
+          "bytes": 220448
+        }
+      },
+      "saturation": 1,
+      "prints": 0.85
+    },
+    "red_laterite_soil_stones": {
+      "title": "Железная осыпь: латерит с камнями",
+      "name": "Red Laterite Soil Stones",
+      "page": "https://polyhaven.com/a/red_laterite_soil_stones",
+      "authors": [
+        "Amal Kumar"
+      ],
+      "license": "CC0-1.0",
+      "tilingMeters": 3,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "maps": {
+        "diff": {
+          "polyhaven": "Diffuse",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_laterite_soil_stones/red_laterite_soil_stones_diff_1k.jpg",
+          "md5": "f5d483e42da0c704f320b8c159ebca5e",
+          "bytes": 906764
+        },
+        "nor": {
+          "polyhaven": "nor_gl",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_laterite_soil_stones/red_laterite_soil_stones_nor_gl_1k.jpg",
+          "md5": "08737e3b461efa2583c648fbb3472e84",
+          "bytes": 1494933
+        },
+        "arm": {
+          "polyhaven": "arm",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_laterite_soil_stones/red_laterite_soil_stones_arm_1k.jpg",
+          "md5": "8f1a8b5d546c87d57ec2718ea072d8b0",
+          "bytes": 1056919
+        },
+        "disp": {
+          "polyhaven": "Displacement",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_laterite_soil_stones/red_laterite_soil_stones_disp_1k.jpg",
+          "md5": "55fef21f42937458813f8d7e5d2362b5",
+          "bytes": 686915
+        }
+      },
+      "saturation": 0.78,
+      "prints": 0.3
+    },
+    "mud_cracked_dry_riverbed_002": {
+      "title": "Спёкшееся стекло: тёмная корка в трещинах",
+      "name": "Mud Cracked Dry Riverbed 002",
+      "page": "https://polyhaven.com/a/mud_cracked_dry_riverbed_002",
+      "authors": [
+        "Dario Barresi",
+        "Dimitrios Savva"
+      ],
+      "license": "CC0-1.0",
+      "tilingMeters": 3.4,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "maps": {
+        "diff": {
+          "polyhaven": "Diffuse",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/mud_cracked_dry_riverbed_002/mud_cracked_dry_riverbed_002_diff_1k.jpg",
+          "md5": "a7b38524333f22970dd2481115ddd50b",
+          "bytes": 740567
+        },
+        "nor": {
+          "polyhaven": "nor_gl",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/mud_cracked_dry_riverbed_002/mud_cracked_dry_riverbed_002_nor_gl_1k.jpg",
+          "md5": "29674c48445126aebae2f2d5e4ea0e7f",
+          "bytes": 1358195
+        },
+        "arm": {
+          "polyhaven": "arm",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/mud_cracked_dry_riverbed_002/mud_cracked_dry_riverbed_002_arm_1k.jpg",
+          "md5": "29f86b37ed3db22616867a944611e250",
+          "bytes": 952347
+        },
+        "disp": {
+          "polyhaven": "Displacement",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/mud_cracked_dry_riverbed_002/mud_cracked_dry_riverbed_002_disp_1k.jpg",
+          "md5": "9af814efba060c2916e79d347df46f98",
+          "bytes": 505185
+        }
+      },
+      "saturation": 1,
+      "prints": 0.25
+    },
+    "dirty_concrete": {
+      "title": "Бетон шлюзов: грязный бетон",
+      "name": "Dirty Concrete",
+      "page": "https://polyhaven.com/a/dirty_concrete",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "license": "CC0-1.0",
+      "tilingMeters": 4,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "maps": {
+        "diff": {
+          "polyhaven": "Diffuse",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirty_concrete/dirty_concrete_diff_1k.jpg",
+          "md5": "c6a8dc8bd2aa5f81e7038561f7e602a8",
+          "bytes": 666452
+        },
+        "nor": {
+          "polyhaven": "nor_gl",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirty_concrete/dirty_concrete_nor_gl_1k.jpg",
+          "md5": "bf8286fc94f90dbc117efafe5bb381c0",
+          "bytes": 350169
+        },
+        "arm": {
+          "polyhaven": "arm",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirty_concrete/dirty_concrete_arm_1k.jpg",
+          "md5": "c0760744b70851195aa3f44c5b65d806",
+          "bytes": 112953
+        },
+        "disp": {
+          "polyhaven": "Displacement",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirty_concrete/dirty_concrete_disp_1k.jpg",
+          "md5": "54915bcd37fa76c140da97b34986df14",
+          "bytes": 251781
+        }
+      },
+      "saturation": 1,
+      "prints": 0.05
+    },
+    "moon_01": {
+      "title": "Тихое кольцо: мёртвый серый грунт",
+      "name": "Moon 01",
+      "page": "https://polyhaven.com/a/moon_01",
+      "authors": [
+        "Greg Zaal",
+        "Rico Cilliers",
+        "Jenelle van Heerden",
+        "Dario Barresi"
+      ],
+      "license": "CC0-1.0",
+      "tilingMeters": 4,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "maps": {
+        "diff": {
+          "polyhaven": "Diffuse",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/moon_01/moon_01_diff_1k.jpg",
+          "md5": "edaf25012d783909bfc93946ee0b9628",
+          "bytes": 328631
+        },
+        "nor": {
+          "polyhaven": "nor_gl",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/moon_01/moon_01_nor_gl_1k.jpg",
+          "md5": "accb58c64b6bd429ebdec8b41d358dbf",
+          "bytes": 1298713
+        },
+        "arm": {
+          "polyhaven": "arm",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/moon_01/moon_01_arm_1k.jpg",
+          "md5": "deadbce2c5e38f00d6a25a05b958f59f",
+          "bytes": 756990
+        },
+        "disp": {
+          "polyhaven": "Displacement",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/moon_01/moon_01_disp_1k.jpg",
+          "md5": "904fc99cda7e8499bca8f27e6f4f59d8",
+          "bytes": 412021
+        }
+      },
+      "saturation": 1,
+      "prints": 0.9
+    },
+    "rocky_trail": {
+      "title": "Тропы: каменистая колея",
+      "name": "Rocky Trail",
+      "page": "https://polyhaven.com/a/rocky_trail",
+      "authors": [
+        "Amal Kumar"
+      ],
+      "license": "CC0-1.0",
+      "tilingMeters": 2.6,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "maps": {
+        "diff": {
+          "polyhaven": "Diffuse",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_trail/rocky_trail_diff_1k.jpg",
+          "md5": "f515d1f026fe4a022d5c182f191d60dc",
+          "bytes": 1076180
+        },
+        "nor": {
+          "polyhaven": "nor_gl",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_trail/rocky_trail_nor_gl_1k.jpg",
+          "md5": "72db2dba30e2c1685c2c203508528a29",
+          "bytes": 1398291
+        },
+        "arm": {
+          "polyhaven": "arm",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_trail/rocky_trail_arm_1k.jpg",
+          "md5": "fb9fdd5a66762bfc2c0c82ccb8d34088",
+          "bytes": 1085984
+        },
+        "disp": {
+          "polyhaven": "Displacement",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_trail/rocky_trail_disp_1k.jpg",
+          "md5": "9eda48b670ca4997d9c8694010929b96",
+          "bytes": 418491
+        }
+      },
+      "saturation": 1,
+      "prints": 0.3
+    },
+    "muddy_tracks": {
+      "title": "Грязь после дождя",
+      "name": "Muddy Tracks",
+      "page": "https://polyhaven.com/a/muddy_tracks",
+      "authors": [
+        "Amal Kumar"
+      ],
+      "license": "CC0-1.0",
+      "tilingMeters": 3,
+      "tint": [
+        1,
+        1,
+        1
+      ],
+      "maps": {
+        "diff": {
+          "polyhaven": "Diffuse",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/muddy_tracks/muddy_tracks_diff_1k.jpg",
+          "md5": "a0d904939720504810f60377c6463deb",
+          "bytes": 717431
+        },
+        "nor": {
+          "polyhaven": "nor_gl",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/muddy_tracks/muddy_tracks_nor_gl_1k.jpg",
+          "md5": "73598ec70cab540080a0521ac839435d",
+          "bytes": 1311155
+        },
+        "arm": {
+          "polyhaven": "arm",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/muddy_tracks/muddy_tracks_arm_1k.jpg",
+          "md5": "013434bc7166a9bc9bb50693da9b3667",
+          "bytes": 998069
+        },
+        "disp": {
+          "polyhaven": "Displacement",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/muddy_tracks/muddy_tracks_disp_1k.jpg",
+          "md5": "a6410fe00114239a836e2f8e5d1a28c4",
+          "bytes": 481010
+        }
+      },
+      "saturation": 1,
+      "prints": 1
+    }
+  },
+  "presets": {
+    "tract_dust": "gravelly_sand",
+    "industrialDust": "gravelly_sand",
+    "scrapDust": "gravelly_sand",
+    "caravanYard": "gravelly_sand",
+    "encounterDust": "gravelly_sand",
+    "river_loam": "dirt",
+    "greenLowland": "dirt",
+    "riverJunction": "dirt",
+    "chalk": "dry_ground_01",
+    "chalkMud": "dry_ground_01",
+    "saltFlat": "dry_ground_01",
+    "zero_soil": "burned_ground_01",
+    "glassAsh": "burned_ground_01",
+    "ashGrove": "burned_ground_01",
+    "ashForest": "burned_ground_01",
+    "iron_scree": "red_laterite_soil_stones",
+    "rockyHills": "rocky_trail",
+    "fused_soil": "mud_cracked_dry_riverbed_002",
+    "dryBasin": "mud_cracked_dry_riverbed_002",
+    "wet_concrete": "dirty_concrete",
+    "concreteFloor": "dirty_concrete",
+    "ashConcrete": "dirty_concrete",
+    "dampConcrete": "dirty_concrete",
+    "ruinedRoad": "dirty_concrete",
+    "relayConcrete": "dirty_concrete",
+    "silent_ring": "moon_01"
+  },
+  "defaultSet": "gravelly_sand",
+  "pathSet": "rocky_trail",
+  "mudSet": "muddy_tracks"
+}

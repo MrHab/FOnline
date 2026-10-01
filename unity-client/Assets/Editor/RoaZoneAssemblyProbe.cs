@@ -114,7 +114,8 @@ namespace RealmOfAshes.EditorTools
                         float margin = server.Margin(px, pz);
                         if (Mathf.Abs(margin) < 0.06f) continue; // граница: округления не считаем
                         bool serverInside = margin > 0f;
-                        Vector3 point = new Vector3(px, halfY, -pz);
+                        // Оси сервера и Unity совпадают (RoaCoords.ToUnity).
+                        Vector3 point = new Vector3(px, halfY, pz);
                         bool clientInside = (box.ClosestPoint(point) - point).sqrMagnitude < 1e-6f;
                         samples++;
                         if (serverInside != clientInside)
@@ -176,7 +177,7 @@ namespace RealmOfAshes.EditorTools
                 if (kind == null || File.Exists(Path.Combine(outDir, "zone-play-" + kind + ".png"))) continue;
                 float sx = -zone.WorldWidth / 2f + ((int)row["slot"][0] + 0.5f) * 40f;
                 float sz = -zone.WorldDepth / 2f + ((int)row["slot"][1] + 0.5f) * 40f;
-                Vector3 target = new Vector3(sx, 0f, -sz);
+                Vector3 target = new Vector3(sx, 0f, sz);
                 Quaternion orbit = Quaternion.Euler(55f, 45f, 0f);
                 Capture(Path.Combine(outDir, "zone-play-" + kind + ".png"), target - orbit * Vector3.forward * 11.5f, orbit, false, 0f, 1024, cover, 52f);
                 report.AppendLine("gameplay shot over " + chunk + ": " + cover.ActivePieces + " cover pieces in " + cover.ShownSlots + " slots around the camera");
@@ -231,7 +232,7 @@ namespace RealmOfAshes.EditorTools
 
         private static Vector3 TileToUnity(int tx, int tz, int w, int d)
         {
-            return new Vector3((tx - w / 2f + 0.5f) * Tile, 0f, -((tz - d / 2f + 0.5f) * Tile));
+            return new Vector3((tx - w / 2f + 0.5f) * Tile, 0f, (tz - d / 2f + 0.5f) * Tile);
         }
 
         private static void AddGroundAndMarkers(LocationDefinition zone)

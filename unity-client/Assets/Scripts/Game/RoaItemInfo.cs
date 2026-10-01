@@ -80,13 +80,45 @@ namespace RealmOfAshes.Game
             { "pickaxe", new Row("Инструмент", "Двуручный инструмент для добычи железной руды. В бою работает как тяжёлое оружие ближнего боя.", "Урон 13-21 · тип баллистический · двуручное · дальность 2 · без патронов · треб. Сила 4 · навык: Ближний бой · добыча: руда · Вес 3,0 кг", 2, false, false) },
             { "axe", new Row("Инструмент", "Двуручный инструмент для заготовки древесины. В бою работает как оружие ближнего боя.", "Урон 11-19 · тип баллистический · двуручное · дальность 2.1 · без патронов · треб. Сила 3 · навык: Ближний бой · добыча: древесина · Вес 2,5 кг", 2, false, false) },
             { "handPump", new Row("Инструмент", "Двуручный инструмент для откачки воды и нефти. В бою работает как короткое тяжёлое оружие ближнего боя.", "Урон 7-12 · тип баллистический · двуручное · дальность 1.8 · без патронов · треб. Сила 3 · навык: Ближний бой · добыча: вода/нефть · Вес 2,7 кг", 2, false, false) },
-            { "repairKit", new Row("Расходник", "Позволяет починить оружие, броню или инструмент.", "Ремонт +40% · Вес 1,5 кг", 1, false, true) },
-            { "motorcycle", new Row("Транспорт", "Армейский мотоцикл с оппозитником. Наденьте в слот «Транспорт»: B (на телефоне — МОТО) вызывает его и отпускает. Верхом не стреляют, а удар, оглушение или аномалия выбивают из седла.", "Скорость 11 м/с — вдвое быстрее бега · не носится в рюкзаке · Вес 0,0 кг", 1, false, false) }
+            { "repairKit", new Row("Расходник", "Позволяет починить оружие, броню или инструмент.", "Ремонт +40% · Вес 1,5 кг", 1, false, true) }
         };
+
+        // Транспорт: описание по виду, цифры — из серверного каталога транспорта.
+        private static readonly Dictionary<string, string> VehicleDescriptions = new Dictionary<string, string>
+        {
+            { "moped", "Дешёвый мопед для первых вылазок: быстрее бега, лёгкий на руль, багажник на пару мешков." },
+            { "motorcycle", "Армейский мотоцикл с оппозитником — самый быстрый транспорт Кромки, груза берёт немного." },
+            { "pickup", "Пикап: середина между скоростью и грузом, кузов увозит добычу целой вылазки." },
+            { "truck", "Армейский грузовик: медленный и неповоротливый, зато кузов под кунгом вмещает больше всех." }
+        };
+
+        private static Row VehicleRow(string id)
+        {
+            string kind = RoaVehicleCatalog.Kind(id);
+            VehicleDescriptions.TryGetValue(kind, out string lead);
+            string description = RoaItemData.Description(id);
+            if (string.IsNullOrEmpty(description))
+                description = lead + " Наденьте в слот «Транспорт»: B (на телефоне — кнопка «ЕХАТЬ») вызывает его и отпускает."
+                    + " За рулём не стреляют, а удар, оглушение или аномалия высаживают.";
+            CultureInfo ru = CultureInfo.GetCultureInfo("ru-RU");
+            string stat;
+            if (RoaVehicleCatalog.TryGetStats(id, out RoaVehicleCatalog.Stats stats))
+            {
+                stat = "Тир " + stats.Tier + " · скорость " + stats.Speed.ToString("0.#", ru) + " м/с"
+                    + " · груз +" + stats.CarryKg.ToString("0", ru) + " кг"
+                    + " · разворот " + stats.TurnFullDeg.ToString("0", ru) + "°/с на ходу";
+            }
+            else
+            {
+                stat = "Характеристики придут с сервера";
+            }
+            return new Row("Транспорт", description, stat + " · не носится в рюкзаке · Вес 0,0 кг", 1, false, false);
+        }
 
         public static Row Get(string itemOrRuntimeId)
         {
             string id = RoaArmorData.BaseId(itemOrRuntimeId ?? string.Empty);
+            if (RoaVehicleCatalog.Contains(id)) return VehicleRow(id);
             string group = RoaItemData.TierGroup(id);
             if (!string.IsNullOrEmpty(group) && group != id) return TierVariant(id, group);
             string description = RoaItemData.Description(id);

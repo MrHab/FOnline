@@ -42,10 +42,11 @@ namespace RealmOfAshes.EditorTools
                 {
                     Vector3 a = vertices[triangles[i]], b = vertices[triangles[i + 1]],
                         c = vertices[triangles[i + 2]];
-                    // Remove long barrel and shoulder stock. The remaining
-                    // receiver, grip and trigger retain every authored vertex.
-                    if (Mathf.Max(a.z, b.z, c.z) > 0.29f
-                        || Mathf.Min(a.z, b.z, c.z) < -0.025f) continue;
+                    // Saw the barrel off 0.40 m ahead of the grip: both hands
+                    // (grip and fore-end) still leave a hand's width of barrel
+                    // in view. Receiver, grip and the stub stock keep every
+                    // authored vertex.
+                    if (Mathf.Max(a.z, b.z, c.z) > 0.40f) continue;
                     chosen.Add(triangles[i]); chosen.Add(triangles[i + 1]); chosen.Add(triangles[i + 2]);
                 }
                 if (chosen.Count < 300 || chosen.Count >= triangles.Length * 0.8f)

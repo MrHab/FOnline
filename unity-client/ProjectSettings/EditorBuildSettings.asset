@@ -24,9 +24,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Kromka/Locations/relayStation.unity
     guid: bca606b6e15770b44bea4861cf3fef57
   - enabled: 1
-    path: Assets/Scenes/Kromka/Locations/roadOutpost.unity
-    guid: c36b22cacdf07ac4d9827f9739725927
-  - enabled: 1
     path: Assets/Scenes/Kromka/Locations/klimAmmoWorks.unity
     guid: 034a2cb9233506743981b134e31c501d
   - enabled: 1
@@ -249,9 +246,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Kromka/Locations/z_03_07.unity
     guid: 42f14dee73feda1438fb5d8e63837dac
   - enabled: 1
-    path: Assets/Scenes/Kromka/Locations/z_03_08.unity
-    guid: 956e4a21f92ac0541a0297a4f1a41cf9
-  - enabled: 1
     path: Assets/Scenes/Kromka/Locations/z_03_09.unity
     guid: 36efe479a86bf38448b510c03b6ed645
   - enabled: 1
@@ -375,9 +369,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Kromka/Locations/z_07_01.unity
     guid: 1e1385a5865437c4cbbdc1451a553dd7
   - enabled: 1
-    path: Assets/Scenes/Kromka/Locations/z_07_02.unity
-    guid: a948e60520e88394ba9a5a4e11954701
-  - enabled: 1
     path: Assets/Scenes/Kromka/Locations/z_07_03.unity
     guid: b0adc2a26bc973f4d9c0a47e8cdb19ad
   - enabled: 1
@@ -447,9 +438,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Kromka/Locations/z_08_12.unity
     guid: e0261d53b3be09f47b03f73c19a61ea8
   - enabled: 1
-    path: Assets/Scenes/Kromka/Locations/z_08_13.unity
-    guid: b1f43dae28d793c42995d8090e3b60fa
-  - enabled: 1
     path: Assets/Scenes/Kromka/Locations/z_08_14.unity
     guid: 379a3ff49061332469b0734aaca609aa
   - enabled: 1
@@ -509,9 +497,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Kromka/Locations/z_10_06.unity
     guid: b2ca742a1a49a6c45868527ef331ae56
-  - enabled: 1
-    path: Assets/Scenes/Kromka/Locations/z_10_07.unity
-    guid: 24a87e93863c9ce43b74f8784443abdf
   - enabled: 1
     path: Assets/Scenes/Kromka/Locations/z_10_08.unity
     guid: 06c8a53633686194c968337c1689cf21
@@ -654,9 +639,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Kromka/Locations/z_14_02.unity
     guid: 2973b89da258d0448a08aa2c5a0a9bab
   - enabled: 1
-    path: Assets/Scenes/Kromka/Locations/z_14_03.unity
-    guid: 3727924160c7a854c84fbd33ebbd04f4
-  - enabled: 1
     path: Assets/Scenes/Kromka/Locations/z_14_04.unity
     guid: f1eea7c56ffaf7f4099bf91a840ed7df
   - enabled: 1
@@ -701,9 +683,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Kromka/Locations/z_15_09.unity
     guid: 574540b363461374e935dc24b4bff858
-  - enabled: 1
-    path: Assets/Scenes/Kromka/Locations/z_15_10.unity
-    guid: bc98f04c568ac884d9c0deb5dfcb8391
   - enabled: 1
     path: Assets/Scenes/Kromka/Locations/z_15_11.unity
     guid: 116ff3b916033534090df34d49e139c6
@@ -755,4 +734,25 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Kromka/Locations/z_17_09.unity
     guid: 5a1af27ff125aec4089a63f08ba791a9
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_03_10.unity
+    guid: 9010567cecd01fc47a3b7f44e5d1cceb
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_07.unity
+    guid: e3407bae3ea8bf14b9d1da97ca4e7d05
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_10.unity
+    guid: bf26b68d45739a549872e776e38b8c9c
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_13.unity
+    guid: 08620cf355451384989859de0430668a
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_05.unity
+    guid: 4d48f7d9b5746dd44bc60e98219c95fe
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_09.unity
+    guid: 3c12e3304f9846c41a217f0f6f4e12bb
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_02.unity
+    guid: db2e33ebd2b4efb488ad74c443197ca6
   m_configObjects: {}

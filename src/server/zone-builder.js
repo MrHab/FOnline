@@ -9,7 +9,10 @@
 const crypto = require('node:crypto');
 const { SLOT_METRES, chunkFits, rotatePoint, rotatedHalfExtents } = require('./zone-chunks');
 
-const BUILDER_VERSION = 4;
+const BUILDER_VERSION = 5;
+// Север зоны — +Z (большие tz), как у компаса, миникарты и карты мира; восток — +X.
+// Метку несёт каждое определение: закреплённая зона без неё собрана ещё зеркально.
+const COMPASS_NORTH = '+z';
 const TILE = 2;
 const TILES = 160;
 const HALF_METRES = TILES * TILE / 2;
@@ -23,9 +26,10 @@ const WALK_MIN = 2;
 const WALK_MAX = TILES - 3;
 const KEY_POINT_CLEAR_METRES = 6;
 const SPAWN_CLEAR_METRES = 40;
+// `near` — ворота у малых координат оси: запад (−X) и юг (−Z).
 const DIRECTIONS = Object.freeze({
-  north: { axis: 'z', near: true, targetEntry: 'entryFromSouth', entry: 'entryFromNorth' },
-  south: { axis: 'z', near: false, targetEntry: 'entryFromNorth', entry: 'entryFromSouth' },
+  north: { axis: 'z', near: false, targetEntry: 'entryFromSouth', entry: 'entryFromNorth' },
+  south: { axis: 'z', near: true, targetEntry: 'entryFromNorth', entry: 'entryFromSouth' },
   west: { axis: 'x', near: true, targetEntry: 'entryFromEast', entry: 'entryFromWest' },
   east: { axis: 'x', near: false, targetEntry: 'entryFromWest', entry: 'entryFromEast' }
 });
@@ -96,7 +100,9 @@ function normalizeRecipe(recipe = {}) {
   const places = (Array.isArray(recipe.places) ? recipe.places : []).map(place => ({
     locationId: safeId(place?.locationId), name: String(place?.name || place?.locationId || '').slice(0, 80),
     u: clamp(Number(place?.u ?? 0.5), 0, 1), v: clamp(Number(place?.v ?? 0.5), 0, 1),
-    ...(place?.hidden === true ? { hidden: true } : {})
+    ...(place?.hidden === true ? { hidden: true } : {}),
+    ...(place?.site === true ? { site: true, kind: String(place.kind || '').slice(0, 32) } : {}),
+    ...(place?.site === true && place?.safe === true ? { safe: true } : {})
   })).filter(place => place.locationId).sort((a, b) => a.locationId.localeCompare(b.locationId));
   return {
     zoneId, mode, gates, places,
@@ -119,7 +125,10 @@ function normalizeRecipe(recipe = {}) {
 
 function gateGeometry(gate) {
   const dir = DIRECTIONS[gate.dir];
-  const along = clamp(Math.round(gate.along * (TILES - 1)), 12, TILES - 13);
+  // `along` — доля стороны клетки карты мира: у северной и южной — к востоку (tx),
+  // у западной и восточной — к югу, а в зоне юг — малые tz.
+  const share = dir.axis === 'x' ? 1 - gate.along : gate.along;
+  const along = clamp(Math.round(share * (TILES - 1)), 12, TILES - 13);
   const edge = dir.near ? GATE_TRIGGER_TILE : TILES - 1 - GATE_TRIGGER_TILE;
   const inner = dir.near ? GATE_ENTRY_TILE : TILES - 1 - GATE_ENTRY_TILE;
   const trigger = dir.axis === 'z' ? { tx: along, tz: edge } : { tx: edge, tz: along };
@@ -128,8 +137,9 @@ function gateGeometry(gate) {
 }
 
 function placeGeometry(place, hub, taken) {
+  // u, v — доли клетки карты мира, где v растёт к югу, а в зоне юг — малые tz.
   let tx = clamp(Math.round(place.u * (TILES - 1)), 24, TILES - 25);
-  let tz = clamp(Math.round(place.v * (TILES - 1)), 24, TILES - 25);
+  let tz = clamp(Math.round((1 - place.v) * (TILES - 1)), 24, TILES - 25);
   // Портал места не садится на центр зоны, на ворота и на другой портал.
   for (let guard = 0; guard < 8 && taken.some(p => Math.hypot(p.tx - tx, p.tz - tz) < 14); guard++) {
     tx = clamp(tx + 14, 24, TILES - 25);
@@ -464,10 +474,10 @@ function buildZone(recipeInput, catalog) {
 
   const entries = {};
   for (const gate of gates) entries[gate.entryKey] = { ...gate.entry };
-  for (const place of places) entries[place.entryKey] = { ...place.entry };
+  for (const place of places) if (!place.site) entries[place.entryKey] = { ...place.entry };
   const definition = {
     schema: 'realm.location.v1', version: 1, id: recipe.zoneId, name: recipe.name, seed: recipe.seed,
-    kind: 'zone', generated: true, builderVersion: BUILDER_VERSION, revision: '',
+    kind: 'zone', generated: true, builderVersion: BUILDER_VERSION, compassNorth: COMPASS_NORTH, revision: '',
     safe: recipe.mode === 'peaceful', pvpMode: recipe.mode, noRespawn: true, enemyCap: 0, spawnCount: 0,
     allowGlobalMapExit: false, noGlobalMapEntry: true, runtimeMode: 'generated', macroRegion: recipe.biome,
     ground: { preset: recipe.groundPreset }, map: { width: TILES * TILE, depth: TILES * TILE, origin: 'center' },
@@ -479,12 +489,20 @@ function buildZone(recipeInput, catalog) {
         entryKey: gate.targetEntryKey, tx: gate.trigger.tx, tz: gate.trigger.tz, radius: 5, halfWidthTiles: 3,
         ...(gate.toMode ? { targetMode: gate.toMode } : {}), ...(gate.road ? { road: true } : {})
       })),
-      ...places.filter(place => !place.hidden).map(place => ({
+      ...places.filter(place => !place.hidden && !place.site).map(place => ({
         id: `place_${place.locationId}`.slice(0, 48), type: 'location', label: place.name || place.locationId, to: place.locationId,
         entryKey: 'entryFromWorld', tx: place.portal.tx, tz: place.portal.tz, radius: 3.2
       }))
     ],
     worldZones: [], objects, containers, anomalyFields,
+    // Место-площадка (zone-sites.js): пока его не построили в сцене, сектор держит
+    // для него квадрат 30 м вокруг точки места.
+    ...(places.some(place => place.site) ? {
+      sites: places.filter(place => place.site).map(place => {
+        const point = worldOf(place.portal);
+        return { id: place.locationId, name: place.name || place.locationId, kind: place.kind || '', safe: place.safe === true, x: point.x, z: point.z, halfX: 15, halfZ: 15, rotationY: 0 };
+      })
+    } : {}),
     zone: {
       col: recipe.col, row: recipe.row, n: recipe.n, region: recipe.biome, mode: recipe.mode, difficulty: recipe.difficulty,
       gates: gates.map(gate => ({ dir: gate.dir, to: gate.to, tx: gate.trigger.tx, tz: gate.trigger.tz, halfWidthTiles: 3, road: gate.road })),
@@ -498,6 +516,6 @@ function buildZone(recipeInput, catalog) {
 }
 
 module.exports = {
-  BUILDER_VERSION, DIRECTIONS, GATE_ENTRY_TILE, GATE_TRIGGER_TILE, TILES, WALK_MAX, WALK_MIN,
+  BUILDER_VERSION, COMPASS_NORTH, DIRECTIONS, GATE_ENTRY_TILE, GATE_TRIGGER_TILE, TILES, WALK_MAX, WALK_MIN,
   buildZone, normalizeRecipe, rasterize, reachable, zoneRevision
 };

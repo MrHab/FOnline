@@ -86,7 +86,8 @@ namespace RealmOfAshes.EditorTools
             var armor = new List<RoaApocalypseModels.ArmorEntry>
             {
                 Armor("leather", "SM_Chr_Biker_Male_01", "SM_Chr_Punk_Female_01"),
-                Armor("metalArmor", "SM_Chr_Criminal_Male_01", "SM_Chr_Mechanic_Female_01"),
+                // «Лом»: полевой жилет с патронташем, металл поверх — у RoaApocalypseCharacterSkin.
+                Armor("metalArmor", "SM_Chr_Islander_Male_01", "SM_Chr_Mechanic_Female_01"),
                 Armor("ballisticVest", "SM_Chr_Hunter_Male_01", "SM_Chr_Eastern_Female_01"),
                 Armor("combatArmor", "SM_Chr_Soldier_Male_01", "SM_Chr_Soldier_Female_01"),
                 // Bastion uses frontline uniforms plus separate metal plates;
@@ -137,7 +138,9 @@ namespace RealmOfAshes.EditorTools
             AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Soldier_Male_Helmet_01", "helmet");
             AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_FootballHelmet_01", "tacticalHelmet");
             AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_RiotCop_Male_Helmet_01", "assaultHelmet");
-            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Scout_Female_Hat_01", "preWarHelmet");
+            // «Реликт» — каска прежней армии с противогазом; её префаб, как и «Дозор» без
+            // решётки, собирает RoaApocalypseWornVariantBuilder (подмена ниже).
+            AddItems(itemPaths, "Characters/Attachments/SM_Chr_Attach_Soldier_Male_Helmet_01", "preWarHelmet");
             foreach (RoaApocalypseModels.ArmorEntry row in armor)
                 itemPaths[row.itemId] = "Characters/" + row.malePrefab.name;
             // Материалы и точки добычи по тирам — из data/kromka/tiers.json (visuals):
@@ -166,12 +169,15 @@ namespace RealmOfAshes.EditorTools
             }
             var items = new List<RoaApocalypseModels.ItemEntry>();
             foreach (KeyValuePair<string, string> pair in itemPaths)
+            {
+                GameObject prefab = RoaApocalypseWornVariantBuilder.CatalogVariant(pair.Key) ?? Require(pair.Value);
                 items.Add(new RoaApocalypseModels.ItemEntry
                 {
                     itemId = pair.Key,
-                    prefab = Require(pair.Value),
-                    mark = RoaTierMarkLayout.Compute(Require(pair.Value))
+                    prefab = prefab,
+                    mark = RoaTierMarkLayout.Compute(prefab)
                 });
+            }
             // Оружие и инструменты тиров: полоса краски на тонкой части модели.
             foreach (RoaApocalypseModels.WeaponEntry weapon in weapons)
                 weapon.mark = RoaTierMarkLayout.Compute(weapon.prefab);
@@ -233,12 +239,16 @@ namespace RealmOfAshes.EditorTools
                 Require("Props/SM_Prop_Generator_01"),
                 Require("Environment/SM_Env_Rock_01"));
             catalog.ConfigureTierNodes(tierNodes);
+            catalog.ConfigureVehicles(
+                Require("Vehicles/SM_Veh_Moped_01"),
+                Require("Vehicles/SM_Veh_Ute_01"),
+                Require("Vehicles/SM_Veh_Army_Truck_01"));
             EditorUtility.SetDirty(catalog);
             AssetDatabase.SaveAssets();
             Debug.Log("[ROA APOCALYPSE] Runtime palette: " + weapons.Count
                 + " weapons, " + items.Count + " ground items, " + creatures.Count
                 + " creature roles, " + environment.Count
-                + " environment models, six bodies and one vehicle.");
+                + " environment models, six bodies and four vehicles.");
         }
 
         [MenuItem("Realm of Ashes/PolygonApocalypse/Validate weapon roster")]

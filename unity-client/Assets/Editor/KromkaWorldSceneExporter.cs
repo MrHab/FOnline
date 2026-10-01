@@ -197,6 +197,7 @@ namespace Kromka.EditorTools
             definition["entryFromWasteland"] = arrival.DeepClone();
             definition["migrationArrival"] = ExportPoint(authoring.MigrationArrival, width, depth);
             ExportDynamicSpawns(authoring, definition, exported, width, depth);
+            ExportSites(authoring, definition);
 
             WriteJson(locationPath, definition);
             ExportAnomalyLayout(authoring);
@@ -290,6 +291,38 @@ namespace Kromka.EditorTools
             row["worldRevision"] = KromkaLocationAuthoring.CurrentWorldRevision;
             row.Remove("placement");
             return row;
+        }
+
+        /// <summary>
+        /// Площадки мест в секторе (KromkaSiteAuthoring → `sites`, src/server/zone-sites.js).
+        /// Сцена без маркеров площадок строк не трогает: их пишет конструктор зоны, пока место
+        /// не построено.
+        /// </summary>
+        private static void ExportSites(KromkaLocationAuthoring authoring, JObject definition)
+        {
+            KromkaSiteAuthoring[] sites = authoring.GetComponentsInChildren<KromkaSiteAuthoring>(true)
+                .Where(site => site != null && !string.IsNullOrWhiteSpace(site.SiteId))
+                .OrderBy(site => site.SiteId, StringComparer.Ordinal)
+                .ToArray();
+            if (sites.Length == 0) return;
+            var rows = new JArray();
+            foreach (KromkaSiteAuthoring site in sites)
+            {
+                Vector3 position = site.transform.position;
+                rows.Add(new JObject
+                {
+                    ["id"] = site.SiteId,
+                    ["name"] = string.IsNullOrWhiteSpace(site.DisplayName) ? site.SiteId : site.DisplayName,
+                    ["kind"] = site.Kind ?? string.Empty,
+                    ["safe"] = site.Safe,
+                    ["x"] = Round(position.x),
+                    ["z"] = Round(position.z),
+                    ["halfX"] = Round(site.Size.x * 0.5f),
+                    ["halfZ"] = Round(site.Size.y * 0.5f),
+                    ["rotationY"] = Round(site.transform.eulerAngles.y * Mathf.Deg2Rad)
+                });
+            }
+            definition["sites"] = rows;
         }
 
         /// <summary>Поля преград строки так, как их записал бы экспорт: для проверки сцен.</summary>

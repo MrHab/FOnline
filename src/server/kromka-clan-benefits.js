@@ -129,11 +129,6 @@ function commitClanCraftBenefit(runtime = {}, preview = {}) {
   return runtime.benefitCredits;
 }
 
-/** Доля цены переноса между столицами, которую платит член клана‑владельца (0,85 — скидка 15%). */
-function clanFastTravelFeeMultiplier(profile = {}) {
-  return 1 - Math.max(0, Math.min(0.5, Number(profile?.benefit?.clanFastTravelDiscountPct || 0)));
-}
-
 function benefitOrdersForProfile(profile = {}, runtime = {}, now = Date.now()) {
   const cooldowns = runtime?.benefitOrderCooldowns && typeof runtime.benefitOrderCooldowns === 'object'
     ? runtime.benefitOrderCooldowns : {};
@@ -168,7 +163,6 @@ module.exports = {
   benefitOrdersForProfile,
   claimWeeklyBaseGrant,
   clanBaseProfile,
-  clanFastTravelFeeMultiplier,
   commitClanCraftBenefit,
   markBenefitOrderCompleted,
   ownedClanBaseContext,

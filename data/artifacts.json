@@ -4,8 +4,9 @@
   "shift": {
     "cycleMs": 7200000,
     "warningMs": 600000,
-    "activeMs": 240000,
+    "activeMs": 1800000,
     "afterglowMs": 1200000,
+    "storm": { "widthKm": 60, "waveKm": 10 },
     "safeShelterLocationIds": ["settlement", "sluiceCity", "scrapTown", "relayStation", "caravanCamp", "secondHaven", "personalBase"]
   },
   "detectors": [

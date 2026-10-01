@@ -39,6 +39,11 @@ namespace RealmOfAshes.Game
             public bool IsPlayer;
             /// <summary>Свой персонаж: здоровье всегда числом, без перка «Осведомлённость».</summary>
             public bool IsSelf;
+            /// <summary>
+            /// Только имя: мастер мастерской участка — не боец, а служащий у станка,
+            /// здоровье и тир снаряжения над ним ничего не значат.
+            /// </summary>
+            public bool NameOnly;
         }
 
         public readonly struct Presentation
@@ -193,6 +198,7 @@ namespace RealmOfAshes.Game
             public TextMeshProUGUI ApocalypseAllyName;
             public TextMeshProUGUI ApocalypseLevel;
             public Slider ApocalypseHealth;
+            public GameObject ApocalypseHealthBar;
         }
 
         private Canvas _canvas;
@@ -292,6 +298,7 @@ namespace RealmOfAshes.Game
                     plate.ApocalypseLevel = infoRect.Find(
                         "Health_Bar/HUD_EnemyInfo_Level/Label_EnemyLevel")
                         ?.GetComponent<TextMeshProUGUI>();
+                    plate.ApocalypseHealthBar = infoRect.Find("Health_Bar")?.gameObject;
                     plate.ApocalypseHealth = infoRect.Find(
                         "Health_Bar/HUD_HealthBar_Enemy/Slider")?.GetComponent<Slider>();
                     StyleName(plate.ApocalypseEnemyName, NameHostile);
@@ -497,6 +504,8 @@ namespace RealmOfAshes.Game
                             plate.ApocalypseAllyName.transform.parent.gameObject.SetActive(ally);
                             plate.ApocalypseAllyName.text = displayName;
                         }
+                        if (plate.ApocalypseHealthBar != null)
+                            plate.ApocalypseHealthBar.SetActive(!entry.NameOnly);
                         if (plate.ApocalypseLevel != null)
                             plate.ApocalypseLevel.text = BadgeText(entry);
                         if (plate.ApocalypseHealth != null)
@@ -517,7 +526,8 @@ namespace RealmOfAshes.Game
                         ? DisplayActorName(entry.Name, "") : string.Empty;
                     plate.Faction.gameObject.SetActive(presentation.ShowFaction);
                     plate.Faction.text = presentation.ShowFaction ? entry.Faction : string.Empty;
-                    plate.Health.gameObject.SetActive(presentation.ShowHealthText);
+                    plate.Health.gameObject.SetActive(presentation.ShowHealthText && !entry.NameOnly);
+                    plate.HealthTrack.gameObject.SetActive(!entry.NameOnly);
                     plate.Health.text = presentation.HealthText;
                     float identityWidth = Mathf.Max(
                         presentation.ShowName ? plate.Name.preferredWidth : 0f,

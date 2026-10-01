@@ -49,6 +49,15 @@ namespace RealmOfAshes.Game
             EnsureBuilt();
             if (!_root.activeSelf) { _root.SetActive(true); _shownProgress = 0f; }
 
+            // Переход краем зоны — продолжение пути: только короткое затемнение, без карточки.
+            bool seamless = Bootstrap.LoadingSeamless;
+            if (_card.gameObject.activeSelf == seamless) _card.gameObject.SetActive(!seamless);
+            if (seamless)
+            {
+                _veil.color = new Color(VeilStartup.r, VeilStartup.g, VeilStartup.b, Bootstrap.SeamlessVeilAlpha);
+                return;
+            }
+
             _veil.color = Bootstrap.LoadingStartup ? VeilStartup : VeilLocation;
             _kicker.text = Bootstrap.LoadingKicker.ToUpperInvariant();
             _title.text = Bootstrap.LoadingTitle;

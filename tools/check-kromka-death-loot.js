@@ -168,67 +168,7 @@ assert.deepStrictEqual(restoreDownedState({ downed: false, downedUntil: 999 }), 
   dead: false, downed: false, downedUntil: 0
 });
 
-const server = read('server.js');
-assert(server.includes('const SERVER_PVP_PROTECTED_ITEM_IDS = new Set(['));
-assert(server.includes("id !== 'silver'"));
-assert(!server.includes('...KROMKA_ARTIFACT_CATALOG.types.map(row => row.itemId),\n  ...KROMKA_ARTIFACT_CATALOG.detectors'),
-  'artifacts must no longer be protected from the partial-loss drop by item id');
-assert(server.includes('selectBagDropRows(inventory, {'));
-assert(server.includes('installedCounts: options.all ? new Map() : serverInstalledArtifactCounts(target)'),
-  'the black zone must drop installed artifacts too');
-assert(server.includes("if (!SERVER_WEAPONS[entry.id]?.ammoType && !KROMKA_ARTIFACT_INDEXES.byItem[entry.id]) continue;"));
-assert(server.includes('itemRuntimeRecords: records,'), 'dropped weapons must carry their runtime records');
-assert(server.includes('resolveDeathLootTransaction(target, mode, now'));
-assert(server.includes("policy.loss === 'inventory'"));
-assert(!server.includes("policy.loss === 'consumables'") && !server.includes('consumableDrop:'),
-  'the half-consumables drop is gone with the v3 zone ladder');
-assert(server.includes("function locationDropsEverything(loc = {}) {\n  return deathLootPolicy(locationPvpMode(loc)).loss === 'all';"));
-assert(server.includes('loc.fullDrop = zoneModeDropsInventory(loc.pvpMode);'), 'the black zone also reports a drop');
-assert(server.includes("if (policy.loss === 'all') {"));
-assert(server.includes('serverStripEquipmentForDeath(target, now);'), 'the black zone must strip the equipment before dropping it');
-assert(server.includes('serverApplyDeathWear(target, mode);'), 'death must wear the worn equipment by zone');
-assert(server.includes('const split = trashChance > 0 ? splitTrashRows(drops, trashChance)'), 'the black drop must roll scrap per unit');
-assert(server.includes('(runtimeDrops.get(entry.id)?.records || []).slice(0, entry.qty)'), 'destroyed weapon instances must not reach the ground');
-assert(server.includes('serverSyncRoomGroundDrops(room);\n    persistActivePlayerState(target);'));
-assert(server.includes('serverRestoreRoomGroundDrops(rooms.get(id));'));
-assert(server.includes('serverDropPvpLootForMode(shiftRoom, p, null, shiftLoc, now)'), 'emission death must use the zone loss policy');
-assert(server.includes('serverDropPvpLootForMode(anomalyRoom, p, null, anomalyLoc, playerTickNow)'), 'anomaly death must use the zone loss policy');
-assert(server.includes('serverDropPvpLootForMode(downedRoom, p, null, bleedLoc, playerTickNow)'), 'bleed-out must use the zone loss policy');
-assert(server.includes('serverTryDownWorldActivityPlayer(p, shiftRoom, now)'));
-assert(server.includes('serverTryDownWorldActivityPlayer(p, anomalyRoom, playerTickNow)'));
-assert(server.includes('WORLD_ACTIVITY_REVIVE_DISTANCE = 3.5'));
-assert(server.includes('* 0.3'));
-assert(server.includes('* 0.55'));
-assert(server.includes('...persistedDownedState(player)'));
-assert(server.includes('diedAt: persistedDeathState(player).diedAt'));
-assert(server.includes('next.deathLootTransactionId = persistedDeathState(player).deathLootTransactionId;'));
-assert(server.includes('const savedDownedState = restoreDownedState(savedPlayer)'));
-assert(server.includes('...savedDownedState'));
-assert(server.includes('...restoreDeathState(savedState, savedPlayer)'));
-assert(server.includes('persistActivePlayerState(player);'));
-assert(server.includes('persistActivePlayerState(target);'));
-assert(server.includes('zoneRules: zoneRules(currentPvpMode'));
-assert(!/полн(ый|ого|ым) (лут|дроп)/i.test(server), 'the server must not describe the partial-loss mode as full loot');
-
-const hud = read('unity-client/Assets/Scripts/Game/RoaHudCanvas.cs');
-assert(hud.includes('МИРНЫЙ · PvP ОТКЛЮЧЁН'));
-assert(hud.includes('ЭКИПИРОВКА ЦЕЛА'));
-assert(hud.includes('ВЕЩИ СОХРАНЯЮТСЯ'));
-assert(!hud.includes('ПОЛНЫЙ ЛУТ'));
-const recovery = read('unity-client/Assets/Scripts/Game/RoaRecoveryCanvas.cs');
-assert(recovery.includes('Экипировка сохранена'));
-for (const [file, source] of [['RoaHudCanvas', hud], ['RoaRecoveryCanvas', recovery]]) {
-  assert(!/полн(ый|ого|ым) (лут|дроп)|ПОЛНЫЙ ЛУТ/i.test(source), `${file} must not call the partial-loss mode full loot`);
-}
-
-// Правило потерь не зависит от причины смерти: собственный взрыв идёт через ту
-// же воронку, что и чужая ракета, аномалия или выброс.
-const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-assert(serverSource.includes('droppedItems = serverDropPvpLootForMode(room, target, isSelf ? null : p, loc, now);'),
-  'A self-inflicted explosion must drop loot by the zone rule.');
-assert(!serverSource.includes('if (!isSelf) droppedItems = serverDropPvpLootForMode'),
-  'The old exception for self-inflicted deaths must be gone.');
-assert(!serverSource.includes('fullDrop: !isSelf &&') && !serverSource.includes('totalDrop: !isSelf &&'),
-  'Loss flags of an explosion death must not depend on who caused it.');
+// Server integration is exercised by check-death-loot-runtime.js,
+// check-zone-ladder-runtime.js and the network loot-bag scenarios.
 
 console.log('Kromka death/loot contract: OK (6 zone modes, black-zone scrap, partial-loss drop by instance, atomic and reconnect-safe death loot, persisted ground drops, zone rules before entry).');

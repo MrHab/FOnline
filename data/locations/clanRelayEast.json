@@ -5,7 +5,7 @@
   "name": "Ретранслятор В-9",
   "seed": 2026091406,
   "safe": false,
-  "pvpMode": "pvp",
+  "pvpMode": "pvpBlack",
   "kind": "clanBase",
   "clanBaseId": "relay_v9",
   "respawnAllowed": false,

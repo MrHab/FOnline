@@ -60,6 +60,11 @@ namespace RealmOfAshes.EditorTools
             string candidate = RoaPersonalBaseCanvas.ResidentRowText(zoya, null, false);
             Require(!candidate.Contains("лояльность") && !candidate.Contains("РАБОТАЕТ") && candidate.Contains("Даёт:"),
                 "A candidate shows what they would give: " + candidate);
+            string task = RoaPersonalBaseCanvas.PersonalQuestTaskText(zoya);
+            JToken requirement = zoya["questRequirement"];
+            Require(task.StartsWith(zoya["questObjective"].ToString())
+                && task.EndsWith("\nНужно: " + RoaItemData.Name(requirement["itemId"].ToString()) + " ×" + requirement["qty"]),
+                "The personal quest names its goal and what to bring: " + task);
 
             // Строки окна меряются тем же шрифтом и кеглем, что в игре.
             var host = new GameObject("BaseResidentsProbe");
@@ -69,6 +74,18 @@ namespace RealmOfAshes.EditorTools
                 Debug.Log("[BASE RESIDENTS] longest resident row: " + Mathf.CeilToInt(rowHeight) + " / " + (RoaPersonalBaseCanvas.ResidentRowHeight - 8f) + " px");
                 Require(rowHeight <= RoaPersonalBaseCanvas.ResidentRowHeight - 8f,
                     "The longest resident row does not fit — " + Mathf.CeilToInt(rowHeight) + " px: " + longestRow);
+                // Задание личного дела — заголовок, цель и предмет: три строки в строке той же высоты.
+                foreach (JToken token in catalog["residents"] as JArray ?? new JArray())
+                {
+                    string questRow = "ЗАВЕРШИТЬ ЛИЧНОЕ ДЕЛО · " + token["personalQuestName"] + "\n"
+                        + RoaPersonalBaseCanvas.PersonalQuestTaskText((JObject)token);
+                    float questHeight = TextHeight(host, questRow, 14, RoaPersonalBaseCanvas.RowLabelWidth);
+                    Require(questHeight <= RoaPersonalBaseCanvas.ResidentRowHeight - 8f,
+                        "A personal quest row does not fit — " + Mathf.CeilToInt(questHeight) + " px: " + questRow);
+                }
+                float statusHeight = TextHeight(host, "Сервер проверяет…\nДействие отклонено.", 14, 690f);
+                Require(statusHeight <= RoaPersonalBaseCanvas.StatusHeight,
+                    "A two-line server answer does not fit the status line — " + Mathf.CeilToInt(statusHeight) + " px");
                 // Вся база сразу — с запасом больше, чем помещается жителей.
                 string note = "ВКЛАД БАЗЫ: " + RoaPersonalBaseCanvas.ResidentBonusLabel(total);
                 float noteHeight = TextHeight(host, note, 14, RoaPersonalBaseCanvas.RowLabelWidth + 24f);
@@ -91,7 +108,7 @@ namespace RealmOfAshes.EditorTools
             try
             {
                 var text = go.AddComponent<Text>();
-                text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                text.font = RoaUiFont.Default;
                 text.fontSize = fontSize;
                 text.horizontalOverflow = HorizontalWrapMode.Wrap;
                 text.verticalOverflow = VerticalWrapMode.Overflow;

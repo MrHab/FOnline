@@ -419,15 +419,16 @@ async function connect() {
   assert(questRow(self, 'campaign_prologue_twelfth')?.status === 'completed', 'Campaign prologue was not recorded.');
   console.log('FIRST MISSION complete; Keys reached and prologue recorded');
 
-  // Первый выход в мир зон: Ключи занимают сектор целиком, их северный край ведёт
-  // прямо в соседний сектор, а его южные ворота возвращают в город.
+  // Первый выход в мир зон: Ключи занимают сектор целиком, портал в проёме их
+  // северных ворот ведёт прямо в соседний сектор, а портал у его края — обратно.
   assert.equal(keysZone.city, onboarding.arrivalLocationId, 'Keys must hold a sector of its own.');
   const keysDefinition = await definitionOf(onboarding.arrivalLocationId);
-  const northGate = (keysDefinition.sectorGates || []).find(gate => gate.side === 'north');
-  assert(northGate?.to, 'Keys carry no gate on their north side.');
-  // Город — сектор целиком: от площади идём улицей к северным воротам и за край.
-  const keysHalf = Number(keysDefinition.map?.depth || 320) / 2;
-  await moveNear(1, -(keysHalf - 3), 2.5, 'Keys north edge');
+  const northGate = (keysDefinition.transitions || []).find(row => row.type === 'zoneGate' && row.crossing === 'portal' && row.direction === 'north');
+  assert(northGate?.to, 'Keys carry no gate portal on their north side.');
+  northGate.title = String(northGate.label || '').replace(/^Выход: /, '');
+  // Город — сектор целиком: от площади идём улицей к северным воротам, в их портал.
+  const keysTiles = Number(keysDefinition.map?.width || 160) / 2;
+  await moveNear((Number(northGate.tx) - keysTiles / 2 + 0.5) * 2, (Number(northGate.tz) - keysTiles / 2 + 0.5) * 2 - 2, 2.5, 'Keys north gate portal');
   enemies = [];
   update(assertOk(await ack(socket, 'changeLocation', { locationId: northGate.to, entryKey: northGate.entryKey || '' }),
     'walk out of Keys into the neighbouring sector'));
@@ -563,9 +564,13 @@ async function connect() {
     const from = currentLocationId;
     enemies = [];
     latestWorldTransfer = null;
-    update(assertOk(await ack(socket, 'qaTravel', { to: locationId }), `travel to ${locationId}`));
-    for (let wait = 0; wait < 40 && latestWorldTransfer?.locationId !== locationId; wait++) await delay(50);
-    assert.equal(latestWorldTransfer?.locationId, locationId, `${locationId}: the world transfer did not reach the client.`);
+    const travelled = assertOk(await ack(socket, 'qaTravel', { to: locationId }), `travel to ${locationId}`);
+    update(travelled);
+    // Место, стоящее площадкой в зоне, переносит в её сектор, на саму площадку.
+    const arrived = travelled.locationId;
+    assert(arrived === locationId || travelled.site === locationId, `${locationId}: travel landed in ${arrived}.`);
+    for (let wait = 0; wait < 40 && latestWorldTransfer?.locationId !== arrived; wait++) await delay(50);
+    assert.equal(latestWorldTransfer?.locationId, arrived, `${locationId}: the world transfer did not reach the client.`);
     currentLocationId = locationId;
     console.log(`TRAVEL ${from} -> ${locationId}`);
     await delay(250);

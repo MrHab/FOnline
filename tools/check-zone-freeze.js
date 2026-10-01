@@ -25,7 +25,14 @@ const home = graph.zones.find(zone => zone.id === zoneOfPlace(graph, 'settlement
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-zone-freeze-'));
 try {
   fs.copyFileSync(path.join(root, 'data', 'zones', 'kit.json'), path.join(scratch, 'kit.json'));
-  fs.cpSync(path.join(root, 'data', 'zones', 'chunks'), path.join(scratch, 'chunks'), { recursive: true });
+  // This catalog is flat. Copying each chunk avoids a native Windows crash in
+  // fs.cpSync on the project's Node 22 runtime.
+  const sourceChunks = path.join(root, 'data', 'zones', 'chunks');
+  const scratchChunks = path.join(scratch, 'chunks');
+  fs.mkdirSync(scratchChunks);
+  for (const name of fs.readdirSync(sourceChunks)) {
+    fs.copyFileSync(path.join(sourceChunks, name), path.join(scratchChunks, name));
+  }
   fs.mkdirSync(path.join(scratch, 'authored'));
   const generated = buildZone(zoneRecipe(graph, home.id), catalog);
   assert.deepEqual(frozenZoneProblems(graph, generated), [], 'a zone of the constructor fits the graph');

@@ -25916,6 +25916,14 @@ function spawnServerEnemy(room, opts = {}) {
   } else if (naturalCreature) {
     enemyInventory = stripServerCreatureInventoryRows(enemyInventory);
   }
+  if (!naturalCreature && opts.dropEquipment !== false) {
+    // A simulated actor may arrive with a saved inventory that predates the
+    // equipment assigned for this spawn. Keep its visible gear in its loot.
+    enemyInventory = serverInventoryEnsureMinimumRows(
+      enemyInventory,
+      buildNpcEquipmentInventory(equipment, SERVER_ITEM_IDS)
+    );
+  }
   const initialRoutinePackage = npcProfile ? npcSchedulePackageAt(npcProfile.schedule, Date.now()) : null;
   const initialScheduleState = String(initialRoutinePackage?.state || '');
   const enemy = {

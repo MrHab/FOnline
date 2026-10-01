@@ -73,6 +73,11 @@ var RoaWebSocketPlugin = {
   RoaWs_State: function (id) {
     var socket = RoaWs.sockets[id];
     return socket ? socket.readyState : 3;
+  },
+
+  RoaWs_BufferedBytes: function (id) {
+    var socket = RoaWs.sockets[id];
+    return socket ? Math.min(socket.bufferedAmount, 2147483647) : 0;
   }
 };
 

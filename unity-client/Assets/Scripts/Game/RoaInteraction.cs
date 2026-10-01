@@ -2268,6 +2268,10 @@ namespace RealmOfAshes.Game
                 ["deviceType"] = Application.isMobilePlatform ? "mobile" : "desktop",
                 ["controlType"] = Application.isMobilePlatform ? "touch" : "keyboard_mouse"
             };
+            // A crossing must follow the latest position proposal in the same
+            // socket send stream; the server validates the exit against its own
+            // accepted position, which may lag behind a fast moving player.
+            Player?.SendStateImmediately();
             Socket.EmitWithAck("changeLocation", payload, ack =>
             {
                 _transitionPending = false;

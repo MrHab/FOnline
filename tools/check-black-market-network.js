@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 'use strict';
 
-// Сетевая проверка Чёрного рынка (экономика v3, библия 14.5) на реальном
-// сервере с изолированным DATA_DIR: член фракции входит на Рынок Ядра,
-// скупщик показывает витрину без полки и цены сервера, покупает целое оружие,
-// отказывает в продаже и в чужих категориях, склад и казна переживают
-// перезапуск; наёмника без контракта на рынок не пускают, а подъём ведёт в
-// центральную сцену к точке у спуска.
+// Сетевая проверка Чёрного рынка на реальном сервере с изолированным DATA_DIR:
+// аукционер показывает заявки на выкуп, проводит немедленную продажу и
+// исполняет отложенные заявки игроков. Склад, казна и ордера переживают
+// перезапуск; вход на рынок и переход в центральную сцену также проверяются.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -37,6 +35,11 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   seller.territoryFaction = membership('uprava');
   seller.inventory.silver = 0;
   seller.inventory.medkit = 2;
+  seller.inventory.leather = 2;
+  seller.inventory.ui_laserPistol_trade_3 = 1;
+  seller.itemRuntime.ui_laserPistol_trade_3 = {
+    baseId: 'laserPistol', condition: 80, loaded: 4, createdAt: Date.now()
+  };
 
   // Второй член фракции — у лестницы наверх.
   const climber = stateFor('harvest');
@@ -51,69 +54,92 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   saves.blackMarket = {
     version: 2,
     treasury: 3000,
-    orders: { laserPistol: { qty: 1, multiplier: 1 } },
+    orders: { laserPistol: { qty: 2, multiplier: 1 }, leather: { qty: 1, multiplier: 1 } },
     stock: {}
   };
   fs.writeFileSync(savesPath, JSON.stringify(saves));
 
   await h.startServer();
   try {
-    // --- вход и витрина ------------------------------------------------------------------
+    // --- аукцион Чёрного рынка ----------------------------------------------------------
     await h.connectAndJoin(accounts.trade);
     const join = accounts.trade.join;
     assert.equal(join.locationId, HUB_ID, 'A faction member reconnects into the market hub.');
-    const broker = (join.worldState?.enemies || []).find(row => row.hostileToPlayer === false && row.service === 'blackMarket');
-    assert(broker?.id, 'The broker stands in the hub: ' + JSON.stringify((join.worldState?.enemies || []).map(row => [row.id, row.service])));
-
-    const view = await h.socketAck(accounts.trade.socket, 'syncNpcTradeState', { enemyId: broker.id });
-    assert(view.ok, 'The broker opens a trade window: ' + JSON.stringify(view));
-    assert.deepEqual(view.market.stock, [], 'The broker has no shelf.');
-    assert(view.market.blackMarket && view.market.caps === view.market.blackMarket.treasury, 'The window shows the market treasury.');
-    const pistolPrice = Number(view.market.sellPrices?.laserPistol || 0);
-    assert(pistolPrice > 0, 'The server names a price for a whole weapon: ' + JSON.stringify(view.market.sellPrices));
-    assert.deepEqual(view.market.blackMarket.buyOrders.find(row => row.id === 'laserPistol'),
-      { id: 'laserPistol', qty: 1, price: pistolPrice }, 'all players can see the open buy order');
-    assert.equal(view.market.sellPrices.medkit, undefined, 'The broker names no price for medicine.');
-    assert.equal(view.market.sellPricesByItem?.ui_laserPistol_trade_2, pistolPrice, 'Each weapon instance has its own price.');
-    const treasuryBefore = Number(view.market.caps);
-    console.log('PASS hub entry and broker window');
-
-    // --- отказы --------------------------------------------------------------------------
-    // Пауза на несколько тиков ИИ: нейтральный персонал рынка не должен брать
-    // члена фракции в цель (иначе сервер закрывает торговлю как «бой»).
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    const buy = await h.socketAck(accounts.trade.socket, 'npcTradeExchange', {
-      enemyId: broker.id, buys: [{ id: 'laserPistol', qty: 1 }], sells: []
+    const auctioneer = (join.worldState?.enemies || []).find(row => row.hostileToPlayer === false && row.service === 'auction');
+    assert(auctioneer?.id, 'The hub has an auctioneer.');
+    assert(!(join.worldState?.enemies || []).some(row => row.service === 'blackMarket'), 'The broker NPC is gone.');
+    const view = await h.socketAck(accounts.trade.socket, 'auctionAction', { action: 'state' });
+    assert(view.ok && view.auction?.blackMarket === true, 'The auction shows Black Market demand.');
+    const pistolBid = view.auction.orders.find(row => row.id === 'bm_laserPistol');
+    const leatherBid = view.auction.orders.find(row => row.id === 'bm_leather');
+    assert(pistolBid?.price > 0 && leatherBid?.price > 0, 'Item-specific NPC bids are listed.');
+    assert.equal(view.auction.orders.filter(row => row.side === 'buy').length, 2);
+    const oldTrade = await h.socketAck(accounts.trade.socket, 'syncNpcTradeState', { enemyId: auctioneer.id });
+    assert(!oldTrade.ok, 'The auctioneer has no NPC barter window.');
+    const buy = await h.socketAck(accounts.trade.socket, 'auctionAction', { action: 'buy', itemId: 'leather', qty: 1, price: 1 });
+    assert(!buy.ok, 'The Black Market does not sell to players.');
+    const medicine = await h.socketAck(accounts.trade.socket, 'auctionAction', {
+      action: 'sell', itemId: 'medkit', qty: 1, price: 1, durationHours: 24
     });
-    assert(!buy.ok && /ничего не продаёт/.test(buy.error), 'The broker sells nothing: ' + JSON.stringify(buy.error));
-    const medicine = await h.socketAck(accounts.trade.socket, 'npcTradeExchange', {
-      enemyId: broker.id, buys: [], sells: [{ id: 'medkit', qty: 1 }]
-    });
-    assert(!medicine.ok && /оружие и броню/.test(medicine.error), 'The broker refuses medicine: ' + JSON.stringify(medicine.error));
-    assert.equal(qty(medicine.self, 'medkit'), 2, 'A refused sale keeps the medkits.');
-    console.log('PASS broker refusals');
+    assert(!medicine.ok && qty(medicine.self, 'medkit') === 2, 'The Black Market refuses other categories.');
+    console.log('PASS Black Market auction and broker removal');
 
-    // --- продажа -------------------------------------------------------------------------
-    // Оружие и броню у игроков покупает только скупщик: заряженный запасной пистолет
-    // продаётся ему, а пять зарядов возвращаются в сумку.
-    const cellsBefore = qty(medicine.self, 'energyCell');
-    const sale = await h.socketAck(accounts.trade.socket, 'npcTradeExchange', {
-      enemyId: broker.id,
-      buys: [],
-      sells: [{ id: 'laserPistol', itemRuntimeId: 'ui_laserPistol_trade_2', qty: 1 }]
+    // An ask lower than the NPC bid is bought immediately. The listing fee is
+    // charged, the sale proceeds wait on the auction shelf and the gear enters loot.
+    const askPrice = Math.max(1, leatherBid.price - 1);
+    const listing = await h.socketAck(accounts.trade.socket, 'auctionAction', {
+      action: 'sell', itemId: 'leather', qty: 1, price: askPrice, durationHours: 24
     });
-    assert(sale.ok, 'The broker buys a whole weapon: ' + JSON.stringify(sale.error || sale).slice(0, 400));
-    assert.equal(qty(sale.self, 'silver'), pistolPrice, 'The seller receives the quoted price.');
-    assert.deepEqual(sale.unloadedAmmo, [{ id: 'energyCell', qty: 5 }], 'The sold pistol is unloaded first.');
-    assert.equal(qty(sale.self, 'energyCell'), cellsBefore + 5, 'The unloaded cells return to the bag.');
+    assert(listing.ok, 'The seller places an ask: ' + JSON.stringify(listing.error || listing).slice(0, 400));
+    assert.equal(listing.soldQty, 1, 'The NPC fills an affordable ask immediately.');
+    assert.equal(listing.restingQty, 0);
+    assert.equal(qty(listing.self, 'leather'), 1, 'Only the listed item leaves the bag.');
+    assert(listing.auction.shelf.silver > 0, 'Proceeds are on the auction shelf.');
+    assert(!listing.auction.orders.some(row => row.id === 'bm_leather'), 'The filled bid disappears.');
+    console.log('PASS player ask matched to NPC demand');
+
+    // Selling directly into a visible buy order uses the same auction event.
+    const cellsBefore = qty(listing.self, 'energyCell');
+    const stale = await h.socketAck(accounts.trade.socket, 'auctionAction', {
+      action: 'sellNow', orderId: pistolBid.id, qty: 1,
+      expectedPrice: pistolBid.price + 1, itemRuntimeId: 'ui_laserPistol_trade_2'
+    });
+    assert(!stale.ok, 'An outdated quote cannot fill an NPC bid.');
+    const sale = await h.socketAck(accounts.trade.socket, 'auctionAction', {
+      action: 'sellNow', orderId: pistolBid.id, qty: 1, expectedPrice: pistolBid.price,
+      itemRuntimeId: 'ui_laserPistol_trade_2', requestId: 'bm_pistol_sale_1'
+    });
+    assert(sale.ok, 'The auction buys a whole weapon: ' + JSON.stringify(sale.error || sale).slice(0, 400));
+    assert.equal(qty(sale.self, 'silver'), sale.proceeds, 'The seller receives the after-tax payout.');
+    assert.equal(qty(sale.self, 'energyCell'), cellsBefore + 5, 'The loaded cells return to the bag.');
     assert(!(sale.self?.weaponInventoryRuntime || []).some(row => row?.id === 'ui_laserPistol_trade_2'),
       'The sold weapon leaves the bag.');
-    assert.equal(sale.self?.equipmentRuntime?.weapon, 'ui_laserPistol_trade_1', 'Selling a bag weapon keeps the equipped one.');
-    const after = await h.socketAck(accounts.trade.socket, 'syncNpcTradeState', { enemyId: broker.id });
-    assert.equal(Number(after.market.caps), treasuryBefore - pistolPrice, 'The price leaves the treasury.');
-    assert.equal(after.market.blackMarket.orders.laserPistol, undefined, 'The filled order disappears.');
-    assert.equal(Number(after.market.sellPrices?.laserPistol || 0), 0, 'The broker no longer quotes an item without an order.');
-    console.log('PASS black market sale (' + pistolPrice + ' marks)');
+    assert.equal(sale.self?.equipmentRuntime?.weapon, 'ui_laserPistol_trade_1', 'The equipped weapon stays.');
+    assert.equal(sale.auction.orders.find(row => row.id === 'bm_laserPistol')?.qty, 1);
+    const replay = await h.socketAck(accounts.trade.socket, 'auctionAction', {
+      action: 'sellNow', orderId: pistolBid.id, qty: 1, expectedPrice: pistolBid.price,
+      itemRuntimeId: 'ui_laserPistol_trade_2', requestId: 'bm_pistol_sale_1'
+    });
+    assert(replay.ok && replay.reused === true
+      && replay.auction.orders.find(row => row.id === 'bm_laserPistol')?.qty === 1,
+    'A retried sale cannot buy twice.');
+    console.log('PASS instant auction sale');
+
+    const weaponAsk = await h.socketAck(accounts.trade.socket, 'auctionAction', {
+      action: 'sell', itemId: 'laserPistol', itemRuntimeId: 'ui_laserPistol_trade_3',
+      qty: 1, price: 1, durationHours: 24
+    });
+    assert(weaponAsk.ok && weaponAsk.soldQty === 1, 'A worn weapon ask can be matched by the NPC bid.');
+    assert(!weaponAsk.auction.orders.some(row => row.id === 'bm_laserPistol'));
+    assert(weaponAsk.auction.shelf.items.some(row => row.itemId === 'energyCell' && row.qty === 4),
+      'Loaded ammunition from an automatically bought weapon waits on the seller shelf.');
+
+    const waiting = await h.socketAck(accounts.trade.socket, 'auctionAction', {
+      action: 'sell', itemId: 'leather', qty: 1, price: 100, durationHours: 24
+    });
+    assert(waiting.ok && waiting.restingQty === 1, 'An ask without demand waits in the book.');
+    assert.equal(qty(waiting.self, 'leather'), 0, 'The waiting ask holds the item in escrow.');
+    assert(waiting.auction.orders.some(row => row.id === waiting.orderId && row.mine), 'The player sees their ask.');
 
     // --- доступ и подъём -----------------------------------------------------------------
     await h.connectAndJoin(accounts.untargeted);
@@ -135,25 +161,34 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     await h.stopServer();
   }
 
-  // --- склад и казна переживают перезапуск ------------------------------------------------
-  const persisted = JSON.parse(fs.readFileSync(savesPath)).blackMarket;
-  assert(persisted?.stock?.laserPistol?.length === 1, 'The sold weapon is stored: ' + JSON.stringify(persisted?.stock));
-  assert(persisted.treasury > 0, 'The treasury is stored.');
+  // --- stock, book and treasury survive a restart --------------------------------------
+  const persisted = JSON.parse(fs.readFileSync(savesPath));
+  assert(persisted.blackMarket?.stock?.laserPistol?.length === 2, 'Both sold weapons enter NPC loot stock.');
+  assert.deepEqual(persisted.blackMarket.stock.laserPistol.map(row => row.c), [100, 80],
+    'The auction preserves the condition of each bought weapon.');
+  assert(persisted.blackMarket?.stock?.leather?.length === 1, 'The listed armor enters NPC loot stock.');
+  assert(persisted.blackMarket.treasury > 0, 'The treasury is stored.');
   await h.startServer();
   try {
     await h.connectAndJoin(accounts.trade);
-    const broker = (accounts.trade.join.worldState?.enemies || []).find(row => row.service === 'blackMarket');
-    const view = await h.socketAck(accounts.trade.socket, 'syncNpcTradeState', { enemyId: broker.id });
-    assert.equal(Number(view.market.caps), persisted.treasury, 'The treasury survives a restart.');
-    assert.equal(view.market.blackMarket.stockCount, 1,
-      'The stock survives a restart: ' + JSON.stringify(view.market.blackMarket).slice(0, 300));
-    console.log('PASS black market persistence');
+    const view = await h.socketAck(accounts.trade.socket, 'auctionAction', { action: 'state' });
+    assert(view.ok && view.auction?.blackMarket === true);
+    assert(view.auction.shelf.silver > 0, 'Auction proceeds survive a restart.');
+    assert(!view.auction.orders.some(row => row.id === 'bm_leather' || row.id === 'bm_laserPistol'));
+    assert(view.auction.orders.some(row => row.mine && row.itemId === 'leather'), 'The waiting ask survives a restart.');
+    const own = view.auction.orders.find(row => row.mine && row.itemId === 'leather');
+    const cancel = await h.socketAck(accounts.trade.socket, 'auctionAction', { action: 'cancel', orderId: own.id });
+    assert(cancel.ok && cancel.auction.shelf.items.some(row => row.itemId === 'leather'),
+      'Cancelling puts the escrowed item on the shelf.');
+    const claim = await h.socketAck(accounts.trade.socket, 'auctionAction', { action: 'claim' });
+    assert(claim.ok && qty(claim.self, 'leather') === 1, 'The item can be claimed after cancellation.');
+    console.log('PASS Black Market auction persistence');
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();
     h.cleanupSync();
   }
-  console.log('Black market network OK: members reach the hub, the broker buys whole weapons at server prices and refuses the rest, the stairs connect the hub with the core, and stock and treasury survive a restart.');
+  console.log('Black market network OK: the auction exposes NPC bids, fills player asks and instant sales, and persists stock and proceeds.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

@@ -60,7 +60,7 @@ function factionCategory(faction = '') {
 function factionLabel(faction = '') {
   const key = factionGroup(faction);
   if (key === 'old_klim') return 'Управа';
-  if (key === 'caravans') return 'вольные караваны';
+  if (key === 'caravans') return 'Лига Тракта';
   if (key === 'scrap_union') return 'Вольные артели';
   if (key === 'relay_order') return 'техники Ретранслятора';
   if (key === 'raiders') return 'рейдеры';

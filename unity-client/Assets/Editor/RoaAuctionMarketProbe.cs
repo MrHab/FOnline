@@ -114,13 +114,14 @@ namespace RealmOfAshes.EditorTools
         private static async void RunRuntime()
         {
             try {
-                var modes = new[] { "listing", "catalog", "buy", "sell", "sellorder", "buyorder", "edit", "journal" }
+                var modes = new[] { "listing", "catalog", "buy", "sell", "sellorder", "buyorder", "edit", "journal",
+                    "blackmarket", "blackmarketorder" }
                     .Concat(File.Exists(Path.Combine(Output, "verified-state.json")) ? new[] { "verified" } : Array.Empty<string>());
                 foreach (bool mobile in new[] { false, true })
                     foreach (string mode in modes)
                         await Capture(mode, mobile);
                 RoaAuctionSinCaptureProbe.Run();
-                File.WriteAllText(Path.Combine(Output, "result.txt"), "PASS: listing filters, catalogue search, four item actions, quantity, price history, editing and journal at 1440x810 and 844x390"
+                File.WriteAllText(Path.Combine(Output, "result.txt"), "PASS: listing filters, catalogue search, four item actions, Black Market bids and asks, quantity, price history, editing and journal at 1440x810 and 844x390"
                     + (File.Exists(Path.Combine(Output, "verified-state.json")) ? "; captured live server trade history." : "."));
                 SessionState.SetInt(Key + ".result", 0);
                 Debug.Log("[AUCTION MARKET] PASS: runtime interactions and desktop/mobile captures.");
@@ -140,7 +141,8 @@ namespace RealmOfAshes.EditorTools
             Texture2D image = null;
             var previous = RenderTexture.active;
             try {
-                var self = new JObject { ["inventory"] = new JArray(new JObject { ["id"] = "silver", ["qty"] = 4200 }, new JObject { ["id"] = "ammo9", ["qty"] = 30 }) };
+                var self = new JObject { ["inventory"] = new JArray(new JObject { ["id"] = "silver", ["qty"] = 4200 },
+                    new JObject { ["id"] = "ammo9", ["qty"] = 30 }, new JObject { ["id"] = "ballisticVest", ["qty"] = 1 }) };
                 var socket = host.AddComponent<RoaSocketClient>(); socket.enabled = false;
                 typeof(RoaSocketClient).GetProperty("Session").SetValue(socket, new JoinAck { Self = self, LocationId = "sluiceCity" });
                 var inventory = host.AddComponent<RoaInventory>(); inventory.enabled = false; inventory.Socket = socket;
@@ -150,11 +152,23 @@ namespace RealmOfAshes.EditorTools
                 ((GameObject)Get(screen, "_root")).SetActive(true);
                 Set(screen, "_inventory", inventory);
                 var state = State();
+                bool blackMarket = mode == "blackmarket" || mode == "blackmarketorder";
+                if (blackMarket) {
+                    state["marketName"] = "Чёрный рынок";
+                    state["blackMarket"] = true;
+                    state["minCondition"] = 10;
+                    state["items"] = new JArray(new JObject { ["itemId"] = "ballisticVest", ["category"] = "armor",
+                        ["sellQty"] = 0, ["buyQty"] = 2, ["buyPrice"] = 60 });
+                    state["orders"] = new JArray(new JObject { ["id"] = "bm_ballisticVest", ["itemId"] = "ballisticVest",
+                        ["category"] = "armor", ["side"] = "buy", ["qty"] = 2, ["price"] = 60,
+                        ["mine"] = false, ["npc"] = true, ["ownerName"] = "Чёрный рынок" });
+                }
                 Set(screen, "_state", state); Set(screen, "_durationHours", 720);
                 Set(screen, "_snapshotAt", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
                 Set(screen, "_tab", mode == "edit" ? "Mine" : mode == "journal" ? "Journal" : "Buy");
                 Require((int)Get(screen, "_availability") == 2, "The market must open with the full item catalog.");
                 if (mode == "listing") Set(screen, "_availability", 0);
+                if (blackMarket) Set(screen, "_availability", 1);
                 if (mode == "verified") {
                     var verified = JObject.Parse(File.ReadAllText(Path.Combine(Output, "verified-state.json")));
                     Require(verified["itemId"]?.ToString() == "ammo9", "The live capture must be for ammo9.");
@@ -172,6 +186,11 @@ namespace RealmOfAshes.EditorTools
                 if (mode == "sellorder" || mode == "buyorder") {
                     Call(screen, "SelectItem", "ammo9");
                     Call(screen, "ChooseMarketMode", mode == "sellorder" ? 2 : 3);
+                }
+                if (mode == "blackmarket") Call(screen, "SelectOrder", state["orders"][0] as JObject, false);
+                if (mode == "blackmarketorder") {
+                    Call(screen, "SelectItem", "ballisticVest");
+                    Call(screen, "ChooseMarketMode", 2);
                 }
                 var canvas = host.GetComponentInChildren<Canvas>();
                 RoaUiScale.Apply(canvas.GetComponent<CanvasScaler>(), mobile);
@@ -219,7 +238,12 @@ namespace RealmOfAshes.EditorTools
                 Require(all.Contains(mode == "buy" || mode == "verified" ? "К оплате: 36" : mode == "edit" ? "СОХРАНИТЬ ИЗМЕНЕНИЯ"
                     : mode == "journal" ? "Продано" : mode == "catalog" ? RoaItemData.Name("medkit")
                     : mode == "listing" ? "КУПИТЬ С РЫНКА" : mode == "sellorder" ? "ВЫСТАВИТЬ НА ПРОДАЖУ"
-                    : mode == "sell" ? "ПРОДАТЬ" : "ПОСТАВИТЬ ЗАЯВКУ"), "Missing action in " + mode);
+                    : mode == "sell" || mode == "blackmarket" ? "ПРОДАТЬ"
+                    : mode == "blackmarketorder" ? "ВЫСТАВИТЬ НА ПРОДАЖУ" : "ПОСТАВИТЬ ЗАЯВКУ"), "Missing action in " + mode);
+                if (blackMarket) {
+                    Require(all.Contains("ЗАЯВКИ НА ВЫКУП") && !all.Contains("ПОСТАВИТЬ ЗАЯВКУ"),
+                        "The Black Market must show NPC bids without a player buy action.");
+                }
                 if (mode == "buy" || mode == "verified") Require(all.Contains("К оплате: 36"), "Partial purchase total must be 36.");
                 if (mode == "edit") Require(all.Contains("Вернётся: 56"), "Edit must preview the correct reserve refund.");
                 Camera camera = cameraObject.AddComponent<Camera>(); camera.enabled = false;

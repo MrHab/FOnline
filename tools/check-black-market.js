@@ -10,6 +10,8 @@ const {
   fundBlackMarket, takeBlackMarketLoot, decayBlackMarket,
   blackMarketFatigueFactor, publicBlackMarketState
 } = require('../src/server/black-market');
+const { blackMarketBids, settleBlackMarketAsks } = require('../src/server/black-market-auction');
+const { normalizeMarketStore, normalizeMarketRules, placeSellOrder, cancelOrder, shelfFor } = require('../src/server/faction-market');
 
 const economy = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'economy.json'), 'utf8'));
 const config = normalizeBlackMarketConfig(economy.blackMarket);
@@ -131,6 +133,40 @@ assert.equal(config.treasuryShare, 0.2);
   }
   assert(blackMarketFatigueFactor(tracker, config, 1000) < 1);
   assert.equal(blackMarketFatigueFactor(tracker, config, 1000 + config.fatigue.windowMinutes * 60000 + 1), 1);
+}
+
+// A player ask keeps its item in the auction book until the NPC bid reaches it.
+{
+  const state = normalizeBlackMarketState({ treasury: 1000,
+    orders: { pistol: { qty: 1, multiplier: 1 } }
+  }, config, 0);
+  const book = normalizeMarketStore();
+  const rules = normalizeMarketRules({ durationChoicesMs: [24 * HOUR],
+    listingLifetimeMs: 24 * HOUR, taxPct: 0.08 });
+  const ask = placeSellOrder(book, { ownerCharacterId: 'seller', ownerName: 'Seller',
+    itemId: 'pistol', category: 'weapons', qty: 1, price: 20,
+    condition: 75, durationMs: 24 * HOUR }, rules, 1000);
+  assert(ask.ok && ask.restingQty === 1);
+  assert.equal(settleBlackMarketAsks(state, book, config, priceOf, accepts, 0, rules, 1001).length, 0);
+  for (let i = 0; i < 20 && blackMarketUnitPrice(state, config, 40, 75, 0, 'pistol') < 20; i += 1) {
+    takeBlackMarketLoot(state, config, 45, priceOf, ['pistol'], () => 0);
+  }
+  assert(blackMarketBids(state, config, priceOf)[0].price >= 20);
+  const fills = settleBlackMarketAsks(state, book, config, priceOf, accepts, 0, rules, 1002);
+  assert.equal(fills.length, 1);
+  assert.equal(fills[0].price, 20, 'An NPC taking a resting ask pays the ask price.');
+  assert.equal(state.treasury, 980);
+  assert.deepEqual(state.stock.pistol.map(row => row.c), [75]);
+  assert.equal(shelfFor(book, 'seller').silver, 19, 'The seller receives the ask minus auction tax.');
+  assert.equal(book.orders[ask.order.id], undefined);
+
+  const waiting = placeSellOrder(book, { ownerCharacterId: 'seller', itemId: 'pistol',
+    category: 'weapons', qty: 1, price: 100, condition: 55,
+    durationMs: 24 * HOUR }, rules, 2000);
+  assert(waiting.ok);
+  assert(cancelOrder(book, waiting.order.id, 'seller', 2001).ok);
+  assert.equal(shelfFor(book, 'seller').items[0].condition, 55,
+    'A cancelled worn item keeps its condition on the auction shelf.');
 }
 
 console.log('Black market OK: exact-item demand orders, capped purchases, player-made loot, treasury and persistence.');

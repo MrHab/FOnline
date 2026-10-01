@@ -3303,7 +3303,7 @@ namespace RealmOfAshes.Game
         {
             if (actor == null) return false;
             // Сервер говорит прямо, торгует ли этот человек (экономика v3:
-            // только торговцы столиц и баз Сердцевины и скупщик Чёрного рынка).
+            // только торговцы столиц и баз Сердцевины).
             if (actor["tradeOpen"]?.Type == JTokenType.Boolean) return actor["tradeOpen"].Value<bool>();
             return actor["personalTrade"]?.ToObject<bool>() == true
                 || !string.IsNullOrEmpty(actor["traderId"]?.ToString())

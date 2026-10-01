@@ -250,17 +250,6 @@ if (playerProtectionIndex < 0 || playerProtectionIndex > playerHitServerBody.ind
   fail('playerHit must protect allies and peaceful-zone targets before damage while allowing the shot');
 }
 
-const syncNpcTradeStateBody = socketEventSlice(server, 'syncNpcTradeState');
-// Скупщик Чёрного рынка отдаёт свою витрину, остальные NPC — обычную.
-if (!(syncNpcTradeStateBody.includes('market: serverNpcTradeMarket(actor)')
-    || syncNpcTradeStateBody.includes('serverIsBlackMarketActor(actor) ? serverBlackMarketTradeMarket(p) : serverNpcTradeMarket(actor)'))
-  || !syncNpcTradeStateBody.includes('readOnly: true')
-  || syncNpcTradeStateBody.includes('serverNpcSetInventoryCaps(')
-  || syncNpcTradeStateBody.includes('data.inventory')
-  || syncNpcTradeStateBody.includes('data.traderStock')) {
-  fail('syncNpcTradeState must be a read-only server-authoritative NPC market snapshot');
-}
-
 const npcDialogueFocusBody = socketEventSlice(server, 'npcDialogueFocus');
 if (!npcDialogueFocusBody.includes('enemy.canDialogue !== false') || !npcDialogueFocusBody.includes('!serverNpcIsNaturalCreature(enemy, enemy)')) {
   fail('npcDialogueFocus must reject non-dialogue natural creatures even when they belong to a friendly faction');

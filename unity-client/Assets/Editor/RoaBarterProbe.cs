@@ -139,19 +139,6 @@ namespace RealmOfAshes.EditorTools
                         && CallPrice("TradeSellPrice", "leather", refusingMarket, traderSelf) == 0
                         && CallPrice("TradeSellPrice", "medkit", refusingMarket, traderSelf) == 12,
                     "торговец называет цену оружию или броне, которые покупает только Чёрный рынок");
-                // Чёрный рынок: цену каждого предмета называет сервер, без цены — не берёт.
-                JObject blackMarket = JObject.Parse("{\"stock\":[],\"caps\":900,\"blackMarket\":{\"treasury\":900},\"sellPrices\":{\"pistol\":17,\"food\":0}}");
-                Require(RoaBarterCanvas.IsBlackMarket(blackMarket) && !RoaBarterCanvas.IsBlackMarket(quoteMarket), "витрина скупщика не распознана");
-                Require(CallPrice("TradeSellPrice", "pistol", blackMarket, traderSelf) == 17, "цена скупщика взята не с сервера");
-                JObject perItem = JObject.Parse("{\"sellPrices\":{\"pistol\":30},\"sellPricesByItem\":{\"ui_pistol_good\":30,\"ui_pistol_broken\":0}}");
-                Require(CallPrice("TradeSellPriceFor", "ui_pistol_good", "pistol", perItem, traderSelf) == 30
-                        && CallPrice("TradeSellPriceFor", "ui_pistol_broken", "pistol", perItem, traderSelf) == 0
-                        && CallPrice("TradeSellPriceFor", "ui_pistol_other", "pistol", perItem, traderSelf) == 30,
-                        "цена экземпляра оружия у скупщика берётся не по экземпляру");
-                Require(CallPrice("TradeSellPrice", "food", blackMarket, traderSelf) == 0
-                        && CallPrice("TradeSellPrice", "leather", blackMarket, traderSelf) == 0,
-                        "скупщик не должен брать то, чему сервер не назначил цену");
-
                 Call(canvas, "EnsureBuilt");
                 var root = (GameObject)Get(canvas, "_root");
                 root.SetActive(true);
@@ -213,31 +200,7 @@ namespace RealmOfAshes.EditorTools
                 Require(rifleShown, "надетая винтовка не попала в колонку «Ваши вещи»");
                 ClearRowsImmediate(canvas, player, vendor);
 
-                // Окно скупщика Чёрного рынка: заголовок, касса и отказ словами.
-                Set(interaction, "_market", JObject.Parse(
-                    "{\"stock\":[],\"caps\":900,\"buyInterests\":[\"weapons\",\"armor\"],\"blackMarket\":{\"treasury\":900,\"orders\":{\"pistol\":1},\"buyOrders\":[{\"id\":\"pistol\",\"qty\":1,\"price\":17}]},\"sellPrices\":{\"pistol\":17}}"));
                 var sells = (Dictionary<string, int>)Get(interaction, "_tradeSells");
-                sells.Clear();
-                sells["medkit"] = 1;
-                Call(canvas, "Refresh");
-                string title = ((Text)Get(canvas, "_title")).text;
-                string skill = ((Text)Get(canvas, "_skillLine")).text;
-                string warning = ((Text)Get(canvas, "_warning")).text;
-                report.Append("black market: ").Append(title).Append(" | ").Append(skill).Append(" | ").Append(warning).Append('\n');
-                Require(title.EndsWith("ЗАЯВКИ НА СКУПКУ", StringComparison.Ordinal), "окно скупщика не показывает заявки: " + title);
-                Require(skill.StartsWith("Касса скупщика: 900", StringComparison.Ordinal), "окно скупщика не показывает кассу: " + skill);
-                Require(warning.StartsWith("Нет заявки", StringComparison.Ordinal), "отказ скупщика не объяснён: " + warning);
-                rows = (List<GameObject>)vendor.GetType().GetField("Rows").GetValue(vendor);
-                Require(rows.Count == 1 && rows[0].name == "Row:pistol" && rows[0].GetComponent<Button>() == null,
-                    "публичная заявка должна быть видна, но не должна продавать предмет игроку");
-                sells.Clear();
-                sells["ui_pistol_a1_b2"] = 2;
-                Call(canvas, "Refresh");
-                warning = ((Text)Get(canvas, "_warning")).text;
-                Require(warning.StartsWith("Заявка на", StringComparison.Ordinal), "окно разрешило превысить объём заявки: " + warning);
-                sells.Clear();
-                ClearRowsImmediate(canvas, player, vendor);
-
                 // Обычный торговец не берёт оружие: окно говорит, кто его покупает.
                 Set(interaction, "_market", JObject.Parse(
                     "{\"stock\":[],\"caps\":900,\"buyInterests\":[\"aid\"],\"refusedCategories\":[\"weapons\",\"armor\"]}"));

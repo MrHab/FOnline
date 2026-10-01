@@ -323,6 +323,7 @@ namespace RealmOfAshes.Game
         private static string ActionNote(JObject ack)
         {
             int qty = ack["qty"]?.Value<int>() ?? 0;
+            bool blackMarket = ack["auction"]?["blackMarket"]?.Value<bool>() == true;
             switch (ack["action"]?.ToString() ?? string.Empty)
             {
                 case "sell":
@@ -331,7 +332,8 @@ namespace RealmOfAshes.Game
                     int resting = ack["restingQty"]?.Value<int>() ?? 0;
                     string note = sold > 0 ? "Продано сразу: " + sold + " шт за " + RoaPlural.Marks((ack["proceeds"]?.Value<int>() ?? 0)) + "." : string.Empty;
                     if (resting > 0) note += (note.Length > 0 ? " " : string.Empty) + "В книге: " + resting + " шт.";
-                    return note + " Сбор " + (ack["setupFee"]?.Value<int>() ?? 0) + ".";
+                    return note + " Сбор " + (ack["setupFee"]?.Value<int>() ?? 0) + "."
+                        + (blackMarket && sold > 0 ? " Выручка на полке." : string.Empty);
                 }
                 case "buy":
                 {
@@ -344,7 +346,8 @@ namespace RealmOfAshes.Game
                 }
                 case "buyNow": return "Куплено " + qty + " шт за " + RoaPlural.Marks((ack["cost"]?.Value<int>() ?? 0)) + "."
                     + ((ack["shelved"]?.Value<int>() ?? 0) > 0 ? " Покупка ждёт на полке." : string.Empty);
-                case "sellNow": return "Продано " + qty + " шт, на руки " + RoaPlural.Marks((ack["proceeds"]?.Value<int>() ?? 0)) + ".";
+                case "sellNow": return "Продано " + qty + " шт, получите " + RoaPlural.Marks((ack["proceeds"]?.Value<int>() ?? 0)) + "."
+                    + ((ack["shelvedSilver"]?.Value<int>() ?? 0) > 0 ? " Часть выручки на полке." : string.Empty);
                 case "cancel": return "Ордер отменён, товар и марки ждут на полке.";
                 case "update": return "Ордер обновлён. Сбор " + (ack["setupFee"]?.Value<int>() ?? 0)
                     + ". Купленное и возвращённые предметы ждут на полке.";
@@ -357,7 +360,17 @@ namespace RealmOfAshes.Game
         {
             JObject market = ack["auction"] as JObject;
             if (market == null) return;
+            bool enteringBlackMarket = market["blackMarket"]?.Value<bool>() == true
+                && _state?["blackMarket"]?.Value<bool>() != true;
+            bool leavingBlackMarket = market["blackMarket"]?.Value<bool>() != true
+                && _state?["blackMarket"]?.Value<bool>() == true;
             _state = market;
+            if (enteringBlackMarket)
+            {
+                _availability = 1;
+                _modalMode = 1;
+            }
+            if (leavingBlackMarket) _availability = 2;
             _snapshotAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (_durationHours <= 0)
             {
@@ -377,6 +390,8 @@ namespace RealmOfAshes.Game
         private float SetupFeePct { get { return _state?["setupFeePct"]?.Value<float>() ?? 0.015f; } }
 
         private JObject Shelf { get { return _state?["shelf"] as JObject; } }
+
+        private bool BlackMarket { get { return _state?["blackMarket"]?.Value<bool>() == true; } }
 
         private int SinBalance { get { return _sinAccount?["sin"]?.Value<int>() ?? 0; } }
 
@@ -483,6 +498,7 @@ namespace RealmOfAshes.Game
         {
             _orderId = order["id"]?.ToString() ?? string.Empty;
             _itemId = order["itemId"]?.ToString() ?? string.Empty;
+            _saleRuntimeId = SaleInstances(_itemId).FirstOrDefault() ?? string.Empty;
             if (mine) _tab = Tab.Mine;
             _priceInput.text = (order["price"]?.Value<int>() ?? 1).ToString();
             _qtyInput.text = mine ? (order["qty"]?.Value<int>() ?? 1).ToString() : "1";
@@ -837,7 +853,7 @@ namespace RealmOfAshes.Game
             _terms.text = _tab == Tab.Sin
                 ? "Обменник сини: сбор за ордер " + RoaPlural.Marks(SinOrderFee) + ", налога нет · у вас " + Marks
                     + " марок, на счёте " + SinBalance + " сини"
-                : "Налог с продажи " + (TaxPct * 100f).ToString("0.#") + "% · сбор за ордер "
+                : (BlackMarket ? "Выкуп из казны · " : "") + "Налог с продажи " + (TaxPct * 100f).ToString("0.#") + "% · сбор за ордер "
                     + (SetupFeePct * 100f).ToString("0.#") + "% · у вас " + RoaPlural.Marks(Marks);
             _status.text = string.IsNullOrEmpty(_note)
                 ? (_pending ? "Аукционер сверяет книгу…" : "Купленное, проданное и возвраты ждут на полке у аукционера.")
@@ -968,6 +984,7 @@ namespace RealmOfAshes.Game
             close.GetComponent<Image>().color = QuietBg;
             for (int i = 0; i < 4; i++)
             {
+                if (BlackMarket && (i == 0 || i == 3)) continue;
                 int mode = i;
                 string label = new[] { "Купить", "Продать", "Заявка на продажу", "Заявка на покупку" }[i];
                 ModalButton(_modalLeft, (_modalMode == i ? "●  " : "○  ") + label,
@@ -1031,12 +1048,16 @@ namespace RealmOfAshes.Game
                 ready &= _modalMode == 2 ? quantity <= Backpack(_itemId) && fee <= Marks
                     && (Fungible(_itemId) || quantity == 1) : Fungible(_itemId) && total + fee <= Marks;
                 ModalText(_modalLeft, _modalMode == 2 ? "В рюкзаке: " + Backpack(_itemId)
-                    + " · полностью отремонтируйте снаряжение" : Fungible(_itemId)
+                    + (BlackMarket ? " · принимают от " + (_state?["minCondition"]?.Value<int>() ?? 10) + "% состояния"
+                        : " · полностью отремонтируйте снаряжение") : Fungible(_itemId)
                     ? "Марки будут зарезервированы до сделки или отмены."
                     : "Заявка на выкуп недоступна для снаряжения и артефактов.",
                     11, InkDim, 0.02f, 0.98f, -207f, 30f);
                 AddMarketDurationButtons();
             }
+            if (BlackMarket && _modalMode == 1)
+                ModalText(_modalLeft, "Цена заявки указана для целой вещи. Для изношенной сервер пересчитает выплату по состоянию.",
+                    11, InkDim, 0.02f, 0.98f, -238f, 42f);
             if ((_modalMode == 1 || _modalMode == 2)
                 && (RoaItemData.Category(_itemId) == "artifacts" || RoaItemData.ConditionMode(_itemId) == "runtime"))
             {
@@ -1058,13 +1079,16 @@ namespace RealmOfAshes.Game
                         if (instances.Count > 1) { _saleRuntimeId = instances[(index + 1) % instances.Count]; Rebuild(); }
                     });
                 if (RoaItemData.Category(_itemId) == "artifacts") ready &= instances.Count > 0;
+                if (BlackMarket && RoaItemData.ConditionMode(_itemId) == "runtime") ready &= instances.Count > 0;
             }
             if (_modalMode == 0 || _modalMode == 3)
                 ModalButton(_modalLeft, (_buyToBag ? "☑" : "□") + " Купленное сразу в рюкзак",
                     0.02f, 0.98f, -285f, 24f, _buyToBag, () => { _buyToBag = !_buyToBag; Rebuild(); });
             ready &= !_actionBusy;
             string summary = _modalMode == 0 ? "К оплате: " + total + " марок · у вас " + Marks
-                : _modalMode == 1 ? "Налог: " + tax + " · получите " + (total - tax) + " марок"
+                : _modalMode == 1 ? (BlackMarket
+                    ? "До " + (total - tax) + " марок после налога; точная сумма зависит от состояния"
+                    : "Налог: " + tax + " · получите " + (total - tax) + " марок")
                 : _modalMode == 2 ? "Сбор: " + fee + " · после налога получите " + (total - tax - fee)
                 : "Резерв: " + total + " · сбор: " + fee + " · всего " + (total + fee);
             Text summaryLabel = ModalText(_modalLeft, summary, 13, ready ? Accent : Warn, 0.02f, 0.98f, -310f, 32f);
@@ -1254,12 +1278,12 @@ namespace RealmOfAshes.Game
             int shelfItems = 0;
             foreach (JToken row in shelf?["items"] as JArray ?? new JArray()) shelfItems += row["qty"]?.Value<int>() ?? 0;
 
-            AddTab(Tab.Buy, "ПОКУПКА");
+            AddTab(Tab.Buy, BlackMarket ? "ЗАЯВКИ НА ВЫКУП" : "ПОКУПКА");
             AddTab(Tab.Sell, "ПРОДАЖА");
             AddTab(Tab.Mine, "МОИ ОРДЕРА" + (mine > 0 ? " (" + mine + ")" : string.Empty));
             AddTab(Tab.Shelf, "ПОЛКА" + (shelfSilver > 0 || shelfItems > 0 ? " ●" : string.Empty));
             AddTab(Tab.Journal, "ЖУРНАЛ СДЕЛОК");
-            if (_sinAccount != null) AddTab(Tab.Sin, "СИНЬ · " + SinBalance + (SinPremium ? " ★" : string.Empty));
+            if (_sinAccount != null && !BlackMarket) AddTab(Tab.Sin, "СИНЬ · " + SinBalance + (SinPremium ? " ★" : string.Empty));
         }
 
         private void AddTab(Tab tab, string caption)
@@ -1434,6 +1458,7 @@ namespace RealmOfAshes.Game
             Text timer = Label("Time", rect, 12, TextAnchor.MiddleCenter, InkDim);
             Place(timer.rectTransform, 0.45f, 0f, 0.67f, 1f, Vector2.zero, Vector2.zero);
             if (catalog) timer.text = "—";
+            else if (row["npc"]?.Value<bool>() == true) timer.text = "до исполнения";
             else _timers.Add(new KeyValuePair<Text, long>(timer, DeadlineFor(row)));
             Text cost = Label("Price", rect, 15, TextAnchor.MiddleCenter, price > 0 ? Accent : InkDim, FontStyle.Bold);
             Place(cost.rectTransform, 0.67f, 0f, 0.85f, 1f, Vector2.zero, Vector2.zero);
@@ -1489,7 +1514,7 @@ namespace RealmOfAshes.Game
             {
                 _modalQty.text = "1";
                 _modalPrice.text = suggested.ToString();
-                bool selling = _tab == Tab.Sell;
+                bool selling = _tab == Tab.Sell || BlackMarket;
                 JObject best = BestAvailableOrder(itemId, selling ? "buy" : "sell");
                 _modalMode = selling ? (best != null ? 1 : 2) : (best != null ? 0 : 3);
                 _orderId = best?["id"]?.ToString() ?? string.Empty;
@@ -1618,7 +1643,8 @@ namespace RealmOfAshes.Game
 
             Text timer = Label("Timer", rect, 11, TextAnchor.UpperRight, InkDim);
             Place(timer.rectTransform, 0.62f, 0f, 1f, 1f, new Vector2(0f, 20f), new Vector2(-10f, -3f));
-            _timers.Add(new KeyValuePair<Text, long>(timer, DeadlineFor(order)));
+            if (order["npc"]?.Value<bool>() == true) timer.text = "до исполнения";
+            else _timers.Add(new KeyValuePair<Text, long>(timer, DeadlineFor(order)));
 
             string label;
             Action action;
@@ -2096,7 +2122,7 @@ namespace RealmOfAshes.Game
                 ready ? ButtonBg : QuietBg, () => {
                     if (!ready) return;
                     SendMarket(done => buying ? RoaAuctionNet.BuyNow(Interaction.Socket, id, quantity, done, price)
-                        : RoaAuctionNet.SellNow(Interaction.Socket, id, quantity, string.Empty, done, price));
+                        : RoaAuctionNet.SellNow(Interaction.Socket, id, quantity, _saleRuntimeId, done, price));
                 });
             AddDetailButton("К ФОРМЕ ЗАЯВКИ", QuietBg, () => { _orderId = string.Empty; Rebuild(); });
         }
@@ -2151,14 +2177,17 @@ namespace RealmOfAshes.Game
             AddDurationRow();
             AddDetailText("Сбор за ордер " + fee + " · налог с продажи " + tax
                 + " · итог после сборов " + Math.Max(0, FormTotal - tax - fee) + ".", 11, fee > Marks ? Warn : InkDim, 40f);
-            if (!Fungible(_itemId)) AddDetailText("Снаряжение принимается полностью отремонтированным. Предметы с собственными свойствами выставляются по одному.", 11, InkDim, 48f);
+            if (!Fungible(_itemId)) AddDetailText(BlackMarket
+                ? "Чёрный рынок принимает снаряжение от " + (_state?["minCondition"]?.Value<int>() ?? 10)
+                    + "% состояния. Каждый предмет выставляется отдельно."
+                : "Снаряжение принимается полностью отремонтированным. Предметы с собственными свойствами выставляются по одному.", 11, InkDim, 48f);
 
             bool ready = ValidOrderForm && qty <= have && fee <= Marks && (Fungible(_itemId) || qty == 1);
             AddDetailButton(ready ? "ВЫСТАВИТЬ ОРДЕР НА " + _durationHours + " Ч" : "УКАЖИТЕ ЦЕНУ И КОЛИЧЕСТВО",
                 ready ? ButtonBg : QuietBg, () =>
                 {
                     if (!ready) return;
-                    SendMarket(done => RoaAuctionNet.SellOrder(Interaction.Socket, _itemId, qty, price, _durationHours, string.Empty, done));
+                    SendMarket(done => RoaAuctionNet.SellOrder(Interaction.Socket, _itemId, qty, price, _durationHours, _saleRuntimeId, done));
                 });
         }
 

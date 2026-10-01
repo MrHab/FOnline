@@ -198,7 +198,6 @@
     "defaultMode": "pvp"
   },
   "blackMarket": {
-    "service": "blackMarket",
     "hubLocationId": "coreMarket",
     "categories": [
       "weapons",

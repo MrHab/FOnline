@@ -1,8 +1,8 @@
 'use strict';
 
 /**
- * Чёрный рынок экономики v3 (библия 14.5, KRM-22): единственный скупщик
- * снаряжения игроков и единственный источник снаряжения в добыче NPC.
+ * Чёрный рынок экономики v3 (библия 14.5, KRM-22): аукционный выкуп
+ * снаряжения игроков и источник снаряжения в добыче NPC.
  *
  * - Рынок только покупает и платит из казны. Казну пополняет доля марок,
  *   которые иначе выпали бы с NPC, поэтому новых марок он не создаёт.
@@ -17,7 +17,6 @@
 const BLACK_MARKET_VERSION = 2;
 
 const DEFAULT_CONFIG = Object.freeze({
-  service: 'blackMarket',
   hubLocationId: 'coreMarket',
   categories: Object.freeze(['weapons', 'armor']),
   treasuryShare: 0.2,
@@ -69,7 +68,6 @@ function normalizeBlackMarketConfig(input = {}) {
   const minMultiplier = finite(src.minMultiplier, DEFAULT_CONFIG.minMultiplier, 0.05, 1);
   const categories = Array.isArray(src.categories) && src.categories.length ? src.categories : DEFAULT_CONFIG.categories;
   return Object.freeze({
-    service: safeId(src.service || DEFAULT_CONFIG.service, 32),
     hubLocationId: safeId(src.hubLocationId || DEFAULT_CONFIG.hubLocationId),
     categories: Object.freeze(categories.map(value => safeId(value, 32)).filter(Boolean)),
     treasuryShare: finite(src.treasuryShare, DEFAULT_CONFIG.treasuryShare, 0, 1),
@@ -154,7 +152,7 @@ function normalizeBlackMarketState(raw = {}, config = normalizeBlackMarketConfig
 /**
  * Цена скупки одной единицы: база × доля × множитель полосы × состояние.
  * capShare > 0 ограничивает цену целого предмета долей базы — пока в мире
- * есть NPC-торговцы, скупщик не должен платить больше их самой низкой цены.
+ * есть NPC-торговцы, рынок не должен платить больше их самой низкой цены.
  */
 function blackMarketUnitPrice(state, config, basePrice = 0, condition = 100, capShare = 0, itemId = '') {
   const base = Math.max(0, Number(basePrice) || 0);
@@ -179,7 +177,7 @@ function quoteBlackMarketSale(state, config, rows = [], priceOf = () => 0, accep
     const id = safeId(row?.id);
     const qty = Math.max(0, Math.floor(Number(row?.qty) || 0));
     if (!id || qty <= 0) continue;
-    if (!accepts(id)) return { ok: false, error: 'Скупщик берёт только оружие и броню.', itemId: id };
+    if (!accepts(id)) return { ok: false, error: 'Чёрный рынок берёт только оружие и броню.', itemId: id };
     const combined = (requested.get(id) || 0) + qty;
     if (combined > (state.orders[id]?.qty || 0)) {
       return { ok: false, error: 'На этот предмет нет заявки нужного объёма.', itemId: id };
@@ -189,7 +187,7 @@ function quoteBlackMarketSale(state, config, rows = [], priceOf = () => 0, accep
       Array.isArray(row.conditions) ? row.conditions[index] ?? row.condition : row.condition, 100, 1, 100
     ));
     if (conditions.some(value => value < config.minCondition)) {
-      return { ok: false, error: `Скупщик не берёт вещи с состоянием ниже ${config.minCondition}%.`, itemId: id };
+      return { ok: false, error: `Чёрный рынок не берёт вещи с состоянием ниже ${config.minCondition}%.`, itemId: id };
     }
     const units = conditions.map(value => blackMarketUnitPrice(state, config, priceOf(id), value, capShare, id));
     if (units.some(value => value <= 0)) return { ok: false, error: 'У этого предмета нет цены скупки.', itemId: id };
@@ -208,11 +206,11 @@ function applyBlackMarketSale(state, config, quote, priceOf = () => 0, now = Dat
   for (const [id, qty] of requested) {
     if (qty > (state.orders[id]?.qty || 0)) return { ok: false, error: 'Заявка на предмет уже исполнена.' };
     if ((state.stock[id]?.length || 0) + qty > config.maxStockPerItem) {
-      return { ok: false, error: 'Склад скупщика для этого предмета заполнен.' };
+      return { ok: false, error: 'Склад Чёрного рынка для этого предмета заполнен.' };
     }
   }
   if (state.treasury < quote.total) {
-    return { ok: false, error: 'У скупщика сейчас не хватает марок. Загляните позже.' };
+    return { ok: false, error: 'В казне Чёрного рынка не хватает марок. Загляните позже.' };
   }
   state.treasury -= quote.total;
   for (const line of quote.lines) {

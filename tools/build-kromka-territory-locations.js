@@ -651,16 +651,16 @@ function marketHubDefinition() {
     prop('stairs_up', 'Подъём в Сердцевину', 'cargo_stack.glb', 0, -32, { x: 1.6, y: 1.2, z: 1.2 }, ['territory-market', 'market-door'], {
       fields: { interactive: { kind: 'transition', role: 'marketDoor', to: territory.zoneLocationId } }
     }),
-    prop('stall_west', 'Прилавок скупщика', 'wasteland_shack.glb', -12, 8, 1.2, ['territory-market', 'stall'], { vision: { mode: 'cover' } }),
-    prop('stall_east', 'Склад скупщика', 'storage_lean_to.glb', 12, 8, 1.4, ['territory-market', 'stall'], { vision: { mode: 'cover' } }),
+    prop('stall_west', 'Прилавок аукциона', 'wasteland_shack.glb', -12, 8, 1.2, ['territory-market', 'stall'], { vision: { mode: 'cover' } }),
+    prop('stall_east', 'Склад аукциона', 'storage_lean_to.glb', 12, 8, 1.4, ['territory-market', 'stall'], { vision: { mode: 'cover' } }),
     prop('crates_west', 'Ящики с оружием', 'cargo_stack.glb', -18, -4, 1.1, ['territory-market', 'crates']),
     prop('crates_east', 'Ящики с бронёй', 'cargo_stack.glb', 18, -4, 1.1, ['territory-market', 'crates']),
     prop('lamp_west', 'Фонарь рынка', 'utility_pole.glb', -8, -20, 1, ['territory-market', 'light'], { vision: { mode: 'none' } }),
     prop('lamp_east', 'Фонарь рынка', 'utility_pole.glb', 8, -20, 1, ['territory-market', 'light'], { vision: { mode: 'none' } }),
-    prop('workbench', 'Верстак скупщика', 'workshop_bench.glb', 0, 16, 1.2, ['territory-market', 'bench'], { vision: { mode: 'cover' } }),
-    serviceNpc('broker', 'Скупщик Ядра', 'neutral', 'blackMarket', 0, 8, {
-      role: 'merchant', model: 'traderNpc', tags: ['merchant', 'trader', 'black-market'],
-      entity: { traderProfile: 'blackMarket', tradeProfile: 'blackMarket', dialogueProfile: 'blackMarket' }
+    prop('workbench', 'Верстак аукциона', 'workshop_bench.glb', 0, 16, 1.2, ['territory-market', 'bench'], { vision: { mode: 'cover' } }),
+    serviceNpc('auctioneer', 'Аукционер Чёрного рынка', 'neutral', 'auction', 0, 8, {
+      role: 'auctioneer', model: 'traderNpc', tags: ['auction', 'black-market'],
+      entity: { dialogueProfile: 'auction' }
     }),
     guard('guard_stairs_a', 'Охрана рынка', 'neutral', -4, -28, 0),
     guard('guard_stairs_b', 'Охрана рынка', 'neutral', 4, -28, 0)
@@ -670,7 +670,7 @@ function marketHubDefinition() {
     seed: 2026091700, safe: true, pvpMode: 'peaceful', kind: 'territoryHub', respawnAllowed: false,
     enemyCap: 0, spawnCount: 0, noRespawn: true, allowGlobalMapExit: false, noGlobalMap: true, noGlobalMapEntry: true,
     territoryId: territory.id, territoryRole: 'marketHub', factionAccess: 'territory',
-    marketHub: { service: 'blackMarket', description: hub.description },
+    marketHub: { service: 'auction', description: hub.description },
     ground: { preset: 'concreteFloor', label: hub.displayName },
     map: { width, depth, origin: 'center' }, grid: { snap: true, step: 2 },
     spawn: point(0, -26, width, depth),

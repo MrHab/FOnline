@@ -49,6 +49,18 @@ namespace RealmOfAshes.EditorTools
         [MenuItem("Realm of Ashes/Напечь рендеры предметов")]
         public static void Run() { Bake(ReadCatalogIds()); }
 
+        /// <summary>
+        /// Только перечисленные предметы (ROA_ITEM_BAKE_IDS=moped,pickup), чтобы новый
+        /// предмет не перепекал весь каталог. Пакетный запуск: -executeMethod … RunSelected -quit.
+        /// </summary>
+        public static void RunSelected()
+        {
+            var ids = new List<string>();
+            foreach (string id in (System.Environment.GetEnvironmentVariable("ROA_ITEM_BAKE_IDS") ?? string.Empty).Split(','))
+                if (!string.IsNullOrWhiteSpace(id)) ids.Add(id.Trim());
+            Bake(ids);
+        }
+
         /// <summary>Только материалы тиров (data/kromka/tiers.json): сырьё и полуфабрикаты T1–T5.</summary>
         [MenuItem("Realm of Ashes/Напечь рендеры материалов тиров")]
         public static void RunTierMaterials()
@@ -91,6 +103,20 @@ namespace RealmOfAshes.EditorTools
                 RenderSettings.fog = false;
 
                 Camera camera = BuildRig(out rig);
+                // Прогрев: в пакетном режиме первый кадр с впервые встреченными
+                // вариантами шейдеров выходит белым силуэтом — снимаем его и выбрасываем.
+                GameObject warm = Instantiate(ids[0], out GameObject warmFocus, out string warmKind);
+                if (warm != null)
+                {
+                    try
+                    {
+                        warm.transform.SetParent(rig.transform, false);
+                        SetLayerRecursively(warm, Layer);
+                        if (warmFocus != warm) HideOutside(warm, warmFocus);
+                        if (Frame(camera, warmFocus, warmKind)) Capture(camera, out _);
+                    }
+                    finally { Object.DestroyImmediate(warm); }
+                }
                 foreach (string id in ids)
                 {
                     GameObject instance = Instantiate(id, out GameObject focus, out string kind);
@@ -197,6 +223,8 @@ namespace RealmOfAshes.EditorTools
                 {
                     packInstance.hideFlags = HideFlags.HideAndDontSave;
                     RoaApocalypseModels.MarkItem(packInstance, itemId);
+                    // «Лом» on the icon wears the same metal plates as on the player.
+                    if (itemId == "metalArmor") RoaApocalypseCharacterSkin.DressMetalArmorAtRest(packInstance);
                     foreach (Animator animator in packInstance.GetComponentsInChildren<Animator>(true))
                         animator.enabled = false;
                     focus = packInstance;

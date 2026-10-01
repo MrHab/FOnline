@@ -310,7 +310,7 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
   f.p.mountedVehicle = ride();
   const spent = f.spends();
   const refused = f.attack('explosionAttack', { impactX: 10, impactZ: 0 });
-  assert(refused && refused.ok === false && /Верхом/.test(refused.error), 'A rider cannot fire a rocket');
+  assert(refused && refused.ok === false && /За рулём/.test(refused.error), 'A rider cannot fire a rocket');
   assert.equal(f.spends(), spent, 'A refused rocket spends nothing');
   assert(f.p.mountedVehicle, 'Refusal leaves the rider in the saddle');
 }

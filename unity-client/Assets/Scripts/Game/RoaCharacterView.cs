@@ -159,6 +159,8 @@ namespace RealmOfAshes.Game
         private readonly RoaRiderPose _rider = new RoaRiderPose();
         private RoaVehicleView _vehicle;
         private bool _riding;
+        // Седло отпущено, но оружие ещё спрятано, а крен и посадка не сняты.
+        private bool _dismountPending;
         private float _riderWeight;
         private float _rideSpeed;
         private float _rideYawRate;
@@ -203,6 +205,10 @@ namespace RealmOfAshes.Game
         private string _attackClip = "attack";
         private string _reactionClip = "hurt";
         private bool _alternateAttack;
+        // Удар кулаком на ходу: клип удара играет слоем поверх походки только на
+        // корпусе и руках (от spine_01), ноги продолжают шаг.
+        private bool _upperAttack;
+        private const string UpperSuffix = "_upper";
         // Действие на месте (добыча, еда, ящик): клип до этого времени, пока стоим.
         private string _actionClip = string.Empty;
         private float _actionUntil;
@@ -251,6 +257,27 @@ namespace RealmOfAshes.Game
 
         /// <summary>Клип, который играет сейчас. Для диагностики.</summary>
         public string CurrentClip { get { return _currentClip; } }
+
+        /// <summary>Идёт удар кулаком (стоя или на ходу поверх шага).</summary>
+        public bool PunchActive { get { return Time.time < _attackUntil; } }
+
+        /// <summary>Какой удар кулаком идёт: "attack" — джеб левой, "punch_cross" — кросс правой.</summary>
+        public string PunchClip { get { return _attackClip; } }
+
+        /// <summary>Удар кулаком играет верхним слоем поверх походки.</summary>
+        public bool UpperBodyPunch { get { return _upperAttack && Time.time < _attackUntil; } }
+
+        /// <summary>Доля пройденного удара кулаком, 0..1; −1 — удара нет. Для проб.</summary>
+        public float DebugPunchPhase
+        {
+            get
+            {
+                if (Time.time >= _attackUntil || _animation == null) return -1f;
+                AnimationState state = _animation[_upperAttack ? _attackClip + UpperSuffix : _attackClip];
+                if (state == null || state.length <= 0f) return -1f;
+                return Mathf.Clamp01(state.time / state.length);
+            }
+        }
 
         /// <summary>Доля пройденного текущего клипа, 0..1 (у петли — внутри цикла).</summary>
         public float CurrentClipPhase
@@ -398,6 +425,7 @@ namespace RealmOfAshes.Game
             _vehicle = RoaVehicleView.Create(transform, baseUrl, itemId);
             _vehicle.VisualChanged += NotifyVisualChanged;
             _riding = true;
+            _dismountPending = true;
             _rideHasYaw = false;
             _ = RoaWeaponGrip.Ensure(baseUrl);
             SetHeldWeaponsStowed(true);
@@ -419,6 +447,7 @@ namespace RealmOfAshes.Game
             _vehicle = vehicle;
             _vehicle.VisualChanged += NotifyVisualChanged;
             _riding = true;
+            _dismountPending = true;
             _rideHasYaw = false;
             SetHeldWeaponsStowed(true);
             NotifyVisualChanged();
@@ -657,6 +686,19 @@ namespace RealmOfAshes.Game
             _attackUntil = Time.time + (_attackClip == "punch_cross" ? CrossSeconds : AttackSeconds);
             _alternateAttack = !_alternateAttack;
 
+            // На ходу ноги не встают: удар идёт верхним слоем, походка остаётся.
+            AnimationState upper = _locomoting ? UpperAttackState(_attackClip) : null;
+            if (upper != null)
+            {
+                _upperAttack = true;
+                upper.wrapMode = WrapMode.ClampForever;
+                upper.time = 0f;
+                upper.speed = 1f;
+                _animation.CrossFade(upper.name, 0.08f);
+                return;
+            }
+            FadeUpperAttack(0.08f);
+
             // Перезапуск с нуля: очередь выстрелов должна давать удар на каждый,
             // а не один растянутый.
             _currentClip = _attackClip;
@@ -664,6 +706,37 @@ namespace RealmOfAshes.Game
             _animation[_currentClip].time = 0f;
             _animation[_currentClip].speed = 1f;
             _animation.CrossFade(_attackClip, 0.08f);
+        }
+
+        /// <summary>
+        /// Копия клипа удара на слое 1, которая пишет только корпус, голову и руки
+        /// (всё ниже spine_01 — от походки). Создаётся при первом ударе на ходу.
+        /// </summary>
+        private AnimationState UpperAttackState(string clip)
+        {
+            if (_animation == null || !_clips.Contains(clip)) return null;
+            string name = clip + UpperSuffix;
+            AnimationState state = _animation[name];
+            if (state != null) return state;
+            if (!_bones.TryGetValue("spine_01", out Transform spine) || spine == null) return null;
+            AnimationClip source = _animation.GetClip(clip);
+            if (source == null) return null;
+            _animation.AddClip(source, name);
+            state = _animation[name];
+            state.layer = 1;
+            state.AddMixingTransform(spine, true);
+            return state;
+        }
+
+        private void FadeUpperAttack(float seconds)
+        {
+            _upperAttack = false;
+            if (_animation == null) return;
+            foreach (string clip in new[] { "attack", "punch_cross" })
+            {
+                AnimationState state = _animation[clip + UpperSuffix];
+                if (state != null && state.enabled) _animation.Blend(state.name, 0f, seconds);
+            }
         }
 
         /// <summary>Идёт ли действие на месте (добыча, еда, ящик).</summary>
@@ -805,6 +878,7 @@ namespace RealmOfAshes.Game
                 }
                 if (_riderWeight > 0f && _modelRoot != null) _modelRoot.localPosition = _modelRootRest;
                 _riding = false;
+                _dismountPending = false;
                 _riderWeight = 0f;
                 _rideYawRate = 0f;
                 _rideHasYaw = false;
@@ -1478,7 +1552,10 @@ namespace RealmOfAshes.Game
             if (locomoting && _presentationTier == RoaActorPresentationTier.Near)
                 _hurtUntil = 0f;
             bool hurt = Time.time < _hurtUntil && _clips.Contains("hurt");
-            bool attacking = Time.time < _attackUntil;
+            // Удар на ходу закончился — верхний слой плавно отдаёт руки походке.
+            if (_upperAttack && Time.time >= _attackUntil) FadeUpperAttack(0.2f);
+            // Верхний слой не останавливает походку: ноги идут своим клипом.
+            bool attacking = Time.time < _attackUntil && !_upperAttack;
             CombatPresentationPhase phase = ResolveCombatPresentationPhase(
                 false, hurt, attacking, locomoting);
             // Шаг прерывает действие на месте (добычу, еду, ящик).
@@ -1617,11 +1694,14 @@ namespace RealmOfAshes.Game
             bool vehicleAlive = _vehicle != null;
             float target = _riding && vehicleAlive && _vehicle.Ready ? 1f : 0f;
             _riderWeight = Mathf.MoveTowards(_riderWeight, target, dt / RiderBlendSeconds);
-            if (!_riding && _riderWeight <= 0.001f)
+            // Отпущенный транспорт уходит быстрее, чем снимается поза (LeaveSeconds <
+            // RiderBlendSeconds), и может удалить себя раньше: без него сидеть уже не на чем.
+            if (!_riding && (_riderWeight <= 0.001f || !vehicleAlive))
             {
                 // Седок спешился целиком: транспорт уже уезжает сам, оружие — в руки.
-                if (vehicleAlive || _riderWeight > 0f)
+                if (_dismountPending)
                 {
+                    _dismountPending = false;
                     _vehicle = null;
                     _riderWeight = 0f;
                     _rideYawRate = 0f;
@@ -1919,6 +1999,17 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void ApplyPunchDrive()
         {
+            if (_upperAttack)
+            {
+                // На ходу таз ведёт шаг: удар идёт от плеч — грудь доворачивается к удару.
+                float upperPhase = DebugPunchPhase;
+                if (upperPhase < 0f) return;
+                float upperDrive = Mathf.Sin(Mathf.Clamp01(upperPhase / 0.55f) * Mathf.PI);
+                float upperYaw = (_attackClip == "attack" ? 0.5f : -0.35f) * PunchHipYawDeg * upperDrive;
+                if (_bones.TryGetValue("spine_02", out Transform upperChest) && upperChest != null)
+                    upperChest.rotation = Quaternion.AngleAxis(upperYaw, transform.up) * upperChest.rotation;
+                return;
+            }
             bool jab = _currentClip == "attack", cross = _currentClip == "punch_cross";
             if ((!jab && !cross) || Time.time >= _attackUntil) return;
             if (!_bones.TryGetValue("pelvis", out Transform pelvis) || pelvis == null) return;

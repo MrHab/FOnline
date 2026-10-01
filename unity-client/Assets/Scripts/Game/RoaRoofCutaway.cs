@@ -111,6 +111,8 @@ namespace RealmOfAshes.Game
                         {
                             name = shared[m].name + " (roof cutaway)"
                         };
+                        // Зона грузится и в дождь: копия крыши начинает сухой, мочит её RoaWetSurfaces.
+                        RoaWetSurfaces.CopyDry(shared[m], owned[m]);
                         roof.Materials.Add(Capture(owned[m]));
                     }
                     renderer.sharedMaterials = owned;
@@ -331,16 +333,17 @@ namespace RealmOfAshes.Game
                 Material material = state.Material;
                 if (material == null) continue;
 
+                // Крыша меняет только прозрачность: цвет держит влажность (RoaWetSurfaces).
                 if (state.HasBaseColor)
                 {
-                    Color color = state.BaseColor;
-                    color.a = transparent ? Mathf.Min(color.a, opacity) : state.BaseColor.a;
+                    Color color = material.GetColor("_BaseColor");
+                    color.a = transparent ? Mathf.Min(state.BaseColor.a, opacity) : state.BaseColor.a;
                     material.SetColor("_BaseColor", color);
                 }
                 if (state.HasLegacyColor)
                 {
-                    Color color = state.LegacyColor;
-                    color.a = transparent ? Mathf.Min(color.a, opacity) : state.LegacyColor.a;
+                    Color color = material.GetColor("_Color");
+                    color.a = transparent ? Mathf.Min(state.LegacyColor.a, opacity) : state.LegacyColor.a;
                     material.SetColor("_Color", color);
                 }
 

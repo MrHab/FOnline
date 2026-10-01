@@ -7,8 +7,8 @@ using UnityEngine.UI;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Транспорт своего игрока. B (или кнопка «МОТО» на телефоне) вызывает надетый
-    /// в слот «Транспорт» мотоцикл или отпускает его. Решает сервер (vehicleAction):
+    /// Транспорт своего игрока. B (или кнопка «ЕХАТЬ» на телефоне) вызывает надетый
+    /// в слот «Транспорт» мопед, мотоцикл, пикап или грузовик или отпускает его. Решает сервер (vehicleAction):
     /// его ответ и событие playerVehicle сажают персонажа в седло и ссаживают —
     /// в том числе когда спешил сам сервер (удар, оглушение, снятый транспорт).
     /// </summary>
@@ -99,11 +99,15 @@ namespace RealmOfAshes.Game
                 velocity = _player.Velocity;
             }
             float load = riding ? Mathf.InverseLerp(0f, Mathf.Max(1f, _player.VehicleSpeed), velocity.magnitude) : 0f;
-            _audio?.SetEngine(riding, load, ground + Vector3.up * 0.5f);
+            _audio?.SetEngine(riding, load, ground + Vector3.up * 0.5f,
+                riding ? RoaAudio.EnginePitchFor(_player.VehicleKind) : 1f);
             if (!riding || _movementFx == null) return;
             Vector3 observer = _camera != null ? _camera.transform.position : ground;
+            RoaVehicleView vehicle = _player.View != null ? _player.View.Vehicle : null;
             _movementFx.TrackWheels(ref _wheelDust, ground, velocity, _player.Moving,
-                !RoaGameBootstrap.BlocksWorldHud, observer, RoaGroundPrints.TwinTrack(_player.VehicleItemId));
+                !RoaGameBootstrap.BlocksWorldHud, observer,
+                vehicle != null ? vehicle.RearWheelOffset : RoaMovementFx.RearWheelOffset,
+                RoaGroundPrints.TwinTrack(_player.VehicleItemId));
         }
 
         /// <summary>Сесть на транспорт или слезть с него. Ответ сервера применяется целиком.</summary>
@@ -113,7 +117,7 @@ namespace RealmOfAshes.Game
                 || _socket.Phase != RoaSocketClient.ConnectionPhase.Joined) return;
             if (!_player.Mounted && !HasVehicleEquipped)
             {
-                ShowStatus("Транспорта нет: наденьте мотоцикл в слот «Транспорт» (ПУТНИК → Персонаж).", 3f);
+                ShowStatus("Транспорта нет: наденьте его в слот «Транспорт» (ПУТНИК → Персонаж).", 3f);
                 return;
             }
             _pending = true;
@@ -137,7 +141,7 @@ namespace RealmOfAshes.Game
                 }
                 _player.ApplyVehicleState(ack["vehicle"] as JObject);
                 if (_player.Mounted)
-                    ShowStatus("W — газ, S — тормоз, руль — мышь или A/D. B — слезть.", 3.2f);
+                    ShowStatus("W — газ, S — тормоз, руль — мышь или A/D. B — выйти.", 3.2f);
             });
         }
 
@@ -149,13 +153,15 @@ namespace RealmOfAshes.Game
             _player.ApplyVehicleState(payload["vehicle"] as JObject);
             if (!wasMounted || _player.Mounted) return;
             string reason = payload["reason"]?.ToString() ?? string.Empty;
-            if (reason == "hit") ShowStatus("Удар выбил вас из седла.", 2.4f);
-            else if (reason == "stunned") ShowStatus("Оглушение сбросило вас с мотоцикла.", 2.4f);
-            else if (reason == "unequipped") ShowStatus("Мотоцикл снят со слота «Транспорт».", 2.2f);
+            if (reason == "hit") ShowStatus("Удар высадил вас из транспорта.", 2.4f);
+            else if (reason == "stunned") ShowStatus("Оглушение выбросило вас из транспорта.", 2.4f);
+            else if (reason == "unequipped") ShowStatus("Транспорт снят со слота «Транспорт».", 2.2f);
         }
 
         private void SyncView()
         {
+            // Кузов везёт груз, только пока игрок за рулём.
+            _inventory?.SetMountedVehicle(_player != null && _player.Mounted ? _player.VehicleItemId : string.Empty);
             if (_player == null || _player.View == null) return;
             _player.View.SetVehicle(_baseUrl, _player.Mounted ? _player.VehicleItemId : string.Empty);
         }

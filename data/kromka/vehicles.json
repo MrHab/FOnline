@@ -1,12 +1,68 @@
 {
-  "schema": "kromka.vehicles.v1",
-  "version": 1,
+  "schema": "kromka.vehicles.v2",
+  "version": 2,
+  "note": "Транспорт по тирам. itemId — группа предметов (tierGroup) из items.json, tiers — строка на каждый тир, в котором предмет существует. speed — полный газ, м/с (пешком около 4); acceleration — разгон, м/с²; turnStillDeg / turnFullDeg — разворот носа на месте и на полном ходу, град/с; reverseSpeed — задний ход, м/с; carryKg — сколько килограммов переносимого веса добавляет транспорт, пока игрок за рулём; hull — корпус в плане, м: длина, ширина и смещение его центра от водителя (offsetX — вправо, offsetZ — вперёд), по нему считаются столкновения; pivotX/pivotZ — ось поворота от водителя (у машин — задний мост, у двухколёсных — сам седок). Мопед — дешёвый T1; мотоцикл — самый быстрый, пикап — середина между скоростью и грузом, армейский грузовик — самый вместительный и неповоротливый.",
   "vehicles": [
+    {
+      "itemId": "moped",
+      "kind": "moped",
+      "acceleration": 13,
+      "turnStillDeg": 230,
+      "turnFullDeg": 150,
+      "reverseSpeed": 2.5,
+      "toggleCooldownMs": 700,
+      "hull": { "length": 1.95, "width": 0.7, "offsetX": 0, "offsetZ": 0.21 },
+      "tiers": [
+        { "tier": 1, "speed": 7.5, "carryKg": 10 }
+      ]
+    },
     {
       "itemId": "motorcycle",
       "kind": "motorcycle",
-      "speed": 11,
-      "toggleCooldownMs": 700
+      "acceleration": 22,
+      "turnStillDeg": 220,
+      "turnFullDeg": 120,
+      "reverseSpeed": 3.5,
+      "toggleCooldownMs": 700,
+      "hull": { "length": 2.4, "width": 0.8, "offsetX": 0, "offsetZ": 0.05 },
+      "tiers": [
+        { "tier": 2, "speed": 11, "carryKg": 15 },
+        { "tier": 3, "speed": 12, "carryKg": 18 },
+        { "tier": 4, "speed": 13, "carryKg": 21 },
+        { "tier": 5, "speed": 14, "carryKg": 25 }
+      ]
+    },
+    {
+      "itemId": "pickup",
+      "kind": "pickup",
+      "acceleration": 12,
+      "turnStillDeg": 140,
+      "turnFullDeg": 75,
+      "reverseSpeed": 4,
+      "toggleCooldownMs": 1200,
+      "hull": { "length": 5.8, "width": 2.4, "offsetX": 0.45, "offsetZ": -0.02, "pivotX": 0.44, "pivotZ": -1.49 },
+      "tiers": [
+        { "tier": 2, "speed": 9, "carryKg": 60 },
+        { "tier": 3, "speed": 9.8, "carryKg": 80 },
+        { "tier": 4, "speed": 10.6, "carryKg": 100 },
+        { "tier": 5, "speed": 11.4, "carryKg": 125 }
+      ]
+    },
+    {
+      "itemId": "armyTruck",
+      "kind": "truck",
+      "acceleration": 7,
+      "turnStillDeg": 100,
+      "turnFullDeg": 50,
+      "reverseSpeed": 3,
+      "toggleCooldownMs": 1500,
+      "hull": { "length": 8.1, "width": 2.5, "offsetX": 0.43, "offsetZ": -1.17, "pivotX": 0.43, "pivotZ": -3.38 },
+      "tiers": [
+        { "tier": 2, "speed": 7, "carryKg": 150 },
+        { "tier": 3, "speed": 7.6, "carryKg": 200 },
+        { "tier": 4, "speed": 8.2, "carryKg": 250 },
+        { "tier": 5, "speed": 8.8, "carryKg": 320 }
+      ]
     }
   ]
 }

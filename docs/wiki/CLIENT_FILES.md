@@ -64,6 +64,7 @@ WebGL-мост живёт в `Assets/Plugins/WebGL/RoaWebSocket.jslib`; прот
 | `RoaUnityLocationScene.cs`, `RoaUnityLocationObject.cs` | маркер авторской сцены локации и мост «id серверного объекта → объект сцены» |
 | `RoaSceneEnvironment.cs` | снимок освещения авторской сцены (ambient, туман, небо, солнце), применяемый к активной сцене |
 | `RoaLocalTerrain.cs` | земля из авторитетной `worldState.map`, рельеф, вода, физика тайлов и границы `playableBounds` |
+| `RoaGroundWater.cs` | где под ногой вода: лужи той же формулой, что в шейдере земли, и вода с карты сервера |
 | `RoaGroundDressing.cs` | процедурная растительность и разбивка однообразия земли |
 | `RoaWorldExitBoundary.cs` | край места: золотая полоса выхода в его зону мира или замкнутый пунктирный периметр |
 | `RoaEnvironmentPalette.cs` | палитра моделей окружения из `Resources` |
@@ -124,7 +125,8 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 `RoaWorldLighting` (день/ночь, авторские профили, погода и мокрая земля; `.Weather` —
 буря выброса поверх света часа), `RoaWeather` (снимок погоды сервера), `RoaRainFx`
 (струи, круги, молнии), `RoaGroundTextures` (наборы земли по пресету грунта для шейдера
-`Kromka Ground`), `RoaGroundPrints` (следы шагов и колёс на карте вокруг камеры), `RoaFogOfWar`,
+`Kromka Ground`), `RoaGroundPrints` (следы шагов и колёс на карте вокруг камеры),
+`RoaWetSurfaces` (мокрые предметы и персонажи в дождь), `RoaFogOfWar`,
 `RoaAuthoredVision`, `RoaVisibilityGate`, `RoaRoofCutaway`, `RoaMinimap`.
 Подробнее: [камера и видимость](CAMERA_AND_VISION.md).
 

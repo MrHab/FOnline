@@ -53,6 +53,22 @@ namespace RealmOfAshes.World
         /// <summary>Земля нарисована шейдером Kromka Ground (бесшовные наборы по пресету грунта).</summary>
         public bool UsesGroundTextures { get { return _material != null && _material.HasProperty(SurfaceMaskId); } }
         public Texture2D SurfaceMaskTexture { get { return _surfaceMask; } }
+
+        /// <summary>
+        /// Маска поверхности в точке мира — то, что читает шейдер земли: R — тропа, G — гарь,
+        /// B — вода. Вне площадки и без маски — пусто.
+        /// </summary>
+        public Color SurfaceAt(Vector3 world)
+        {
+            if (_surfaceMask == null || !_surfaceMask.isReadable || _visualWidth <= 0f || _visualDepth <= 0f) return Color.clear;
+            float u = world.x / _visualWidth + 0.5f;
+            float v = world.z / _visualDepth + 0.5f;
+            if (u < 0f || u > 1f || v < 0f || v > 1f) return Color.clear;
+            // Маска авторской земли отражена вслед за развёрткой куба (MirrorPixels).
+            if (_mirrorAlbedoX) u = 1f - u;
+            if (_mirrorAlbedoZ) v = 1f - v;
+            return _surfaceMask.GetPixelBilinear(u, v);
+        }
         public int PathConnectionCount { get; private set; }
         public bool UsesAuthoredEnvironment { get { return _groundDressing != null && _groundDressing.UsesAuthoredPrefabs; } }
         public int AuthoredEnvironmentPrefabCount { get { return _groundDressing != null ? _groundDressing.AuthoredPrefabCount : 0; } }

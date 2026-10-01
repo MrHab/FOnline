@@ -141,6 +141,9 @@ namespace RealmOfAshes.Game
         {
             if (remote?.View == null) return;
             remote.View.SetVehicle(BaseUrl, RemoteVehicleItemId(remote));
+            // Чужая машина твёрдая: сквозь её кузов не пройти и не проехать.
+            if (remote.View.Riding && remote.View.Vehicle != null)
+                remote.View.Vehicle.SetSolidHull(RoaVehicleCatalog.Hull.Parse(remote.Player?.Vehicle?["hull"] as JObject));
         }
 
         private static string RemoteVehicleItemId(Remote remote)
@@ -748,8 +751,10 @@ namespace RealmOfAshes.Game
                 // Седок не шагает: вместо шагов пыль из-под колёс — без звука шагов.
                 if (_movementFx != null && riding)
                 {
+                    RoaVehicleView vehicle = remote.View != null ? remote.View.Vehicle : null;
                     _movementFx.TrackWheels(ref remote.StepFx, t.position, remote.PresentationVelocity,
                         remote.PresentationMoving, presentationVisible, observer,
+                        vehicle != null ? vehicle.RearWheelOffset : RoaMovementFx.RearWheelOffset,
                         RoaGroundPrints.TwinTrack(RemoteVehicleItemId(remote)));
                 }
                 else if (_movementFx != null)

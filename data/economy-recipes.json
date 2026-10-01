@@ -563,6 +563,39 @@
         "electronics": 8,
         "oil": 6
       }
+    },
+    "moped": {
+      "station": "repair_bench",
+      "workHours": 16,
+      "outputQty": 1,
+      "inputs": {
+        "scrap": 14,
+        "ore": 4,
+        "electronics": 2,
+        "oil": 3
+      }
+    },
+    "pickup": {
+      "station": "repair_bench",
+      "workHours": 52,
+      "outputQty": 1,
+      "inputs": {
+        "scrap": 48,
+        "ore": 18,
+        "electronics": 10,
+        "oil": 9
+      }
+    },
+    "armyTruck": {
+      "station": "repair_bench",
+      "workHours": 70,
+      "outputQty": 1,
+      "inputs": {
+        "scrap": 70,
+        "ore": 26,
+        "electronics": 12,
+        "oil": 12
+      }
     }
   }
 }

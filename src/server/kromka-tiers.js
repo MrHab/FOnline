@@ -209,6 +209,21 @@ function materialItem(family, kind, tier, existing, basePrice) {
 }
 
 /**
+ * Тиры, в которых предмет существует: все пять или авторский диапазон tierRange
+ * [от, до] (мопед — только T1, грузовик — T2–T5). Авторский тир обязан в него входить.
+ */
+function itemTierRange(item = {}, authoredTier = 1) {
+  if (item.tierRange === undefined) return [1, TIER_COUNT];
+  const range = Array.isArray(item.tierRange) ? item.tierRange.map(Number) : [];
+  const [min, max] = range;
+  if (range.length !== 2 || !Number.isInteger(min) || !Number.isInteger(max)
+    || min < 1 || max > TIER_COUNT || min > max || authoredTier < min || authoredTier > max) {
+    throw new Error(`Kromka item ${item.id} has an invalid tierRange: ${JSON.stringify(item.tierRange)}`);
+  }
+  return [min, max];
+}
+
+/**
  * Разворачивает авторский каталог предметов: семейства материалов T1–T5 и
  * варианты оружия, брони и инструментов во всех тирах. Возвращает сырой каталог
  * той же схемы — его затем проверяет normalizeItemCatalog.
@@ -234,13 +249,15 @@ function expandItemCatalogSource(rawCatalog = {}, config) {
       continue;
     }
     const slots = Array.isArray(item.modificationSlots) ? item.modificationSlots : [];
-    for (let tier = 1; tier <= TIER_COUNT; tier += 1) {
+    const [minTier, maxTier] = itemTierRange(item, authoredTier);
+    const { tierRange: _tierRange, ...authored } = item;
+    for (let tier = minTier; tier <= maxTier; tier += 1) {
       const variantId = tierVariantId(id, tier, authoredTier);
       if (tier !== authoredTier && byId.has(variantId)) {
         throw new Error(`Kromka item ${variantId} collides with a generated tier variant`);
       }
       const variant = {
-        ...item,
+        ...authored,
         id: variantId,
         tier,
         tierGroup: id,
@@ -317,6 +334,8 @@ function expandFieldRecipeSource(rawRecipes = {}, itemIndex = {}, config) {
     const profession = professionForCraftLine(config, String(recipe.line || ''));
     if (!profession) throw new Error(`Kromka recipe ${recipe.id} has no craft line`);
     for (let tier = 1; tier <= TIER_COUNT; tier += 1) {
+      // Рецепт есть только у тех тиров, в которых существует сам предмет (tierRange).
+      if (!itemIndex[tierVariantId(output.tierGroup, tier, authoredTier)]) continue;
       const inputs = {};
       for (const [key, qty] of Object.entries(recipe.inputs || {})) {
         let itemId = key;

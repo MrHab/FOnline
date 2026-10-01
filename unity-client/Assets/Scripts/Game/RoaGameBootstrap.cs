@@ -79,6 +79,7 @@ namespace RealmOfAshes.Game
         public RoaMovementFx MovementFx;
         public RoaWeather Weather;
         public RoaGroundPrints GroundPrints;
+        public RoaWetSurfaces WetSurfaces;
         public RoaAnomalyFieldRenderer Anomalies;
         public RoaSettlementLifePresentation SettlementLifePresentation;
         public RoaBoltThrower BoltThrower;
@@ -244,6 +245,11 @@ namespace RealmOfAshes.Game
             GroundPrints.ViewCamera = Weather.ViewCamera;
             MovementFx.Prints = GroundPrints;
             Weather.Prints = GroundPrints;
+
+            // Мокрые предметы, растения и персонажи в дождь.
+            if (WetSurfaces == null) WetSurfaces = GetComponent<RoaWetSurfaces>();
+            if (WetSurfaces == null) WetSurfaces = gameObject.AddComponent<RoaWetSurfaces>();
+            Weather.WetSurfaces = WetSurfaces;
 
             if (Minimap == null) Minimap = GetComponent<RoaMinimap>();
             if (Minimap == null) Minimap = gameObject.AddComponent<RoaMinimap>();
@@ -640,6 +646,7 @@ namespace RealmOfAshes.Game
                     yield break;
                 }
                 RoaTierData.Apply(response["tiers"] as JObject);
+                RoaVehicleCatalog.Apply(response["vehicles"] as JArray);
                 JObject fieldRecipes = response["fieldRecipes"] as JObject;
                 if (!RoaCraftingData.ApplyCatalog(fieldRecipes, out catalogError))
                 {
@@ -1616,6 +1623,8 @@ namespace RealmOfAshes.Game
             }
             Weather?.SetActive(false);
             GroundPrints?.SetLocation(null, null);
+            RoaGroundWater.Terrain = null;
+            WetSurfaces?.SetLocalWorldActive(false);
             SettlementLifePresentation?.SetLocalWorldActive(false);
             Anomalies?.SetLocalWorldActive(false);
             if (Minimap != null)
@@ -1820,6 +1829,8 @@ namespace RealmOfAshes.Game
                 Lighting.SetLocalWorldActive(true);
             }
             GroundPrints?.SetLocation(ack.LocationId, location?.Ground?.Preset);
+            RoaGroundWater.Terrain = Loader.CurrentTerrain;
+            WetSurfaces?.SetLocalWorldActive(true);
             // Новая комната — сразу её погода, без перетекания из прошлой.
             Weather?.SetActive(true);
             Weather?.ApplyWorldState(ack.WorldState);

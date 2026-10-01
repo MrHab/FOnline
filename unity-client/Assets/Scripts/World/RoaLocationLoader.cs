@@ -51,6 +51,8 @@ namespace RealmOfAshes.World
             return !string.IsNullOrEmpty(id) && _objectEntries.TryGetValue(id, out entry) ? entry : null;
         }
         public Renderer CurrentGroundRenderer { get; private set; }
+        /// <summary>Земля текущей локации (маска троп и воды для луж под ногами); null — нет.</summary>
+        public RoaLocalTerrain CurrentTerrain { get { return _groundSurface; } }
         public bool IsLoading { get; private set; }
         /// <summary>Доля собранных объектов 0..1 и текущий шаг — для экрана загрузки (setLocationLoadingProgress web).</summary>
         public float Progress { get; private set; }

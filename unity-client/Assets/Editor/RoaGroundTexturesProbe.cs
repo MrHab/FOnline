@@ -192,8 +192,13 @@ namespace RealmOfAshes.EditorTools
             return Render(host, name, Output, 11.5f, Width, Height);
         }
 
-        /// <summary>Кадр клочка земли игровой камерой (55°, дистанция distance) в папку output.</summary>
-        internal static Shot Render(GameObject host, string name, string output, float distance, int width, int height)
+        /// <summary>
+        /// Кадр клочка земли игровой камерой (55°, дистанция distance) в папку output;
+        /// topDown — ортографически строго сверху, distance — половина стороны кадра в метрах
+        /// (верх кадра — +Z, право — +X).
+        /// </summary>
+        internal static Shot Render(GameObject host, string name, string output, float distance, int width, int height,
+                                    bool topDown = false)
         {
             foreach (Transform part in host.GetComponentsInChildren<Transform>(true))
                 part.gameObject.layer = CaptureLayer;
@@ -238,9 +243,15 @@ namespace RealmOfAshes.EditorTools
                 camera.fieldOfView = 52f;
                 camera.nearClipPlane = 0.1f;
                 camera.farClipPlane = 120f;
-                Quaternion orbit = Quaternion.Euler(55f, 45f, 0f);
+                Quaternion orbit = topDown ? Quaternion.Euler(90f, 0f, 0f) : Quaternion.Euler(55f, 45f, 0f);
                 cameraObject.transform.rotation = orbit;
-                cameraObject.transform.position = new Vector3(0f, 0f, 0f) - orbit * Vector3.forward * distance;
+                cameraObject.transform.position = new Vector3(0f, 0f, 0f) - orbit * Vector3.forward * (topDown ? 30f : distance);
+                if (topDown)
+                {
+                    camera.orthographic = true;
+                    camera.orthographicSize = distance;
+                    camera.aspect = width / (float)height;
+                }
 
                 target = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
                 target.Create();

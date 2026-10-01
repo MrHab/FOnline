@@ -48,6 +48,7 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaWeatherProbe),
             typeof(RoaGroundTexturesProbe),
             typeof(RoaGroundPrintsProbe),
+            typeof(RoaWetWeatherProbe),
             typeof(RoaCameraProbe),
             typeof(RoaModelPrefabCatalogProbe),
             typeof(RoaVisualCohesionProbe),

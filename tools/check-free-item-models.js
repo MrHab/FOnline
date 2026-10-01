@@ -77,9 +77,10 @@ async function main() {
   // Test the authoritative 79-item catalog, not only the frozen legacy subset.
   const existing = ground.slice(ground.indexOf('HashSet<string> LibraryItems'), ground.indexOf('private string _status'));
   const existingIds = new Set([...existing.matchAll(/"([A-Za-z0-9]+)"/g)].map(m => m[1]));
-  // Транспорт лежит на земле своей моделью из RoaVehicleCatalog; файлы проверяет check-ground-item-models.
+  // Транспорт лежит на земле своей моделью из RoaVehicleCatalog (GLB мотоцикла или префаб
+  // пакета по виду из таблицы Kinds); файлы и ссылки проверяет check-ground-item-models.
   const vehicleIds = new Set([...read('unity-client/Assets/Scripts/Game/RoaVehicleCatalog.cs')
-    .matchAll(/\{ "([A-Za-z0-9]+)", "[^"]+\.glb" \}/g)].map(m => m[1]));
+    .matchAll(/\{ "([A-Za-z0-9]+)", "[^"]+" \}/g)].map(m => m[1]));
   const apocalypseIds = new Set(apocalypseWeapons.map(row => row.itemId));
   for (const item of items) {
     if (item.id === 'fists') continue;

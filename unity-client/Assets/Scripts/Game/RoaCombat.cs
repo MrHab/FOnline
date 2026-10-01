@@ -607,7 +607,7 @@ namespace RealmOfAshes.Game
         {
             if (downed) return "Вы без сознания и не можете атаковать.";
             // Сервер отказывает седоку тем же текстом: руки держат руль.
-            if (mounted) return "Верхом не стреляют: B — слезть с мотоцикла.";
+            if (mounted) return "За рулём не стреляют: B — выйти из транспорта.";
             return string.Empty;
         }
 

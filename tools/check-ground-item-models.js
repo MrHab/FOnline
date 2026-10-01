@@ -152,6 +152,24 @@ assert(unityVehicleModels.size > 0, 'Unity не знает ни одной мо�
 for (const [itemId, url] of unityVehicleModels) {
   assert(fs.existsSync(path.join(ROOT, 'public', url.replace(/^\//, ''))), `${itemId}: нет GLB транспорта ${url}`);
 }
+// Транспорт без GLB (мопед, пикап, грузовик) лежит на земле и едет префабом пакета из
+// палитры PolygonApocalypseModels: ссылка обязана быть, а при установленном пакете — вести к префабу.
+const unityVehicleKinds = unityPairs(fs.readFileSync(UNITY_VEHICLE_CATALOG_SOURCE, 'utf8'), 'Kinds =');
+const PALETTE_FIELDS = { moped: 'moped', motorcycle: 'motorbike', pickup: 'pickupTruck', truck: 'armyTruck' };
+const palette = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Resources', 'RealmOfAshes',
+  'PolygonApocalypseModels.asset'), 'utf8');
+const vehiclePrefabDir = path.join(ROOT, 'unity-client', 'Assets', 'Synty', 'PolygonApocalypse', 'Prefabs', 'Vehicles');
+const vehiclePrefabGuids = fs.existsSync(vehiclePrefabDir)
+  ? new Set(fs.readdirSync(vehiclePrefabDir).filter(name => name.endsWith('.prefab.meta'))
+    .map(name => (fs.readFileSync(path.join(vehiclePrefabDir, name), 'utf8').match(/^guid: (\w+)/m) || [])[1]))
+  : null;
+for (const [itemId, kind] of unityVehicleKinds) {
+  const field = PALETTE_FIELDS[kind];
+  assert(field, `${itemId}: неизвестный вид транспорта ${kind}`);
+  const guid = (palette.match(new RegExp(`^  ${field}: \\{fileID: \\d+, guid: (\\w+)`, 'm')) || [])[1];
+  assert(guid || unityVehicleModels.has(itemId), `${itemId}: в палитре нет модели транспорта (${field})`);
+  if (guid && vehiclePrefabGuids) assert(vehiclePrefabGuids.has(guid), `${itemId}: палитра ссылается на отсутствующий префаб транспорта`);
+}
 
 const kromkaItems = JSON.parse(fs.readFileSync(KROMKA_ITEMS_FILE, 'utf8')).items || [];
 const apocalypseWeapons = JSON.parse(fs.readFileSync(APOCALYPSE_WEAPONS_FILE, 'utf8')).weapons || [];
@@ -168,7 +186,7 @@ for (const row of apocalypseWeapons) {
 const authoredIds = kromkaItems.map(item => String(item?.id || ''));
 const covered = new Set([
   ...EXPECTED_LIBRARY_IDS, ...WEAPON_IDS, ...EQUIPMENT_IDS, 'fists',
-  ...unityLibraryAliases.keys(), ...unityCatalogIds, ...unityVehicleModels.keys(),
+  ...unityLibraryAliases.keys(), ...unityCatalogIds, ...unityVehicleModels.keys(), ...unityVehicleKinds.keys(),
   ...apocalypseWeapons.map(row => row.itemId)
 ]);
 // Предмет с авторским visualId лежит на земле моделью другого предмета

@@ -51,7 +51,7 @@ namespace RealmOfAshes.Game
                 { "backpack", new HashSet<string>(new[] { "backpack" }) },
                 { "detector", new HashSet<string>(new[] { "artifactDetectorMk1", "artifactDetectorMk2", "artifactDetectorMk3" }) },
                 { "artifactBelt", new HashSet<string>(new[] { "artifactBelt2", "artifactBelt3", "artifactBelt4" }) },
-                { "vehicle", new HashSet<string>(new[] { "motorcycle" }) }
+                { "vehicle", new HashSet<string>(new[] { "moped", "motorcycle", "pickup", "armyTruck" }) }
             };
 
         private static readonly string[] SlotOrder = { "weapon", "offhand", "armor", "helmet", "boots", "backpack", "detector", "artifactBelt", "vehicle" };
@@ -296,6 +296,17 @@ namespace RealmOfAshes.Game
             RecalculateCarry();
         }
 
+        private string _mountedVehicleId = string.Empty;
+
+        /// <summary>Игрок сел за руль или вышел (RoaVehicleController): меняется грузоподъёмность.</summary>
+        public void SetMountedVehicle(string itemId)
+        {
+            itemId = itemId ?? string.Empty;
+            if (itemId == _mountedVehicleId) return;
+            _mountedVehicleId = itemId;
+            RecalculateCarry();
+        }
+
         private void RecalculateCarry()
         {
             float weight = 0f;
@@ -315,7 +326,9 @@ namespace RealmOfAshes.Game
             bool backpackEquipped = _equipment.TryGetValue("backpack", out backpack)
                 && BaseId(backpack) == "backpack";
             float artifactCarry = _self?["artifactEffects"]?["carryKg"]?.ToObject<float>() ?? 0f;
-            _carryCapacity = RoaItemData.CarryCapacity(strength, backpackEquipped) + artifactCarry;
+            // Груз везёт только транспорт, за рулём которого игрок сидит (serverCarryCapacity).
+            float vehicleCarry = string.IsNullOrEmpty(_mountedVehicleId) ? 0f : RoaVehicleCatalog.CarryKg(_mountedVehicleId);
+            _carryCapacity = RoaItemData.CarryCapacity(strength, backpackEquipped) + artifactCarry + vehicleCarry;
         }
 
         /// <summary>

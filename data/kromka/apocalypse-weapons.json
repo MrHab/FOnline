@@ -616,7 +616,7 @@
     {
       "itemId": "polygonAAGun01",
       "name": "Зенитная установка 01",
-      "prefab": "Weapons/Weapons/SM_Wep_AAGun_01",
+      "prefab": "Weapons/Weapons/SM_Wep_Veh_AA_01",
       "rigId": "machineGun",
       "combatId": "machineGun",
       "kind": "mounted",

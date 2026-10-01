@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Newtonsoft.Json.Linq;
+using RealmOfAshes.World;
 
 namespace RealmOfAshes.Game
 {
@@ -71,10 +72,15 @@ namespace RealmOfAshes.Game
         private AudioSource _thunderSource;
         private AudioClip _rainLoop;
         private AudioClip _thunder;
+        private AudioClip[] _wetSteps;
+        private AudioClip _splash;
+        private float _groundWet;
+        private float _groundMud;
         private float _rainIntensity;
         private bool _rainSheltered;
         private bool _engineRunning;
         private float _engineLoad;
+        private float _enginePitch = 1f;
         private float _engineStartedAt = -100f;
         private AudioClip _pistol;
         private AudioClip _rifle;
@@ -207,6 +213,30 @@ namespace RealmOfAshes.Game
         }
 
         public bool RainCueReady { get { return _rainLoop != null && _rain != null && _thunder != null; } }
+        public bool WetStepCueReady { get { return _wetSteps != null && _wetSteps.Length == 2 && _splash != null; } }
+        public int WetStepCount { get; private set; }
+        public int SplashCount { get; private set; }
+
+        /// <summary>
+        /// Земля по погоде (RoaWeather): по мокрой и грязной земле шаги хлюпают, в луже и
+        /// воде с карты — плещут.
+        /// </summary>
+        public void SetGround(float wetness, float mud)
+        {
+            _groundWet = Mathf.Clamp01(wetness);
+            _groundMud = Mathf.Clamp01(mud);
+        }
+
+        /// <summary>Доля хлюпа в шаге: с середины намокания и по грязи.</summary>
+        public float WetStepMix { get { return Mathf.Max(Mathf.Clamp01((_groundWet - 0.25f) / 0.5f), _groundMud); } }
+
+        /// <summary>Всплеск в точке мира: колесо или шаг в луже (не свой — свой играет UpdateFootsteps).</summary>
+        public void PlaySplash(Vector3 position, float volume)
+        {
+            if (_splash == null) return;
+            SplashCount++;
+            PlayWorld(_splash, position, Mathf.Clamp01(volume), Pitch(0.9f, 1.12f), 16f, false);
+        }
         public float RainVolume { get { return _rain != null ? _rain.volume : 0f; } }
 
         /// <summary>
@@ -251,13 +281,27 @@ namespace RealmOfAshes.Game
 
         /// <summary>
         /// Мотор своего транспорта. Вызывать каждый кадр: running — седок в седле,
-        /// load 0..1 — насколько быстро едет (выше обороты и громче).
+        /// load 0..1 — насколько быстро едет (выше обороты и громче), pitch — тон
+        /// мотора этого транспорта (EnginePitchFor): мопед звенит, грузовик басит.
         /// </summary>
-        public void SetEngine(bool running, float load, Vector3 position)
+        /// <summary>Тон мотора по виду транспорта: тот же двухцилиндровый цикл, другие обороты.</summary>
+        public static float EnginePitchFor(string kind)
+        {
+            switch (kind)
+            {
+                case "moped": return 1.3f;
+                case "pickup": return 0.8f;
+                case "truck": return 0.62f;
+                default: return 1f;
+            }
+        }
+
+        public void SetEngine(bool running, float load, Vector3 position, float pitch = 1f)
         {
             if (running && !_engineRunning) _engineStartedAt = Time.unscaledTime;
             _engineRunning = running;
             _engineLoad = Mathf.Clamp01(load);
+            _enginePitch = Mathf.Clamp(pitch, 0.4f, 2f);
             if (_engine != null) _engine.transform.position = position;
         }
 
@@ -269,14 +313,14 @@ namespace RealmOfAshes.Game
             float rev = Mathf.Clamp01(1f - (Time.unscaledTime - _engineStartedAt) / 0.55f);
             float load = Mathf.Max(_engineLoad, rev * 0.55f);
             float targetVolume = running ? Mathf.Lerp(0.11f, 0.24f, load) : 0f;
-            float targetPitch = Mathf.Lerp(0.82f, 1.85f, load);
+            float targetPitch = Mathf.Lerp(0.82f, 1.85f, load) * _enginePitch;
             _engine.volume = Mathf.MoveTowards(_engine.volume, targetVolume, dt * (running ? 0.9f : 0.6f));
             _engine.pitch = Mathf.MoveTowards(_engine.pitch, targetPitch, dt * 1.6f);
             if (running && !_engine.isPlaying)
             {
                 _engine.clip = _engineLoop;
                 _engine.loop = true;
-                _engine.pitch = 0.82f;
+                _engine.pitch = 0.82f * _enginePitch;
                 _engine.Play();
             }
             else if (!running && _engine.isPlaying && _engine.volume <= 0.001f)
@@ -312,8 +356,17 @@ namespace RealmOfAshes.Game
             float pace = Mathf.InverseLerp(1.2f, 6.5f, cue.Speed);
             float volume = cue.Crouching ? 0.055f : Mathf.Lerp(0.09f, 0.17f, pace);
             float noise = cue.NoiseMultiplier > 0f ? cue.NoiseMultiplier : 1f;
-            PlayWorld(_steps[index], cue.Position, volume * noise,
-                Pitch(0.92f, 1.07f) * (cue.Crouching ? 0.9f : 1f), 14f * noise, false);
+            float pitch = Pitch(0.92f, 1.07f) * (cue.Crouching ? 0.9f : 1f);
+            bool splash = _splash != null && RoaGroundWater.InWater(cue.Position);
+            float wet = splash ? 1f : WetStepMix;
+            PlayWorld(_steps[index], cue.Position, volume * noise * (1f - 0.65f * wet), pitch, 14f * noise, false);
+            if (wet > 0.02f && _wetSteps != null)
+            {
+                if (splash) SplashCount++;
+                else WetStepCount++;
+                PlayWorld(splash ? _splash : _wetSteps[index], cue.Position, volume * noise * (splash ? 1.3f : wet * 1.1f),
+                    pitch * (splash ? 1f : Mathf.Lerp(1f, 0.86f, _groundMud)), 14f * noise, false);
+            }
         }
 
         public void PlayShot(Vector3 start, Vector3 end, string weaponId)
@@ -503,7 +556,16 @@ namespace RealmOfAshes.Game
             _feet.pitch = Pitch(0.9f, 1.08f) * (_crouching ? 0.88f : 1f);
             _feet.volume = _crouching ? 0.18f : Mathf.Lerp(0.24f, 0.4f, Mathf.InverseLerp(1.5f, 6.5f, speed));
             _feet.volume *= _movementNoiseMultiplier;
-            _feet.PlayOneShot(_steps[index]);
+            // По мокрому шаг хлюпает, в луже и воде — плещет; сухой стук тише.
+            bool splash = _splash != null && RoaGroundWater.InWater(_playerPosition);
+            float wet = splash ? 1f : WetStepMix;
+            _feet.PlayOneShot(_steps[index], 1f - 0.65f * wet);
+            if (wet > 0.02f && _wetSteps != null)
+            {
+                if (splash) SplashCount++;
+                else WetStepCount++;
+                _feet.PlayOneShot(splash ? _splash : _wetSteps[index], splash ? 1.3f : wet * 1.1f);
+            }
 
             _rightFoot = !_rightFoot;
             Footstep?.Invoke(new FootstepCue
@@ -715,6 +777,8 @@ namespace RealmOfAshes.Game
             _levelUp = BuildActivitySignal("LevelUp", 0.78f,
                 new[] { 261.63f, 392f, 523.25f, 659.25f }, 0.014f, 0xc521u);
             _steps = new[] { BuildStep("StepA", 0x92a1u, 82f), BuildStep("StepB", 0x5c71u, 96f) };
+            _wetSteps = new[] { BuildWetStep("WetStepA", 0x3b17u, 310f), BuildWetStep("WetStepB", 0xe2a5u, 360f) };
+            _splash = BuildSplash();
             LoadWeaponPilotClips();
         }
 
@@ -973,6 +1037,57 @@ namespace RealmOfAshes.Game
                     * Mathf.Exp(-progress * 5.8f);
                 float sole = Mathf.Sin(Mathf.PI * 2f * hz * time) * 0.42f;
                 return Mathf.Clamp((dust * 0.68f + sole) * envelope, -0.78f, 0.78f);
+            });
+        }
+
+        /// <summary>
+        /// Шаг по мокрому: влажный шлепок (мягкий шум) и короткое чавканье — тон,
+        /// сползающий вниз и дрожащий пузырьками, плюс пара капель под конец.
+        /// </summary>
+        private AudioClip BuildWetStep(string name, uint seed, float hz)
+        {
+            uint state = seed;
+            float soft = 0f;
+            float phase = 0f;
+            return Mono(name, 0.24f, (sample, time, progress) =>
+            {
+                soft = Mathf.Lerp(soft, Noise(ref state), 0.22f);
+                float slap = Mathf.Exp(-time * 55f) * Mathf.Clamp01(time / 0.004f);
+                float suck = Mathf.Sin(Mathf.Clamp01(progress / 0.25f) * Mathf.PI * 0.5f) * Mathf.Exp(-progress * 4.2f);
+                phase += Mathf.PI * 2f * hz * (1f - 0.45f * progress) / SampleRate;
+                float bubble = 0.65f + 0.35f * Mathf.Sin(Mathf.PI * 2f * 38f * time);
+                float drops = Pulse(time, 0.13f, 0.008f) * 0.5f + Pulse(time, 0.175f, 0.006f) * 0.35f;
+                float tone = Mathf.Sin(phase) * bubble * suck * 0.45f;
+                float drip = Mathf.Sin(Mathf.PI * 2f * 2400f * time) * drops;
+                return Mathf.Clamp(soft * (slap * 0.9f + suck * 0.35f) + tone + drip * 0.3f, -0.8f, 0.8f);
+            });
+        }
+
+        /// <summary>
+        /// Всплеск в луже: удар по воде (яркий шум) и россыпь капель ещё треть секунды.
+        /// </summary>
+        private AudioClip BuildSplash()
+        {
+            uint state = 0x6d2bu;
+            float low = 0f;
+            float dropEnvelope = 0f;
+            float dropHz = 2200f;
+            float dropPhase = 0f;
+            return Mono("PuddleSplash", 0.42f, (sample, time, progress) =>
+            {
+                float white = Noise(ref state);
+                low = Mathf.Lerp(low, white, 0.35f);
+                float hit = Mathf.Exp(-time * 22f) * Mathf.Clamp01(time / 0.003f);
+                if (time > 0.02f && Noise(ref state) > 0.9975f)
+                {
+                    dropEnvelope = 0.4f + 0.6f * Mathf.Abs(Noise(ref state));
+                    dropHz = 1500f + 3000f * Mathf.Abs(Noise(ref state));
+                }
+                dropEnvelope *= 0.9975f;
+                dropPhase += Mathf.PI * 2f * dropHz / SampleRate;
+                float tail = Mathf.Exp(-progress * 3.5f);
+                float spray = (white - low) * hit * 0.9f + low * hit * 0.5f;
+                return Mathf.Clamp(spray + Mathf.Sin(dropPhase) * dropEnvelope * 0.28f * tail, -0.85f, 0.85f);
             });
         }
 

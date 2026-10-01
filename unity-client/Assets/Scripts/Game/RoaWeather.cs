@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using RealmOfAshes.World;
 using UnityEngine;
 
 namespace RealmOfAshes.Game
@@ -42,6 +43,7 @@ namespace RealmOfAshes.Game
         public RoaAudio Audio;
         public RoaMovementFx MovementFx;
         public RoaGroundPrints Prints;
+        public RoaWetSurfaces WetSurfaces;
         public RoaCombat Combat;
         public Camera ViewCamera;
 
@@ -228,6 +230,10 @@ namespace RealmOfAshes.Game
             Audio?.SetRain(_target.Valid ? _target.Rain : 0f, _target.Sheltered);
             MovementFx?.SetGround(Wetness, Mud);
             Prints?.SetConditions(Wetness, Mud, Rain);
+            Audio?.SetGround(Wetness, Mud);
+            RoaGroundWater.Puddles = Puddles;
+            // Предметы мокнут сразу под дождём и сохнут вместе с землёй.
+            WetSurfaces?.SetWetness(Mathf.Max(Rain, Wetness * 0.8f));
             EnsureRainFx();
             if (ViewCamera == null) ViewCamera = Camera.main;
             _rainFx.SetWeather(Rain, Wetness, _target.Wind, _target.WindSpeed, ViewCamera);

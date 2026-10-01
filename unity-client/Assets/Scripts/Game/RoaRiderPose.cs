@@ -92,15 +92,16 @@ namespace RealmOfAshes.Game
             if (bodyRoot != null) bodyRoot.position += shift;
             else _pelvis.position += shift;
 
-            // 2. Корпус к рулю, взгляд — на дорогу.
-            float lean = Mathf.Lerp(9f, 17f, Mathf.Clamp01(pace)) * weight;
+            // 2. Корпус к рулю, взгляд — на дорогу. В кабине водитель сидит почти
+            // прямо, опираясь на спинку: к рулю тянутся только руки.
+            float lean = (anchors.Cab ? 3f : Mathf.Lerp(9f, 17f, Mathf.Clamp01(pace))) * weight;
             Rotate(_spine1, right, lean * 0.5f);
             Rotate(_spine2, right, lean * 0.3f);
             Rotate(_spine3, right, lean * 0.2f);
             Rotate(_head, right, -lean * 0.6f);
 
             float reach = 0f;
-            // 3. Ноги на подножки: колени вперёд и чуть наружу, к бакам.
+            // 3. Ноги на подножки (в кабине — на педали): колени вперёд и чуть наружу, к бакам.
             // Стопа сохраняет плоский поворот клипа, кисть идёт продолжением предплечья.
             reach = Mathf.Max(reach, Limb(_thighL, _calfL, _footL, anchors.PegLeft + up * AnkleAbovePeg - forward * 0.04f,
                 forward * 0.7f - right * 0.3f + up * 0.25f, weight, true));

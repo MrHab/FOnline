@@ -90,10 +90,13 @@ const {
 const kromkaTiers = require('./src/server/kromka-tiers');
 const {
   normalizeVehicleCatalog,
+  vehicleHullCircles,
   vehicleForItem,
   vehicleMountRefusal,
   publicMountedVehicle,
   mountedVehicleState,
+  vehicleCarryKg,
+  publicVehicleCatalog,
   normalizeDismountReason
 } = require('./src/server/vehicles');
 const {
@@ -2208,7 +2211,8 @@ app.get('/api/kromka/items', (_, res) => {
     ok: true,
     catalog: publicItemCatalog(KROMKA_ITEM_CATALOG),
     fieldRecipes: publicFieldRecipeCatalog(KROMKA_FIELD_RECIPE_CATALOG),
-    tiers: kromkaTiers.publicTierConfig(KROMKA_TIER_CONFIG)
+    tiers: kromkaTiers.publicTierConfig(KROMKA_TIER_CONFIG),
+    vehicles: publicVehicleCatalog(KROMKA_VEHICLE_CATALOG)
   });
 });
 
@@ -8041,6 +8045,8 @@ function serverCarryCapacity(p = {}) {
   const backpackId = serverBaseItemId(p.equipment?.backpack || '');
   if (backpackId === 'backpack') capacity += 20;
   capacity += serverArtifactEffects(p).carryKg;
+  // Багажник, кузов и кунг везут груз, только пока игрок за рулём.
+  capacity += vehicleCarryKg(serverMountedVehicleDefinition(p));
   return Math.max(1, capacity);
 }
 
@@ -10691,6 +10697,15 @@ function serverApplyEquipmentAction(player = {}, data = {}, now = Date.now()) {
   if (rawItemRuntimeId && serverRuntimeItemKey(rawItemRuntimeId, desiredBaseId) !== rawItemRuntimeId) {
     return finish({ ok: false, error: 'Сервер: неверный id экземпляра экипировки.' });
   }
+  // Груз кузова держит только транспорт, за рулём которого сидит игрок. Сменить
+  // или снять его — значит выйти, поэтому с полным кузовом нельзя, как и выйти самому.
+  if (slot === 'vehicle' && player.mountedVehicle
+    && serverBaseItemId(rawItemRuntimeId) !== player.mountedVehicle.itemId) {
+    const overload = serverOnFootOverload(player);
+    if (overload) {
+      return finish({ ok: false, error: `Груз не унести пешком: ${overload.weight.toFixed(1)}/${overload.capacity.toFixed(1)} кг. Сначала разгрузите транспорт.` });
+    }
+  }
   const handSlot = SERVER_HAND_EQUIPMENT_SLOTS.includes(slot);
   const twoHanded = handSlot && equipmentIsTwoHandedWeapon(desiredBaseId, SERVER_WEAPONS);
   const targetSlot = slot === 'offhand' && twoHanded ? 'weapon' : slot;
@@ -10986,6 +11001,41 @@ function serverEquippedVehicle(p = {}) {
   return vehicleForItem(KROMKA_VEHICLE_CATALOG, serverBaseItemId(p.equipment?.vehicle || ''));
 }
 
+/** Перегруз, если бы игрок вышел из транспорта: { weight, capacity } или null. */
+function serverOnFootOverload(p = {}) {
+  const weight = serverPlayerInventoryWeight(p);
+  const capacity = serverCarryCapacity(p) - vehicleCarryKg(serverMountedVehicleDefinition(p));
+  return weight > capacity + 0.0001 ? { weight, capacity } : null;
+}
+
+/** Транспорт, за рулём которого игрок сидит сейчас; пешком — null. */
+function serverMountedVehicleDefinition(p = {}) {
+  return p?.mountedVehicle ? vehicleForItem(KROMKA_VEHICLE_CATALOG, p.mountedVehicle.itemId) : null;
+}
+
+/**
+ * Насколько корпус транспорта в позе (x, z, angle) влезает в препятствия, м:
+ * стены и предметы комнаты, врагов и НПС, непроходимые тайлы и край закрытой
+ * локации. Ноль — корпус свободен. Корпус — цепочка кругов (vehicleHullCircles).
+ */
+function serverVehicleHullPenalty(room, p = {}, hull = null, x = 0, z = 0, angle = 0) {
+  if (!room || !hull) return 0;
+  const edge = serverClosedLocationMovementBounds(p, room, 0);
+  let penalty = 0;
+  for (const circle of vehicleHullCircles(hull, x, z, angle, PLAYER_COLLISION_RADIUS)) {
+    if (edge) {
+      penalty = Math.max(penalty,
+        edge.minX - (circle.x - circle.r), circle.x + circle.r - edge.maxX,
+        edge.minZ - (circle.z - circle.r), circle.z + circle.r - edge.maxZ);
+    }
+    if (!isRoomTerrainWalkableWorld(room, circle.x, circle.z, circle.r)) penalty = Math.max(penalty, circle.r);
+    penalty = Math.max(penalty,
+      roomStaticCollisionPenaltyAt(room, circle.x, circle.z, circle.r),
+      roomEnemyCollisionPenalty(room, circle.x, circle.z, circle.r));
+  }
+  return Math.max(0, penalty);
+}
+
 function serverEmitPlayerVehicle(p = {}, reason = '') {
   if (!p?.id || !p.roomId) return;
   // Всей комнате, включая самого седока: спешить его может и сервер (удар, оглушение).
@@ -11077,22 +11127,45 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
       * Number(room?.weather?.effects?.moveSpeedMultiplier ?? 1);
   const maxDistance = speedLimit * elapsed * 1.35 + 0.22;
   const scale = distance > maxDistance && distance > 0 ? maxDistance / distance : 1;
-  const moveAllowed = (toX, toZ) => !room || (
-    (!closedBounds || serverPointInsideClosedLocationBounds(toX, toZ, closedBounds))
-    && isRoomTerrainWalkableWorld(room, toX, toZ, PLAYER_COLLISION_RADIUS)
-    && roomStaticCollisionMoveAllowed(room, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS)
-    && roomEnemyCollisionMoveAllowed(room, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS)
-  );
+  // За рулём сталкивается весь корпус транспорта, а не капсула водителя. Поза
+  // (положение и угол) проверяется целиком: машина поворачивает вокруг заднего
+  // моста, и клиент сдвигает водителя вместе с поворотом. Годится поза, в которой
+  // корпус свободен или выходит из препятствия; если с новым углом не выходит,
+  // тот же ход пробуется без поворота — угол остаётся прежним.
+  const hull = room ? player.mountedVehicle?.hull || null : null;
+  const previousAngle = Number.isFinite(Number(player.angle)) ? Number(player.angle) : 0;
+  let angle = Number.isFinite(Number(data.angle)) ? Number(data.angle) : previousAngle;
+  const hullBefore = hull ? serverVehicleHullPenalty(room, player, hull, fromX, fromZ, previousAngle) : 0;
+  const poseAllowed = (toX, toZ, poseAngle) => {
+    const next = serverVehicleHullPenalty(room, player, hull, toX, toZ, poseAngle);
+    return next <= 0.001 || (hullBefore > 0.001 && next < hullBefore - 0.0005);
+  };
+  const moveAllowed = (toX, toZ) => {
+    if (!room) return true;
+    if (hull) return poseAllowed(toX, toZ, angle);
+    return (!closedBounds || serverPointInsideClosedLocationBounds(toX, toZ, closedBounds))
+      && isRoomTerrainWalkableWorld(room, toX, toZ, PLAYER_COLLISION_RADIUS)
+      && roomStaticCollisionMoveAllowed(room, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS)
+      && roomEnemyCollisionMoveAllowed(room, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS);
+  };
   // Прижатие к стене или НПС — не читерство. Полный отказ здесь оборачивался
   // movementCorrection на каждое касание, и клиента «откидывало» телепортом.
   // Вместо отказа скользим по осям — так же гасит ход CharacterController.
-  let nextX = fromX + dx * scale;
-  let nextZ = fromZ + dz * scale;
-  if (!moveAllowed(nextX, nextZ)) {
-    if (moveAllowed(nextX, fromZ)) nextZ = fromZ;
-    else if (moveAllowed(fromX, nextZ)) nextX = fromX;
-    else { nextX = fromX; nextZ = fromZ; }
+  const targetX = fromX + dx * scale;
+  const targetZ = fromZ + dz * scale;
+  const resolve = () => {
+    if (moveAllowed(targetX, targetZ)) return [targetX, targetZ];
+    if (moveAllowed(targetX, fromZ)) return [targetX, fromZ];
+    if (moveAllowed(fromX, targetZ)) return [fromX, targetZ];
+    return null;
+  };
+  let resolved = resolve();
+  if (!resolved && hull && angle !== previousAngle) {
+    angle = previousAngle;
+    resolved = resolve();
   }
+  if (!resolved && hull) angle = previousAngle;
+  const [nextX, nextZ] = resolved || [fromX, fromZ];
   player.x = clamp(nextX, -worldExtent, worldExtent);
   player.z = clamp(nextZ, -worldExtent, worldExtent);
   // Телепорт-коррекцию клиенту шлём только при реальном расхождении: щель в
@@ -11103,7 +11176,11 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
     clamp(proposedZ, -worldExtent, worldExtent) - player.z
   );
   const moved = Math.hypot(player.x - fromX, player.z - fromZ) > 0.0001;
-  return { accepted: moved || divergence <= 0.001 || boundaryCorrected, corrected: boundaryCorrected || divergence > 0.6 };
+  return {
+    accepted: moved || divergence <= 0.001 || boundaryCorrected,
+    corrected: boundaryCorrected || divergence > 0.6,
+    angle
+  };
 }
 
 function sanitizeServerLocationContext(input = {}, fallbackLocationId = '') {
@@ -12939,7 +13016,7 @@ function serverCombatAcksForPlayer(p = {}, now = Date.now()) {
 }
 
 // Руки седока держат руль: верхом не стреляют и не бьют.
-const VEHICLE_ATTACK_REFUSAL = 'Верхом не стреляют: B — слезть с мотоцикла.';
+const VEHICLE_ATTACK_REFUSAL = 'За рулём не стреляют: B — выйти из транспорта.';
 
 function serverResolvePlayerAttackPlan(p = {}, data = {}, now = Date.now()) {
   if (p.mountedVehicle) return { ok: false, error: VEHICLE_ATTACK_REFUSAL };
@@ -15147,10 +15224,17 @@ function roomPlayerCollisionMoveAllowed(room, enemy, nextX, nextZ) {
   const actorRadius = enemyBodyRadius(enemy);
   for (const player of roomPlayers) {
     if (!player || player.dead || Number(player.hp || 0) <= 0) continue;
-    if (!actorCircleMoveAllowed(
-      enemy.x, enemy.z, nextX, nextZ, actorRadius,
-      player.x, player.z, PLAYER_COLLISION_RADIUS, 0.08
-    )) return false;
+    // Игрок за рулём загораживает весь корпус транспорта, а не только себя.
+    const hull = player.mountedVehicle?.hull;
+    const bodies = hull
+      ? vehicleHullCircles(hull, player.x, player.z, player.angle, PLAYER_COLLISION_RADIUS)
+      : [{ x: player.x, z: player.z, r: PLAYER_COLLISION_RADIUS }];
+    for (const body of bodies) {
+      if (!actorCircleMoveAllowed(
+        enemy.x, enemy.z, nextX, nextZ, actorRadius,
+        body.x, body.z, body.r, 0.08
+      )) return false;
+    }
   }
   return true;
 }
@@ -30117,7 +30201,9 @@ io.on('connection', (socket) => {
       }
       if (movementResult.corrected) realtimeNetworkMetrics.movementPacketsCorrected++;
       hardMovementApplied = true;
-      p.angle = Number.isFinite(Number(data.angle)) ? Number(data.angle) : p.angle;
+      // Угол решает serverApplyMovementProposal: корпус машины не поворачивают в стену.
+      p.angle = Number.isFinite(movementResult.angle) ? movementResult.angle
+        : Number.isFinite(Number(data.angle)) ? Number(data.angle) : p.angle;
       if (typeof data.crouching !== 'undefined') p.crouching = !!data.crouching;
       if (typeof data.moving !== 'undefined') p.moving = !!data.moving && !p.dead && !p.downed && !isArtifactStunned(p, stateReceivedAt);
       if (typeof data.turning !== 'undefined') p.turning = !!data.turning;
@@ -30280,17 +30366,32 @@ io.on('connection', (socket) => {
     const requested = String(data.action || 'toggle');
     const mount = requested === 'mount' || (requested !== 'dismount' && !p.mountedVehicle);
     if (!mount) {
+      // Груз кузова пешком не унести: сам игрок выходит, только разгрузившись.
+      // Удар, оглушение и потеря сознания высаживают и с грузом.
+      const overload = serverOnFootOverload(p);
+      if (p.mountedVehicle && overload) {
+        return reply({
+          ok: false,
+          mounted: true,
+          vehicle: publicMountedVehicle(p.mountedVehicle),
+          error: `Груз не унести пешком: ${overload.weight.toFixed(1)}/${overload.capacity.toFixed(1)} кг. Разгрузитесь, не выходя из транспорта.`
+        });
+      }
       serverDismountVehicle(p, 'request', now);
       return reply({ ok: true, mounted: false, vehicle: null });
     }
     if (p.mountedVehicle) return reply({ ok: true, mounted: true, vehicle: publicMountedVehicle(p.mountedVehicle) });
     const vehicle = serverEquippedVehicle(p);
+    const mountRoom = p.roomId && !p.onGlobalMap ? rooms.get(p.roomId) : null;
     const refusal = vehicleMountRefusal({
       vehicle,
       dead: !!p.dead || Number(p.hp || 0) <= 0,
       downed: !!p.downed,
       stunned: isArtifactStunned(p, now),
       inRoom: !!p.roomId && !p.onGlobalMap,
+      // Корпус вызванного транспорта не должен стоять в стене, укрытии или враге.
+      blocked: !!vehicle && serverVehicleHullPenalty(mountRoom, p, vehicle.hull,
+        Number(p.x || 0), Number(p.z || 0), Number(p.angle || 0)) > 0.001,
       lastToggleAt: p.vehicleToggledAt,
       now
     });

@@ -17,6 +17,16 @@ const recipes = fieldRecipeCatalogIndexes(recipeCatalog).byId;
 const T = tiers.TIER_COUNT;
 
 // --- каталог: каждая группа снаряжения есть во всех пяти тирах -----------------------------
+// или ровно в авторском диапазоне tierRange (транспорт: мопед T1, грузовик T2–T5).
+const authoredRanges = new Map(require(path.join(ROOT, 'data/kromka/items.json')).items
+  .filter(item => Array.isArray(item.tierRange))
+  .map(item => [item.id, item.tierRange]));
+const expectedTiers = group => {
+  const [min, max] = authoredRanges.get(group) || [1, T];
+  return Array.from({ length: max - min + 1 }, (_, i) => min + i);
+};
+assert(authoredRanges.size > 0 && [...authoredRanges.keys()].every(id => items[id]?.slot === 'vehicle'),
+  'only vehicles narrow their tier range');
 const groups = new Map();
 for (const item of itemCatalog.items) {
   if (!item.tierGroup) continue;
@@ -26,9 +36,9 @@ for (const item of itemCatalog.items) {
 let equipmentGroups = 0;
 for (const [group, rows] of groups) {
   const byTier = rows.map(row => row.tier).sort();
-  assert.deepEqual(byTier, [1, 2, 3, 4, 5], `${group}: must exist in every tier, got ${byTier}`);
+  assert.deepEqual(byTier, expectedTiers(group), `${group}: must exist in its tiers, got ${byTier}`);
   const sorted = [...rows].sort((a, b) => a.tier - b.tier);
-  for (let i = 1; i < T; i += 1) {
+  for (let i = 1; i < sorted.length; i += 1) {
     assert(sorted[i].basePrice > sorted[i - 1].basePrice, `${group}: T${i + 1} must cost more than T${i}`);
     assert.equal(sorted[i].weight, sorted[i - 1].weight, `${group}: tiers must weigh the same`);
     assert.equal(sorted[i].category, sorted[0].category, `${group}: tiers share the category`);

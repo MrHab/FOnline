@@ -1,4 +1,5 @@
 using System;
+using RealmOfAshes.World;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -44,6 +45,7 @@ namespace RealmOfAshes.Game
 
         private const int PuffCapacityValue = 96;
         private const int ScuffCapacityValue = 24;
+        private const int RingCapacityValue = 16;
         private const int DustTextureSizeValue = 64;
         private const float PuffLiftMin = 0.16f;
         private const float PuffLiftMax = 0.58f;
@@ -54,9 +56,12 @@ namespace RealmOfAshes.Game
         private RoaAudio _audio;
         private ParticleSystem _puffs;
         private ParticleSystem _scuffs;
+        private ParticleSystem _rings;
         private Material _puffMaterial;
         private Material _scuffMaterial;
+        private Material _ringMaterial;
         private Texture2D _softParticle;
+        private Texture2D _ringTexture;
         private uint _randomState = 0x9e3779b9u;
         private float _wetness;
         private float _mud;
@@ -74,6 +79,9 @@ namespace RealmOfAshes.Game
 
         public float GroundWetness { get { return _wetness; } }
         public float GroundMud { get { return _mud; } }
+        /// <summary>Сколько шагов и колёс попало в лужу или воду (фонтанчик и круг на воде).</summary>
+        public int PuddleSplashCount { get; private set; }
+        public int RingCapacity { get { return _rings != null ? _rings.main.maxParticles : 0; } }
 
         /// <summary>
         /// Состояние земли по погоде (RoaWeather): мокрая земля не пылит, из-под
@@ -105,10 +113,14 @@ namespace RealmOfAshes.Game
             _audio = null;
             Dispose(_puffMaterial);
             Dispose(_scuffMaterial);
+            Dispose(_ringMaterial);
             Dispose(_softParticle);
+            Dispose(_ringTexture);
             _puffMaterial = null;
             _scuffMaterial = null;
+            _ringMaterial = null;
             _softParticle = null;
+            _ringTexture = null;
         }
 
         public static EmissionPlan PlanFor(float speed, bool crouching, bool mobile)
@@ -209,24 +221,26 @@ namespace RealmOfAshes.Game
 
         /// <summary>
         /// Пыль из-под заднего колеса седока вместо шагов: тот же пул частиц, без
-        /// звука шагов. position — земля под седоком. true — пыль выпущена.
+        /// звука шагов. position — земля под седоком, rearOffset — сколько метров
+        /// назад до заднего моста (RoaVehicleView.RearWheelOffset). true — пыль выпущена.
         /// </summary>
         public bool TrackWheels(ref ActorStepState state, Vector3 position, Vector3 velocity,
-                                bool moving, bool visible, Vector3 observerPosition, bool twinTrack = false)
+                                bool moving, bool visible, Vector3 observerPosition, float rearOffset = RearWheelOffset,
+                                bool twinTrack = false)
         {
             velocity.y = 0f;
             float speed = velocity.magnitude;
             float now = Time.unscaledTime;
             bool inRange = visible && moving && IsActorFxInRange(position, observerPosition, Application.isMobilePlatform);
-            Prints?.TrackWheels(ref state.PrintWheels, position, velocity, inRange, twinTrack);
+            Prints?.TrackWheels(ref state.PrintWheels, position, velocity, inRange, twinTrack, rearOffset);
             bool active = inRange && speed > 1.2f;
             if (!active || now < state.NextStepAt) return false;
             state.NextStepAt = now + Mathf.Lerp(0.16f, 0.07f, Mathf.InverseLerp(1.2f, 11f, speed));
-            EmitWheelDust(position, velocity);
+            EmitWheelDust(position, velocity, rearOffset);
             return true;
         }
 
-        public void EmitWheelDust(Vector3 position, Vector3 velocity)
+        public void EmitWheelDust(Vector3 position, Vector3 velocity, float rearOffset = RearWheelOffset)
         {
             if (!isActiveAndEnabled) return;
             EnsureSystems();
@@ -236,8 +250,20 @@ namespace RealmOfAshes.Game
             Vector3 forward = speed > 0.01f ? velocity / speed : Vector3.forward;
             Vector3 side = Vector3.Cross(Vector3.up, forward).normalized;
             float pace = Mathf.InverseLerp(1.2f, 11f, speed);
-            Vector3 origin = position - forward * RearWheelOffset + Vector3.up * 0.02f;
-            int count = Application.isMobilePlatform ? 1 : 2;
+            Vector3 origin = position - forward * rearOffset + Vector3.up * 0.02f;
+            // Колесо в луже или воде с карты — веер воды и всплеск вместо пыли.
+            if (RoaGroundWater.InWater(origin))
+            {
+                PuddleSplashCount++;
+                EmitWaterSpray(origin, forward, side, Mathf.Lerp(3f, 7f, pace), Mathf.Lerp(0.8f, 2.2f, pace), 0.2f);
+                EmitRing(origin, Mathf.Lerp(0.5f, 0.9f, pace));
+                _audio?.PlaySplash(origin, Mathf.Lerp(0.28f, 0.5f, pace));
+                return;
+            }
+            // Мокрая земля не пылит: вместо пыли — мелкие брызги из-под шины.
+            float dryWheel = 1f - _wetness;
+            if (_wetness > 0.35f) EmitWaterSpray(origin, forward, side, 1f, Mathf.Lerp(0.4f, 1.1f, pace), 0.1f);
+            int count = Mathf.RoundToInt((Application.isMobilePlatform ? 1 : 2) * dryWheel * dryWheel);
             for (int i = 0; i < count; i++)
             {
                 float alpha = Mathf.Lerp(0.30f, 0.52f, pace);
@@ -283,6 +309,15 @@ namespace RealmOfAshes.Game
             float dry = 1f - _wetness;
             int dustCount = Mathf.RoundToInt(plan.PuffCount * dry * dry);
             int splashCount = _wetness > 0.35f && !cue.Crouching ? Mathf.Max(1, plan.PuffCount / 2) : 0;
+            // Шаг в лужу или в воду с карты: фонтанчик брызг и круг по воде, пыли и следа нет.
+            if (RoaGroundWater.InWater(origin))
+            {
+                PuddleSplashCount++;
+                EmitWaterSpray(origin, forward, side, cue.Crouching ? 2f : Mathf.Lerp(3f, 6f, pace),
+                    Mathf.Lerp(0.5f, 1.3f, pace), 0.13f);
+                EmitRing(origin, Mathf.Lerp(0.32f, 0.5f, pace));
+                return;
+            }
 
             for (int i = 0; i < dustCount; i++)
             {
@@ -346,12 +381,93 @@ namespace RealmOfAshes.Game
         {
             if (Ready) return;
             _softParticle = CreateSoftParticle();
+            _ringTexture = CreateRingTexture();
             _puffMaterial = CreateParticleMaterial("MovementDustPuffMaterial", _softParticle);
             _scuffMaterial = CreateParticleMaterial("MovementDustScuffMaterial", _softParticle);
+            _ringMaterial = CreateParticleMaterial("MovementPuddleRingMaterial", _ringTexture);
             _puffs = CreateSystem("MovementDustPuffs", PuffCapacityValue,
                 ParticleSystemRenderMode.Billboard, _puffMaterial, PuffGradient(), PuffSizeCurve());
             _scuffs = CreateSystem("MovementGroundScuffs", ScuffCapacityValue,
                 ParticleSystemRenderMode.HorizontalBillboard, _scuffMaterial, ScuffGradient(), ScuffSizeCurve());
+            _rings = CreateSystem("MovementPuddleRings", RingCapacityValue,
+                ParticleSystemRenderMode.HorizontalBillboard, _ringMaterial, RingGradient(), RingSizeCurve());
+            var ringMain = _rings.main;
+            ringMain.gravityModifier = 0f;
+        }
+
+        /// <summary>Брызги воды: count капель вверх и в стороны, speed — сила удара.</summary>
+        private void EmitWaterSpray(Vector3 origin, Vector3 forward, Vector3 side, float count, float speed, float size)
+        {
+            if (_puffs == null) return;
+            int drops = Mathf.Max(1, Mathf.RoundToInt(count * (Application.isMobilePlatform ? 0.6f : 1f)));
+            for (int i = 0; i < drops; i++)
+            {
+                var drop = new ParticleSystem.EmitParams
+                {
+                    position = origin + side * SignedRandom() * 0.08f + forward * SignedRandom() * 0.05f,
+                    velocity = side * SignedRandom() * speed * 0.6f - forward * speed * 0.35f * Next01()
+                        + Vector3.up * speed * Mathf.Lerp(0.8f, 1.4f, Next01()),
+                    startLifetime = Mathf.Lerp(0.22f, 0.38f, Next01()),
+                    startSize = size * Mathf.Lerp(0.6f, 1.2f, Next01()),
+                    rotation = SignedRandom() * 180f,
+                    startColor = new Color(0.74f, 0.78f, 0.8f, 0.62f)
+                };
+                _puffs.Emit(drop, 1);
+            }
+        }
+
+        /// <summary>Круг по воде от шага или колеса: светлое кольцо, расходится и гаснет.</summary>
+        private void EmitRing(Vector3 origin, float size)
+        {
+            if (_rings == null) return;
+            var ring = new ParticleSystem.EmitParams
+            {
+                position = new Vector3(origin.x, origin.y + 0.012f, origin.z),
+                velocity = Vector3.zero,
+                startLifetime = 0.7f,
+                startSize = size,
+                startColor = new Color(0.86f, 0.9f, 0.94f, 0.55f)
+            };
+            _rings.Emit(ring, 1);
+        }
+
+        private static Gradient RingGradient()
+        {
+            return new Gradient
+            {
+                colorKeys = new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                alphaKeys = new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0.45f, 0.5f), new GradientAlphaKey(0f, 1f) }
+            };
+        }
+
+        private static AnimationCurve RingSizeCurve()
+        {
+            return new AnimationCurve(new Keyframe(0f, 0.35f), new Keyframe(1f, 2.2f));
+        }
+
+        /// <summary>Кольцо волны: тонкий светлый обод, внутри пусто.</summary>
+        private static Texture2D CreateRingTexture()
+        {
+            const int size = DustTextureSizeValue;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false, true)
+            {
+                name = "ProceduralPuddleRing",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            var pixels = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float nx = ((x + 0.5f) / size - 0.5f) * 2f;
+                float ny = ((y + 0.5f) / size - 0.5f) * 2f;
+                float radius = Mathf.Sqrt(nx * nx + ny * ny);
+                float rim = Mathf.Clamp01(1f - Mathf.Abs(radius - 0.8f) / 0.12f);
+                pixels[y * size + x] = new Color(1f, 1f, 1f, rim * rim);
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            return texture;
         }
 
         private ParticleSystem CreateSystem(string name, int capacity, ParticleSystemRenderMode mode,

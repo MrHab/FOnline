@@ -23,8 +23,9 @@ namespace RealmOfAshes.EditorTools
     /// /api/dev/weather ясно → дождь → ливень → мокро после дождя и в каждом состоянии
     /// проверяет, что видит игрок: струи и круги дождя, шум, чип под картой, мокрую
     /// землю (темнее и глаже), молнии в ливень и множитель шага из снимка сервера.
-    /// В конце игрок проходит петлю после дождя (следы в грязи набирают воду) и ещё одну,
-    /// когда земля высохла: новые сухие следы ложатся рядом со старыми из грязи.
+    /// В конце игрок проходит петлю после дождя (следы в грязи набирают воду, шаги хлюпают)
+    /// и ещё одну, когда земля высохла: новые сухие следы ложатся рядом со старыми из грязи.
+    /// Предметы и персонажи (RoaWetSurfaces) мокнут в ливень и точно сохнут в ясную.
     /// Кадры камеры — 1600×900 и 844×390 (телефон в ландшафте) — в той же папке.
     /// </summary>
     [InitializeOnLoad]
@@ -107,6 +108,9 @@ namespace RealmOfAshes.EditorTools
             public Color GroundTint;
             public float GroundLuminance;
             public int Lightning;
+            public float PropWetness;
+            public int WetMaterials;
+            public float SampleDarken;
         }
 
         private static async void Audit()
@@ -162,6 +166,8 @@ namespace RealmOfAshes.EditorTools
                 Require(groundRenderer.bounds.center.y < RoaWorldLighting.WetReflectionTop - 0.01f,
                     "центр земли выше коробки отражения мокрой земли");
                 StateReport wet = await Settle(baseUrl, "wet", weather, bootstrap, camera);
+                int wetSteps = bootstrap.Audio != null ? bootstrap.Audio.WetStepCount + bootstrap.Audio.SplashCount : 0;
+                int puddleSplashes = bootstrap.MovementFx != null ? bootstrap.MovementFx.PuddleSplashCount : 0;
 
                 // Следы живого игрока: петля по грязи после дождя, затем по высохшей земле.
                 RoaGroundPrints prints = bootstrap.GroundPrints;
@@ -170,9 +176,11 @@ namespace RealmOfAshes.EditorTools
                     "следы не подключены к игроку и локации");
                 (int wetPrints, Vector3 wetMiddle) = await WalkLoop(player, prints, 1f);
                 float wetDepth = prints.DepthNear(wetMiddle, 1.4f);
+                wetSteps = (bootstrap.Audio != null ? bootstrap.Audio.WetStepCount + bootstrap.Audio.SplashCount : 0) - wetSteps;
+                puddleSplashes = (bootstrap.MovementFx != null ? bootstrap.MovementFx.PuddleSplashCount : 0) - puddleSplashes;
                 Save(Capture(camera, 1600, 900), "wet-prints-desktop.png");
                 Save(Capture(camera, 844, 390), "wet-prints-mobile.png");
-                await Settle(baseUrl, "clear", weather, bootstrap, camera, "dried");
+                StateReport dried = await Settle(baseUrl, "clear", weather, bootstrap, camera, "dried");
                 (int dryPrints, Vector3 dryMiddle) = await WalkLoop(player, prints, -1f);
                 float dryDepth = prints.DepthNear(dryMiddle, 1.4f);
                 float keptDepth = prints.DepthNear(wetMiddle, 1.4f);
@@ -181,6 +189,11 @@ namespace RealmOfAshes.EditorTools
                 lines.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                     "prints {0}: ground softness {1:0.00}, after rain {2} (depth {3:0.00}), dried {4} (depth {5:0.00}), mud prints kept {6:0.00}, map draws {7}",
                     prints.LocationId, prints.Softness, wetPrints, wetDepth, dryPrints, dryDepth, keptDepth, prints.DrawCount));
+                lines.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "wet props: clear {0:0.00}, rain {1:0.00}, storm {2:0.00} ({3} materials, darker by {4:0.00}), wet {5:0.00}, dried {6:0.00} (darker by {7:0.0000}); "
+                    + "after-rain loop: wet steps {8}, puddle splashes {9}",
+                    clear.PropWetness, rain.PropWetness, storm.PropWetness, storm.WetMaterials, storm.SampleDarken, wet.PropWetness,
+                    dried.PropWetness, dried.SampleDarken, wetSteps, puddleSplashes));
                 await Post(baseUrl, "/api/dev/weather", "{\"override\":null}");
 
                 foreach (StateReport row in new[] { clear, rain, storm, wet })
@@ -228,6 +241,10 @@ namespace RealmOfAshes.EditorTools
                 Require(wet.GroundLuminance < clear.GroundLuminance, "в кадре мокрая земля не темнее сухой");
                 Require(wetPrints >= 6 && wetDepth > 0.3f, "после дождя игрок не оставляет глубоких следов: " + wetPrints + ", " + wetDepth);
                 Require(keptDepth > wetDepth * 0.95f, "следы в грязи пропали, когда земля высохла");
+                Require(clear.PropWetness == 0f && storm.PropWetness > 0.95f && storm.WetMaterials > 20 && storm.SampleDarken > 0.1f,
+                    "в ливень предметы не мокнут: " + storm.PropWetness + ", " + storm.WetMaterials + ", " + storm.SampleDarken);
+                Require(dried.PropWetness == 0f && Mathf.Abs(dried.SampleDarken) < 0.0005f, "высохшие предметы не вернулись к сухим: " + dried.SampleDarken);
+                Require(wetSteps >= 4, "после дождя шаги игрока не хлюпают: " + wetSteps);
                 if (prints.Softness >= 0.2f)
                     Require(dryPrints >= 4 && dryDepth > 0.1f && dryDepth < wetDepth, "в сухом грунте следы не мельче, чем в грязи: " + dryDepth);
                 verdict = "PASS: " + string.Join(" | ", lines);
@@ -292,11 +309,47 @@ namespace RealmOfAshes.EditorTools
             report.GroundPuddles = block.GetFloat("_Puddles");
             report.GroundMud = block.GetFloat("_Mud");
             report.GroundTint = block.GetColor("_BaseColor");
+            RoaWetSurfaces wetSurfaces = bootstrap.WetSurfaces;
+            report.PropWetness = wetSurfaces != null ? wetSurfaces.AppliedWetness : 0f;
+            report.WetMaterials = wetSurfaces != null ? wetSurfaces.MaterialCount : 0;
+            report.SampleDarken = SampleDarken(wetSurfaces);
             Texture2D desktop = Capture(camera, 1600, 900);
             report.GroundLuminance = LowerLuminance(desktop);
             Save(desktop, (label ?? state) + "-desktop.png");
             Save(Capture(camera, 844, 390), (label ?? state) + "-mobile.png");
+            // Тот же кадр с сухими предметами — «было/стало» мокрых предметов при том же свете.
+            if (wetSurfaces != null && wetSurfaces.AppliedWetness > 0.5f)
+            {
+                float applied = wetSurfaces.AppliedWetness;
+                wetSurfaces.SetWetness(0f);
+                wetSurfaces.ApplyNow();
+                Save(Capture(camera, 1600, 900), (label ?? state) + "-dryprops-desktop.png");
+                wetSurfaces.SetWetness(applied);
+                wetSurfaces.ApplyNow();
+            }
             return report;
+        }
+
+        /// <summary>Насколько темнее сухого стали освещаемые материалы на сцене (до 60 штук).</summary>
+        private static float SampleDarken(RoaWetSurfaces wet)
+        {
+            if (wet == null) return 0f;
+            float sum = 0f;
+            int count = 0;
+            var buffer = new List<Material>();
+            foreach (Renderer renderer in UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Exclude))
+            {
+                renderer.GetSharedMaterials(buffer);
+                foreach (Material material in buffer)
+                {
+                    if (count >= 60 || !wet.TryGetDry(material, out Color dry, out _) || dry.grayscale < 0.05f) continue;
+                    Color now = material.HasProperty("_BaseColor") ? material.GetColor("_BaseColor") : material.GetColor("baseColorFactor");
+                    sum += 1f - now.grayscale / dry.grayscale;
+                    count++;
+                }
+                if (count >= 60) break;
+            }
+            return count > 0 ? sum / count : 0f;
         }
 
         private static void CaptureLegacyGround(RoaGameBootstrap bootstrap, Camera camera)

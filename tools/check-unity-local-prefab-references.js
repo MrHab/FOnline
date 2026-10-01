@@ -4,9 +4,19 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
 // Store packs installed per machine and ignored by Git: a clean checkout, CI included, has none of their models.
-// Scenes must not instance them even where they are installed; wrap the model in a tracked prefab instead.
+// Recovered environment prefabs stay tracked. Direct PolygonApocalypse scene
+// instances are accepted only when their GUID and expected pack path are listed
+// in the authored manifest below.
 const LOCAL_PACKS = ['unity-client/Assets/MEP', 'unity-client/Assets/TerrainSampleAssets',
   'unity-client/Assets/ThirdParty/AtomicRealmPostApocalyptic'];
+const LOCAL_PREFAB_REFS = require('./data/local-pack-prefab-references.json').prefabs;
+const localPrefabRefs = new Map();
+for (const row of LOCAL_PREFAB_REFS) {
+  assert(/^[0-9a-f]{32}$/.test(row.guid), `Invalid local prefab GUID: ${row.guid}`);
+  assert(row.path.startsWith('unity-client/Assets/Synty/'), `Unexpected local prefab path: ${row.path}`);
+  assert(!localPrefabRefs.has(row.guid), `Duplicate local prefab GUID: ${row.guid}`);
+  localPrefabRefs.set(row.guid, row.path);
+}
 const localPack = file => LOCAL_PACKS.find(pack => `${path.relative(root, file).replaceAll('\\', '/')}/`.startsWith(`${pack}/`));
 function files(dir, skip = () => false) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory()
@@ -21,7 +31,7 @@ function inventory() {
     }
   }
   const scenes = files(path.join(root,'unity-client/Assets/Scenes/Kromka/Locations')).filter(f => f.endsWith('.unity'));
-  const missing = new Map(); let instances = 0;
+  const missing = new Map(); const usedLocalRefs = new Set(); let instances = 0;
   for (const scene of scenes) {
     const text = fs.readFileSync(scene,'utf8');
     const blocks = text.split(/(?=^--- !u!)/m);
@@ -29,6 +39,7 @@ function inventory() {
       const source = block.match(/m_SourcePrefab: \{fileID: \d+, guid: (\w+)/);
       if (!source) continue;
       instances++;
+      if (localPrefabRefs.has(source[1])) { usedLocalRefs.add(source[1]); continue; }
       if (metas.has(source[1])) continue;
       const guid = source[1], instanceId = block.match(/^--- !u!1001 &(\d+)/)?.[1];
       const refs = blocks.filter(b => b.includes(`m_PrefabInstance: {fileID: ${instanceId}}`));
@@ -45,7 +56,19 @@ function inventory() {
       }
     }
   }
-  return { scenes:scenes.length, instances, missing:[...missing.values()], metas };
+  return { scenes:scenes.length, instances, missing:[...missing.values()], metas, usedLocalRefs };
+}
+function validateLocalPrefabRefs(result) {
+  assert.equal(result.usedLocalRefs.size, localPrefabRefs.size,
+    'The local prefab manifest contains an unused or missing scene reference');
+  const packRoot = path.join(root, 'unity-client/Assets/Synty');
+  if (!fs.existsSync(packRoot)) return;
+  for (const row of LOCAL_PREFAB_REFS) {
+    const asset = path.join(root, row.path);
+    assert(fs.existsSync(asset), `Missing installed local prefab: ${row.path}`);
+    const installedGuid = fs.readFileSync(`${asset}.meta`, 'utf8').match(/^guid:\s*(\w+)/m)?.[1];
+    assert.equal(installedGuid, row.guid, `Installed prefab GUID changed: ${row.path}`);
+  }
 }
 function validateRecovery(result) {
   const manifest = require('./data/local-prefab-recovery.json');
@@ -94,6 +117,6 @@ if(require.main===module){
   console.log(`Local prefab references: ${result.scenes} scenes, ${result.instances} instances, ${result.missing.length} unresolved GUIDs`);
   for(const m of result.missing)console.log(m.guid,m.instances.length,m.instances[0].name,JSON.stringify(m.sourceIds),m.instances[0].fields.join(' '));
   if(result.missing.length)process.exitCode=1;
-  else validateRecovery(result);
+  else { validateLocalPrefabRefs(result); validateRecovery(result); }
 }
-module.exports={inventory,validateRecovery};
+module.exports={inventory,validateLocalPrefabRefs,validateRecovery};

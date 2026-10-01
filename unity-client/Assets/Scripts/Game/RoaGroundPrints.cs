@@ -61,7 +61,7 @@ namespace RealmOfAshes.Game
             public float LeftAt = -1f;
         }
 
-        public const string StampShaderName = "Hidden/Realm of Ashes/Kromka Ground Print";
+        public const string StampShaderName = "Hidden/Kromka/Ground Print";
         public const float DustLifeSeconds = 150f;
         public const float MudLifeSeconds = 1800f;
         /// <summary>Дождь старит след в пыли в (1 + 5·дождь) раз быстрее; след в грязи — нет.</summary>

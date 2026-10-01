@@ -8456,7 +8456,7 @@ function performServerStorageTransfer(player = {}, data = {}, factionId = '') {
   const direction = String(data.direction || '').toLowerCase();
   const storageFaction = serverStorageFactionKey(factionId || serverPlayerStorageFaction(player));
   if (!storageFaction) {
-    return { ok: false, error: '\u0425\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0442\u043e\u043b\u044c\u043a\u043e \u0432 \u0441\u0442\u043e\u043b\u0438\u0446\u0430\u0445 \u0444\u0440\u0430\u043a\u0446\u0438\u0439.' };
+    return { ok: false, error: 'В этой локации нет личного хранилища.' };
   }
   if (!['deposit', 'withdraw'].includes(direction)) return { ok: false, error: 'Неизвестное направление переноса.' };
   const rows = serverStorageTransferRows(data.rows || [{ id: data.itemId || data.id, qty: data.qty }]);
@@ -30009,7 +30009,7 @@ io.on('connection', (socket) => {
     const savedInventory = serverBagInventoryFromSavedState(savedState);
     const savedFactionStorages = serverFactionStoragesFromState(savedState);
     const savedFactionStorageRuntime = serverFactionStorageRuntimeFromState(savedState);
-    const savedStorageFaction = serverStorageFactionKey(locationCapitalFaction(room.locationId));
+    const savedStorageFaction = serverStorageFactionKey(locationStorageFaction(roomLocation(room)));
     const savedGlobalMap = savedState.globalMap && typeof savedState.globalMap === 'object' ? savedState.globalMap : {};
     const savedGlobalWorldPoint = sanitizeServerGlobalMapPoint({ x: savedGlobalMap.playerX, y: savedGlobalMap.playerY });
     const savedPendingLocationTransition = sanitizePendingLocationTransition(savedGlobalMap.pendingWorldDrop);
@@ -32494,9 +32494,9 @@ io.on('connection', (socket) => {
     const room = rooms.get(p.roomId);
     if (!room) return fail('Локация не найдена.');
     const loc = roomLocation(room);
-    const storageFaction = serverStorageFactionKey(locationCapitalFaction(loc));
-    if (!locationIsFactionCapital(loc) || !storageFaction) {
-      return fail('\u0425\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0442\u043e\u043b\u044c\u043a\u043e \u0432 \u0441\u0442\u043e\u043b\u0438\u0446\u0430\u0445 \u0444\u0440\u0430\u043a\u0446\u0438\u0439.');
+    const storageFaction = serverStorageFactionKey(locationStorageFaction(loc));
+    if (!storageFaction) {
+      return fail('В этой локации нет личного хранилища.');
     }
     const point = serverLocationObjectWorldPoint(loc.storage || {}, locationTileDims(loc));
     if (!point) return fail('В этой локации нет личного хранилища.');

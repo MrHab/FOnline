@@ -24,6 +24,12 @@ namespace RealmOfAshes.EditorTools
             Require(relief != null && relief.Ready, "The authored global-map height field is unavailable.");
             Require(Mathf.Abs(RoaZoneReliefProjection.HeightAt(relief, -82f, -106f, 320f, 320f)) < 0.001f,
                 "Checkpoint apron is not level.");
+            Require(Mathf.Abs(RoaZoneReliefProjection.HeightAt(relief, -31f, -106f, 320f, 320f)) < 0.001f,
+                "The checkpoint approach is not level.");
+            Vector2 outer = RoaZoneReliefProjection.MapPoint(120f, 120f, 320f, 320f);
+            float mapDelta = relief.HeightAt(outer.x, outer.y) - relief.HeightAt(site.x, site.y);
+            Require(Mathf.Abs(RoaZoneReliefProjection.HeightAt(relief, 120f, 120f, 320f, 320f)
+                - mapDelta * 160f) < 0.001f, "Local height does not match the map's visual scale.");
 
             GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
             try
@@ -36,18 +42,23 @@ namespace RealmOfAshes.EditorTools
                 Require(ground.GetComponent<MeshCollider>()?.sharedMesh == mesh,
                     "Walk surface and rendered relief differ.");
                 Require(!ground.GetComponent<BoxCollider>().enabled, "Flat collision still covers the relief.");
+                Require(Mathf.Abs(RoaCoords.ToUnity(120f, 120f).y
+                    - RoaZoneReliefProjection.HeightAt(relief, 120f, 120f, 320f, 320f)) < 0.001f,
+                    "Actors are not placed on the projected terrain.");
                 float min = float.PositiveInfinity, max = float.NegativeInfinity;
                 foreach (Vector3 vertex in mesh.vertices)
                 {
                     min = Mathf.Min(min, vertex.y);
                     max = Mathf.Max(max, vertex.y);
                 }
-                Require(max - min > 0.1f, "Relief remains visually flat.");
+                Require((max - min) * 0.5f > 12f, "Relief remains visually flat.");
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(ground);
             }
+            Require(Mathf.Abs(RoaCoords.ToUnity(120f, 120f).y) < 0.001f,
+                "The old zone's terrain is still active after unload.");
             Debug.Log("[ROA DAM ROAD RELIEF] PASS: map scale, zone edges, level checkpoint and walk mesh.");
         }
 

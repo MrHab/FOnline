@@ -7,11 +7,12 @@ namespace RealmOfAshes.World
     ///
     /// Мир Кромки строится в Unity: KromkaWorldSceneExporter пишет в data/locations
     /// мировые координаты сцены как есть, и сервер считает в них же — движение,
-    /// преграды из collisionParts, точки прибытия, NPC. Поэтому перевод тождественный:
-    /// x, y и z сервера — это x, y и z сцены, а север — +Z (как на глобальной карте
+    /// преграды из collisionParts, точки прибытия, NPC. Координаты XZ совпадают:
+    /// x и z сервера — это x и z сцены, а север — +Z (как на глобальной карте
     /// и в виде сверху редактора). Прежний клиент зеркалил Z (правило времён
     /// Three.js), и всё, что ставит сервер, стояло в зеркальном отражении сцены:
     /// игрок появлялся у каравана вместо точки прибытия, NPC — вдали от своих мест.
+    /// Для динамических объектов перегрузка XZ добавляет высоту активного рельефа.
     ///
     /// Углы: сервер хранит angle как atan2(dx, dz) в радианах (0 = взгляд вдоль +Z,
     /// рост к +X). Это и есть yaw Unity: модели после импорта glTFast смотрят в +Z.
@@ -33,7 +34,7 @@ namespace RealmOfAshes.World
             => new Vector3(serverX, serverY, serverZ);
 
         public static Vector3 ToUnity(float serverX, float serverZ)
-            => new Vector3(serverX, 0f, serverZ);
+            => new Vector3(serverX, RoaZoneReliefProjection.GroundHeightAt(serverX, serverZ), serverZ);
 
         public static void ToServer(Vector3 unityPos, out float serverX, out float serverZ)
         {

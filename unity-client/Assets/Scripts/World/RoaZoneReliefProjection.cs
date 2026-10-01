@@ -15,12 +15,27 @@ namespace RealmOfAshes.World
         public const float ZoneMapPoints = 20f;
         public const float DamRoadCenterX = -82f;
         public const float DamRoadCenterZ = -106f;
-        private const float LevelRadius = 68f;
-        private const float BlendRadius = 104f;
-        private const float VerticalGain = 3f;
-        private const int Segments = 64;
+        private const float LevelHalfWidth = 52f;
+        private const float LevelHalfDepth = 30f;
+        private const float BlendWidth = 24f;
+        // The map renders 20 points across this cell at 0.1 units per point.
+        // Stretching those 2 units to a 320 m zone requires the same factor on Y.
+        private const float VerticalGain = 160f;
+        private const int Segments = 128;
 
         private Mesh _mesh;
+        private RoaGlobalMapRelief _relief;
+        private float _width;
+        private float _depth;
+        private static RoaZoneReliefProjection _active;
+
+        public static float GroundHeightAt(float localX, float localZ)
+        {
+            if (_active == null || _active._relief == null) return 0f;
+            if (Mathf.Abs(localX) > _active._width * 0.5f
+                || Mathf.Abs(localZ) > _active._depth * 0.5f) return 0f;
+            return HeightAt(_active._relief, localX, localZ, _active._width, _active._depth);
+        }
 
         public static bool Supports(string locationId) =>
             string.Equals(locationId, DamRoadZone, StringComparison.Ordinal);
@@ -41,13 +56,12 @@ namespace RealmOfAshes.World
             if (relief == null || !relief.Ready) return 0f;
             Vector2 point = MapPoint(localX, localZ, worldWidth, worldDepth);
             Vector2 origin = MapPoint(DamRoadCenterX, DamRoadCenterZ, worldWidth, worldDepth);
-            float distance = Vector2.Distance(new Vector2(localX, localZ),
-                new Vector2(DamRoadCenterX, DamRoadCenterZ));
-            float t = Mathf.Clamp01((distance - LevelRadius) / (BlendRadius - LevelRadius));
+            float dx = Mathf.Max(0f, Mathf.Abs(localX - DamRoadCenterX) - LevelHalfWidth);
+            float dz = Mathf.Max(0f, Mathf.Abs(localZ - DamRoadCenterZ) - LevelHalfDepth);
+            float t = Mathf.Clamp01(new Vector2(dx, dz).magnitude / BlendWidth);
             float apronBlend = t * t * (3f - 2f * t);
-            return Mathf.Clamp((relief.HeightAt(point.x, point.y)
-                    - relief.HeightAt(origin.x, origin.y)) * VerticalGain * apronBlend,
-                -0.55f, 0.25f);
+            return (relief.HeightAt(point.x, point.y)
+                    - relief.HeightAt(origin.x, origin.y)) * VerticalGain * apronBlend;
         }
 
         public static void Project(Renderer ground, float worldWidth, float worldDepth)
@@ -62,16 +76,20 @@ namespace RealmOfAshes.World
             MeshFilter filter = ground.GetComponent<MeshFilter>();
             if (filter == null || ground.GetComponent<RoaZoneReliefProjection>() != null) return;
             var projection = ground.gameObject.AddComponent<RoaZoneReliefProjection>();
+            projection._relief = relief;
+            projection._width = worldWidth;
+            projection._depth = worldDepth;
             projection._mesh = BuildMesh(relief, worldWidth, worldDepth);
             filter.sharedMesh = projection._mesh;
             BoxCollider flat = ground.GetComponent<BoxCollider>();
             if (flat != null) flat.enabled = false;
             MeshCollider surface = ground.gameObject.AddComponent<MeshCollider>();
             surface.sharedMesh = projection._mesh;
+            _active = projection;
 
             // Static models elsewhere in the zone follow the projected surface.
-            // The whole checkpoint lies on the level apron, so its authored heights
-            // and the collision boxes exported for the server are left intact.
+            // The checkpoint and bridge lie on the level apron, so their authored
+            // heights and collision boxes exported for the server remain intact.
             foreach (KromkaPlacedObjectAuthoring placed in ground.transform.root
                          .GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true))
             {
@@ -123,8 +141,14 @@ namespace RealmOfAshes.World
             return mesh;
         }
 
+        private void OnDisable()
+        {
+            if (_active == this) _active = null;
+        }
+
         private void OnDestroy()
         {
+            if (_active == this) _active = null;
             if (_mesh == null) return;
             if (Application.isPlaying) Destroy(_mesh);
             else DestroyImmediate(_mesh);

@@ -148,7 +148,9 @@ namespace RealmOfAshes.World
                         if (Blocked(blockers, point) || NearTrail(point, nodes, trails)) continue;
                         float radius = Mathf.Lerp(Kinds[kind].MinRadius, Kinds[kind].MaxRadius, size * size);
                         float scale = radius / kindRadius[kind];
-                        Matrix4x4 placement = Matrix4x4.TRS(new Vector3(x, -kindBase[kind] * scale - 0.02f, z),
+                        float groundHeight = RoaZoneReliefProjection.GroundHeightAt(x, z);
+                        Matrix4x4 placement = Matrix4x4.TRS(new Vector3(x,
+                                groundHeight - kindBase[kind] * scale - 0.02f, z),
                             Quaternion.Euler(0f, yaw, 0f), Vector3.one * scale);
                         foreach (int part in kindParts[kind])
                             slot.Add(new Piece { Part = part, Matrix = placement * _parts[part].Local });
@@ -169,7 +171,16 @@ namespace RealmOfAshes.World
         {
             Vector3 focus = view.transform.position;
             Vector3 forward = view.transform.forward;
-            if (forward.y < -0.05f) focus += forward * (-(focus.y - transform.position.y) / forward.y);
+            if (forward.y < -0.05f)
+            {
+                float groundY = transform.position.y;
+                for (int attempt = 0; attempt < 2; attempt++)
+                {
+                    focus = view.transform.position + forward *
+                        ((groundY - view.transform.position.y) / forward.y);
+                    groundY = RoaZoneReliefProjection.GroundHeightAt(focus.x, focus.z);
+                }
+            }
             return focus;
         }
 

@@ -4,7 +4,8 @@
 // сохранённый «на карте» или в сцене мелкой клетки карты (`#cell_`), встаёт в
 // зону своей точки карты. Из красной и чёрной зоны — в ближайшую синюю или
 // мирную: переключение мира не должно убивать и грабить. Персонаж в месте
-// (поселение, логово, база) остаётся там — его край и так выводит в зону.
+// (поселение, логово, база) остаётся там — его край и так выводит в зону; из
+// места, ставшего площадкой в своей зоне, он просыпается в этой зоне у места.
 // Та же функция работает при входе (восстановленные бэкапы) и в инструменте
 // tools/migrate-saves-to-zones.js. Модуль чистый.
 
@@ -27,6 +28,20 @@ function finitePoint(value) {
   const x = Number(value?.x ?? value?.playerX);
   const y = Number(value?.y ?? value?.playerY);
   return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+}
+
+// Сектор — 160 клеток по 2 м с началом в центре; u, v места — доли клетки карты
+// мира, v растёт к югу, а в секторе север — +Z (как у конструктора зон).
+const ZONE_TILES = 160;
+const ZONE_TILE = 2;
+
+/** Точка места в метрах его сектора — там, где конструктор ставит портал места. */
+function sitePointOf(place) {
+  const tile = share => Math.min(ZONE_TILES - 25, Math.max(24, Math.round(share * (ZONE_TILES - 1))));
+  const tx = tile(Number(place.u));
+  const tz = tile(1 - Number(place.v));
+  const metres = tile => (tile - ZONE_TILES / 2 + 0.5) * ZONE_TILE;
+  return { x: metres(tx), z: metres(tz) };
 }
 
 /** Зона точки карты; из красной и чёрной — ближайшая синяя или мирная. */
@@ -79,6 +94,17 @@ function migrateSaveStateToZones(state, graph) {
     state.player = { ...(state.player || {}), x: 0, z: 0 };
     delete state.serverLocationContext;
     Object.assign(result, { changed: true, zoneId: taken.id, reason: 'sectorBecameCity' });
+  }
+  // Место, которое теперь стоит площадкой в своей зоне (zone-sites.js), отдельной
+  // локацией больше не открывается: сохранённый в нём просыпается в этой зоне, у
+  // точки места (сервер при входе найдёт свободную клетку рядом).
+  const sitePlace = !result.changed && saved ? zoneOfPlace(graph, saved) : null;
+  const siteRow = sitePlace ? (sitePlace.places || []).find(place => place.locationId === saved && place.site) : null;
+  if (siteRow) {
+    state.currentLocationId = zoneLocationId(sitePlace);
+    state.player = { ...(state.player || {}), ...sitePointOf(siteRow) };
+    delete state.serverLocationContext;
+    Object.assign(result, { changed: true, zoneId: zoneLocationId(sitePlace), reason: 'placeBecameSite' });
   }
   // Город, который стал местом («Баланс» — подземелье с правилами красной зоны,
   // библия 4.4), больше не мирен: сохранённый в нём до перемены просыпается в

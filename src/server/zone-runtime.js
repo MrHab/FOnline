@@ -56,6 +56,14 @@ function frozenZoneProblems(graph, definition) {
     if (edge.open && !definition[SIDE_ENTRY[side]]) problems.push(`${zone.id}: no ${SIDE_ENTRY[side]} for arrivals from the ${side}`);
   }
   for (const place of zone.places || []) {
+    if (place.site) {
+      // Место стоит в секторе площадкой: портала в него нет, выхода из него тоже.
+      const site = (definition.sites || []).find(row => row?.id === place.locationId);
+      if (!site) problems.push(`${zone.id}: no site ${place.locationId} in the zone`);
+      else if (!!site.safe !== !!place.safe) problems.push(`${zone.id}: site ${place.locationId} must ${place.safe ? '' : 'not '}be a safe island`);
+      if ((definition.transitions || []).some(row => row.to === place.locationId)) problems.push(`${zone.id}: ${place.locationId} is a site, not a portal`);
+      continue;
+    }
     // Ключ входа обрезан до 32 символов — так его пишет конструктор
     // (zone-builder) и так его читает клиент; ищи полный, и сектор с местом
     // вроде resourceScrapFields сервер отказался бы открывать.
@@ -248,7 +256,9 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
         const other = zoneById(graph, edge.to);
         return { dir, to: zoneLocationId(other), n: other.n, title: other.title, mode: other.mode, road: !!edge.road };
       }),
-      places: zone.places.filter(place => !place.hidden).map(place => ({ locationId: place.locationId, name: place.name }))
+      places: zone.places.filter(place => !place.hidden).map(place => ({
+        locationId: place.locationId, name: place.name, ...(place.site ? { site: true } : {}), ...(place.safe ? { safe: true } : {})
+      }))
     };
   }
 
@@ -278,7 +288,8 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
         places: zone.places.filter(place => !place.hidden).map(place => ({
           id: place.locationId, name: nameOf(place.locationId) || place.name, kind: place.kind,
           tier: tierOf ? tierOf(place.locationId) : zone.difficulty,
-          u: Number(Number(place.u).toFixed(3)), v: Number(Number(place.v).toFixed(3))
+          u: Number(Number(place.u).toFixed(3)), v: Number(Number(place.v).toFixed(3)),
+          ...(place.site ? { site: true } : {}), ...(place.safe ? { safe: true } : {})
         }))
       }))
     };

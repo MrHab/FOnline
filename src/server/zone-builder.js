@@ -100,7 +100,9 @@ function normalizeRecipe(recipe = {}) {
   const places = (Array.isArray(recipe.places) ? recipe.places : []).map(place => ({
     locationId: safeId(place?.locationId), name: String(place?.name || place?.locationId || '').slice(0, 80),
     u: clamp(Number(place?.u ?? 0.5), 0, 1), v: clamp(Number(place?.v ?? 0.5), 0, 1),
-    ...(place?.hidden === true ? { hidden: true } : {})
+    ...(place?.hidden === true ? { hidden: true } : {}),
+    ...(place?.site === true ? { site: true, kind: String(place.kind || '').slice(0, 32) } : {}),
+    ...(place?.site === true && place?.safe === true ? { safe: true } : {})
   })).filter(place => place.locationId).sort((a, b) => a.locationId.localeCompare(b.locationId));
   return {
     zoneId, mode, gates, places,
@@ -472,7 +474,7 @@ function buildZone(recipeInput, catalog) {
 
   const entries = {};
   for (const gate of gates) entries[gate.entryKey] = { ...gate.entry };
-  for (const place of places) entries[place.entryKey] = { ...place.entry };
+  for (const place of places) if (!place.site) entries[place.entryKey] = { ...place.entry };
   const definition = {
     schema: 'realm.location.v1', version: 1, id: recipe.zoneId, name: recipe.name, seed: recipe.seed,
     kind: 'zone', generated: true, builderVersion: BUILDER_VERSION, compassNorth: COMPASS_NORTH, revision: '',
@@ -487,12 +489,20 @@ function buildZone(recipeInput, catalog) {
         entryKey: gate.targetEntryKey, tx: gate.trigger.tx, tz: gate.trigger.tz, radius: 5, halfWidthTiles: 3,
         ...(gate.toMode ? { targetMode: gate.toMode } : {}), ...(gate.road ? { road: true } : {})
       })),
-      ...places.filter(place => !place.hidden).map(place => ({
+      ...places.filter(place => !place.hidden && !place.site).map(place => ({
         id: `place_${place.locationId}`.slice(0, 48), type: 'location', label: place.name || place.locationId, to: place.locationId,
         entryKey: 'entryFromWorld', tx: place.portal.tx, tz: place.portal.tz, radius: 3.2
       }))
     ],
     worldZones: [], objects, containers, anomalyFields,
+    // Место-площадка (zone-sites.js): пока его не построили в сцене, сектор держит
+    // для него квадрат 30 м вокруг точки места.
+    ...(places.some(place => place.site) ? {
+      sites: places.filter(place => place.site).map(place => {
+        const point = worldOf(place.portal);
+        return { id: place.locationId, name: place.name || place.locationId, kind: place.kind || '', safe: place.safe === true, x: point.x, z: point.z, halfX: 15, halfZ: 15, rotationY: 0 };
+      })
+    } : {}),
     zone: {
       col: recipe.col, row: recipe.row, n: recipe.n, region: recipe.biome, mode: recipe.mode, difficulty: recipe.difficulty,
       gates: gates.map(gate => ({ dir: gate.dir, to: gate.to, tx: gate.trigger.tx, tz: gate.trigger.tz, halfWidthTiles: 3, road: gate.road })),

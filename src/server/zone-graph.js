@@ -163,6 +163,22 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
     cityNames.set(zone.id, city.name);
   }
 
+  // Место, перенесённое в свою зону: портала нет, площадка стоит в секторе, правила
+  // на ней — правила зоны, кроме безопасного островка (safe). Список — `sites` в
+  // zone-graph.overrides.json; туда место попадает, когда его площадка построена.
+  const siteRules = overrides.sites && typeof overrides.sites === 'object' ? overrides.sites : {};
+  const siteIds = new Set(Object.keys(siteRules));
+  for (const zone of zones.values()) {
+    for (const place of zone.places) {
+      if (!siteIds.has(place.locationId)) continue;
+      if (place.hidden) throw new Error(`zone graph: hidden place ${place.locationId} cannot stand in its zone as a site`);
+      place.site = true;
+      if (siteRules[place.locationId]?.safe === true) place.safe = true;
+      siteIds.delete(place.locationId);
+    }
+  }
+  if (siteIds.size) throw new Error(`zone graph: sites without a place on the map: ${[...siteIds].join(', ')}`);
+
   [...zones.values()].sort((a, b) => a.row - b.row || a.col - b.col).forEach((zone, index) => {
     zone.n = index + 1;
     if (zone.city) {

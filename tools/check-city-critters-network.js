@@ -110,10 +110,11 @@ function strike(account, rat, weapon, self) {
 /** Подойти к зверьку пакетами движения; state {x, z} обновляется по ответам сервера. */
 async function approach(account, state, target, reach = 1.4) {
   let seq = Number(state.seq || 1);
-  for (let frame = 0; frame < 60 && distance(state, target) > reach; frame += 1) {
-    const dx = target.x - state.x, dz = target.z - state.z, length = Math.hypot(dx, dz);
+  for (let frame = 0; frame < 60 && distance(state, target()) > reach; frame += 1) {
+    const current = target();
+    const dx = current.x - state.x, dz = current.z - state.z, length = Math.hypot(dx, dz);
     const result = await h.socketAck(account.socket, 'state', {
-      seq: seq++, x: target.x - dx / length * reach * 0.8, z: target.z - dz / length * reach * 0.8,
+      seq: seq++, x: current.x - dx / length * reach * 0.8, z: current.z - dz / length * reach * 0.8,
       angle: Math.atan2(dx, dz), moving: true, turning: false, crouching: false,
       vx: 5.5 * dx / length, vz: 5.5 * dz / length
     });
@@ -123,7 +124,7 @@ async function approach(account, state, target, reach = 1.4) {
     await wait(58);
   }
   state.seq = seq;
-  return distance(state, target) <= reach + 0.6;
+  return distance(state, target()) <= reach + 0.6;
 }
 
 /** Постоять на месте: ответ сервера несёт авторитетное состояние персонажа. */
@@ -195,8 +196,9 @@ async function standStill(account, state) {
     let punch = null;
     for (let attempt = 0; attempt < 10 && !punch?.hit; attempt += 1) {
       const current = view.rows.get(rat.id) || rat;
-      await approach(accounts.harvest, scoutSelf, current);
-      punch = await strike(accounts.harvest, current, 'fists', scoutSelf);
+      await approach(accounts.harvest, scoutSelf, () => view.rows.get(rat.id) || current);
+      punch = await strike(accounts.harvest, view.rows.get(rat.id) || current, 'fists', scoutSelf);
+      if (punch.error === 'Цель слишком далеко.') { await wait(100); continue; }
       assert(punch.ok && !punch.protected, 'a city critter can be hit in the peaceful city: ' + JSON.stringify(punch).slice(0, 300));
       if (!punch.hit) await wait(1300);
     }
@@ -225,8 +227,9 @@ async function standStill(account, state) {
       const current = view.rows.get(rat.id);
       assert(current, 'the wounded rat is still in the room');
       if (current.aiState === 'flee' || current.aiState === 'return') { await wait(700); continue; }
-      await approach(accounts.trade, hunterSelf, current, 1.6);
+      await approach(accounts.trade, hunterSelf, () => view.rows.get(rat.id) || current, 1.6);
       blow = await strike(accounts.trade, view.rows.get(rat.id) || current, 'pickaxe', hunterSelf);
+      if (blow.error === 'Цель слишком далеко.') { await wait(100); continue; }
       assert(blow.ok && !blow.protected, 'the hunter strikes the rat: ' + JSON.stringify(blow).slice(0, 300));
       if (!blow.killed) await wait(1300);
     }

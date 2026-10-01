@@ -35,6 +35,8 @@ namespace RealmOfAshes.Game
         private RectTransform _menu;
         private readonly List<GameObject> _options = new List<GameObject>();
         private bool _menuOpenedThisFrame;
+        private GameObject _hoverSource;
+        private bool _hasHoverSource;
 
         public sealed class Option
         {
@@ -60,6 +62,13 @@ namespace RealmOfAshes.Game
             _menuOpenedThisFrame = false;
         }
 
+        private void LateUpdate()
+        {
+            // Unity не посылает PointerExit, когда наведённая карточка уничтожена
+            // при обновлении списка или скрыта вместе с окном инвентаря.
+            if (_hasHoverSource && (_hoverSource == null || !_hoverSource.activeInHierarchy)) Hide();
+        }
+
         // ------------------------------------------------------------------ подсказка
 
         /// <summary>Подсказка предмета по id (gameTooltipItem web); extraStat дописывается через « · ».</summary>
@@ -76,6 +85,8 @@ namespace RealmOfAshes.Game
         public void Show(string name, string desc, string stat)
         {
             EnsureBuilt();
+            _hoverSource = null;
+            _hasHoverSource = false;
             _tipName.text = name ?? string.Empty;
             _tipDesc.text = desc ?? string.Empty;
             _tipDesc.gameObject.SetActive(!string.IsNullOrEmpty(desc));
@@ -88,7 +99,22 @@ namespace RealmOfAshes.Game
 
         public void Hide()
         {
+            _hoverSource = null;
+            _hasHoverSource = false;
             if (_tip != null) _tip.gameObject.SetActive(false);
+        }
+
+        public void ShowItemFrom(GameObject source, string itemOrRuntimeId, string extraStat = null)
+        {
+            if (source == null || !source.activeInHierarchy) return;
+            ShowItem(itemOrRuntimeId, extraStat);
+            _hoverSource = source;
+            _hasHoverSource = true;
+        }
+
+        public void HideFrom(GameObject source)
+        {
+            if (_hasHoverSource && _hoverSource == source) Hide();
         }
 
         /// <summary>Навесить показ подсказки на карточку (mouseenter/mouseleave web).</summary>
@@ -96,8 +122,8 @@ namespace RealmOfAshes.Game
         {
             if (card == null) return;
             HoverRelay relay = card.GetComponent<HoverRelay>() ?? card.AddComponent<HoverRelay>();
-            relay.OnEnter += () => { if (Instance != null) Instance.ShowItem(itemOrRuntimeId, extraStat); };
-            relay.OnExit += () => { if (Instance != null) Instance.Hide(); };
+            relay.OnEnter += () => { if (Instance != null) Instance.ShowItemFrom(card, itemOrRuntimeId, extraStat); };
+            relay.OnExit += () => { if (Instance != null) Instance.HideFrom(card); };
         }
 
         /// <summary>
@@ -110,6 +136,7 @@ namespace RealmOfAshes.Game
             public System.Action OnEnter, OnExit;
             public void OnPointerEnter(PointerEventData eventData) { OnEnter?.Invoke(); }
             public void OnPointerExit(PointerEventData eventData) { OnExit?.Invoke(); }
+            private void OnDisable() { OnExit?.Invoke(); }
         }
 
         /// <summary>Только клик правой кнопкой — по той же причине, что и HoverRelay.</summary>
@@ -127,8 +154,14 @@ namespace RealmOfAshes.Game
         {
             if (target == null) return;
             HoverRelay relay = target.GetComponent<HoverRelay>() ?? target.AddComponent<HoverRelay>();
-            relay.OnEnter += () => { if (Instance != null) Instance.Show(title, hint, null); };
-            relay.OnExit += () => { if (Instance != null) Instance.Hide(); };
+            relay.OnEnter += () =>
+            {
+                if (Instance == null || !target.activeInHierarchy) return;
+                Instance.Show(title, hint, null);
+                Instance._hoverSource = target;
+                Instance._hasHoverSource = true;
+            };
+            relay.OnExit += () => { if (Instance != null) Instance.HideFrom(target); };
         }
 
         // ------------------------------------------------------------------ контекстное меню

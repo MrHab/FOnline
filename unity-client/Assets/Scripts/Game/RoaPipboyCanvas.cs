@@ -277,8 +277,8 @@ namespace RealmOfAshes.Game
 
         public void Close()
         {
-            if (RoaItemPopups.Instance != null) { RoaItemPopups.Instance.Hide(); RoaItemPopups.Instance.HideMenu(); }
             if (_root != null) _root.SetActive(false);
+            if (RoaItemPopups.Instance != null) { RoaItemPopups.Instance.Hide(); RoaItemPopups.Instance.HideMenu(); }
         }
 
         private void ApplyPage()
@@ -1284,10 +1284,10 @@ namespace RealmOfAshes.Game
             enter.callback.AddListener(_ =>
             {
                 string rt; if (Inventory != null && Inventory.EquipmentSlots.TryGetValue(slotId, out rt) && !string.IsNullOrEmpty(rt) && RoaItemPopups.Instance != null)
-                    RoaItemPopups.Instance.ShowItem(RoaArmorData.BaseId(rt), ItemExtraStat(RoaArmorData.BaseId(rt)));
+                    RoaItemPopups.Instance.ShowItemFrom(button.gameObject, RoaArmorData.BaseId(rt), ItemExtraStat(RoaArmorData.BaseId(rt)));
             });
             var exit = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerExit };
-            exit.callback.AddListener(_ => { if (RoaItemPopups.Instance != null) RoaItemPopups.Instance.Hide(); });
+            exit.callback.AddListener(_ => { if (RoaItemPopups.Instance != null) RoaItemPopups.Instance.HideFrom(button.gameObject); });
             hover.triggers.Add(enter); hover.triggers.Add(exit);
 
             var cell = new EquipCell { Button = button };

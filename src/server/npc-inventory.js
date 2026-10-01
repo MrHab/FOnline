@@ -158,17 +158,17 @@ function buildFactionSupplyCatalog(state = {}, faction = '', traderProfiles = {}
   const derive = (id, amount, source) => {
     if (amount > 0) add(id, amount, source);
   };
-  if (has('ammoParts')) {
-    derive('ammo9', Number(amounts.ammoParts || 1) * 2.8, 'craft:ammoParts');
-    derive('ammo556', Number(amounts.ammoParts || 1) * 1.7, 'craft:ammoParts');
-    derive('shotgunShell', Number(amounts.ammoParts || 1) * 1.1, 'craft:ammoParts');
+  if (has('metalBar')) {
+    derive('ammo9', Number(amounts.metalBar || 1) * 2.8, 'craft:metalBar');
+    derive('ammo556', Number(amounts.metalBar || 1) * 1.7, 'craft:metalBar');
+    derive('shotgunShell', Number(amounts.metalBar || 1) * 1.1, 'craft:metalBar');
   }
-  if (has('electronics') && has('chemicals')) derive('energyCell', Math.min(Number(amounts.electronics || 1) * 2.2, Number(amounts.chemicals || 1) * 6), 'craft:energyCell');
-  if (has('oil') && has('chemicals')) derive('napalm', Math.min(Number(amounts.oil || 1) * 1.8, Number(amounts.chemicals || 1) * 4), 'craft:napalm');
-  if (has('medicine') && has('chemicals')) {
-    derive('stim', Number(amounts.medicine || 1) * 0.7, 'craft:medicine');
-    derive('medkit', Number(amounts.medicine || 1) * 0.3, 'craft:medicine');
-    derive('antibiotics', Number(amounts.medicine || 1) * 0.35, 'craft:medicine');
+  if (has('electronics') && has('fuel')) derive('energyCell', Math.min(Number(amounts.electronics || 1) * 2.2, Number(amounts.fuel || 1) * 6), 'craft:energyCell');
+  if (has('oil') && has('fuel')) derive('napalm', Math.min(Number(amounts.oil || 1) * 1.8, Number(amounts.fuel || 1) * 4), 'craft:napalm');
+  if (has('cloth') && has('fuel')) {
+    derive('stim', Number(amounts.cloth || 1) * 0.7, 'craft:cloth');
+    derive('medkit', Number(amounts.cloth || 1) * 0.3, 'craft:cloth');
+    derive('antibiotics', Number(amounts.cloth || 1) * 0.35, 'craft:cloth');
   }
   if (has('scrap') && has('electronics')) derive('repairKit', Math.min(Number(amounts.scrap || 1) / 3, Number(amounts.electronics || 1)), 'craft:repairKit');
   if (has('scrap')) derive('knife', Math.max(1, Number(amounts.scrap || 1) * 0.08), 'craft:scrap');
@@ -366,6 +366,7 @@ function buildFactionPersonalInventory(context = {}) {
   if (['craftsman', 'mechanic'].includes(role)) {
     if (has('repairKit') && stableUnit(seed, 'repair-kit') > 0.38) add('repairKit', 1);
     if (has('scrap')) add('scrap', 1 + Math.floor(stableUnit(seed, 'craft-scrap') * 3));
+    if (has('electronics') && stableUnit(seed, 'craft-electronics') > 0.7) add('electronics', 1);
   }
   if (role === 'medic' || (['guard', 'patrol'].includes(role) && stableUnit(seed, 'guard-aid') > 0.68)) {
     if (has('stim')) add('stim', 1 + (role === 'medic' ? Math.floor(stableUnit(seed, 'stim') * 2) : 0));

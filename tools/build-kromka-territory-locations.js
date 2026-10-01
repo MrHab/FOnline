@@ -132,29 +132,29 @@ function mutant(id, kind, x, z, rotationY = 0, extra = {}) {
 // Чёрная зона — верх лестницы: открытый тайник окраин дороже открытого ящика
 // красной зоны, запертый дороже открытого, замок с терминалом — дороже всех.
 const CORE_CACHE_LOOT = {
-  outpostPump_cache: { chemicals: 6, medicine: 4, scrap: 2 },
+  outpostPump_cache: { fuelT5: 6, clothT5: 4, scrap: 2 },
   outpostRelay_cache: { electronics: 6, scrap: 4 },
-  outpostDepot_cache: { weaponParts: 4, ammoParts: 10 },
+  outpostDepot_cache: { weaponParts: 4, metalBarT5: 10 },
   // Окраины: у лагерей налётчиков — лом и детали, у стай — химия и медикаменты.
-  outskirts_cache_1: { scrap: 6, ammoParts: 10, weaponParts: 1 },
-  outskirts_cache_2: { scrap: 5, electronics: 3, ammoParts: 4 },
-  outskirts_cache_3: { scrap: 6, ammoParts: 10, weaponParts: 1 },
-  outskirts_cache_4: { scrap: 5, electronics: 3, ammoParts: 4 },
-  outskirts_cache_5: { chemicals: 4, medicine: 3, scrap: 3 },
-  outskirts_cache_6: { ore: 6, chemicals: 3, medicine: 2 },
-  outskirts_cache_7: { chemicals: 4, medicine: 3, scrap: 3 },
-  outskirts_cache_8: { ore: 6, chemicals: 3, medicine: 2 },
+  outskirts_cache_1: { scrap: 6, metalBarT5: 10, weaponParts: 1 },
+  outskirts_cache_2: { scrap: 5, electronics: 3, metalBarT5: 4 },
+  outskirts_cache_3: { scrap: 6, metalBarT5: 10, weaponParts: 1 },
+  outskirts_cache_4: { scrap: 5, electronics: 3, metalBarT5: 4 },
+  outskirts_cache_5: { fuelT5: 4, clothT5: 3, scrap: 3 },
+  outskirts_cache_6: { ore: 6, fuelT5: 3, clothT5: 2 },
+  outskirts_cache_7: { fuelT5: 4, clothT5: 3, scrap: 3 },
+  outskirts_cache_8: { ore: 6, fuelT5: 3, clothT5: 2 },
   // У входов в лаборатории — материалы их направления, но не сам компонент.
-  middle_cache_1: { medicine: 5, chemicals: 5, scrap: 2 },
+  middle_cache_1: { clothT5: 5, fuelT5: 5, scrap: 2 },
   middle_cache_2: { electronics: 6, scrap: 4 },
   middle_cache_3: { ore: 8, scrap: 6, weaponParts: 2 },
-  middle_cache_4: { chemicals: 6, electronics: 4 },
+  middle_cache_4: { fuelT5: 6, electronics: 4 },
   center_cache_a: { stabilizerCatalyst: 1, electronics: 4, weaponParts: 3 },
-  center_cache_b: { electronics: 4, weaponParts: 3, chemicals: 4 },
-  service_locker_a: { scrap: 5, electronics: 3, chemicals: 2 },
-  service_locker_b: { weaponParts: 3, electronics: 3, ammoParts: 4 },
-  research_vault_w: { stabilizerCatalyst: 1, medicine: 4, chemicals: 3 },
-  research_vault_e: { stabilizerCatalyst: 1, electronics: 4, ammoParts: 4 }
+  center_cache_b: { electronics: 4, weaponParts: 3, fuelT5: 4 },
+  service_locker_a: { scrap: 5, electronics: 3, fuelT5: 2 },
+  service_locker_b: { weaponParts: 3, electronics: 3, metalBarT5: 4 },
+  research_vault_w: { stabilizerCatalyst: 1, clothT5: 4, fuelT5: 3 },
+  research_vault_e: { stabilizerCatalyst: 1, electronics: 4, metalBarT5: 4 }
 };
 
 function container(id, name, x, z, width, depth, tier = 'basic', extra = {}) {
@@ -602,7 +602,7 @@ function centralLevelDefinition(level, index) {
     }));
     containers.push(container('boss_vault_b', 'Контейнер установки', 12, 26, width, depth, 'rare', {
       bossLoot: c.worldBoss.id, locked: true, lockDifficulty: 'hard', lootTable: true,
-      loot: [{ id: 'stabilizerCatalyst', qty: 2 }, { id: 'bioReagent', qty: 1 }, { id: 'spectrumSample', qty: 1 }, { id: 'medicine', qty: 3 }]
+      loot: [{ id: 'stabilizerCatalyst', qty: 2 }, { id: 'bioReagent', qty: 1 }, { id: 'spectrumSample', qty: 1 }, { id: 'clothT5', qty: 3 }]
     }));
   }
   return {

@@ -33,6 +33,7 @@ const {
   addStockpile,
   compactStockpile,
   emptyStockpile,
+  migrateLegacyStockpile,
   stockpileSummary,
   stockpileTotal,
   takeStockpile
@@ -455,7 +456,7 @@ function defaultSites(globalMap = {}) {
       locationId: 'settlement',
       traderProfiles: ['oldKlim', 'guardKlimPatrol'],
       productionCapabilities: ['ammo_bench', 'weapon_bench', 'tool_bench', 'repair_bench', 'chem_station'],
-      stockpile: { ...emptyStockpile(), silver: 520, water: 18, scrap: 14, ore: 7, medicine: 5, ammoParts: 8 },
+      stockpile: { ...emptyStockpile(), silver: 520, water: 18, scrap: 14, ore: 7, medkit: 5, metalBar: 8 },
       security: 62,
       prosperity: 40
     },
@@ -472,7 +473,7 @@ function defaultSites(globalMap = {}) {
       locationId: 'scrapTown',
       traderProfiles: ['scrap'],
       productionCapabilities: ['ammo_bench', 'weapon_bench', 'tool_bench', 'repair_bench', 'chem_station'],
-      stockpile: { ...emptyStockpile(), silver: 420, scrap: 42, ore: 12, ammoParts: 10 },
+      stockpile: { ...emptyStockpile(), silver: 420, scrap: 42, ore: 12, metalBar: 10 },
       security: 38,
       prosperity: 32,
       workers: [
@@ -494,7 +495,7 @@ function defaultSites(globalMap = {}) {
       locationId: 'relayStation',
       traderProfiles: ['relay'],
       productionCapabilities: ['ammo_bench', 'energy_bench', 'weapon_bench', 'tool_bench', 'repair_bench', 'chem_station'],
-      stockpile: { ...emptyStockpile(), silver: 460, electronics: 28, chemicals: 12, medicine: 4 },
+      stockpile: { ...emptyStockpile(), silver: 460, electronics: 28, fuel: 12, medkit: 4 },
       security: 45,
       prosperity: 36,
       workers: [
@@ -516,7 +517,7 @@ function defaultSites(globalMap = {}) {
       locationId: 'caravanCamp',
       traderProfiles: ['caravan'],
       productionCapabilities: ['ammo_bench', 'tool_bench', 'repair_bench'],
-      stockpile: { ...emptyStockpile(), silver: 480, water: 14, food: 16, scrap: 8, medicine: 4, ammoParts: 6 },
+      stockpile: { ...emptyStockpile(), silver: 480, water: 14, food: 16, scrap: 8, medkit: 4, metalBar: 6 },
       security: 44,
       prosperity: 34,
       workers: [
@@ -551,7 +552,7 @@ function defaultSites(globalMap = {}) {
       capital: true,
       capitalFaction: 'seconds',
       locationId: 'secondHaven',
-      stockpile: { ...emptyStockpile(), silver: 260, water: 12, food: 8, medicine: 10, blue: 4 },
+      stockpile: { ...emptyStockpile(), silver: 260, water: 12, food: 8, medkit: 10, blue: 4 },
       security: 48,
       prosperity: 28
     },
@@ -580,9 +581,9 @@ function defaultSites(globalMap = {}) {
       locationId: 'resourceScrapFields',
       nearCapitalLayoutVersion: NEAR_CAPITAL_SITE_LAYOUT_VERSION,
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
-      note: 'Ресурсная точка Вольных артелей у столицы. Добыча: лом, детали патронов, а между грудами — водосборы и грядки на насыпном грунте. Кормит литейную и патронные караваны.',
-      output: { scrap: 16, ammoParts: 5, water: 9, food: 6 },
-      stockpile: { ...emptyStockpile(), silver: 70, scrap: 30, ammoParts: 8, water: 16, food: 12 },
+      note: 'Ресурсная точка Вольных артелей у столицы. Добыча: руда, вода и пища; металлолом встречается в тайниках и трофеях.',
+      output: { ore: 21, water: 9, food: 6 },
+      stockpile: { ...emptyStockpile(), silver: 70, scrap: 30, metalBar: 8, water: 16, food: 12 },
       danger: 2,
       resourceRichness: 78,
       workforce: 46
@@ -596,9 +597,9 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvp',
       locationId: 'resourceDryWaterPump',
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
-      note: 'Сухая насосная станция с редкими рабочими колодцами. Даёт воду и немного химикатов.',
-      output: { water: 18, chemicals: 3 },
-      stockpile: { ...emptyStockpile(), silver: 80, water: 30, chemicals: 5 },
+      note: 'Сухая насосная станция с редкими рабочими колодцами. Даёт воду и немного нефти из старых резервуаров.',
+      output: { water: 18, oil: 3 },
+      stockpile: { ...emptyStockpile(), silver: 80, water: 30, fuel: 5 },
       danger: 1,
       resourceRichness: 66,
       workforce: 56
@@ -612,9 +613,9 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'peaceful',
       locationId: 'resourceOldKlimFarm',
       nearCapitalLayoutVersion: NEAR_CAPITAL_SITE_LAYOUT_VERSION,
-      note: 'Ресурсная точка Управы у столицы. Добыча: еда, вода, медикаменты и древесина с изгородей и сада. Внутри есть огород, травы и бак с водой.',
-      output: { food: 10, water: 6, medicine: 2, wood: 6 },
-      stockpile: { ...emptyStockpile(), silver: 70, food: 26, water: 18, medicine: 6, wood: 14 },
+      note: 'Ресурсная точка Управы у столицы. Добыча: еда, вода, волокно и древесина с изгородей и сада. Внутри есть огород, травы и бак с водой.',
+      output: { food: 10, water: 6, fiber: 2, wood: 6 },
+      stockpile: { ...emptyStockpile(), silver: 70, food: 26, water: 18, medkit: 6, wood: 14 },
       danger: 1,
       resourceRichness: 66,
       workforce: 48,
@@ -632,7 +633,7 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvpFullDrop',
       locationId: 'resourceIronMine',
       note: 'Заброшенная шахта с опасными штольнями. Основной источник руды и металлического лома.',
-      output: { ore: 20, scrap: 4 },
+      output: { ore: 24 },
       stockpile: { ...emptyStockpile(), silver: 90, ore: 36, scrap: 7 },
       danger: 3,
       resourceRichness: 88,
@@ -652,7 +653,7 @@ function defaultSites(globalMap = {}) {
       // четырёх за цикл фракция не собирала ни инструментов, ни ремкомплектов:
       // весь лом съедали патроны. Свалочный союз с тридцатью за цикл первенства
       // при этом не теряет.
-      output: { oil: 14, scrap: 14, wood: 7 },
+      output: { oil: 18, ore: 10, wood: 7 },
       stockpile: { ...emptyStockpile(), silver: 95, oil: 24, scrap: 18, wood: 10 },
       danger: 3.5,
       resourceRichness: 72,
@@ -667,8 +668,8 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvp',
       locationId: 'resourceChemSpring',
       note: 'Минеральный химический источник в северных техпустошах. Ретранслятор поставил здесь фильтры и теплицу на подогретой воде. Сюда ходят патрули и дикие твари.',
-      output: { chemicals: 16, water: 13, food: 7 },
-      stockpile: { ...emptyStockpile(), silver: 85, chemicals: 26, water: 20, food: 12 },
+      output: { oil: 16, water: 13, food: 7 },
+      stockpile: { ...emptyStockpile(), silver: 85, fuel: 26, water: 20, food: 12 },
       danger: 2,
       resourceRichness: 70,
       workforce: 34
@@ -684,7 +685,7 @@ function defaultSites(globalMap = {}) {
       note: 'Южная каменоломня Управы. Камень, руда и вытащенный из породы металл идут на ремонт застав и дорог.',
       // Единственный источник лома у Старого Клима: девяти за цикл не хватало
       // даже патронному заводу, и до станции инструментов не доходило ничего.
-      output: { ore: 12, scrap: 15 },
+      output: { ore: 27 },
       stockpile: { ...emptyStockpile(), silver: 75, ore: 24, scrap: 20 },
       danger: 2,
       resourceRichness: 68,
@@ -699,9 +700,9 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvp',
       locationId: 'resourceSiliconRidge',
       nearCapitalLayoutVersion: NEAR_CAPITAL_SITE_LAYOUT_VERSION,
-      note: 'Ресурсная точка Ретранслятора у столицы. Добыча: электроника, химикаты. Сюда ходят техники за платами и реагентами.',
-      output: { electronics: 10, chemicals: 4 },
-      stockpile: { ...emptyStockpile(), silver: 90, electronics: 18, chemicals: 7 },
+      note: 'Ресурсная точка Ретранслятора у столицы. Добыча: руда и нефть; электроника встречается в тайниках и трофеях.',
+      output: { ore: 10, oil: 4 },
+      stockpile: { ...emptyStockpile(), silver: 90, electronics: 18, fuel: 7 },
       danger: 2.5,
       resourceRichness: 74,
       workforce: 32
@@ -715,7 +716,7 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvp',
       locationId: 'resourceTireDepot',
       note: 'Южный склад старых покрышек и дорожного хлама. Вольные артели собирают здесь резину, лом, топливо и доски от поддонов.',
-      output: { scrap: 10, oil: 5, wood: 5 },
+      output: { ore: 10, oil: 5, wood: 5 },
       stockpile: { ...emptyStockpile(), silver: 80, scrap: 22, oil: 8, wood: 12 },
       danger: 2,
       resourceRichness: 64,
@@ -730,7 +731,7 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvpFullDrop',
       locationId: 'mutantCrater',
       note: 'Опасный кратер в центральной пустоши. Бродячие супермутанты возвращаются сюда после вылазок.',
-      stockpile: { ...emptyStockpile(), silver: 45, ammoParts: 8, scrap: 12 },
+      stockpile: { ...emptyStockpile(), silver: 45, metalBar: 8, scrap: 12 },
       danger: 5,
       resourceRichness: 20,
       workforce: 0
@@ -744,7 +745,7 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvpFullDrop',
       locationId: 'radscorpionNest',
       note: 'Сухая каменная гряда с норами радскорпионов. Выводок выходит отсюда на охоту.',
-      stockpile: { ...emptyStockpile(), silver: 30, chemicals: 5 },
+      stockpile: { ...emptyStockpile(), silver: 30, fuel: 5 },
       danger: 4,
       resourceRichness: 18,
       workforce: 0
@@ -758,7 +759,7 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvpFullDrop',
       locationId: 'geckoCanyon',
       note: 'Каньон в диких охотничьих землях. Стаи гекконов прячутся среди горячих камней.',
-      stockpile: { ...emptyStockpile(), silver: 25, chemicals: 4 },
+      stockpile: { ...emptyStockpile(), silver: 25, fuel: 4 },
       danger: 3.5,
       resourceRichness: 16,
       workforce: 0
@@ -772,7 +773,7 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvpFullDrop',
       locationId: 'antHive',
       note: 'Сухая низина с туннелями мутировавших муравьев. Рой выходит отсюда к свалочным дорогам.',
-      stockpile: { ...emptyStockpile(), silver: 28, chemicals: 3 },
+      stockpile: { ...emptyStockpile(), silver: 28, fuel: 3 },
       danger: 4,
       resourceRichness: 18,
       workforce: 0
@@ -788,7 +789,7 @@ function defaultSites(globalMap = {}) {
       roadOutpost: true,
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
       note: 'Застава 17 Управы. Дозоры контролируют путь между ресурсными точками.',
-      stockpile: { ...emptyStockpile(), silver: 140, water: 6, ammoParts: 4 },
+      stockpile: { ...emptyStockpile(), silver: 140, water: 6, metalBar: 4 },
       security: 55,
       production: { ammo9: 18, stim: 2 },
       productionCapabilities: ['ammo_bench', 'chem_station'],
@@ -809,10 +810,10 @@ function defaultSites(globalMap = {}) {
       roadOutpost: true,
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
       note: 'Передовой пост Вольных артелей у старой трассы. Охраняет караваны лома, рудник и литейную.',
-      stockpile: { ...emptyStockpile(), silver: 130, scrap: 12, ammoParts: 8, water: 5 },
+      stockpile: { ...emptyStockpile(), silver: 130, scrap: 12, metalBar: 8, water: 5 },
       security: 46,
       prosperity: 24,
-      production: { ammoParts: 6, repairKit: 1 },
+      production: { metalBar: 6, repairKit: 1 },
       productionCapabilities: ['ammo_bench', 'tool_bench', 'repair_bench'],
       workers: [
         { role: 'guard', label: 'ополчение Вольных артелей', count: 5 },
@@ -853,7 +854,7 @@ function defaultSites(globalMap = {}) {
       nearCapitalLayoutVersion: NEAR_CAPITAL_SITE_LAYOUT_VERSION,
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
       note: 'Производственная точка Управы у столицы. Производит патроны 9 мм и .223. Станки: патронный, оружейный, ремонтный.',
-      stockpile: { ...emptyStockpile(), silver: 180, scrap: 20, ore: 12, ammoParts: 18 },
+      stockpile: { ...emptyStockpile(), silver: 180, scrap: 20, ore: 12, metalBar: 18 },
       security: 48,
       prosperity: 28,
       production: { ammo9: 28, ammo556: 12 },
@@ -873,10 +874,10 @@ function defaultSites(globalMap = {}) {
       locationId: 'scrapFoundry',
       nearCapitalLayoutVersion: NEAR_CAPITAL_SITE_LAYOUT_VERSION,
       note: 'Производственная точка Вольных артелей у столицы. Производит оружейные и патронные детали. Станки: оружейный, патронный, ремонтный, инструментальный.',
-      stockpile: { ...emptyStockpile(), silver: 170, scrap: 52, ore: 18, ammoParts: 8 },
+      stockpile: { ...emptyStockpile(), silver: 170, scrap: 52, ore: 18, metalBar: 8 },
       security: 42,
       prosperity: 34,
-      production: { weaponParts: 2, ammoParts: 12 },
+      production: { weaponParts: 2, metalBar: 12 },
       productionCapabilities: ['weapon_bench', 'ammo_bench', 'tool_bench', 'repair_bench'],
       workers: [
         { role: 'worker', label: 'литейщики', count: 7 },
@@ -894,7 +895,7 @@ function defaultSites(globalMap = {}) {
       locationId: 'relayWorkshop',
       nearCapitalLayoutVersion: NEAR_CAPITAL_SITE_LAYOUT_VERSION,
       note: 'Производственная точка Ретранслятора у столицы. Производит: электронику, энергоячейки, напалм, ремкомплекты. Станки: энергетический, ремонтный, химический.',
-      stockpile: { ...emptyStockpile(), silver: 190, electronics: 24, chemicals: 14, oil: 10, napalm: 12, scrap: 12 },
+      stockpile: { ...emptyStockpile(), silver: 190, electronics: 24, fuel: 14, oil: 10, napalm: 12, scrap: 12 },
       security: 46,
       prosperity: 38,
       production: { electronics: 4, energyCell: 10, napalm: 6, repairKit: 1 },
@@ -936,7 +937,7 @@ function defaultSites(globalMap = {}) {
       locationId: 'oldDepot',
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
       note: 'Старый военный склад, занятый рейдерами. Опасное место с шансом найти боеприпасы и электронику.',
-      stockpile: { ...emptyStockpile(), silver: 110, ammoParts: 28, electronics: 8, medicine: 3 },
+      stockpile: { ...emptyStockpile(), silver: 110, metalBar: 28, electronics: 8, medkit: 3 },
       danger: 4,
       resourceRichness: 38,
       workforce: 10,
@@ -1154,8 +1155,8 @@ function supportRoleKitOptions(role = '', faction = '') {
   const group = factionGroup(faction || '');
   if (key === 'guard') {
     const rifleKit = {
-      cost: { water: 1, food: 1, medicine: 1, weaponParts: 1, ammo556: 12 },
-      cargo: { water: 1, food: 1, medicine: 1, ammo556: 6 },
+      cost: { water: 1, food: 1, medkit: 1, weaponParts: 1, ammo556: 12 },
+      cargo: { water: 1, food: 1, medkit: 1, ammo556: 6 },
       equipment: {
         weapon: group === 'relay_order' ? 'laserPistol' : 'rifle',
         armor: group === 'scrap_union' ? 'leather' : 'ballisticVest',
@@ -1163,13 +1164,13 @@ function supportRoleKitOptions(role = '', faction = '') {
       }
     };
     const pistolKit = {
-      cost: { water: 1, food: 1, medicine: 1, weaponParts: 1, ammo9: 18 },
-      cargo: { water: 1, food: 1, medicine: 1, ammo9: 8 },
+      cost: { water: 1, food: 1, medkit: 1, weaponParts: 1, ammo9: 18 },
+      cargo: { water: 1, food: 1, medkit: 1, ammo9: 8 },
       equipment: { weapon: 'pistol', armor: 'leather', helmet: group === 'old_klim' ? 'helmet' : null }
     };
     const improvisedKit = {
-      cost: { medicine: 1, ammoParts: 2 },
-      cargo: { medicine: 1, ammoParts: 1 },
+      cost: { medkit: 1, metalBar: 2 },
+      cargo: { medkit: 1, metalBar: 1 },
       equipment: { weapon: 'pistol', armor: 'leather' }
     };
     const energyKit = {
@@ -1185,7 +1186,7 @@ function supportRoleKitOptions(role = '', faction = '') {
     return [
       { cost: { water: 1, scrap: 2 }, cargo: { water: 1, scrap: 1 }, equipment: { weapon: 'knife' } },
       { cost: { electronics: 1 }, cargo: { electronics: 1 }, equipment: { weapon: 'knife' } },
-      { cost: { chemicals: 1, oil: 1 }, cargo: { chemicals: 1 }, equipment: { weapon: 'knife' } }
+      { cost: { fuel: 1, oil: 1 }, cargo: { fuel: 1 }, equipment: { weapon: 'knife' } }
     ];
   }
   if (key === 'hauler') {
@@ -1839,7 +1840,7 @@ function normalizeState(input, globalMap = {}) {
       : capitalClearPoint;
     site.x = point.x;
     site.y = point.y;
-    site.stockpile = { ...emptyStockpile(), ...(site.stockpile || {}) };
+    site.stockpile = { ...emptyStockpile(), ...migrateLegacyStockpile(site.stockpile || {}) };
     site.resourceRichness = clamp(site.resourceRichness ?? defaults.resourceRichness ?? defaultResourceRichness(site), 0, 100);
     site.workforce = clamp(site.workforce ?? defaults.workforce ?? (isHarvestSite(site) ? 45 : isProductionSite(site) ? 35 : 0), 0, 100);
     const computedActivity = resourceActivityPercent(site, Number(state.worldHour || 0));
@@ -1902,12 +1903,12 @@ function normalizeState(input, globalMap = {}) {
       if (site.raidUntil <= Number(state.worldHour || 0)) site.raidUntil = 0;
     }
     site.traderProfiles = Array.isArray(site.traderProfiles) ? site.traderProfiles.map(x => safeId(x)).filter(Boolean) : [];
-    site.output = site.output && typeof site.output === 'object'
-      ? compactStockpile(site.output)
-      : (defaults.output && typeof defaults.output === 'object' ? compactStockpile(defaults.output) : {});
-    site.production = site.production && typeof site.production === 'object'
-      ? compactStockpile(site.production)
-      : (defaults.production && typeof defaults.production === 'object' ? compactStockpile(defaults.production) : {});
+    site.output = defaults.output && typeof defaults.output === 'object'
+      ? compactStockpile(defaults.output)
+      : (site.output && typeof site.output === 'object' ? compactStockpile(migrateLegacyStockpile(site.output)) : {});
+    site.production = defaults.production && typeof defaults.production === 'object'
+      ? compactStockpile(defaults.production)
+      : (site.production && typeof site.production === 'object' ? compactStockpile(migrateLegacyStockpile(site.production)) : {});
     site.productionCapabilities = (Array.isArray(site.productionCapabilities) && site.productionCapabilities.length
       ? site.productionCapabilities
       : (Array.isArray(defaults.productionCapabilities) ? defaults.productionCapabilities : []))
@@ -2092,7 +2093,7 @@ function normalizeState(input, globalMap = {}) {
       ? ''
       : String(party.infrastructureAvoidanceSignature || '').slice(0, 480);
     party.infrastructureLayoutVersion = WORLD_INFRASTRUCTURE_LAYOUT_VERSION;
-    party.cargo = party.cargo && typeof party.cargo === 'object' ? party.cargo : {};
+    party.cargo = migrateLegacyStockpile(party.cargo || {});
     party.cargoCapacity = clamp(party.cargoCapacity || defaults.cargoCapacity || 0, 0, 1000);
     party.collectScale = clamp(party.collectScale || defaults.collectScale || 1, 0.1, 5);
     party.preferredResources = Array.isArray(party.preferredResources) && party.preferredResources.length
@@ -3476,10 +3477,10 @@ function createWastelandSimulation(options = {}) {
       wood: 3,
       ore: 4,
       scrap: 4,
-      chemicals: 7,
-      medicine: 12,
+      fuel: 7,
+      medkit: 12,
       electronics: 9,
-      ammoParts: 3,
+      metalBar: 3,
       ammo9: 3,
       ammo556: 5,
       shotgunShell: 6,
@@ -8480,33 +8481,33 @@ function createWastelandSimulation(options = {}) {
       const stock = site.stockpile || {};
       const production = site.production && typeof site.production === 'object' ? site.production : {};
       const lowStock = stockpileTotal(stock) < 24;
-      const missingCore = Number(stock.scrap || 0) < 8 || Number(stock.ore || 0) < 6 || Number(stock.ammoParts || 0) < 6;
+      const missingCore = Number(stock.scrap || 0) < 8 || Number(stock.ore || 0) < 6 || Number(stock.metalBar || 0) < 6;
       if (lowStock || missingCore || reason === 'stalled' || reason === 'low_stock') {
         add('scrap', Math.max(4, 10 - Number(stock.scrap || 0)));
         add('ore', Math.max(2, 8 - Number(stock.ore || 0)));
         if (production.energyCell || production.electronics || production.repairKit) {
           add('electronics', Math.max(2, 6 - Number(stock.electronics || 0)));
         }
-        if (production.ammo9 || production.ammo556 || production.ammoParts) {
-          add('ammoParts', Math.max(3, 8 - Number(stock.ammoParts || 0)));
+        if (production.ammo9 || production.ammo556 || production.metalBar) {
+          add('metalBar', Math.max(3, 8 - Number(stock.metalBar || 0)));
         }
       }
       if (security < 42 || Number(site.raidUntil || 0) > Number(state.worldHour || 0) || Math.abs(Number(site.controlPressure || 0)) > 6) {
-        add('ammoParts', 4);
-        add('medicine', 2);
+        add('metalBar', 4);
+        add('medkit', 2);
       }
       return compactStockpile(demand);
     }
 
     if (activity < 30 || workforce < 38 || reason === 'stalled') {
       add('water', 2 + Math.ceil(Math.max(0, 42 - workforce) / 12));
-      add('medicine', workforce < 28 ? 3 : 1);
-      if (output.oil || output.chemicals) add('chemicals', 2);
+      add('medkit', workforce < 28 ? 3 : 1);
+      if (output.oil || output.fuel) add('fuel', 2);
       else add('scrap', 3);
     }
     if (security < 42 || Number(site.raidUntil || 0) > Number(state.worldHour || 0) || Math.abs(Number(site.controlPressure || 0)) > 6) {
-      add('ammoParts', 3 + Math.ceil(Math.max(0, 45 - security) / 12));
-      add('medicine', 2);
+      add('metalBar', 3 + Math.ceil(Math.max(0, 45 - security) / 12));
+      add('medkit', 2);
     }
     if (!Object.keys(demand).length && stockpileTotal(site.stockpile || {}) < 18) {
       add('water', 2);
@@ -9529,42 +9530,42 @@ function createWastelandSimulation(options = {}) {
       wood: ['wood'],
       scrap: ['scrap'],
       ore: ['ore'],
-      chemicals: ['chemicals'],
-      medicine: ['medicine'],
+      fuel: ['fuel'],
+      medkit: ['medkit'],
       electronics: ['electronics'],
-      ammoParts: ['ammoParts'],
+      metalBar: ['metalBar'],
       food: ['food'],
       weaponParts: ['weaponParts'],
       repairKit: ['repairKit', 'scrap', 'electronics'],
       handPump: ['handPump', 'scrap', 'electronics'],
       pickaxe: ['pickaxe', 'scrap'],
       axe: ['axe', 'scrap', 'wood'],
-      ammo9: ['ammo9', 'ammoParts'],
-      ammo556: ['ammo556', 'ammoParts'],
-      shotgunShell: ['shotgunShell', 'ammoParts'],
-      rocketAmmo: ['rocketAmmo', 'ammoParts', 'electronics'],
-      napalm: ['napalm', 'oil', 'chemicals'],
-      pistol: ['scrap', 'ammoParts'],
-      rifle: ['weaponParts', 'scrap', 'ammoParts'],
-      assaultRifle: ['weaponParts', 'scrap', 'ammoParts'],
-      machineGun: ['weaponParts', 'scrap', 'ammoParts'],
-      shotgun: ['weaponParts', 'scrap', 'ammoParts'],
+      ammo9: ['ammo9', 'metalBar'],
+      ammo556: ['ammo556', 'metalBar'],
+      shotgunShell: ['shotgunShell', 'metalBar'],
+      rocketAmmo: ['rocketAmmo', 'metalBar', 'electronics'],
+      napalm: ['napalm', 'oil', 'fuel'],
+      pistol: ['scrap', 'metalBar'],
+      rifle: ['weaponParts', 'scrap', 'metalBar'],
+      assaultRifle: ['weaponParts', 'scrap', 'metalBar'],
+      machineGun: ['weaponParts', 'scrap', 'metalBar'],
+      shotgun: ['weaponParts', 'scrap', 'metalBar'],
       rocketLauncher: ['weaponParts', 'scrap', 'electronics'],
       laserPistol: ['electronics'],
-      plasmaRifle: ['electronics', 'chemicals'],
+      plasmaRifle: ['electronics', 'fuel'],
       flamethrower: ['oil', 'scrap'],
       energyCell: ['energyCell', 'electronics'],
-      stim: ['medicine'],
-      medkit: ['medicine'],
-      doctorBag: ['medicine', 'electronics'],
-      antibiotics: ['medicine', 'chemicals'],
+      stim: ['medkit'],
+      medkit: ['medkit'],
+      doctorBag: ['medkit', 'electronics'],
+      antibiotics: ['medkit', 'fuel'],
       leather: ['scrap'],
       metalArmor: ['scrap'],
-      ballisticVest: ['scrap', 'ammoParts'],
+      ballisticVest: ['scrap', 'metalBar'],
       combatArmor: ['scrap', 'electronics'],
-      hazmatSuit: ['chemicals'],
+      hazmatSuit: ['fuel'],
       heavyArmor: ['scrap', 'electronics'],
-      energySuit: ['electronics', 'chemicals'],
+      energySuit: ['electronics', 'fuel'],
       helmet: ['scrap'],
       tacticalHelmet: ['scrap', 'electronics'],
       assaultHelmet: ['scrap', 'electronics'],

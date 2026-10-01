@@ -30729,7 +30729,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 13
         },
         {
@@ -30737,7 +30737,7 @@
           "qty": 17
         },
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 7
         },
         {
@@ -30759,7 +30759,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 7
         },
         {
@@ -30782,7 +30782,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 17
         },
         {
@@ -30812,7 +30812,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 4
         },
         {

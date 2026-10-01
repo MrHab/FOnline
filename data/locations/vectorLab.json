@@ -62,11 +62,11 @@
           "qty": 6
         },
         {
-          "id": "chemicals",
+          "id": "fuelT4",
           "qty": 6
         },
         {
-          "id": "medicine",
+          "id": "clothT4",
           "qty": 4
         },
         {
@@ -92,7 +92,7 @@
           "qty": 4
         },
         {
-          "id": "chemicals",
+          "id": "fuelT4",
           "qty": 2
         }
       ]

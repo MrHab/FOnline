@@ -95,7 +95,10 @@ function previewClanCraftBenefit(profile = {}, runtime = {}, recipeId = '', requ
   };
 
   discount('oil', benefit.clanStationFuelCostPct);
-  discount('chemicals', benefit.filterCostPct, new Set(['reagentcraft', 'medicinecraft', 'hazmatsuitcraft']));
+  for (const id of ['fuel', 'fuelT2', 'fuelT3', 'fuelT4', 'fuelT5']) {
+    discount(id, benefit.clanStationFuelCostPct);
+    discount(id, benefit.filterCostPct, new Set(['medkitcraft', 'antibioticscraft', 'hazmatsuitcraft']));
+  }
   discount('water', benefit.productionWaterCostPct);
 
   const outputBonus = (rawPct, allowedOutputs) => {
@@ -110,9 +113,9 @@ function previewClanCraftBenefit(profile = {}, runtime = {}, recipeId = '', requ
     }
   };
 
-  outputBonus(benefit.processedOreOutputPct, new Set(['weaponParts']));
-  outputBonus(benefit.reagentOutputPct, new Set(['chemicals']));
-  outputBonus(benefit.medicalRawOutputPct, new Set(['medicine']));
+  outputBonus(benefit.processedOreOutputPct, new Set(['metalBar', 'metalBarT2', 'metalBarT3', 'metalBarT4', 'metalBarT5']));
+  outputBonus(benefit.reagentOutputPct, new Set(['fuel', 'fuelT2', 'fuelT3', 'fuelT4', 'fuelT5']));
+  outputBonus(benefit.medicalRawOutputPct, new Set(['medkit']));
 
   return {
     requirements: nextRequirements,

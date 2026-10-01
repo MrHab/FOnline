@@ -31,11 +31,11 @@
     "loadoutChangeCombatLockMs": 10000
   },
   "tiers": [
-    { "tier": 1, "short": "Т1", "displayName": "Тусклый", "color": "#8a939b", "benefitScale": 0.8, "drawbackScale": 1.1, "stabilization": { "silver": 40, "items": [{ "id": "chemicals", "qty": 1 }] }, "salvage": { "items": [{ "id": "chemicals", "qty": 1 }], "familyComponentQty": 0 } },
-    { "tier": 2, "short": "Т2", "displayName": "Ровный", "color": "#d8d2c0", "benefitScale": 1.0, "drawbackScale": 1.0, "stabilization": { "silver": 90, "items": [{ "id": "chemicals", "qty": 2 }, { "id": "electronics", "qty": 1 }] }, "salvage": { "items": [{ "id": "chemicals", "qty": 1 }, { "id": "electronics", "qty": 1 }], "familyComponentQty": 0 } },
-    { "tier": 3, "short": "Т3", "displayName": "Яркий", "color": "#efd078", "benefitScale": 1.25, "drawbackScale": 0.92, "stabilization": { "silver": 180, "items": [{ "id": "stabilizerCatalyst", "qty": 1 }] }, "salvage": { "items": [{ "id": "stabilizerCatalyst", "qty": 1 }], "familyComponentQty": 0 } },
-    { "tier": 4, "short": "Т4", "displayName": "Чистый", "color": "#9fd7ff", "benefitScale": 1.55, "drawbackScale": 0.85, "stabilization": { "silver": 320, "items": [{ "id": "stabilizerCatalyst", "qty": 2 }], "familyComponentQty": 1 }, "salvage": { "items": [{ "id": "stabilizerCatalyst", "qty": 1 }], "familyComponentQty": 1 } },
-    { "tier": 5, "short": "Т5", "displayName": "Первородный", "color": "#ff9a54", "benefitScale": 1.9, "drawbackScale": 0.75, "stabilization": { "silver": 600, "items": [{ "id": "stabilizerCatalyst", "qty": 3 }], "familyComponentQty": 2 }, "salvage": { "items": [{ "id": "stabilizerCatalyst", "qty": 2 }], "familyComponentQty": 1 } }
+    { "tier": 1, "short": "Т1", "displayName": "Тусклый", "color": "#8a939b", "benefitScale": 0.8, "drawbackScale": 1.1, "stabilization": { "silver": 40, "items": [{ "id": "fuel", "qty": 1 }] } },
+    { "tier": 2, "short": "Т2", "displayName": "Ровный", "color": "#d8d2c0", "benefitScale": 1.0, "drawbackScale": 1.0, "stabilization": { "silver": 90, "items": [{ "id": "fuelT2", "qty": 2 }, { "id": "electronics", "qty": 1 }] } },
+    { "tier": 3, "short": "Т3", "displayName": "Яркий", "color": "#efd078", "benefitScale": 1.25, "drawbackScale": 0.92, "stabilization": { "silver": 180, "items": [{ "id": "stabilizerCatalyst", "qty": 1 }] } },
+    { "tier": 4, "short": "Т4", "displayName": "Чистый", "color": "#9fd7ff", "benefitScale": 1.55, "drawbackScale": 0.85, "stabilization": { "silver": 320, "items": [{ "id": "stabilizerCatalyst", "qty": 2 }], "familyComponentQty": 1 } },
+    { "tier": 5, "short": "Т5", "displayName": "Первородный", "color": "#ff9a54", "benefitScale": 1.9, "drawbackScale": 0.75, "stabilization": { "silver": 600, "items": [{ "id": "stabilizerCatalyst", "qty": 3 }], "familyComponentQty": 2 } }
   ],
   "families": {
     "bio": { "displayName": "Биологический", "componentItemId": "bioReagent" },

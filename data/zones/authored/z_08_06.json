@@ -29094,7 +29094,7 @@
           "qty": 8
         },
         {
-          "id": "medicine",
+          "id": "clothT4",
           "qty": 4
         },
         {
@@ -29116,7 +29116,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT4",
           "qty": 5
         },
         {

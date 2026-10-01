@@ -29288,11 +29288,11 @@
       "lockDifficulty": "easy",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT3",
           "qty": 4
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 10
         },
         {
@@ -29314,7 +29314,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 5
         },
         {
@@ -29337,11 +29337,11 @@
       "lockDifficulty": "easy",
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 10
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 8
         },
         {
@@ -29363,11 +29363,11 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 4
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 7
         }
       ]

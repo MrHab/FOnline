@@ -23,8 +23,8 @@
     "summary": "Вентиляция, заражённые секции, питательные узлы и колония мутантов.",
     "rewardComponents": [
       "bioReagent",
-      "medicine",
-      "chemicals"
+      "clothT5",
+      "fuelT5"
     ],
     "innerGateContainerId": "inner_vault"
   },
@@ -115,11 +115,11 @@
           "qty": 1
         },
         {
-          "id": "medicine",
+          "id": "clothT5",
           "qty": 2
         },
         {
-          "id": "chemicals",
+          "id": "fuelT5",
           "qty": 2
         }
       ],
@@ -147,11 +147,11 @@
           "qty": 2
         },
         {
-          "id": "medicine",
+          "id": "clothT5",
           "qty": 2
         },
         {
-          "id": "chemicals",
+          "id": "fuelT5",
           "qty": 2
         }
       ],
@@ -175,11 +175,11 @@
           "qty": 1
         },
         {
-          "id": "medicine",
+          "id": "clothT5",
           "qty": 2
         },
         {
-          "id": "chemicals",
+          "id": "fuelT5",
           "qty": 2
         }
       ],

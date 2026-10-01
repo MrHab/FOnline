@@ -13,11 +13,12 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
 const { createLocationCollision, circleBlockerPenalty } = require('../src/server/location-collision');
+const { readTieredCatalogs } = require('../src/server/kromka-tiers');
 const accounts = {};
 
 const root = path.resolve(__dirname, '..');
 const readJson = relative => JSON.parse(fs.readFileSync(path.join(root, relative), 'utf8'));
-const items = new Map(readJson('data/kromka/items.json').items.map(row => [row.id, row]));
+const items = new Map(readTieredCatalogs(path.join(root, 'data')).itemCatalog.items.map(row => [row.id, row]));
 const perkConfig = readJson('data/kromka/economy.json').lootPerks;
 // Тайник места ищется в его локации, а у места, стоящего площадкой в зоне, — в секторе.
 const definitionOf = locationId => (/^z_\d\d_\d\d$/.test(locationId)

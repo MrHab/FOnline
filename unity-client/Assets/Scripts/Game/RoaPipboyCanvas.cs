@@ -1854,7 +1854,7 @@ namespace RealmOfAshes.Game
         /// <summary>
         /// Карточка артефакта: тир в цвете шкалы экипировки (RoaGearData.TierTint),
         /// статус, раскрытые свойства или пометка, что они скрыты до стабилизации,
-        /// цена стабилизации и выход разбора. Все данные — из записи сервера.
+        /// цена стабилизации. Все данные — из записи сервера.
         /// </summary>
         public static string ArtifactCardSummary(JObject record, int count)
         {
@@ -1897,8 +1897,6 @@ namespace RealmOfAshes.Game
                 if (!string.IsNullOrEmpty(source)) parts.Add("источник: " + source);
                 parts.Add("стабилизация: " + ArtifactCostLabel(record["stabilizationCost"] as JObject));
             }
-            string salvage = ArtifactYieldLabel(record["salvageYields"] as JArray);
-            if (!string.IsNullOrEmpty(salvage)) parts.Add("разбор: " + salvage);
             return string.Join(" · ", parts);
         }
 
@@ -1964,19 +1962,6 @@ namespace RealmOfAshes.Game
                 if (!string.IsNullOrEmpty(id) && qty > 0) parts.Add(RoaItemData.Name(id) + " ×" + qty);
             }
             return parts.Count > 0 ? string.Join(" + ", parts) : "бесплатно";
-        }
-
-        public static string ArtifactYieldLabel(JArray yields)
-        {
-            if (yields == null) return string.Empty;
-            var parts = new List<string>();
-            foreach (JToken token in yields)
-            {
-                string id = token["id"]?.ToString() ?? string.Empty;
-                int qty = token["qty"]?.Value<int>() ?? 0;
-                if (!string.IsNullOrEmpty(id) && qty > 0) parts.Add(RoaItemData.Name(id) + " ×" + qty);
-            }
-            return string.Join(", ", parts);
         }
 
         /// <summary>Дельта предпросмотра контейнера: только изменившиеся характеристики.</summary>
@@ -2104,8 +2089,6 @@ namespace RealmOfAshes.Game
                 bool intact = (tile.Equipped ? Inventory.ConditionPercent(runtimeId) : Inventory.BagConditionPercent(runtimeId)) >= 99.995f;
                 options.Add(new RoaItemPopups.Option(intact ? "Починить (целый)" : "Починить", () => { Inventory.ItemAction("repair", runtimeId); Submit(true, "Ремонтирую…"); }, intact));
             }
-            if (Inventory.IsSalvageable(baseId) && !tile.Equipped)
-                options.Add(new RoaItemPopups.Option("Разобрать", () => { Inventory.ItemAction("salvage", runtimeId); Submit(true, "Разбираю…"); }));
             if (Quickbar != null && Inventory.IsQuickAssignable(baseId))
             {
                 for (int i = 0; i < Mathf.Min(4, Quickbar.Slots.Count); i++)
@@ -2158,12 +2141,6 @@ namespace RealmOfAshes.Game
                             if (ack?["ok"]?.Value<bool>() == true)
                                 RoaItemPopups.Instance?.ShowItem(baseId, ArtifactPreviewLabel(ack));
                         }), "Считаю…")));
-                }
-                if (!Inventory.ArtifactEquipped(id))
-                {
-                    string yields = ArtifactYieldLabel(record["salvageYields"] as JArray);
-                    options.Add(new RoaItemPopups.Option("Разобрать" + (string.IsNullOrEmpty(yields) ? string.Empty : " → " + yields) + suffix,
-                        () => Submit(Inventory.SubmitArtifactAction("salvage", id, OnActionAck), "Разбираю…")));
                 }
             }
             if (start > 0) options.Add(new RoaItemPopups.Option("Предыдущие экземпляры",
@@ -2941,7 +2918,7 @@ namespace RealmOfAshes.Game
                         ? "нет данных"
                         : "вода " + (reserve["water"]?.ToObject<float>() ?? 0f).ToString("0.#")
                           + " дн. · пища " + (reserve["food"]?.ToObject<float>() ?? 0f).ToString("0.#")
-                          + " дн. · медицина " + (reserve["medicine"]?.ToObject<float>() ?? 0f).ToString("0.#") + " дн.";
+                          + " дн. · аптечки " + (reserve["medkit"]?.ToObject<float>() ?? 0f).ToString("0.#") + " дн.";
                     JArray actions = life["actions"] as JArray;
                     string help = actions != null && actions.Count > 0 ? actions[0]?.ToString() : "сейчас не требуется";
                     detail = "Состояние: " + (life["stateLabel"]?.ToString() ?? "нет данных")

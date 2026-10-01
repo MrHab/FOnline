@@ -22,7 +22,7 @@ function lifeConfig(config = {}) {
     consumptionPer100PerDay: {
       water: 8,
       food: 6,
-      medicine: 1,
+      medkit: 1,
       ...(defaults.consumptionPer100PerDay || {})
     },
     shortageReserveDays: Math.max(0.25, Number(defaults.shortageReserveDays || 3)),

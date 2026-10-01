@@ -241,7 +241,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomRuinedRoad',
       owner: 'neutral',
-      stockpile: { scrap: 12, ammoParts: 4, silver: 16 },
+      stockpile: { scrap: 12, metalBar: 4, silver: 16 },
       danger: 1.6,
       security: 18,
       note: 'Старый грузовик у дороги. Вокруг еще можно найти лом, детали и следы недавних мародеров.'
@@ -253,7 +253,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomAshGrove',
       owner: 'caravans',
-      stockpile: { water: 8, medicine: 2, silver: 22 },
+      stockpile: { water: 8, medkit: 2, silver: 22 },
       danger: 1.1,
       security: 34,
       note: 'Временный привал вольных караванщиков. Здесь встречаются торговцы, охрана и случайные путники.'
@@ -265,7 +265,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomAshGrove',
       owner: 'old_klim',
-      stockpile: { water: 5, medicine: 1, ammoParts: 3, silver: 12 },
+      stockpile: { water: 5, medkit: 1, metalBar: 3, silver: 12 },
       danger: 1.2,
       security: 38,
       note: 'Малый дозор Управы держит огонь и дорожный знак. Тут можно переждать путь, но место видно издалека.'
@@ -277,7 +277,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomAshGrove',
       owner: group === 'old_klim' ? 'old_klim' : 'caravans',
-      stockpile: { medicine: 4, water: 4, silver: 10 },
+      stockpile: { medkit: 4, water: 4, silver: 10 },
       danger: 1,
       security: 28,
       note: 'Брезентовый пункт первой помощи у старой тропы. Его ставят там, где караваны чаще всего теряют людей.'
@@ -289,7 +289,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomRuinedRoad',
       owner: group === 'scrap_union' ? 'scrap_union' : 'neutral',
-      stockpile: { scrap: 18, ammoParts: 5, silver: 10 },
+      stockpile: { scrap: 18, metalBar: 5, silver: 10 },
       danger: 1.8,
       security: 20,
       note: 'Спрятанная куча полезного хлама. За ней могут следить сборщики или мародеры.'
@@ -315,7 +315,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomRuinedRoad',
       owner: group === 'relay_order' ? 'relay_order' : 'neutral',
-      stockpile: { electronics: 6, chemicals: 3, scrap: 8, silver: 12 },
+      stockpile: { electronics: 6, fuel: 3, scrap: 8, silver: 12 },
       danger: 2.2,
       security: 22,
       note: 'Обломки старого технического узла. Электроника здесь ценная, но место часто привлекает охотников за деталями.'
@@ -327,7 +327,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomRuinedRoad',
       owner: 'relay_order',
-      stockpile: { electronics: 7, chemicals: 2, silver: 14 },
+      stockpile: { electronics: 7, fuel: 2, silver: 14 },
       danger: 1.8,
       security: 32,
       note: 'Мигающий маяк техников Ретранслятора. Он помогает караванам держать курс, пока батареи и антенны живы.'
@@ -339,7 +339,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomRuinedRoad',
       owner: 'neutral',
-      stockpile: { electronics: 5, chemicals: 3, scrap: 6, silver: 8 },
+      stockpile: { electronics: 5, fuel: 3, scrap: 6, silver: 8 },
       danger: 2.7,
       security: 10,
       note: 'Из земли торчит ржавая вентиляция довоенного убежища. Внутрь не пройти, но вокруг много снятых панелей и проводки.'
@@ -351,8 +351,8 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'resource',
       locationId: 'randomDryBasin',
       owner: group === 'old_klim' ? 'old_klim' : 'neutral',
-      output: { water: 6, chemicals: 1 },
-      stockpile: { water: 16, chemicals: 3, silver: 8 },
+      output: { water: 6, fuel: 1 },
+      stockpile: { water: 16, fuel: 3, silver: 8 },
       danger: 1.4,
       security: 24,
       workforce: 12,
@@ -391,7 +391,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomRuinedRoad',
       owner: 'neutral',
-      stockpile: { electronics: 3, ammoParts: 6, medicine: 1, silver: 32 },
+      stockpile: { electronics: 3, metalBar: 6, medkit: 1, silver: 32 },
       danger: 2.8,
       security: 10,
       note: 'Тайный груз у старой дороги. Караванщики не признают его своим, а рейдеры слишком часто знают, где искать.'
@@ -403,7 +403,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomRuinedRoad',
       owner: 'raiders',
-      stockpile: { ammoParts: 8, scrap: 8, medicine: 1, silver: 28 },
+      stockpile: { metalBar: 8, scrap: 8, medkit: 1, silver: 28 },
       danger: 3.4,
       security: 12,
       note: 'Место, где рейдеры прячут добычу перед перегоном к базе. Рядом почти всегда есть следы засады.'
@@ -415,7 +415,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomDryBasin',
       owner: 'wild',
-      stockpile: { chemicals: 4, medicine: 1, silver: 8 },
+      stockpile: { fuel: 4, medkit: 1, silver: 8 },
       danger: 3.1,
       security: 8,
       note: 'Свежие следы крупной стаи. Здесь можно найти добычу, но шум быстро привлекает хищников.'
@@ -427,7 +427,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomRuinedRoad',
       owner: 'wild',
-      stockpile: { medicine: 2, chemicals: 4, scrap: 5, silver: 9 },
+      stockpile: { medkit: 2, fuel: 4, scrap: 5, silver: 9 },
       danger: 3.2,
       security: 7,
       note: 'Пустые стены звенят от ветра и чужих шагов. Такие руины часто занимают одичавшие и падальщики.'
@@ -439,7 +439,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomDryBasin',
       owner: 'wild',
-      stockpile: { chemicals: 5, medicine: 1, scrap: 4, silver: 7 },
+      stockpile: { fuel: 5, medkit: 1, scrap: 4, silver: 7 },
       danger: 3.6,
       security: 5,
       note: 'Свежие провалы в сухой земле ведут к туннелям мутировавших муравьев. Надолго здесь не задерживаются.'
@@ -451,7 +451,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomDryBasin',
       owner: 'mutants',
-      stockpile: { ammoParts: 4, scrap: 14, chemicals: 2, silver: 12 },
+      stockpile: { metalBar: 4, scrap: 14, fuel: 2, silver: 12 },
       danger: 4,
       security: 6,
       note: 'Грубые знаки на камнях предупреждают, что сюда заходят супермутанты. Ценное обычно лежит рядом с опасностью.'
@@ -463,7 +463,7 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
       type: 'pointOfInterest',
       locationId: 'randomRuinedRoad',
       owner: 'neutral',
-      stockpile: { medicine: 1, water: 2, silver: 18 },
+      stockpile: { medkit: 1, water: 2, silver: 18 },
       danger: 1.3,
       security: 18,
       note: 'Самодельный знак у обочины: имена пропавших караванщиков, жестянки от воды и старые гильзы вместо цветов.'

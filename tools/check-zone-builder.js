@@ -179,7 +179,7 @@ const tinyCatalog = {
     tiny('t_resource', 'resource')
   ]
 };
-const GOLDEN = { pve: 'b5-8834984e', pvpBlack: 'b5-0c7a9306' };
+const GOLDEN = { pve: 'b6-12938e31', pvpBlack: 'b6-18eac945' };
 for (const [mode, expected] of Object.entries(GOLDEN)) {
   const revision = buildZone(recipe(mode, 20260920), tinyCatalog).revision;
   assert.equal(revision, expected, `constructor rules changed for ${mode}: bump BUILDER_VERSION and update GOLDEN (got ${revision})`);

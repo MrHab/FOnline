@@ -30907,7 +30907,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 10
         },
         {
@@ -30938,7 +30938,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 17
         },
         {
@@ -30969,7 +30969,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 17
         },
         {
@@ -31000,7 +31000,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 7
         },
         {

@@ -3,7 +3,7 @@
 
 // Сетевая проверка зон мира на реальном сервере (изолированный DATA_DIR):
 // членство во фракции на путях входа, скрытые свойства артефактов до платной
-// стабилизации, разбор с идемпотентным requestId, личные комнаты PvE-области
+// стабилизации, личные комнаты PvE-области
 // и «Искать следы», аванпосты и публичные события в /api/wasteland и /health,
 // мировой босс в снимке комнаты установки, зал боковой лаборатории и правила
 // его узлов, незабранная награда босса после перезапуска.
@@ -14,16 +14,14 @@ const http = require('node:http');
 const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
 const zoneWalk = require('./lib/zone-walk');
-const { zoneById, zoneLocationId, zoneOfPlace, zoneRecipe } = require('../src/server/zone-graph');
+const { zoneById, zoneLocationId, zoneOfPlace } = require('../src/server/zone-graph');
 const { zoneRules } = require('../src/server/zone-rules');
-const { loadZoneCatalog } = require('../src/server/zone-chunks');
-const { buildZone } = require('../src/server/zone-builder');
 const { readTieredCatalogs, enemyTierScale } = require('../src/server/kromka-tiers');
 const accounts = {};
 // Зона Сердцевины и её портал — ворота территории.
 const zoneGraph = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'zone-graph.json'), 'utf8'));
 const coreHome = zoneOfPlace(zoneGraph, 'coreZone');
-const coreHomeDef = buildZone(zoneRecipe(zoneGraph, coreHome.id), loadZoneCatalog(path.join(__dirname, '..', 'data', 'zones')));
+const coreHomeDef = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'zones', 'authored', `${coreHome.id}.json`), 'utf8'));
 const corePortal = zoneWalk.world(coreHomeDef.transitions.find(row => row.to === 'coreZone'));
 
 const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce((s, r) => s + r.qty, 0);
@@ -48,7 +46,7 @@ const getJson = route => new Promise((resolve, reject) => {
   collector.currentLocationId = 'personalBase';
   collector.serverLocationContext = { locationId: 'personalBase' };
   collector.inventory.silver = 1000;
-  collector.inventory.chemicals = 4;
+  collector.inventory.fuelT2 = 4;
   collector.inventory.electronics = 2;
   collector.inventory.artifactWarmer = 1;
   collector.inventory.artifactVein = 1;
@@ -191,7 +189,8 @@ const getJson = route => new Promise((resolve, reject) => {
   await h.connectAndJoin(accounts.untargeted);
   assert.equal(accounts.untargeted.join.locationId, coreHome.id);
   const gateOffer = await request(accounts.untargeted, 'territoryFactionAction', { action: 'offer' });
-  assert.equal(gateOffer.atGate, true, 'A player at the Core portal of its zone is at the contract gate.');
+  assert.equal(gateOffer.atGate, true, 'A player at the Core portal of its zone is at the contract gate: '
+    + JSON.stringify({ portal: corePortal, player: accounts.untargeted.join.self?.player, offer: gateOffer }).slice(0, 900));
   assert.equal(gateOffer.contract.canSign, true, 'A character without a contract may sign one.');
   assert.equal(gateOffer.contract.factions.length, 4, 'The window offers every territory faction.');
   assert(gateOffer.contract.factions.every(row => typeof row.sharePct === 'number' && row.displayName),
@@ -220,7 +219,7 @@ const getJson = route => new Promise((resolve, reject) => {
   assert(!farFromGate.ok, 'A contract is not signed from an arbitrary location.');
   console.log('PASS mercenary contract at the Core portal of its zone and hidden bases');
 
-  // --- артефакты: скрытые свойства, платная стабилизация, разбор ---------------------------
+  // --- артефакты: скрытые свойства и платная стабилизация -----------------------------------
   await h.connectAndJoin(accounts.trade);
   const self = accounts.trade.join.self;
   const rawWarmer = self.artifactRecords.find(row => row.id === 'zone_raw_warmer');
@@ -228,23 +227,17 @@ const getJson = route => new Promise((resolve, reject) => {
   assert(!('properties' in rawWarmer) && !('seed' in rawWarmer), 'Hidden properties and the seed never reach the client before stabilization.');
   assert(!JSON.stringify(self).includes('zone:raw:warmer'), 'The seed does not leak anywhere in the player state.');
   const quote = await request(accounts.trade, 'stabilizeArtifact', { recordId: 'zone_raw_warmer', action: 'quote' });
-  assert.deepEqual(quote.cost, { silver: 90, items: [{ id: 'chemicals', qty: 2 }, { id: 'electronics', qty: 1 }] }, 'Tier two stabilization price.');
+  assert.deepEqual(quote.cost, { silver: 90, items: [{ id: 'fuelT2', qty: 2 }, { id: 'electronics', qty: 1 }] }, 'Tier two stabilization price.');
   const stable = await request(accounts.trade, 'stabilizeArtifact', { recordId: 'zone_raw_warmer', requestId: 'zone_stabilize_1' });
   assert(stable.record.revealed && stable.record.properties && stable.record.properties.effects.resistances.fire > 0, 'Stabilization reveals fixed properties.');
   assert.equal(qty(stable.self, 'silver'), 910);
-  assert.equal(qty(stable.self, 'chemicals'), 2);
+  assert.equal(qty(stable.self, 'fuelT2'), 2);
   const replay = await request(accounts.trade, 'stabilizeArtifact', { recordId: 'zone_raw_warmer', requestId: 'zone_stabilize_1' });
   assert(replay.reused && qty(replay.self, 'silver') === 910, 'Replaying the stabilization request does not charge twice.');
   const equip = await request(accounts.trade, 'artifactLoadoutAction', { action: 'preview', recordId: 'zone_raw_warmer' });
   assert(equip.preview && equip.delta && equip.delta.resistances && equip.delta.resistances.fire > 0, 'Preview reports the container delta without equipping.');
-  const salvageQuote = await request(accounts.trade, 'salvageArtifact', { recordId: 'zone_raw_vein', action: 'quote' });
-  assert.deepEqual(salvageQuote.yields, [{ id: 'chemicals', qty: 1 }]);
-  const salvaged = await request(accounts.trade, 'salvageArtifact', { recordId: 'zone_raw_vein', requestId: 'zone_salvage_1' });
-  assert.equal(qty(salvaged.self, 'artifactVein'), 0);
-  assert.equal(qty(salvaged.self, 'chemicals'), 3);
-  const salvageReplay = await request(accounts.trade, 'salvageArtifact', { recordId: 'zone_raw_vein', requestId: 'zone_salvage_1' });
-  assert(salvageReplay.reused && qty(salvageReplay.self, 'chemicals') === 3, 'Salvage is idempotent by requestId.');
-  console.log('PASS hidden artifact properties, paid stabilization, preview and salvage');
+  assert.equal(qty(stable.self, 'artifactVein'), 1, 'An untouched artifact remains in inventory.');
+  console.log('PASS hidden artifact properties, paid stabilization and preview');
 
   // --- PvE-область: личные комнаты и следы ------------------------------------------------
   await h.connectAndJoin(accounts.cadence);

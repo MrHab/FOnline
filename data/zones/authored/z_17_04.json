@@ -29684,7 +29684,7 @@
           "qty": 6
         },
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 6
         },
         {
@@ -29729,7 +29729,7 @@
       "lockDifficulty": "medium",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBar",
           "qty": 10
         },
         {

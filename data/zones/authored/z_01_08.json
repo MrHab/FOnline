@@ -29983,11 +29983,11 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 3
         },
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 7
         }
       ]

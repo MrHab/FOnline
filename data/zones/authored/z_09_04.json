@@ -29367,7 +29367,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 17
         },
         {
@@ -29429,11 +29429,11 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT3",
           "qty": 13
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 7
         },
         {
@@ -29460,7 +29460,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT3",
           "qty": 17
         },
         {

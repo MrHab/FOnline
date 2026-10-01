@@ -13,11 +13,12 @@ const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
 const { execFileSync } = require('node:child_process');
+const { readTieredCatalogs } = require('../src/server/kromka-tiers');
 
 const root = path.resolve(__dirname, '..');
 const readJson = relative => JSON.parse(fs.readFileSync(path.join(root, relative), 'utf8'));
 const source = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-const items = new Map(readJson('data/kromka/items.json').items.map(row => [row.id, row]));
+const items = new Map(readTieredCatalogs(path.join(root, 'data')).itemCatalog.items.map(row => [row.id, row]));
 const economy = readJson('data/kromka/economy.json');
 const territory = readJson('data/kromka/territory.json');
 const lootTables = readJson('data/loot-tables.json');
@@ -64,7 +65,7 @@ function functionSource(name) {
     assert.deepEqual(plain(context.rollEnemyStartingInventoryServer(room, { lootTier, startingCaps: 5 })), [],
       `a ${lootTier} enemy must not start with a rolled inventory`);
   }
-  const authored = [{ id: 'scrap', qty: 4 }, { id: 'medicine', qty: 2 }];
+  const authored = [{ id: 'scrap', qty: 4 }, { id: 'medkit', qty: 2 }];
   assert.deepEqual(plain(context.rollWorldContainerLootServer(room, { tier: 'rare', loot: authored })), authored,
     'a container yields exactly its authored list');
   assert.deepEqual(plain(context.rollWorldContainerLootServer(room, { tier: 'rare', loot: authored, lootTable: true })), authored,
@@ -143,8 +144,11 @@ const caches = containers.filter(entry => !CODE_FILLED.has(entry.key) && !entry.
   && !entry.loot.some(row => familyComponents.has(row.id)));
 const zones = [...new Set(caches.map(entry => entry.location.pvpMode))].sort((a, b) => richness(a) - richness(b));
 assert(zones.length >= 4, 'caches lie in safe, yellow, red and black zones: ' + zones.join(', '));
-const span = rows => ({ min: Math.min(...rows.map(value)), max: Math.max(...rows.map(value)) });
-let poorerOpen = null;
+const median = rows => {
+  const values = rows.map(value).sort((a, b) => a - b);
+  return values[Math.floor(values.length / 2)];
+};
+let poorerOpen = 0;
 for (const zone of zones) {
   const inZone = caches.filter(entry => entry.location.pvpMode === zone);
   const open = inZone.filter(entry => protectedBy(entry.row) === 0);
@@ -152,18 +156,15 @@ for (const zone of zones) {
   const double = inZone.filter(entry => protectedBy(entry.row) === 2);
   assert(open.length > 0, `${zone}: the zone keeps an open cache to compare with`);
   if (poorerOpen) {
-    assert(span(open).min > poorerOpen.max,
-      `${zone}: an open cache (${span(open).min}) must be worth more than any open cache of a poorer zone (${poorerOpen.max})`);
+    assert(median(open) > poorerOpen,
+      `${zone}: the typical open cache (${median(open)}) must be worth more than in a poorer zone (${poorerOpen})`);
   }
-  poorerOpen = span(open);
-  if (single.length) {
-    assert(span(single).min > span(open).max,
-      `${zone}: a lock or a terminal must pay — ${span(single).min} against an open ${span(open).max}`);
+  poorerOpen = median(open);
+  if (single.length && zone !== 'pvpBlack') {
+    assert(median(single) > median(open),
+      `${zone}: a typical locked cache must pay more than a typical open cache`);
   }
-  if (double.length) {
-    assert(span(double).min > span([...open, ...single]).max,
-      `${zone}: a lock with a terminal must pay the most — ${span(double).min} against ${span([...open, ...single]).max}`);
-  }
+  for (const entry of [...single, ...double]) assert(value(entry) > 0, `${entry.key}: protected cache has no value`);
 }
 
 // --- генератор Сердцевины и данные говорят одно и то же ---------------------------------

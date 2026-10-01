@@ -29340,11 +29340,11 @@
       "locked": false,
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT4",
           "qty": 5
         },
         {
-          "id": "chemicals",
+          "id": "fuelT4",
           "qty": 4
         }
       ]
@@ -29384,7 +29384,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT4",
           "qty": 3
         },
         {

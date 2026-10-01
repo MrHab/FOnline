@@ -32099,7 +32099,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBar",
           "qty": 7
         },
         {
@@ -32130,7 +32130,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBar",
           "qty": 10
         },
         {

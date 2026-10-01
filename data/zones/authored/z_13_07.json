@@ -30027,11 +30027,11 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT4",
           "qty": 13
         },
         {
-          "id": "chemicals",
+          "id": "fuelT4",
           "qty": 13
         },
         {
@@ -30079,7 +30079,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT4",
           "qty": 4
         },
         {

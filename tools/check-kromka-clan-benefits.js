@@ -3,6 +3,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const { readTieredCatalogs } = require('../src/server/kromka-tiers');
 const {
   WEEK_MS,
   benefitOrdersForProfile,
@@ -26,10 +27,7 @@ const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/clan-bas
 const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const unitySource = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaPipboyCanvas.KromkaClans.cs'), 'utf8');
 
-const knownItems = new Set([
-  'oil', 'weaponParts', 'blue', 'water', 'ore', 'chemicals', 'electronics',
-  'silver', 'wood', 'medicine', 'ammoParts'
-]);
+const knownItems = new Set(readTieredCatalogs(path.join(root, 'data')).itemCatalog.items.map(row => row.id));
 const implementedBenefitKeys = new Set([
   'clanStationFuelCostPct', 'weeklyGrant', 'weeklySine', 'filterCostPct',
   'processedOreOutputPct', 'reagentOutputPct', 'specialOrders', 'clanStoragePct',
@@ -88,15 +86,15 @@ function repeatedCraft(baseProfile, recipeId, requirements, output, count) {
 
 assert.equal(repeatedCraft(profile('hydro2'), 'napalmcraft', { oil: 1, silver: 1 }, { id: 'napalm', qty: 1 }, 5).saved.oil, 1,
   'GЭС-2 must save exactly 20% fuel across deterministic fractional credits.');
-assert.equal(repeatedCraft(profile('filter_t6'), 'reagentcraft', { chemicals: 1 }, { id: 'chemicals', qty: 1 }, 20).saved.chemicals, 3,
-  'Т-6 must save exactly 15% filtration chemicals across repeated work.');
-assert.equal(repeatedCraft(profile('ore_exchange'), 'weaponpartscraft', { ore: 6 }, { id: 'weaponParts', qty: 2 }, 4).bonus.weaponParts, 2,
+assert.equal(repeatedCraft(profile('filter_t6'), 'medkitcraft', { fuel: 1 }, { id: 'medkit', qty: 1 }, 20).saved.fuel, 3,
+  'Т-6 must save exactly 15% filtration fuel across repeated work.');
+assert.equal(repeatedCraft(profile('ore_exchange'), 'metalBarrefine', { ore: 6 }, { id: 'metalBar', qty: 2 }, 4).bonus.metalBar, 2,
   'Рудный перевал must add 25% processed output.');
-assert.equal(repeatedCraft(profile('reverse_cycle'), 'reagentcraft', { oil: 2 }, { id: 'chemicals', qty: 3 }, 4).bonus.chemicals, 3,
-  'Цех обратного цикла must add 25% reagent output.');
-assert.equal(repeatedCraft(profile('chalk_sluice'), 'medicinecraft', { chemicals: 2, water: 1 }, { id: 'medicine', qty: 3 }, 4).bonus.medicine, 3,
-  'Меловой шлюз must add 25% medical raw output.');
-assert.equal(repeatedCraft(profile('chalk_sluice'), 'medicinecraft', { chemicals: 2, water: 1 }, { id: 'medicine', qty: 3 }, 10).saved.water, 1,
+assert.equal(repeatedCraft(profile('reverse_cycle'), 'fuelrefine', { oil: 2 }, { id: 'fuel', qty: 3 }, 4).bonus.fuel, 3,
+  'Цех обратного цикла must add 25% fuel output.');
+assert.equal(repeatedCraft(profile('chalk_sluice'), 'medkitcraft', { fuel: 2, water: 1 }, { id: 'medkit', qty: 3 }, 4).bonus.medkit, 3,
+  'Меловой шлюз must add 25% medkit output.');
+assert.equal(repeatedCraft(profile('chalk_sluice'), 'medkitcraft', { fuel: 2, water: 1 }, { id: 'medkit', qty: 3 }, 10).saved.water, 1,
   'Меловой шлюз must save exactly 10% production water.');
 
 for (const baseId of ['reverse_cycle', 'fort14']) {

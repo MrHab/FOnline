@@ -30243,7 +30243,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT2",
           "qty": 17
         },
         {
@@ -30273,7 +30273,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT2",
           "qty": 11
         },
         {
@@ -30295,7 +30295,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "medicine",
+          "id": "clothT2",
           "qty": 11
         },
         {
@@ -30317,7 +30317,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT2",
           "qty": 9
         },
         {

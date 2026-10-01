@@ -100,8 +100,8 @@
       "name": "Стимулятор",
       "station": "chem_station",
       "inputs": {
-        "medicine": 2,
-        "chemicals": 1
+        "cloth": 2,
+        "fuel": 1
       },
       "silverFee": 1,
       "workSeconds": 2,
@@ -115,9 +115,9 @@
       "name": "Аптечка",
       "station": "chem_station",
       "inputs": {
-        "medicine": 4,
-        "chemicals": 1,
-        "scrap": 1
+        "scrap": 1,
+        "cloth": 4,
+        "fuel": 1
       },
       "silverFee": 2,
       "workSeconds": 3,
@@ -131,9 +131,9 @@
       "name": "Набор доктора",
       "station": "chem_station",
       "inputs": {
-        "medicine": 5,
         "electronics": 1,
-        "scrap": 2
+        "scrap": 2,
+        "cloth": 5
       },
       "silverFee": 2,
       "workSeconds": 4,
@@ -147,45 +147,14 @@
       "name": "Антибиотики",
       "station": "chem_station",
       "inputs": {
-        "medicine": 3,
-        "chemicals": 2
+        "cloth": 3,
+        "fuel": 2
       },
       "silverFee": 1,
       "workSeconds": 3,
       "output": {
         "id": "antibiotics",
         "qty": 2
-      }
-    },
-    {
-      "id": "medicinecraft",
-      "name": "Медикаменты",
-      "station": "chem_station",
-      "inputs": {
-        "chemicals": 2,
-        "water": 1
-      },
-      "silverFee": 1,
-      "workSeconds": 2,
-      "output": {
-        "id": "medicine",
-        "qty": 3
-      }
-    },
-    {
-      "id": "reagentcraft",
-      "name": "Химикаты",
-      "station": "chem_station",
-      "inputs": {
-        "oil": 2,
-        "water": 1,
-        "scrap": 1
-      },
-      "silverFee": 1,
-      "workSeconds": 2,
-      "output": {
-        "id": "chemicals",
-        "qty": 3
       }
     },
     {
@@ -225,9 +194,8 @@
       "station": "weapon_bench",
       "line": "firearms",
       "inputs": {
-        "$metal": 2,
-        "weaponParts": 1,
-        "ammoParts": 2
+        "$metal": 4,
+        "weaponParts": 1
       },
       "silverFee": 2,
       "workSeconds": 4,
@@ -456,8 +424,7 @@
       "line": "armor",
       "inputs": {
         "$fiber": 4,
-        "$metal": 3,
-        "ammoParts": 3
+        "$metal": 6
       },
       "silverFee": 4,
       "workSeconds": 9,
@@ -774,36 +741,6 @@
       "output": {
         "id": "skinningKnife",
         "qty": 1
-      }
-    },
-    {
-      "id": "weaponpartscraft",
-      "name": "Оружейные детали",
-      "station": "weapon_bench",
-      "inputs": {
-        "ore": 6,
-        "scrap": 5
-      },
-      "silverFee": 3,
-      "workSeconds": 6,
-      "output": {
-        "id": "weaponParts",
-        "qty": 2
-      }
-    },
-    {
-      "id": "electronicscraft",
-      "name": "Электроника",
-      "station": "energy_bench",
-      "inputs": {
-        "scrap": 3,
-        "chemicals": 1
-      },
-      "silverFee": 1,
-      "workSeconds": 2,
-      "output": {
-        "id": "electronics",
-        "qty": 2
       }
     },
     {
@@ -1534,9 +1471,8 @@
       "station": "weapon_bench",
       "line": "firearms",
       "inputs": {
-        "$metal": 2,
-        "weaponParts": 1,
-        "ammoParts": 2
+        "$metal": 4,
+        "weaponParts": 1
       },
       "silverFee": 2,
       "workSeconds": 4,

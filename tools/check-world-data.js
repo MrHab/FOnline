@@ -10,6 +10,7 @@ const { ROAD_SITE_LAYOUT_VERSION } = require('../src/server/wasteland-district-s
 const { worldSiteLocationId } = require('../src/server/wasteland-site-instances');
 const { isRetiredEnvironmentModel } = require('../src/server/retired-environment-models');
 const { usesAuthoredWorldSites } = require('../src/server/authored-world-sites');
+const { readTieredCatalogs } = require('../src/server/kromka-tiers');
 
 const root = path.resolve(__dirname, '..');
 const dataDir = path.join(root, 'data');
@@ -267,20 +268,8 @@ function checkNaturalCreatureActor(row, label, rel) {
 }
 
 function readServerItemIds() {
-  const catalogFile = path.join(dataDir, 'kromka', 'items.json');
-  if (fs.existsSync(catalogFile)) {
-    const catalog = JSON.parse(fs.readFileSync(catalogFile, 'utf8'));
-    return new Set((Array.isArray(catalog?.items) ? catalog.items : [])
-      .map(row => String(row?.id || '').trim())
-      .filter(Boolean));
-  }
-  const match = serverSource.match(/const\s+SERVER_ITEM_IDS\s*=\s*new\s+Set\s*\(\s*\[([\s\S]*?)\]\s*\)/);
-  if (!match) return new Set();
-  const ids = [];
-  const re = /'([^']+)'/g;
-  let next;
-  while ((next = re.exec(match[1]))) ids.push(next[1]);
-  return new Set(ids);
+  return new Set(readTieredCatalogs(dataDir).itemCatalog.items
+    .map(row => String(row?.id || '').trim()).filter(Boolean));
 }
 
 // Ключи статических моделей — серверный реестр SERVER_MODEL_FILE_BY_KEY (ключ → GLB).

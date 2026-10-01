@@ -19,7 +19,7 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   donor.inventory.artifactSpring = 1;
   donor.inventory.artifactDrop = 1;
   donor.inventory.artifactContainer = 1;
-  donor.inventory.chemicals = 2; // стабилизация Т1 стоит 40 марок + 1 химикат
+  donor.inventory.chemicals = 2; // старый материал должен переехать в топливо Т1
   donor.inventory.artifactBelt2 = 1;
   donor.equipment.artifactBelt = 'artifactBelt2';
   donor.artifactRecords = [{ id: 'audit_spring', typeId: 'spring', itemId: 'artifactSpring', hot: false, stabilized: true, ownerCharacterId: accounts.trade.characterId }];
@@ -122,9 +122,9 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   assert(quote.quote && quote.cost.silver === 40 && !quote.record.properties, 'Quote shows the price, never the hidden properties');
   const stable = await request(accounts.trade, 'stabilizeArtifact', { recordId: 'audit_hot', requestId: 'regression_stabilize' });
   assert(stable.record.stabilized && !stable.record.hot && stable.record.revealed && stable.record.properties, 'Stabilization reveals the fixed properties');
-  assert.equal(qty(stable.self, 'chemicals'), 1, 'Stabilization consumes the authored components');
+  assert.equal(qty(stable.self, 'fuel'), 1, 'Legacy chemicals convert to fuel and stabilization consumes one');
   const replay = await request(accounts.trade, 'stabilizeArtifact', { recordId: 'audit_hot', requestId: 'regression_stabilize' });
-  assert(replay.reused && qty(replay.self, 'chemicals') === 1, 'Replaying the same requestId never charges twice');
+  assert(replay.reused && qty(replay.self, 'fuel') === 1, 'Replaying the same requestId never charges twice');
   await request(accounts.trade, 'artifactLoadoutAction', { action: 'equip', recordId: 'audit_hot' });
   console.log('PASS base rights and artifact drop/pickup/storage/stabilization/loadout');
 
@@ -182,7 +182,7 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   const job = await request(accounts.persistence, 'personalBaseAction', { action: 'startJob', typeId: 'filters' });
   assert.equal(job.state.jobs.filter(row => !row.claimed).length, 1);
   assert.equal(qty(job.self, 'scrap'), 8);
-  assert.equal(qty(job.self, 'chemicals'), 8);
+  assert.equal(qty(job.self, 'fuel'), 8);
   assert.equal(job.state.jobQueueLimit, 6, 'The trader adds two production orders');
   assert.equal(job.self.residentTradePricePct, 0.08, 'The trader improves ordinary trade for the owner');
   const hpWithDoctor = Number(job.self.maxHp);

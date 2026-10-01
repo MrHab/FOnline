@@ -10,6 +10,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { readTieredCatalogs } = require('../src/server/kromka-tiers');
 
 const root = path.resolve(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -18,7 +19,7 @@ const { zoneModeAllowsPvp, zoneModeLossPolicy } = require('../src/server/zone-ru
 const { deathLootPolicy } = require('../src/server/kromka-death-loot');
 const catalog = events.normalizePublicEventCatalog(JSON.parse(read('data/kromka/public-events.json')));
 const encounters = JSON.parse(read('data/encounters.json')).encounters;
-const items = new Set(JSON.parse(read('data/kromka/items.json')).items.map(row => row.id));
+const items = new Set(readTieredCatalogs(path.join(root, 'data')).itemCatalog.items.map(row => row.id));
 
 // --- данные -------------------------------------------------------------------
 assert(catalog.templates.length >= 4, 'At least four event templates.');

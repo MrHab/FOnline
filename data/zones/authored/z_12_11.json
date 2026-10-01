@@ -29856,7 +29856,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT4",
           "qty": 13
         },
         {
@@ -29909,7 +29909,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT4",
           "qty": 7
         },
         {
@@ -29943,7 +29943,7 @@
           "qty": 4
         },
         {
-          "id": "medicine",
+          "id": "clothT4",
           "qty": 4
         }
       ]

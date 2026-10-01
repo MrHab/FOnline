@@ -128,7 +128,7 @@
           "qty": 3
         },
         {
-          "id": "chemicals",
+          "id": "fuelT5",
           "qty": 2
         }
       ]
@@ -155,7 +155,7 @@
           "qty": 3
         },
         {
-          "id": "ammoParts",
+          "id": "metalBarT5",
           "qty": 4
         }
       ]

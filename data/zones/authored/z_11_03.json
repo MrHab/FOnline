@@ -30119,7 +30119,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "medicine",
+          "id": "clothT4",
           "qty": 3
         },
         {
@@ -30141,7 +30141,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "medicine",
+          "id": "clothT4",
           "qty": 4
         },
         {
@@ -30163,7 +30163,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT4",
           "qty": 2
         },
         {

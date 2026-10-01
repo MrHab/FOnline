@@ -59,8 +59,7 @@ function tierRows(catalog = {}) {
       color: String(row.color || TIER_COLORS[tier]),
       benefitScale: Math.max(0.1, Number(row.benefitScale || 1)),
       drawbackScale: Math.max(0.1, Number(row.drawbackScale || 1)),
-      stabilization: row.stabilization && typeof row.stabilization === 'object' ? row.stabilization : { silver: 0, items: [] },
-      salvage: row.salvage && typeof row.salvage === 'object' ? row.salvage : { items: [], familyComponentQty: 0 }
+      stabilization: row.stabilization && typeof row.stabilization === 'object' ? row.stabilization : { silver: 0, items: [] }
     });
   }
   return out;
@@ -189,17 +188,6 @@ function stabilizationCost(record = {}, catalog = {}) {
   return { silver: Math.max(0, Math.floor(Number(row.stabilization.silver || 0))), items };
 }
 
-function salvageYields(record = {}, catalog = {}) {
-  const indexes = artifactIndexes(catalog);
-  const type = indexes.byId[String(record?.typeId || '')];
-  const row = tierRow(catalog, record?.tier || baseTierOfType(type || {}));
-  const items = itemRows(row.salvage.items);
-  const componentQty = Math.max(0, Math.floor(Number(row.salvage.familyComponentQty || 0)));
-  const componentId = type ? familyComponentId(type, catalog) : '';
-  if (componentQty > 0 && componentId) items.push({ id: componentId, qty: componentQty });
-  return items;
-}
-
 function sanitizeArtifactRecords(input = [], catalog = {}) {
   const indexes = artifactIndexes(catalog);
   const seen = new Set();
@@ -276,7 +264,6 @@ function publicArtifactRecord(record = {}, catalog = {}, options = {}) {
     ownerCharacterId: String(record?.ownerCharacterId || ''),
     acquiredAt: Math.max(0, Number(record?.acquiredAt || 0)),
     stabilizationCost: stabilizationCost(record, catalog),
-    salvageYields: salvageYields(record, catalog),
     recordVersion: RECORD_VERSION
   };
   if (revealed || options.includeHidden === true) {
@@ -304,7 +291,6 @@ function publicArtifactCatalog(catalog = {}) {
       personalBaseAllowed: catalog.stabilization?.personalBaseAllowed !== false,
       costByTier: tierRows(catalog).map(row => ({ tier: row.tier, silver: Math.max(0, Math.floor(Number(row.stabilization.silver || 0))), items: itemRows(row.stabilization.items) }))
     },
-    salvage: tierRows(catalog).map(row => ({ tier: row.tier, items: itemRows(row.salvage.items), familyComponentQty: Math.max(0, Math.floor(Number(row.salvage.familyComponentQty || 0))) })),
     births: { ...(catalog.births || {}) },
     detectors: (catalog.detectors || []).map(row => ({ ...row })),
     belts: (catalog.belts || []).map(row => ({ ...row })),
@@ -341,7 +327,6 @@ module.exports = {
   publicArtifactCatalog,
   publicArtifactRecord,
   rollTier,
-  salvageYields,
   sanitizeArtifactRecords,
   stabilizationCost,
   stabilizeRecord,

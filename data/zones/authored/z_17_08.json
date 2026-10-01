@@ -30019,7 +30019,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBar",
           "qty": 10
         },
         {
@@ -30053,7 +30053,7 @@
           "qty": 11
         },
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 11
         }
       ]

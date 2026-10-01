@@ -228,7 +228,7 @@ namespace RealmOfAshes.Game
 
         private void AddClanWarehouseActions(JObject storage)
         {
-            string[] depositIds = { "scrap", "electronics", "wood", "silver", "oil", "chemicals", "medicine", "ammoParts" };
+            string[] depositIds = { "scrap", "electronics", "weaponParts", "wood", "silver", "oil", "cloth", "fuel", "metalBar" };
             foreach (string itemId in depositIds)
             {
                 int available = Pipboy?.InventoryQty(itemId) ?? 0;

@@ -311,10 +311,7 @@ namespace RealmOfAshes.Game
             Add(result, "wood", "Древесина", 1.2f);
             Add(result, "scrap", "Металлолом", 1.4f);
             Add(result, "oil", "Канистра нефти", 1.5f);
-            Add(result, "chemicals", "Химикаты", 0.45f);
-            Add(result, "medicine", "Медикаменты", 0.35f);
             Add(result, "electronics", "Электроника", 0.6f);
-            Add(result, "ammoParts", "Детали патронов", 0.18f);
             Add(result, "food", "Пища", 0.65f);
             Add(result, "weaponParts", "Оружейные детали", 0.85f);
             Add(result, "bioReagent", "Биореагент", 0.3f);

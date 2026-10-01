@@ -69,7 +69,10 @@
       "reward": {
         "xp": 85,
         "silver": 70,
-        "items": []
+        "items": [
+          { "id": "scrap", "qty": 4 },
+          { "id": "weaponParts", "qty": 1 }
+        ]
       },
       "panel": {
         "active": "Соберите детали для свалочного пресса.",
@@ -94,7 +97,9 @@
       "reward": {
         "xp": 95,
         "silver": 90,
-        "items": []
+        "items": [
+          { "id": "electronics", "qty": 2 }
+        ]
       },
       "panel": {
         "active": "Подготовьте расходники для ретранслятора.",

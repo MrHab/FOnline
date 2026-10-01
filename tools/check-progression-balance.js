@@ -163,6 +163,7 @@ const pricing = serverTradePricing(serverSource, itemIndexes, worldEconomy);
 const refusedCategories = worldEconomy.worldModel.blackMarket ? worldEconomy.blackMarket.categories : [];
 if (!refusedCategories.includes('weapons') || !refusedCategories.includes('armor')) fail('NPC traders must leave weapons and armour to the Black Market');
 const tradeItemIds = Object.keys(itemIndexes.byId).filter(id => id !== 'silver' && id !== 'fists');
+const lootOnlyMaterials = new Set(['scrap', 'electronics', 'weaponParts']);
 const allCategories = [...new Set(Object.values(itemIndexes.categories))];
 const tradeMarkets = [
   ...Object.entries(traderData.profiles || {}).map(([id, profile]) => ({ name: `profile:${id}`, stock: profile.stock || [], buyInterests: profile.buyInterests || [] })),
@@ -214,6 +215,10 @@ for (const id of tradeItemIds) {
     fail(`NPC shelf price of ${id} drops below its floor ${floor}`);
   }
   const personal = pricing.serverNpcTradeMarket({ personalTrade: true, traderStock: [{ id, qty: 1, price: 1 }] }).stock[0];
+  if (lootOnlyMaterials.has(id)) {
+    if (personal) fail(`NPC trader offers loot-only material ${id}`, personal);
+    continue;
+  }
   if (!personal || personal.price !== floor) fail(`serverNpcTradeMarket shows ${id} below its shelf floor`, personal);
   const refused = refusedCategories.includes(itemIndexes.categories[id]);
   const markets = tradeMarkets.concat([

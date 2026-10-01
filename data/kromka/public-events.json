@@ -47,7 +47,7 @@
           { "id": "silver", "qty": 120 },
           { "id": "ammo9", "qty": 40 },
           { "id": "weaponParts", "qty": 3 },
-          { "id": "medicine", "qty": 2 },
+          { "id": "cloth", "qty": 2 },
           { "id": "stabilizerCatalyst", "qty": 1 }
         ]
       }
@@ -81,9 +81,9 @@
         "name": "Гнездовой тайник",
         "loot": [
           { "id": "silver", "qty": 90 },
-          { "id": "chemicals", "qty": 4 },
+          { "id": "fuel", "qty": 4 },
           { "id": "bioReagent", "qty": 2 },
-          { "id": "medicine", "qty": 2 }
+          { "id": "cloth", "qty": 2 }
         ]
       }
     },
@@ -153,7 +153,7 @@
           { "id": "silver", "qty": 70 },
           { "id": "alloyPlate", "qty": 2 },
           { "id": "scrap", "qty": 8 },
-          { "id": "medicine", "qty": 1 }
+          { "id": "cloth", "qty": 1 }
         ]
       }
     }

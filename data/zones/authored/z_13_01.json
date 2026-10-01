@@ -30073,11 +30073,11 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 4
         },
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 2
         }
       ]
@@ -30095,7 +30095,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBar",
           "qty": 2
         },
         {

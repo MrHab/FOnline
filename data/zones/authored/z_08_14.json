@@ -30817,11 +30817,11 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 2
         },
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 5
         }
       ]
@@ -30843,7 +30843,7 @@
           "qty": 2
         },
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 3
         }
       ]

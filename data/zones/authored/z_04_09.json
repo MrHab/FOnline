@@ -30086,7 +30086,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT2",
           "qty": 5
         },
         {
@@ -30108,7 +30108,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT2",
           "qty": 2
         },
         {
@@ -30130,7 +30130,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT2",
           "qty": 3
         },
         {

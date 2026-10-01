@@ -198,9 +198,15 @@ requireText('server resource site output nodes', functionBody(server, 'ensureWas
 
 rejectText('world artificial time cap', functionBody(wastelandSim, 'tick'), 'cappedHours');
 
+const questComponentRewards = new Set(['scrap', 'electronics', 'weaponParts']);
 for (const [questId, quest] of Object.entries(quests.quests || {})) {
   const rewardItems = Array.isArray(quest?.reward?.items) ? quest.reward.items : [];
-  if (rewardItems.length) errors.push(`quest ${questId}: item rewards must stay empty in the closed economy.`);
+  for (const reward of rewardItems) {
+    if (!questComponentRewards.has(reward?.id) || !Number.isInteger(reward?.qty)
+      || reward.qty < 1 || reward.qty > 10) {
+      errors.push(`quest ${questId}: only bounded loot-only component rewards are allowed.`);
+    }
+  }
 }
 
 function defaultSiteRows() {
@@ -302,7 +308,7 @@ function locationAuthoredNpcRows(loc = {}) {
 }
 
 const defaultSitesList = defaultSiteRows();
-const harvestableSiteResources = new Set(['ore', 'wood', 'scrap', 'water', 'oil', 'chemicals', 'medicine', 'food', 'electronics', 'ammoParts', 'weaponParts']);
+const harvestableSiteResources = new Set(['ore', 'wood', 'fiber', 'water', 'oil', 'food']);
 
 for (const site of defaultSitesList) {
   if (site.type !== 'resource') continue;
@@ -506,7 +512,8 @@ function checkPersistentFactionEconomy() {
   const recipes = normalizeRecipeCatalog(recipeData);
   const traders = normalizeTraderProfiles(traderData);
   const stationIds = new Set(Object.keys(craftingStationModels));
-  const rawResources = new Set(['water', 'oil', 'scrap', 'ore', 'wood', 'chemicals']);
+  const rawResources = new Set(['water', 'oil', 'ore', 'wood', 'fiber', 'food']);
+  const lootOnlyInputs = new Set(['scrap', 'electronics', 'weaponParts']);
 
   if (recipeData.schema !== 'realm.economyRecipes.v1' || Object.keys(recipes).length < 20) {
     errors.push('faction economy: authored recipe catalog is missing or unexpectedly small');
@@ -514,7 +521,7 @@ function checkPersistentFactionEconomy() {
   for (const recipe of Object.values(recipes)) {
     if (!stationIds.has(recipe.station)) errors.push(`faction economy recipe ${recipe.id}: unknown station ${recipe.station}`);
     for (const inputId of Object.keys(recipe.inputs || {})) {
-      if (!rawResources.has(inputId) && !recipes[inputId]) errors.push(`faction economy recipe ${recipe.id}: input ${inputId} cannot be produced or harvested`);
+      if (!rawResources.has(inputId) && !lootOnlyInputs.has(inputId) && !recipes[inputId]) errors.push(`faction economy recipe ${recipe.id}: input ${inputId} cannot be produced, harvested or looted`);
     }
   }
   for (const profile of Object.values(traders)) {

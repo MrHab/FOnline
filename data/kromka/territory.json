@@ -173,8 +173,8 @@
       },
       "rewardComponents": [
         "bioReagent",
-        "medicine",
-        "chemicals"
+        "clothT5",
+        "fuelT5"
       ],
       "mechanics": {
         "meterLabel": "Споры",

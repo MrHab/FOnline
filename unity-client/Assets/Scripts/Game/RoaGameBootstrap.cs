@@ -756,12 +756,11 @@ namespace RealmOfAshes.Game
             SetGameMenuOpen(!_gameMenuOpen);
         }
 
-        private float _edgeExitRetryAt;
-
         /// <summary>
         /// Край места внутри зоны: игрок в полосе выхода (2 клетки от края играбельной
         /// области) и ни одно окно не открыто — переход в родительскую зону
-        /// запрашивается сам, без клавиши. Отказ сервера повторяется через 0.75 с.
+        /// запрашивается сам, без клавиши. Проверка идёт каждый кадр, чтобы
+        /// выход из полосы всегда сбрасывал состояние входа в переход.
         /// </summary>
         private void UpdatePlaceEdgeExit()
         {
@@ -769,14 +768,16 @@ namespace RealmOfAshes.Game
             ParentZoneInfo parentZone = Loader != null ? Loader.Current?.ExitZone : null;
             if (parentZone == null || !CurrentLocationHasEdgeExit) return;
             if (_cinematicActive || _gameMenuOpen || _tutorialOpen || _graphicsOpen
-                || RoaHudLayout.Editing || AnyGameplayPanelOpen()) return;
-            if (Time.unscaledTime < _edgeExitRetryAt) return;
+                || RoaHudLayout.Editing || AnyGameplayPanelOpen())
+            {
+                Interaction.UpdateZoneEdge(parentZone, false);
+                return;
+            }
             int width = Minimap.MapWidth, depth = Minimap.MapDepth;
             if (width <= 0 || depth <= 0) return;
             Vector3 position = _controller.transform.position;
             bool inBand = RoaWorldExitBoundary.IsInExitBand(position, width, depth);
             Interaction.UpdateZoneEdge(parentZone, inBand);
-            if (inBand) _edgeExitRetryAt = Time.unscaledTime + 0.75f;
         }
 
         private void SetGameMenuOpen(bool open)

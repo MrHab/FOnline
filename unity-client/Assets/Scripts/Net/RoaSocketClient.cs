@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net.SocketIo;
@@ -207,6 +208,8 @@ namespace RealmOfAshes.Net
 
         private long _stateSeq;
         private float _stateCooldown;
+        private Task _stateSendTask;
+        private RoaSocketIoConnection _stateSendConnection;
         private bool _lastSentMoving;
         private bool _lastSentCrouching;
 
@@ -308,6 +311,8 @@ namespace RealmOfAshes.Net
 
             RoaSocketIoConnection previous = _connection;
             _connection = null;
+            _stateSendTask = null;
+            _stateSendConnection = null;
             FailPendingAcks(false, true);
             previous?.Dispose();
 
@@ -1286,6 +1291,15 @@ namespace RealmOfAshes.Net
             // получить сразу, иначе персонаж «залипает» в беге у других игроков.
             bool isTransition = moving != _lastSentMoving || crouching != _lastSentCrouching;
             if (!force && !isTransition && _stateCooldown > 0f) return;
+            // The transport serializes websocket writes. Never queue a new 20 Hz
+            // movement frame behind an unfinished one: a slow connection would
+            // otherwise accumulate old positions ahead of a location transition.
+            if (!force && _stateSendConnection == _connection
+                && _stateSendTask != null && !_stateSendTask.IsCompleted) return;
+            // WebGL's SendAsync completes when bytes enter the browser's own
+            // websocket buffer. Drop intermediate movement samples if that
+            // buffer grows; the next free slot sends the current position.
+            if (!force && _connection.BufferedBytes >= 8192) return;
 
             _stateCooldown = StateSendIntervalSeconds;
             _lastSentMoving = moving;
@@ -1307,7 +1321,8 @@ namespace RealmOfAshes.Net
                 Turning = turning
             };
 
-            _connection.EmitAsync("state", payload);
+            _stateSendConnection = _connection;
+            _stateSendTask = _connection.EmitAsync("state", payload);
         }
 
         /// <summary>

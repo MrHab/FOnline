@@ -18,6 +18,7 @@ namespace RealmOfAshes.Net.SocketIo
     public interface IRoaWebSocketTransport : IDisposable
     {
         bool IsOpen { get; }
+        int BufferedBytes { get; }
         event Action<string> OnMessage;
         event Action<string> OnClosed;
         event Action<Exception> OnError;
@@ -45,6 +46,7 @@ namespace RealmOfAshes.Net.SocketIo
         private CancellationTokenSource _cancellation;
 
         public bool IsOpen { get { return _socket != null && _socket.State == WebSocketState.Open; } }
+        public int BufferedBytes { get { return 0; } }
         public event Action<string> OnMessage;
         public event Action<string> OnClosed;
         public event Action<Exception> OnError;
@@ -137,6 +139,7 @@ namespace RealmOfAshes.Net.SocketIo
         [DllImport("__Internal")] private static extern void RoaWs_Send(int id, string text);
         [DllImport("__Internal")] private static extern void RoaWs_Close(int id);
         [DllImport("__Internal")] private static extern int RoaWs_State(int id);
+        [DllImport("__Internal")] private static extern int RoaWs_BufferedBytes(int id);
 
         private static bool _initialized;
         private static readonly Dictionary<int, RoaWebGlWebSocket> Sockets = new Dictionary<int, RoaWebGlWebSocket>();
@@ -145,6 +148,7 @@ namespace RealmOfAshes.Net.SocketIo
         private TaskCompletionSource<bool> _connectTcs;
 
         public bool IsOpen { get { return _id >= 0 && RoaWs_State(_id) == 1; } }
+        public int BufferedBytes { get { return _id >= 0 ? RoaWs_BufferedBytes(_id) : 0; } }
         public event Action<string> OnMessage;
         public event Action<string> OnClosed;
         public event Action<Exception> OnError;

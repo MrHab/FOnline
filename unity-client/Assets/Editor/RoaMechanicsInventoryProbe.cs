@@ -89,6 +89,19 @@ namespace RealmOfAshes.EditorTools
                                 {'id':'stable','itemId':'artifactSpring','stabilized':true}], 'artifactSlots':[]}") });
                     }
                     _visualCanvas.Open(RoaPipboyCanvas.Page.Items);
+                    if (!mobile)
+                    {
+                        var hoverSource = new GameObject("TooltipLifecycleSource", typeof(RectTransform));
+                        hoverSource.transform.SetParent(_visualCanvas.transform, false);
+                        RoaItemPopups popups = RoaItemPopups.Instance;
+                        popups.ShowItemFrom(hoverSource, "water");
+                        var tip = (RectTransform)typeof(RoaItemPopups).GetField("_tip", Private).GetValue(popups);
+                        Require(tip.gameObject.activeSelf, "Hover tooltip is visible while its source exists");
+                        hoverSource.SetActive(false);
+                        typeof(RoaItemPopups).GetMethod("LateUpdate", Private).Invoke(popups, null);
+                        Require(!tip.gameObject.activeSelf, "Tooltip disappears when its hovered source is hidden");
+                        UnityEngine.Object.Destroy(hoverSource);
+                    }
                     typeof(RoaPipboyCanvas).GetField("_selectedItemId", Private).SetValue(_visualCanvas, "artifactSpring");
                     typeof(RoaPipboyCanvas).GetMethod("RefreshSelection", Private).Invoke(_visualCanvas, null);
                     var button = (Button)typeof(RoaPipboyCanvas).GetField("_equipButton", Private).GetValue(_visualCanvas);

@@ -5084,6 +5084,17 @@ function serverLegacyCityExit(loc = {}, row = {}) {
 
 function kromkaPublicLocationDefinition(location = {}) {
   const next = transformKromkaPublicValue(location);
+  // Вид постоянного логова выбирает серверная A-Life. Передаём его вместе с
+  // точкой, чтобы Unity могла показать следы именно этого вида и в закреплённой
+  // сцене, и в секторе, который клиент собирает на лету.
+  if (ZONE_RUNTIME.isZone(next.id) && Array.isArray(next.zone?.lairs) && serverEcologyActive()) {
+    const state = serverEcologyState();
+    next.zone.lairs = next.zone.lairs.map((anchor, slot) => {
+      const lair = state.lairs.get(`lair_${next.id}_${slot}`);
+      const species = lair && DANGER_ECOLOGY.speciesById[lair.speciesId];
+      return species ? { ...anchor, speciesId: species.id, speciesName: species.name } : anchor;
+    });
+  }
   // Город занимает сектор целиком: у каждой его стороны — ворота в соседний сектор,
   // а старые дороги «в мир» становятся воротами той стороны, у которой они стоят.
   const cityGates = ZONE_RUNTIME.cityGates(next.id);

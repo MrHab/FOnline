@@ -292,6 +292,7 @@ namespace RealmOfAshes.World
             if (!definition.Generated && definition.Zone != null && unityScene != null) BuildZoneGroundCover(definition);
             // Белая черта безопасных островков мест, стоящих прямо в зоне (сервер: zone-sites.js).
             RoaZoneSites.BuildBoundaries(definition.Sites, _currentRoot.transform);
+            RoaZoneLairDressing.Build(definition, _currentRoot.transform);
 
             // Сектор без сцены в этой сборке клиента собирается из того же
             // определения набором префабов: его строки и так пишет сцена, так что

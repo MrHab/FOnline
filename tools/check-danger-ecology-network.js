@@ -170,6 +170,11 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
     const summary = (await devGet(`/api/dev/danger-ecology?sx=${home.col}&sy=${home.row}&radius=0`)).summary;
     assert.equal(summary.lairs, expectedLairs, 'every live zone has its lairs');
     assert.equal(summary.groups, 3, 'a group outside the zone world is dropped on start');
+    const locationResponse = await fetch(h.baseUrl() + `/api/locations/${home.id}`);
+    const publicZone = (await locationResponse.json()).location;
+    assert.equal(publicZone.zone.lairs.length, homeDef.zone.lairs.length, 'every lair keeps its authored anchor');
+    assert(publicZone.zone.lairs.every(lair => ['test_gari', 'test_scouts'].includes(lair.speciesId)
+      && lair.speciesName === 'Стая гари'), 'the client receives the resident species of each lair');
     // Чёрных зон на карте канона нет (библия, 4.4): логова есть в синих и красных.
     assert(summary.lairsByMode.pve > 0 && summary.lairsByMode.pvpFullDrop > 0, 'blue and red zones have lairs: ' + JSON.stringify(summary.lairsByMode));
     console.log(`PASS the group living in ${home.title} stands in both of its channels (3 + 3 creatures); ${expectedLairs} lairs across the live zones`);

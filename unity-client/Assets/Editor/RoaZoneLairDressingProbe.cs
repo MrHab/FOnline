@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using RealmOfAshes.Game;
 using RealmOfAshes.World;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -12,7 +13,7 @@ using UnityEngine.UI;
 
 namespace RealmOfAshes.EditorTools
 {
-    /// <summary>Checks all species in a real zone without changing the open scene.</summary>
+    /// <summary>Checks tier-one lairs in a real zone without changing the open scene.</summary>
     [InitializeOnLoad]
     public static class RoaZoneLairDressingProbe
     {
@@ -45,9 +46,19 @@ namespace RealmOfAshes.EditorTools
                 string repo = Environment.GetEnvironmentVariable("ROA_REPO") ??
                     Path.GetFullPath(Path.Combine(Application.dataPath, "../.."));
                 var ecology = JObject.Parse(File.ReadAllText(Path.Combine(repo, "data/kromka/danger-ecology.json")));
-                var species = ((JArray)ecology["species"]).OfType<JObject>()
+                var allResidents = ((JArray)ecology["species"]).OfType<JObject>()
                     .Where(row => row["kind"]?.ToString() != "traveller").ToArray();
-                Require(species.Length == RoaZoneLairDressing.ThemeCount, "Every resident species needs a theme");
+                Require(allResidents.Length == RoaZoneLairDressing.ThemeCount,
+                    "Every resident species needs a theme");
+                var tiers = JObject.Parse(File.ReadAllText(Path.Combine(repo, "data/kromka/tiers.json")));
+                var tierRules = tiers["enemies"]?["species"];
+                var species = allResidents.Where(row =>
+                {
+                    string type = row["members"]?[0]?["type"]?.ToString();
+                    return tierRules?[type]?["tiers"] is JArray allowed &&
+                        allowed.Any(value => value.Value<int>() == 1);
+                }).ToArray();
+                Require(species.Length == 4, "Expected four tier-one lair species");
                 if (RoaLairPropCatalog.Instance == null) RoaLairPropCatalogBuilder.Build();
                 Require(RoaLairPropCatalog.Instance != null, "PolygonApocalypse lair catalog is missing");
                 var definition = JObject.Parse(File.ReadAllText(
@@ -61,7 +72,7 @@ namespace RealmOfAshes.EditorTools
                 Require(preview.IsValid(), "Authored zone scene did not open");
                 renderer = new PreviewRenderUtility();
                 renderer.camera.clearFlags = CameraClearFlags.SolidColor;
-                renderer.camera.fieldOfView = 44f;
+                renderer.camera.fieldOfView = RoaCameraRig.GameplayFieldOfView;
                 renderer.camera.nearClipPlane = 0.1f;
                 renderer.camera.farClipPlane = 170f;
                 renderer.ambientColor = new Color(0.22f, 0.21f, 0.19f);
@@ -85,8 +96,10 @@ namespace RealmOfAshes.EditorTools
                 Directory.CreateDirectory(output);
 
                 var camera = renderer.camera;
-                camera.transform.position = focus + new Vector3(0f, 11f, -19f);
-                camera.transform.LookAt(focus);
+                Quaternion gameplayOrbit = Quaternion.Euler(55f, 45f, 0f);
+                camera.transform.position = focus - gameplayOrbit * Vector3.forward *
+                    RoaCameraRig.DefaultGameplayDistance;
+                camera.transform.rotation = gameplayOrbit;
                 var light = renderer.lights[0];
                 light.transform.rotation = Quaternion.Euler(48f, -35f, 0f);
 
@@ -100,10 +113,56 @@ namespace RealmOfAshes.EditorTools
                     Require(RoaZoneLairDressing.Build(definition, host.transform) == 1,
                         "Lair was not placed: " + id);
                     Transform group = host.transform.GetChild(0).GetChild(0);
+                    string modelKey = CreatureModelKey(id);
+                    RoaLairCreatureRemains[] remains =
+                        group.GetComponentsInChildren<RoaLairCreatureRemains>(true);
+                    Require(remains.Length == (modelKey == null ? 0 : id == "lantern_herd" ? 2 : 1),
+                        "Wrong species remains count: " + id);
+                    foreach (RoaLairCreatureRemains trace in remains)
+                    {
+                        string sourcePath = RoaLairCreatureRemains.SourcePath(modelKey);
+                        const string prefix = "public/assets/models/";
+                        Require(sourcePath.StartsWith(prefix, StringComparison.Ordinal),
+                            "Unapproved creature source: " + sourcePath);
+                        string packagePath = "Packages/com.realmofashes.models/" +
+                            sourcePath.Substring(prefix.Length);
+                        GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(packagePath);
+                        Require(source != null, "Existing creature GLB unavailable: " + packagePath);
+                        GameObject model = UnityEngine.Object.Instantiate(source, trace.transform, false);
+                        Require(RoaLairCreatureRemains.ConfigureStaticVisual(
+                                model, modelKey, trace.ShowsBody),
+                            "Creature remains cannot freeze existing model: " + id +
+                            " nodes=" + string.Join(",", model.GetComponentsInChildren<Transform>(true)
+                                .Select(t => t.name)) + " renderers=" +
+                            string.Join(",", model.GetComponentsInChildren<Renderer>(true)
+                                .Select(r => r.name)));
+                        if (modelKey != "kromkaLantern")
+                        {
+                            Animation animation = model.GetComponentInChildren<Animation>(true);
+                            Require(animation != null && animation["death"] != null &&
+                                animation["death"].speed == 0f,
+                                "Creature trace is not frozen in death pose: " + id);
+                        }
+                        else if (trace.ShowsBody)
+                        {
+                            Require(Mathf.Abs(Mathf.DeltaAngle(
+                                    trace.transform.localEulerAngles.z, 40f)) < 1f &&
+                                model.GetComponentsInChildren<Renderer>(true)
+                                    .Any(renderer => renderer.enabled &&
+                                        renderer.name.Contains("stag_body")),
+                                "Lantern remains must be a whole creature lying on its side");
+                        }
+                        else
+                            Require(model.GetComponentsInChildren<Renderer>(true)
+                                .Where(renderer => renderer.enabled).All(renderer =>
+                                    !renderer.name.Contains("stag_body")),
+                                "Lantern trace shows body rather than shed antlers");
+                    }
                     Require(group.GetComponentsInChildren<Renderer>(true).Length >= 4,
                         "Lair lacks visible traces: " + id);
                     foreach (Transform prop in group)
                     {
+                        if (prop.GetComponent<RoaLairCreatureRemains>() != null) continue;
                         Require(prop.name.StartsWith("LairProp_", StringComparison.Ordinal),
                             "Unexpected lair visual: " + prop.name);
                         GameObject source = RoaLairPropCatalog.Instance.Find(
@@ -112,9 +171,14 @@ namespace RealmOfAshes.EditorTools
                         Require(path.StartsWith("Assets/Synty/PolygonApocalypse/Prefabs/", StringComparison.Ordinal),
                             "Non-PolygonApocalypse lair model: " + prop.name + " source=" +
                             (source != null ? source.name : "NULL") + " path=" + path);
+                        Require(prop.localScale == source.transform.localScale,
+                            "PolygonApocalypse authored scale changed: " + prop.name);
                     }
                     Require(group.GetComponentsInChildren<Collider>(true).All(c => !c.enabled),
                         "Lair visual blocks gameplay: " + id);
+                    Require(group.GetComponentsInChildren<RoaEnemies>(true).Length == 0 &&
+                        group.GetComponentsInChildren<RoaCharacterView>(true).Length == 0,
+                        "Static trace impersonates a live server actor: " + id);
                     Require(!group.GetComponentsInChildren<Text>(true).Any() &&
                         !group.GetComponentsInChildren<TextMesh>(true).Any() &&
                         !group.GetComponentsInChildren<Canvas>(true).Any() &&
@@ -123,22 +187,20 @@ namespace RealmOfAshes.EditorTools
                         "Lair contains lettering: " + id);
                     Require(group.GetComponentsInChildren<Transform>(true).Any(t =>
                         t.name == Signature(id)), "Species trace missing: " + id);
-                    if (id == "raider_band")
-                        foreach (string required in new[] { "SM_Prop_Tent_Dome_01",
-                            "SM_Prop_Barricade_01", "SM_Prop_FirePit_01", "FX_Fire_01" })
-                            Require(group.GetComponentsInChildren<Transform>(true).Any(t =>
-                                t.name == "LairProp_" + required), "Raider camp lacks " + required);
+                    CheckTierOneMotif(id, group);
                     foreach (ParticleSystem particles in group.GetComponentsInChildren<ParticleSystem>(true))
                         particles.Simulate(1.25f, true, true);
                     foreach (string time in new[] { "day", "night" })
                     {
-                        light.intensity = time == "day" ? 1.15f : 0.38f;
-                        renderer.lights[1].intensity = time == "day" ? 0.28f : 0.08f;
-                        renderer.ambientColor = time == "day"
-                            ? new Color(0.40f, 0.39f, 0.37f)
-                            : new Color(0.12f, 0.13f, 0.16f);
-                        camera.backgroundColor = time == "day"
-                            ? new Color(0.49f, 0.54f, 0.57f) : new Color(0.025f, 0.03f, 0.06f);
+                        bool mobile = time == "night";
+                        RoaWorldLighting.LightingSample lighting = RoaWorldLighting.Evaluate(
+                            mobile ? 0f : RoaWorldLighting.WebFixedWorldHour, null, mobile);
+                        light.intensity = mobile ? lighting.MoonIntensity : lighting.SunIntensity;
+                        light.color = mobile ? lighting.MoonColor : lighting.SunColor;
+                        renderer.lights[1].intensity = lighting.FillIntensity;
+                        renderer.lights[1].color = lighting.FillColor;
+                        renderer.ambientColor = lighting.HemiSkyColor * lighting.HemiIntensity;
+                        camera.backgroundColor = lighting.SkyColor;
                         if (time == "day")
                             Capture(renderer, Path.Combine(output, id + "-desktop-day.png"), 1440, 810);
                         else
@@ -148,7 +210,7 @@ namespace RealmOfAshes.EditorTools
                     host = null;
                 }
                 File.WriteAllText(Result, new JObject { ["status"] = "pass",
-                    ["species"] = species.Length, ["nearbyModels"] = nearbyModels,
+                    ["tier"] = 1, ["species"] = species.Length, ["nearbyModels"] = nearbyModels,
                     ["captures"] = output }.ToString());
                 Debug.Log("[ROA] Lair dressing passed in authored zone: " + species.Length +
                     " species, no lettering or blocking colliders; desktop day/mobile night: " + output);
@@ -173,15 +235,68 @@ namespace RealmOfAshes.EditorTools
             switch (speciesId)
             {
                 case "raider_band": return "LairProp_SM_Prop_Tent_Dome_01";
-                case "gari_pack": return "LairProp_SM_Prop_Dog_House_01";
+                case "gari_pack": return "LairProp_SM_Env_Rock_01";
                 case "dustling_brood": return "LairProp_SM_Prop_Vents_Exhaust_01";
                 case "listener_pack": return "LairProp_SM_Prop_Roof_Satellite_Dish_01";
                 case "rykhlyak_herd": return "LairProp_SM_Env_DirtPile_01";
                 case "mourner_flock": return "LairProp_SM_Env_Tree_Dead_02";
                 case "fold_cluster": return "LairProp_SM_Prop_BodyBag_Pile_01";
                 case "burned_drifters": return "LairProp_SM_Prop_Tent_Dome_Damaged_01";
-                case "lantern_herd": return "LairProp_SM_Prop_Barrel_Nuke_Pool_01";
+                case "lantern_herd": return "LairProp_SM_Env_Flowers_Large_01";
                 default: throw new InvalidOperationException("Unknown species: " + speciesId);
+            }
+        }
+
+        private static string CreatureModelKey(string speciesId)
+        {
+            switch (speciesId)
+            {
+                case "gari_pack": return "kromkaGari";
+                case "dustling_brood": return "kromkaDustling";
+                case "lantern_herd": return "kromkaLantern";
+                default: return null;
+            }
+        }
+
+        private static void CheckTierOneMotif(string id, Transform group)
+        {
+            int Count(string key) => group.GetComponentsInChildren<Transform>(true)
+                .Count(t => t.name == "LairProp_" + key);
+            switch (id)
+            {
+                case "raider_band":
+                    Require(Count("SM_Prop_Tent_Dome_01") == 2 &&
+                        Count("SM_Prop_Barricade_01") + Count("SM_Prop_Barricade_02") >= 6 &&
+                        Count("SM_Prop_Barricade_Corrugated_01") == 2 &&
+                        Count("SM_Prop_Sandbag_Wall_01") == 2 &&
+                        Count("SM_Prop_Ammo_Box_Open_01") == 1 &&
+                        Count("SM_Prop_DeadBody_Spiked_Male_01") == 1 &&
+                        Count("SM_Prop_FirePit_01") == 1 && Count("FX_Fire_01") == 1 &&
+                        group.GetComponentsInChildren<Light>(true).Length >= 1,
+                        "Raider camp needs tents, perimeter, firepit and firelight");
+                    break;
+                case "gari_pack":
+                    Require(Count("SM_Prop_Dog_House_01") == 0 &&
+                        Count("SM_Env_Rock_01") >= 3 && Count("SM_Env_Rock_02") == 0 &&
+                        Count("SM_Prop_DeadBody_Laying_Male_01") == 1 &&
+                        Count("SM_Prop_BloodPool_01") == 1,
+                        "Gari den needs a wild low entrance and torn prey, not a kennel");
+                    break;
+                case "dustling_brood":
+                    Require(Count("SM_Prop_Wall_Wire_Damaged_01") == 0 &&
+                        Count("SM_Prop_Wire_01") == 0 &&
+                        Count("SM_Env_DirtPile_01") + Count("SM_Env_DirtPile_02") >= 5 &&
+                        Count("SM_Prop_Vents_Exhaust_01") == 1 && Count("FX_Flies_01") >= 3,
+                        "Dustling brood needs a low clustered hive and insects");
+                    break;
+                case "lantern_herd":
+                    Light[] lights = group.GetComponentsInChildren<Light>(true);
+                    Require(Count("SM_Prop_Barrel_Nuke_Pool_01") == 0 &&
+                        Count("SM_Env_Flowers_Large_01") == 2 &&
+                        Count("SM_Env_Flowers_Large_02") == 1 && lights.Length >= 3 &&
+                        lights.All(light => light.color.b > light.color.r),
+                        "Lantern pasture needs vegetation and cold light, not radioactive waste");
+                    break;
             }
         }
 

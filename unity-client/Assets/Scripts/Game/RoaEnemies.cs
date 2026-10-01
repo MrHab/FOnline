@@ -1591,7 +1591,7 @@ namespace RealmOfAshes.Game
             return null;
         }
 
-        private static Task<GltfImport> LoadCached(string url)
+        internal static Task<GltfImport> LoadCached(string url)
         {
             Task<GltfImport> cached;
             if (ModelCache.TryGetValue(url, out cached)) return cached;

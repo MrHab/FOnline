@@ -23,34 +23,48 @@ MonoBehaviour:
     prefab: {fileID: 1627071915366092, guid: b092211bc2fc70a44b2d0923759d5c16, type: 3}
   - key: SM_Prop_Barricade_02
     prefab: {fileID: 1918388152597966, guid: f2a09aca249a5974f939302e6e692654, type: 3}
+  - key: SM_Prop_Barricade_Corrugated_01
+    prefab: {fileID: 1913680498485106, guid: d1749d9c90146d646990a20586c88c11, type: 3}
+  - key: SM_Prop_Sandbag_Wall_01
+    prefab: {fileID: 1393725319409702, guid: 7cddecf69ef38c44f8baf578d2fe4a84, type: 3}
+  - key: SM_Prop_Ammo_Box_Open_01
+    prefab: {fileID: 1272480267893180, guid: 7c5f95bf549ddfb43982f6c79702544d, type: 3}
+  - key: SM_Prop_Flag_Straight_01
+    prefab: {fileID: 1542653490761352, guid: 4eabbd147d780f940b9da01b016d265e, type: 3}
+  - key: SM_Prop_Bandit_Skull_01
+    prefab: {fileID: 1582532293609712, guid: 344cff1e1d3fd184a98b87920ac0d570, type: 3}
   - key: SM_Prop_FirePit_01
     prefab: {fileID: 1649974113805406, guid: e877b3ac2d64d404f94a9bc0bfb94891, type: 3}
   - key: SM_Prop_Camp_Chair_01
     prefab: {fileID: 1459058126935912, guid: 3d004b72f7b50e448a300b56635c9728, type: 3}
   - key: SM_Prop_SupplyPile_01
     prefab: {fileID: 1253555264889860, guid: b18f01bb0b904ae43be4a3ef9003cd6d, type: 3}
-  - key: SM_Prop_Dog_House_01
-    prefab: {fileID: 1796243636264490, guid: 044a6c953915ff649bc93dd694624c4e, type: 3}
+  - key: SM_Prop_CarBattery_01
+    prefab: {fileID: 1641304953013102, guid: a605a5f87e9bb1a47b6377c2306c9dbd, type: 3}
   - key: SM_Prop_Skull_01
     prefab: {fileID: 1515035654734784, guid: f5e52fc0c8d68eb4bb6f0a7fa8b6650a, type: 3}
   - key: SM_Env_DirtPile_01
     prefab: {fileID: 1350235754117392, guid: fffa2241c5a8ffc4f9ddf7cb7e671a9f, type: 3}
   - key: SM_Env_DirtPile_02
     prefab: {fileID: 1914291397940932, guid: 7b36f93e498d3064194f0099054e95a3, type: 3}
+  - key: SM_Env_Grass_Tuft_01
+    prefab: {fileID: 1904356791742696, guid: e85a5f270aefc744d86962e605a57bb3, type: 3}
+  - key: SM_Env_Grass_Tuft_02
+    prefab: {fileID: 1154606685033784, guid: 38a679cbf2c60174f878721348dc3381, type: 3}
+  - key: SM_Env_Flowers_Large_01
+    prefab: {fileID: 1747983794508470, guid: 280fea07668826947a333deccc24f0cc, type: 3}
+  - key: SM_Env_Flowers_Large_02
+    prefab: {fileID: 1152109604970712, guid: 265bc6884f2ecda44b859ca997cbe720, type: 3}
   - key: SM_Prop_BloodPool_01
     prefab: {fileID: 1560305908663812, guid: 4146c50c48727a84d938cba98c327b77, type: 3}
   - key: SM_Prop_BloodSplat_01
     prefab: {fileID: 1435870659997696, guid: 3ebfe7eacf279e74ea1e2b9938215c90, type: 3}
   - key: SM_Prop_DeadBody_Laying_Male_01
     prefab: {fileID: 1982476189357990, guid: ee9df1f893649094bb3366fa2c48882b, type: 3}
-  - key: SM_Prop_Wall_Wire_Damaged_01
-    prefab: {fileID: 1512936425430310, guid: 1de3026f4fa03e9478f7d7f28fbbd00d, type: 3}
+  - key: SM_Prop_DeadBody_Spiked_Male_01
+    prefab: {fileID: 1586614307668486, guid: 598756d170a129144b29dae2fbb83003, type: 3}
   - key: SM_Prop_Vents_Exhaust_01
     prefab: {fileID: 1309344893076848, guid: fca3d3dcb5c6efb4abe29733012a7be8, type: 3}
-  - key: SM_Prop_TrashPile_03
-    prefab: {fileID: 1437611484020292, guid: fc35bce06e2fae94e9bce930f8413833, type: 3}
-  - key: SM_Env_Overgrowth_03
-    prefab: {fileID: 1800649983442656, guid: de4b90bf632cdf649af56ca9ded3d67b, type: 3}
   - key: SM_Env_Overgrowth_05
     prefab: {fileID: 1849011950601862, guid: 74400134902a7d4499d47e7fb0c7f852, type: 3}
   - key: SM_Prop_Roof_Satellite_Dish_01
@@ -87,11 +101,11 @@ MonoBehaviour:
     prefab: {fileID: 1729354746954410, guid: 5ad3f82852cadf94791f71dda3a3e9a0, type: 3}
   - key: SM_Prop_Chemical_02
     prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
-  - key: SM_Prop_Barrel_Nuke_Pool_01
-    prefab: {fileID: 1789578456741784, guid: 7f9e6737043b2304ca32ac25b2689737, type: 3}
   - key: SM_Env_GrassBlob_11
     prefab: {fileID: 1369506455379858, guid: 516049eaa83518d4e9b0b7ece41ed7c1, type: 3}
   - key: SM_Env_Bushes_02
     prefab: {fileID: 1646082096404570, guid: 53cc0a19e09835f4fb0adef80edc5bc9, type: 3}
   - key: FX_Fire_01
     prefab: {fileID: 1663974233948936, guid: cd0cbcca82f24d3f95c6299907b9b097, type: 3}
+  - key: FX_Flies_01
+    prefab: {fileID: 1842198354992312, guid: 90e9c22f9f7741d41b7b76fd1edb1d43, type: 3}

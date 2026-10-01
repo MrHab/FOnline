@@ -60,36 +60,11 @@ namespace RealmOfAshes.World
 
         private static void Dress(string id, Transform root, RoaLairPropCatalog kit)
         {
+            // The tier-one layout is the baseline for these four species until
+            // higher-tier variants are authored from zone.difficulty.
+            if (DressTierOne(id, root, kit)) return;
             switch (id)
             {
-                case "raider_band":
-                    Place(kit, root, "SM_Prop_Tent_Dome_01", -4.2f, 1.8f, 30f);
-                    Place(kit, root, "SM_Prop_Tent_Dome_01", 4.2f, 1.8f, -30f);
-                    Place(kit, root, "SM_Prop_Barricade_01", -3.4f, -3.4f, -28f);
-                    Place(kit, root, "SM_Prop_Barricade_02", 3.4f, -3.4f, 28f);
-                    Place(kit, root, "SM_Prop_FirePit_01", 0f, 0f);
-                    Place(kit, root, "FX_Fire_01", 0f, 0f);
-                    Place(kit, root, "SM_Prop_Camp_Chair_01", -1.5f, 0.8f, 85f);
-                    Place(kit, root, "SM_Prop_Sleeping_Bag_01", 2.7f, 2.1f, 25f);
-                    Place(kit, root, "SM_Prop_SupplyPile_01", -4.2f, 3.8f);
-                    break;
-                case "gari_pack":
-                    Place(kit, root, "SM_Prop_Dog_House_01", 0f, 1.7f, 180f);
-                    Place(kit, root, "SM_Env_DirtPile_01", -2.5f, 2.3f, 70f);
-                    Place(kit, root, "SM_Env_DirtPile_02", 2.4f, 2.5f, -60f);
-                    Place(kit, root, "SM_Prop_Skull_01", -1.3f, -0.9f);
-                    Place(kit, root, "SM_Prop_BloodPool_01", 1.4f, -1.1f, 25f);
-                    Place(kit, root, "SM_Prop_DeadBody_Laying_Male_01", 3.2f, -2.5f, 36f);
-                    break;
-                case "dustling_brood":
-                    Place(kit, root, "SM_Prop_Vents_Exhaust_01", 0f, 1.1f);
-                    Place(kit, root, "SM_Env_DirtPile_02", -2.8f, 1.9f, 40f);
-                    Place(kit, root, "SM_Env_DirtPile_02", 2.8f, 1.9f, -55f);
-                    Place(kit, root, "SM_Env_DirtPile_01", 0f, -2.6f, 150f);
-                    Place(kit, root, "SM_Prop_Wall_Wire_Damaged_01", -2.7f, -2.5f, 90f);
-                    Place(kit, root, "SM_Prop_TrashPile_03", 2.5f, -2.3f, -25f);
-                    Place(kit, root, "SM_Env_Overgrowth_03", 3.6f, 3.2f);
-                    break;
                 case "listener_pack":
                     Place(kit, root, "SM_Prop_Roof_Satellite_Dish_01", -2.6f, 0.6f, 40f);
                     Place(kit, root, "SM_Prop_Roof_Satellite_Dish_01", 2.6f, 0.6f, -40f);
@@ -128,31 +103,134 @@ namespace RealmOfAshes.World
                     Place(kit, root, "SM_Prop_Sleeping_Bag_01", 0.2f, -2.9f, 95f);
                     Place(kit, root, "SM_Prop_BloodSplat_01", -0.5f, 2.6f);
                     break;
-                case "lantern_herd":
-                    Place(kit, root, "SM_Env_GrassBlob_11", -2f, 0.7f);
-                    Place(kit, root, "SM_Env_GrassBlob_11", 2.1f, 1.2f, 60f);
-                    Place(kit, root, "SM_Env_Bushes_02", -3.2f, -1.7f);
-                    Place(kit, root, "SM_Env_Overgrowth_05", 2.7f, -1.9f, -35f);
-                    Place(kit, root, "SM_Prop_Barrel_Nuke_Pool_01", 0f, -0.6f);
-                    break;
             }
         }
 
-        private static void Place(RoaLairPropCatalog kit, Transform parent, string key,
-            float x, float z, float yaw = 0f)
+        private static bool DressTierOne(string id, Transform root, RoaLairPropCatalog kit)
+        {
+            switch (id)
+            {
+                case "raider_band":
+                    Place(kit, root, "SM_Prop_Tent_Dome_01", -3.4f, 2f, 28f);
+                    Place(kit, root, "SM_Prop_Tent_Dome_01", 3.4f, 2f, -28f);
+                    Place(kit, root, "SM_Prop_Barricade_01", -3.3f, -2.9f);
+                    Place(kit, root, "SM_Prop_Barricade_02", -1.8f, -2.9f);
+                    Place(kit, root, "SM_Prop_Barricade_01", 1.8f, -2.9f);
+                    Place(kit, root, "SM_Prop_Barricade_02", 3.3f, -2.9f);
+                    Place(kit, root, "SM_Prop_Barricade_01", -4.7f, -0.6f, 90f);
+                    Place(kit, root, "SM_Prop_Barricade_02", 4.7f, -0.6f, 90f);
+                    Place(kit, root, "SM_Prop_Barricade_Corrugated_01", -4.9f, 1.3f, 90f);
+                    Place(kit, root, "SM_Prop_Barricade_Corrugated_01", 4.9f, 1.3f, 90f);
+                    Place(kit, root, "SM_Prop_Sandbag_Wall_01", -1.9f, 4.5f);
+                    Place(kit, root, "SM_Prop_Sandbag_Wall_01", 1.9f, 4.5f);
+                    Place(kit, root, "SM_Prop_FirePit_01", 0f, 0f);
+                    AddLight(Place(kit, root, "FX_Fire_01", 0f, 0f),
+                        new Color(1f, 0.46f, 0.18f), 1.5f, 6f);
+                    Place(kit, root, "SM_Prop_Camp_Chair_01", -1.7f, 0.1f, 85f);
+                    Place(kit, root, "SM_Prop_Sleeping_Bag_01", 2.6f, 1.8f, 25f);
+                    Place(kit, root, "SM_Prop_SupplyPile_01", -2.7f, 3.9f);
+                    Place(kit, root, "SM_Prop_Ammo_Box_Open_01", 2.6f, 0.3f, -20f);
+                    Place(kit, root, "SM_Prop_Flag_Straight_01", 4.2f, 3.1f);
+                    Place(kit, root, "SM_Prop_Bandit_Skull_01", -1.9f, -2.5f);
+                    Place(kit, root, "SM_Prop_DeadBody_Spiked_Male_01", -3.6f, -3.4f, 45f);
+                    Place(kit, root, "SM_Prop_Luggage_Open_01", 3.5f, -2.1f, -25f);
+                    return true;
+                case "gari_pack":
+                    Place(kit, root, "SM_Env_Rock_01", -1.2f, 0.9f, 45f);
+                    Place(kit, root, "SM_Env_Rock_01", 1.2f, 0.9f, -35f);
+                    Place(kit, root, "SM_Env_Rock_01", 0f, 2.5f, 85f);
+                    Place(kit, root, "SM_Env_DirtPile_01", -1.5f, 1.5f, 65f);
+                    Place(kit, root, "SM_Env_DirtPile_02", 1.5f, 1.5f, -55f);
+                    Place(kit, root, "SM_Env_DirtPile_01", -1.5f, -0.2f, 25f);
+                    Place(kit, root, "SM_Env_DirtPile_02", 1.5f, -0.2f, -25f);
+                    Place(kit, root, "SM_Prop_Skull_01", -0.8f, -0.5f);
+                    Place(kit, root, "SM_Prop_BloodPool_01", 0.4f, -1f, 25f);
+                    Place(kit, root, "SM_Prop_BloodSplat_01", 0.6f, -1.5f, -20f);
+                    Place(kit, root, "SM_Prop_DeadBody_Laying_Male_01", 0.9f, -1.8f, 36f);
+                    PlaceRemains(root, "kromkaGari", -2.6f, -0.55f, 40f, -0.18f, 78f);
+                    return true;
+                case "dustling_brood":
+                    Place(kit, root, "SM_Prop_Vents_Exhaust_01", 0f, 0.8f);
+                    Place(kit, root, "SM_Env_DirtPile_02", -1.1f, 0.9f, 40f);
+                    Place(kit, root, "SM_Env_DirtPile_02", 1.1f, 0.9f, -55f);
+                    Place(kit, root, "SM_Env_DirtPile_01", 0f, -1.3f, 150f);
+                    Place(kit, root, "SM_Env_DirtPile_01", -1.2f, -0.6f, 25f);
+                    Place(kit, root, "SM_Env_DirtPile_01", 1.2f, -0.6f, -25f);
+                    Place(kit, root, "SM_Prop_CarBattery_01", 1.7f, -1.8f);
+                    EmphasizeSwarm(Place(kit, root, "FX_Flies_01", -1f, 0.3f, 0f, 1.2f));
+                    EmphasizeSwarm(Place(kit, root, "FX_Flies_01", 0f, -0.6f, 0f, 1.2f));
+                    EmphasizeSwarm(Place(kit, root, "FX_Flies_01", 1f, 0.3f, 0f, 1.2f));
+                    PlaceRemains(root, "kromkaDustling", 0f, -0.3f, 155f, -0.2f);
+                    return true;
+                case "lantern_herd":
+                    Place(kit, root, "SM_Env_GrassBlob_11", -2.7f, 1.4f);
+                    Place(kit, root, "SM_Env_GrassBlob_11", 2.7f, 1.4f, 60f);
+                    Place(kit, root, "SM_Env_Bushes_02", -3f, -1.6f);
+                    Place(kit, root, "SM_Env_Overgrowth_05", 3f, -1.6f, -35f);
+                    Place(kit, root, "SM_Env_Grass_Tuft_01", -1.4f, -1.5f);
+                    Place(kit, root, "SM_Env_Grass_Tuft_02", 1.4f, -1.5f);
+                    AddLight(Place(kit, root, "SM_Env_Flowers_Large_01", -1.5f, 0.2f),
+                        new Color(0.20f, 0.62f, 1f), 0.28f, 2.5f);
+                    AddLight(Place(kit, root, "SM_Env_Flowers_Large_02", 1.6f, 0.4f),
+                        new Color(0.20f, 0.62f, 1f), 0.28f, 2.5f);
+                    AddLight(Place(kit, root, "SM_Env_Flowers_Large_01", 0f, -1.8f, 35f),
+                        new Color(0.20f, 0.62f, 1f), 0.28f, 2.5f);
+                    PlaceRemains(root, "kromkaLantern", -1.5f, -0.5f, 115f);
+                    PlaceRemains(root, "kromkaLantern", 1.5f, -0.5f, 245f, 0f, 0f, true);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static void PlaceRemains(Transform parent, string modelKey,
+            float x, float z, float yaw, float height = 0f, float roll = 0f,
+            bool showBody = false)
+        {
+            var visual = new GameObject("LairRemains_" + modelKey);
+            visual.transform.SetParent(parent, false);
+            visual.transform.localPosition = new Vector3(x, height, z);
+            visual.transform.localRotation = Quaternion.Euler(0f, yaw, roll);
+            visual.AddComponent<RoaLairCreatureRemains>().Initialize(modelKey, showBody);
+        }
+
+        private static GameObject Place(RoaLairPropCatalog kit, Transform parent, string key,
+            float x, float z, float yaw = 0f, float height = 0f)
         {
             GameObject prefab = kit.Find(key);
             if (prefab == null)
             {
                 Debug.LogError("[ROA] Missing PolygonApocalypse lair model: " + key);
-                return;
+                return null;
             }
             GameObject visual = UnityEngine.Object.Instantiate(prefab, parent);
             visual.name = "LairProp_" + key;
-            visual.transform.localPosition = new Vector3(x, 0f, z);
+            visual.transform.localPosition = new Vector3(x, height, z);
             visual.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
             foreach (Collider collider in visual.GetComponentsInChildren<Collider>(true))
                 collider.enabled = false;
+            return visual;
+        }
+
+        private static void AddLight(GameObject visual, Color color, float intensity, float range)
+        {
+            if (visual == null) return;
+            Light light = visual.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = color;
+            light.intensity = intensity;
+            light.range = range;
+            light.shadows = LightShadows.None;
+        }
+
+        private static void EmphasizeSwarm(GameObject visual)
+        {
+            if (visual == null) return;
+            foreach (ParticleSystem particles in visual.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                ParticleSystem.MainModule main = particles.main;
+                main.startSizeMultiplier *= 1.6f;
+            }
         }
     }
 }

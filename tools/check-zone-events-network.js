@@ -67,6 +67,9 @@ const now = Date.now();
 const event = createPublicEvent(template, { now, rules: events.rules, point: centreOf(eventZone), id: 'pubev_zone_check' });
 event.warningAt = now + 20000;
 event.expiresAt = now + 30000;
+// Эта проверка смотрит истечение события, а не пятиминутное продление сундука
+// после случайной зачистки отряда другими жителями зоны.
+event.claimGraceGivenAt = now;
 assert.notEqual(event.roomId, eventZone.id, 'the seeded event still points into its own room');
 const anchors = eventDef.zone.eventAnchors.map(world);
 const nearestAnchor = point => Math.min(...anchors.map(anchor => Math.hypot(point.x - anchor.x, point.z - anchor.z)));

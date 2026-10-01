@@ -86,6 +86,13 @@ unity-client/Assets/Synty.meta
 unity-client/Assets/Resources/ApocalypseHud/
 unity-client/Assets/Resources/ApocalypseHud.meta
 
+# Additional locally imported Unity asset packs and TextMesh Pro examples.
+# Their source files are not part of the game's authored assets.
+unity-client/Assets/Polygon Modular Turrets Pack/
+unity-client/Assets/Polygon Modular Turrets Pack.meta
+unity-client/Assets/TextMesh Pro/
+unity-client/Assets/TextMesh Pro.meta
+
 # Atomic Realm allows use in games, not redistribution of raw assets.
 # Keep import GUIDs and setup/license documentation, but install sources locally.
 unity-client/Assets/ThirdParty/AtomicRealmPostApocalyptic/**

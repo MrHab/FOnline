@@ -77,10 +77,6 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_TrashPile_02.prefab"
     },
     {
-      "guid": "2b09a25c27614c84d823ebf345b9a7ff",
-      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_Road_Patch_01.prefab"
-    },
-    {
       "guid": "2bc2a52c2b77dbc4a8c2058c5e0e0d89",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Tent_Long_01.prefab"
     },

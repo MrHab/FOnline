@@ -2022,66 +2022,6 @@
       "tags": []
     },
     {
-      "id": "apron_wear_w",
-      "prefab": "SM_Env_Road_Patch_01",
-      "x": -27,
-      "z": 1.35,
-      "y": 0.065,
-      "rotY": 27,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "apron_wear_1",
-      "prefab": "SM_Env_Road_Patch_01",
-      "x": -10,
-      "z": 3.7,
-      "y": 0.065,
-      "rotY": 56,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "apron_wear_2",
-      "prefab": "SM_Env_Road_Patch_01",
-      "x": 2.8,
-      "z": 1.1,
-      "y": 0.065,
-      "rotY": 12,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "apron_wear_3",
-      "prefab": "SM_Env_Road_Patch_01",
-      "x": 15.3,
-      "z": 4.1,
-      "y": 0.065,
-      "rotY": 97,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "apron_wear_kpp",
-      "prefab": "SM_Env_Road_Patch_01",
-      "x": 25.5,
-      "z": 0.8,
-      "y": 0.065,
-      "rotY": 34,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
       "id": "road_faded_lines",
       "prefab": "SM_Env_Road_YellowLines_01",
       "x": 28,

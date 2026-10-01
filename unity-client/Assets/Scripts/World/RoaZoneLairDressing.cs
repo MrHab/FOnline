@@ -1,58 +1,32 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
-using RealmOfAshes.Game;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RealmOfAshes.World
 {
-    /// <summary>
-    /// Следы постоянных групп A-Life. Вид логова приходит от сервера, а оформление
-    /// ставится поверх сцены сектора без коллизии: закреплённые сцены не приходится
-    /// пересобирать при изменении состава фауны.
-    /// </summary>
+    /// <summary>Existing PolygonApocalypse models placed around server-owned A-Life lairs.</summary>
     public static class RoaZoneLairDressing
     {
-        private sealed class Theme
+        private static readonly HashSet<string> Species = new HashSet<string>(StringComparer.Ordinal)
         {
-            public readonly string Label;
-            public readonly Color Accent;
-            public readonly string[] Props;
-
-            public Theme(string label, Color accent, params string[] props)
-            {
-                Label = label;
-                Accent = accent;
-                Props = props;
-            }
-        }
-
-        // Путники не имеют логов. Каждый вид, которому A-Life заводит логово,
-        // получает свой набор узнаваемых следов и подпись в Unity-клиенте.
-        private static readonly Dictionary<string, Theme> Themes = new Dictionary<string, Theme>(StringComparer.Ordinal)
-        {
-            { "raider_band", new Theme("НАЛЁТЧИКИ", new Color(0.78f, 0.28f, 0.20f), "scrap_wall_segment", "rust_barrel_v1", "campfire_rest") },
-            { "gari_pack", new Theme("ГАРИ", new Color(0.74f, 0.55f, 0.32f), "rubble_rock", "deadwood", "dry_bush") },
-            { "dustling_brood", new Theme("ПЫЛЬНИКИ", new Color(0.83f, 0.72f, 0.45f), "scrap_heap", "perimeter_debris", "dry_bush") },
-            { "listener_pack", new Theme("СЛУХАЧИ", new Color(0.40f, 0.62f, 0.72f), "dead_tree_a", "utility_pole", "perimeter_debris") },
-            { "rykhlyak_herd", new Theme("РЫХЛЯКИ", new Color(0.63f, 0.47f, 0.30f), "rubble_rock", "rubble_rock", "scrap_heap") },
-            { "mourner_flock", new Theme("ПЛАКАЛЬЩИКИ", new Color(0.60f, 0.47f, 0.70f), "dead_tree_b", "deadwood", "rubble_rock") },
-            { "fold_cluster", new Theme("СКЛАДНИ", new Color(0.43f, 0.70f, 0.67f), "concrete_wall", "scrap_wall_segment", "perimeter_debris") },
-            { "burned_drifters", new Theme("ВЫЖЖЕННЫЕ", new Color(0.87f, 0.39f, 0.21f), "car_wreck", "rust_barrel_v1", "campfire_rest") },
-            { "lantern_herd", new Theme("ФОНАРНИКИ", new Color(0.68f, 0.79f, 0.35f), "dead_tree_c", "dry_bush", "garden_patch") }
+            "raider_band", "gari_pack", "dustling_brood", "listener_pack", "rykhlyak_herd",
+            "mourner_flock", "fold_cluster", "burned_drifters", "lantern_herd"
         };
 
-        private static Material _plaqueMaterial;
-        private static readonly Dictionary<string, Material> AccentMaterials = new Dictionary<string, Material>(StringComparer.Ordinal);
-        public static int ThemeCount { get { return Themes.Count; } }
-        public static bool HasTheme(string speciesId) { return speciesId != null && Themes.ContainsKey(speciesId); }
+        public static int ThemeCount => Species.Count;
+        public static bool HasTheme(string speciesId) => speciesId != null && Species.Contains(speciesId);
 
         public static int Build(LocationDefinition definition, Transform parent)
         {
             JArray lairs = definition?.Zone?["lairs"] as JArray;
             if (lairs == null || parent == null) return 0;
-            RoaZoneKitCatalog kit = RoaZoneKitCatalog.Instance;
+            RoaLairPropCatalog catalog = RoaLairPropCatalog.Instance;
+            if (catalog == null)
+            {
+                Debug.LogError("[ROA] PolygonApocalypse lair prefab references are missing.");
+                return 0;
+            }
             var root = new GameObject("LairDressing");
             root.transform.SetParent(parent, false);
             int built = 0;
@@ -60,126 +34,125 @@ namespace RealmOfAshes.World
             {
                 if (!(token is JObject row)) continue;
                 string speciesId = row["speciesId"]?.ToString() ?? string.Empty;
-                if (!Themes.TryGetValue(speciesId, out Theme theme)) continue;
+                if (!Species.Contains(speciesId)) continue;
                 int tx = row["tx"]?.Value<int>() ?? -1;
                 int tz = row["tz"]?.Value<int>() ?? -1;
                 if (tx < 0 || tx >= definition.TileWidth || tz < 0 || tz >= definition.TileDepth) continue;
                 float x = (tx - definition.TileWidth / 2f + 0.5f) * definition.TileStep;
                 float z = (tz - definition.TileDepth / 2f + 0.5f) * definition.TileStep;
-                var group = new GameObject("Lair_" + speciesId + "_" + (row["id"]?.ToString() ?? built.ToString()));
+                string anchorId = row["id"]?.ToString() ?? built.ToString();
+                var group = new GameObject("Lair_" + speciesId + "_" + anchorId);
                 group.transform.SetParent(root.transform, false);
                 group.transform.localPosition = new Vector3(x, 0f, z);
-                BuildMarker(group.transform, theme, speciesId);
-                if (kit != null)
-                    for (int i = 0; i < theme.Props.Length; i++)
-                        PlaceProp(kit, group.transform, theme.Props[i], i);
+                group.transform.localRotation = Quaternion.Euler(0f, StableYaw(anchorId), 0f);
+                Dress(speciesId, group.transform, catalog);
                 built++;
             }
             return built;
         }
 
-        private static void PlaceProp(RoaZoneKitCatalog kit, Transform parent, string key, int index)
+        private static float StableYaw(string id)
+        {
+            uint hash = 2166136261;
+            foreach (char c in id) hash = unchecked((hash ^ c) * 16777619);
+            return (hash % 4) * 90f;
+        }
+
+        private static void Dress(string id, Transform root, RoaLairPropCatalog kit)
+        {
+            switch (id)
+            {
+                case "raider_band":
+                    Place(kit, root, "SM_Prop_Tent_Dome_01", -4.2f, 1.8f, 30f);
+                    Place(kit, root, "SM_Prop_Tent_Dome_01", 4.2f, 1.8f, -30f);
+                    Place(kit, root, "SM_Prop_Barricade_01", -3.4f, -3.4f, -28f);
+                    Place(kit, root, "SM_Prop_Barricade_02", 3.4f, -3.4f, 28f);
+                    Place(kit, root, "SM_Prop_FirePit_01", 0f, 0f);
+                    Place(kit, root, "FX_Fire_01", 0f, 0f);
+                    Place(kit, root, "SM_Prop_Camp_Chair_01", -1.5f, 0.8f, 85f);
+                    Place(kit, root, "SM_Prop_Sleeping_Bag_01", 2.7f, 2.1f, 25f);
+                    Place(kit, root, "SM_Prop_SupplyPile_01", -4.2f, 3.8f);
+                    break;
+                case "gari_pack":
+                    Place(kit, root, "SM_Prop_Dog_House_01", 0f, 1.7f, 180f);
+                    Place(kit, root, "SM_Env_DirtPile_01", -2.5f, 2.3f, 70f);
+                    Place(kit, root, "SM_Env_DirtPile_02", 2.4f, 2.5f, -60f);
+                    Place(kit, root, "SM_Prop_Skull_01", -1.3f, -0.9f);
+                    Place(kit, root, "SM_Prop_BloodPool_01", 1.4f, -1.1f, 25f);
+                    Place(kit, root, "SM_Prop_DeadBody_Laying_Male_01", 3.2f, -2.5f, 36f);
+                    break;
+                case "dustling_brood":
+                    Place(kit, root, "SM_Prop_Vents_Exhaust_01", 0f, 1.1f);
+                    Place(kit, root, "SM_Env_DirtPile_02", -2.8f, 1.9f, 40f);
+                    Place(kit, root, "SM_Env_DirtPile_02", 2.8f, 1.9f, -55f);
+                    Place(kit, root, "SM_Env_DirtPile_01", 0f, -2.6f, 150f);
+                    Place(kit, root, "SM_Prop_Wall_Wire_Damaged_01", -2.7f, -2.5f, 90f);
+                    Place(kit, root, "SM_Prop_TrashPile_03", 2.5f, -2.3f, -25f);
+                    Place(kit, root, "SM_Env_Overgrowth_03", 3.6f, 3.2f);
+                    break;
+                case "listener_pack":
+                    Place(kit, root, "SM_Prop_Roof_Satellite_Dish_01", -2.6f, 0.6f, 40f);
+                    Place(kit, root, "SM_Prop_Roof_Satellite_Dish_01", 2.6f, 0.6f, -40f);
+                    Place(kit, root, "SM_Prop_Loud_Speaker_01", 0f, 1.9f, 180f);
+                    Place(kit, root, "SM_Prop_Wire_01", 0f, -2f);
+                    Place(kit, root, "SM_Prop_Bear_Trap_01", -2.2f, -3.3f);
+                    Place(kit, root, "SM_Prop_Bear_Trap_01", 2.2f, -3.3f);
+                    break;
+                case "rykhlyak_herd":
+                    Place(kit, root, "SM_Env_DirtPile_01", 0f, 0f, 22f);
+                    Place(kit, root, "SM_Env_DirtPile_01", -3.2f, 1.6f, 65f);
+                    Place(kit, root, "SM_Env_DirtPile_02", 2.7f, 2.4f, -35f);
+                    Place(kit, root, "SM_Env_DirtPile_02", -1.3f, -2.4f, 110f);
+                    Place(kit, root, "SM_Env_Rubble_Pebbles_01", 2.9f, -2.6f);
+                    Place(kit, root, "SM_Env_Rock_01", -3.8f, -2.9f);
+                    break;
+                case "mourner_flock":
+                    Place(kit, root, "SM_Env_Tree_Dead_02", 0f, 1.7f);
+                    Place(kit, root, "SM_Env_GroundLeaves_03", -2.7f, -1.8f);
+                    Place(kit, root, "SM_Prop_Skull_Silver_01", -0.7f, -0.8f);
+                    Place(kit, root, "SM_Prop_Glass_Shard_02", 1.2f, -1.4f);
+                    Place(kit, root, "SM_Prop_DeadBody_Laying_Male_01", 2.8f, -2.9f, 80f);
+                    break;
+                case "fold_cluster":
+                    Place(kit, root, "SM_Prop_BodyBag_Pile_01", 0f, 1.5f);
+                    Place(kit, root, "SM_Prop_Bed_Gurney_BodySheet_01", -2.1f, -1.1f, 40f);
+                    Place(kit, root, "SM_Prop_BodyBag_Pile_01", 2.2f, -1.3f, -35f);
+                    Place(kit, root, "SM_Prop_Medical_Container_Broken_01", -2.6f, -3.1f);
+                    Place(kit, root, "SM_Prop_Chemical_02", 2.8f, -3.2f);
+                    break;
+                case "burned_drifters":
+                    Place(kit, root, "SM_Prop_Tent_Dome_Damaged_01", 1.9f, 2.2f, -25f);
+                    Place(kit, root, "SM_Prop_BurnPile_01", -1.6f, 0.4f);
+                    Place(kit, root, "SM_Prop_BurnPile_Books_01", -2.7f, -2.2f, 40f);
+                    Place(kit, root, "SM_Prop_Luggage_Open_01", 2.9f, -2.1f);
+                    Place(kit, root, "SM_Prop_Sleeping_Bag_01", 0.2f, -2.9f, 95f);
+                    Place(kit, root, "SM_Prop_BloodSplat_01", -0.5f, 2.6f);
+                    break;
+                case "lantern_herd":
+                    Place(kit, root, "SM_Env_GrassBlob_11", -2f, 0.7f);
+                    Place(kit, root, "SM_Env_GrassBlob_11", 2.1f, 1.2f, 60f);
+                    Place(kit, root, "SM_Env_Bushes_02", -3.2f, -1.7f);
+                    Place(kit, root, "SM_Env_Overgrowth_05", 2.7f, -1.9f, -35f);
+                    Place(kit, root, "SM_Prop_Barrel_Nuke_Pool_01", 0f, -0.6f);
+                    break;
+            }
+        }
+
+        private static void Place(RoaLairPropCatalog kit, Transform parent, string key,
+            float x, float z, float yaw = 0f)
         {
             GameObject prefab = kit.Find(key);
-            if (prefab == null) return;
-            GameObject instance = UnityEngine.Object.Instantiate(prefab, parent);
-            instance.name = "Trace_" + key + "_" + index;
-            // Оригинальный размер импортированного префаба сохраняется.
-            Vector3[] spots = { new Vector3(-6f, 0f, -4f), new Vector3(6f, 0f, -4f), new Vector3(0f, 0f, 7f) };
-            instance.transform.localPosition = spots[index % spots.Length];
-            instance.transform.localRotation = Quaternion.Euler(0f, index * 113f, 0f);
-            foreach (Collider collider in instance.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
-        }
-
-        private static void BuildMarker(Transform parent, Theme theme, string speciesId)
-        {
-            // Невысокая табличка из металла и цветной знак читаются с любой
-            // стороны камеры; звериная площадка при этом остаётся проходимой.
-            GameObject post = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            post.name = "MarkerPost";
-            post.transform.SetParent(parent, false);
-            post.transform.localPosition = new Vector3(0f, 0.85f, -5f);
-            post.transform.localScale = new Vector3(0.11f, 0.85f, 0.11f);
-            DisableCollider(post);
-            post.GetComponent<Renderer>().sharedMaterial = PlaqueMaterial();
-
-            var face = new GameObject("MarkerFace");
-            face.transform.SetParent(parent, false);
-            face.transform.localPosition = new Vector3(0f, 2.2f, -5f);
-            face.AddComponent<RoaZoneLairBillboard>();
-            Plate(face.transform, new Vector3(0f, 0f, 0f), new Vector3(5.2f, 0.95f, 0.10f), PlaqueMaterial());
-            Plate(face.transform, new Vector3(0f, 0.39f, -0.065f), new Vector3(5.2f, 0.16f, 0.04f), AccentMaterial(speciesId, theme.Accent));
-            var canvasObject = new GameObject("NameCanvas", typeof(RectTransform), typeof(Canvas));
-            canvasObject.transform.SetParent(face.transform, false);
-            canvasObject.transform.localPosition = new Vector3(0f, -0.04f, -0.08f);
-            canvasObject.transform.localRotation = Quaternion.identity;
-            canvasObject.transform.localScale = Vector3.one * 0.01f;
-            Canvas canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.WorldSpace;
-            RectTransform canvasRect = canvasObject.GetComponent<RectTransform>();
-            canvasRect.sizeDelta = new Vector2(500f, 82f);
-            var textObject = new GameObject("Name", typeof(RectTransform), typeof(Text));
-            textObject.transform.SetParent(canvasObject.transform, false);
-            RectTransform textRect = textObject.GetComponent<RectTransform>();
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = Vector2.zero;
-            textRect.offsetMax = Vector2.zero;
-            Text label = textObject.GetComponent<Text>();
-            label.text = theme.Label;
-            label.font = RoaUiFont.Default;
-            label.fontSize = 60;
-            label.resizeTextForBestFit = true;
-            label.resizeTextMinSize = 30;
-            label.resizeTextMaxSize = 60;
-            label.alignment = TextAnchor.MiddleCenter;
-            label.raycastTarget = false;
-            label.color = new Color(0.97f, 0.94f, 0.83f);
-        }
-
-        private static void Plate(Transform parent, Vector3 at, Vector3 size, Material material)
-        {
-            GameObject plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            plate.transform.SetParent(parent, false);
-            plate.transform.localPosition = at;
-            plate.transform.localScale = size;
-            DisableCollider(plate);
-            plate.GetComponent<Renderer>().sharedMaterial = material;
-        }
-
-        private static void DisableCollider(GameObject gameObject)
-        {
-            Collider collider = gameObject.GetComponent<Collider>();
-            if (collider == null) return;
-            collider.enabled = false;
-            UnityEngine.Object.Destroy(collider);
-        }
-
-        private static Material PlaqueMaterial()
-        {
-            if (_plaqueMaterial != null) return _plaqueMaterial;
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            _plaqueMaterial = new Material(shader) { color = new Color(0.12f, 0.14f, 0.14f) };
-            return _plaqueMaterial;
-        }
-
-        private static Material AccentMaterial(string speciesId, Color color)
-        {
-            if (AccentMaterials.TryGetValue(speciesId, out Material material) && material != null) return material;
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            material = new Material(shader) { color = color };
-            AccentMaterials[speciesId] = material;
-            return material;
-        }
-    }
-
-    public sealed class RoaZoneLairBillboard : MonoBehaviour
-    {
-        private void LateUpdate()
-        {
-            Camera camera = Camera.main;
-            // Лицевая сторона таблички находится на локальной -Z.
-            if (camera != null) transform.rotation = Quaternion.LookRotation(transform.position - camera.transform.position, Vector3.up);
+            if (prefab == null)
+            {
+                Debug.LogError("[ROA] Missing PolygonApocalypse lair model: " + key);
+                return;
+            }
+            GameObject visual = UnityEngine.Object.Instantiate(prefab, parent);
+            visual.name = "LairProp_" + key;
+            visual.transform.localPosition = new Vector3(x, 0f, z);
+            visual.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            foreach (Collider collider in visual.GetComponentsInChildren<Collider>(true))
+                collider.enabled = false;
         }
     }
 }

@@ -1,0 +1,97 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f43bfb40d7df308449073803a1587acd, type: 3}
+  m_Name: LairProps
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaLairPropCatalog
+  entries:
+  - key: SM_Prop_Tent_Dome_01
+    prefab: {fileID: 1432804188481918, guid: 67f482fd5d5fa6a4ebceb0e3b7c8bc52, type: 3}
+  - key: SM_Prop_Tent_Dome_Damaged_01
+    prefab: {fileID: 1902484300601508, guid: ec9219ce3f683cc4baddef20d0d402d4, type: 3}
+  - key: SM_Prop_Sleeping_Bag_01
+    prefab: {fileID: 1304215742492940, guid: d06389c47b933e8439add707caa92991, type: 3}
+  - key: SM_Prop_Barricade_01
+    prefab: {fileID: 1627071915366092, guid: b092211bc2fc70a44b2d0923759d5c16, type: 3}
+  - key: SM_Prop_Barricade_02
+    prefab: {fileID: 1918388152597966, guid: f2a09aca249a5974f939302e6e692654, type: 3}
+  - key: SM_Prop_FirePit_01
+    prefab: {fileID: 1649974113805406, guid: e877b3ac2d64d404f94a9bc0bfb94891, type: 3}
+  - key: SM_Prop_Camp_Chair_01
+    prefab: {fileID: 1459058126935912, guid: 3d004b72f7b50e448a300b56635c9728, type: 3}
+  - key: SM_Prop_SupplyPile_01
+    prefab: {fileID: 1253555264889860, guid: b18f01bb0b904ae43be4a3ef9003cd6d, type: 3}
+  - key: SM_Prop_Dog_House_01
+    prefab: {fileID: 1796243636264490, guid: 044a6c953915ff649bc93dd694624c4e, type: 3}
+  - key: SM_Prop_Skull_01
+    prefab: {fileID: 1515035654734784, guid: f5e52fc0c8d68eb4bb6f0a7fa8b6650a, type: 3}
+  - key: SM_Env_DirtPile_01
+    prefab: {fileID: 1350235754117392, guid: fffa2241c5a8ffc4f9ddf7cb7e671a9f, type: 3}
+  - key: SM_Env_DirtPile_02
+    prefab: {fileID: 1914291397940932, guid: 7b36f93e498d3064194f0099054e95a3, type: 3}
+  - key: SM_Prop_BloodPool_01
+    prefab: {fileID: 1560305908663812, guid: 4146c50c48727a84d938cba98c327b77, type: 3}
+  - key: SM_Prop_BloodSplat_01
+    prefab: {fileID: 1435870659997696, guid: 3ebfe7eacf279e74ea1e2b9938215c90, type: 3}
+  - key: SM_Prop_DeadBody_Laying_Male_01
+    prefab: {fileID: 1982476189357990, guid: ee9df1f893649094bb3366fa2c48882b, type: 3}
+  - key: SM_Prop_Wall_Wire_Damaged_01
+    prefab: {fileID: 1512936425430310, guid: 1de3026f4fa03e9478f7d7f28fbbd00d, type: 3}
+  - key: SM_Prop_Vents_Exhaust_01
+    prefab: {fileID: 1309344893076848, guid: fca3d3dcb5c6efb4abe29733012a7be8, type: 3}
+  - key: SM_Prop_TrashPile_03
+    prefab: {fileID: 1437611484020292, guid: fc35bce06e2fae94e9bce930f8413833, type: 3}
+  - key: SM_Env_Overgrowth_03
+    prefab: {fileID: 1800649983442656, guid: de4b90bf632cdf649af56ca9ded3d67b, type: 3}
+  - key: SM_Env_Overgrowth_05
+    prefab: {fileID: 1849011950601862, guid: 74400134902a7d4499d47e7fb0c7f852, type: 3}
+  - key: SM_Prop_Roof_Satellite_Dish_01
+    prefab: {fileID: 1091682123436512, guid: 51ad6d406506fe34e869825c99fcdf4b, type: 3}
+  - key: SM_Prop_Loud_Speaker_01
+    prefab: {fileID: 1591303334745396, guid: 3b5a58078ec160245b8a390c209cb05b, type: 3}
+  - key: SM_Prop_Wire_01
+    prefab: {fileID: 1263954880233610, guid: 46d5a63c70a74314d92858bb4c4af53d, type: 3}
+  - key: SM_Prop_Bear_Trap_01
+    prefab: {fileID: 1754962658015278, guid: abf0b0a3477fdaa4ba5031599fbe68ae, type: 3}
+  - key: SM_Env_Rock_01
+    prefab: {fileID: 1936706459568100, guid: 0d8974133bae69b4bb417ea8542855b1, type: 3}
+  - key: SM_Env_Rubble_Pebbles_01
+    prefab: {fileID: 1998385293617276, guid: 7969742ac77044a4dbc77a64adb9dd45, type: 3}
+  - key: SM_Env_GroundLeaves_03
+    prefab: {fileID: 1334888285287972, guid: ae17207bcfd499342a62f94495a10cfa, type: 3}
+  - key: SM_Env_Tree_Dead_02
+    prefab: {fileID: 1118852644942752, guid: 2c6eea56361198e4e99317e1f87c7a3d, type: 3}
+  - key: SM_Prop_Skull_Silver_01
+    prefab: {fileID: 1991553965679398, guid: d3262f269a0303a4cb28aed32a4b4a17, type: 3}
+  - key: SM_Prop_Glass_Shard_02
+    prefab: {fileID: 1089289225629928, guid: 62ad8d5991570b64db90dba3967a90cb, type: 3}
+  - key: SM_Prop_Bed_Gurney_BodySheet_01
+    prefab: {fileID: 1305434598229508, guid: 1158bbe0ae58f2f46bc4c3bfb9174a69, type: 3}
+  - key: SM_Prop_BodyBag_Pile_01
+    prefab: {fileID: 1426762982999788, guid: 3fb865e7c62d8384fb76b5b1f855fc76, type: 3}
+  - key: SM_Prop_Medical_Container_Broken_01
+    prefab: {fileID: 1650142612402152, guid: 5252bcb8e18a6f040b5f1e907ebecebc, type: 3}
+  - key: SM_Prop_BurnPile_01
+    prefab: {fileID: 1250369813790830, guid: 43c5be087319b3f4dbba869a4752ee24, type: 3}
+  - key: SM_Prop_BurnPile_Books_01
+    prefab: {fileID: 1905363046881880, guid: b6c01303d32599a48ae4d0c9e004fe21, type: 3}
+  - key: SM_Prop_Luggage_Open_01
+    prefab: {fileID: 1729354746954410, guid: 5ad3f82852cadf94791f71dda3a3e9a0, type: 3}
+  - key: SM_Prop_Chemical_02
+    prefab: {fileID: 1040170151261310, guid: f1491caa01a989c45bec65803f71c15f, type: 3}
+  - key: SM_Prop_Barrel_Nuke_Pool_01
+    prefab: {fileID: 1789578456741784, guid: 7f9e6737043b2304ca32ac25b2689737, type: 3}
+  - key: SM_Env_GrassBlob_11
+    prefab: {fileID: 1369506455379858, guid: 516049eaa83518d4e9b0b7ece41ed7c1, type: 3}
+  - key: SM_Env_Bushes_02
+    prefab: {fileID: 1646082096404570, guid: 53cc0a19e09835f4fb0adef80edc5bc9, type: 3}
+  - key: FX_Fire_01
+    prefab: {fileID: 1663974233948936, guid: cd0cbcca82f24d3f95c6299907b9b097, type: 3}

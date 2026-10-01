@@ -1,11 +1,8 @@
 'use strict';
 // Материалы модификаций оружия должны быть добываемы игроком.
 //
-// Каталог модификаций требует scrap, weaponParts, electronics и wood. Из них
-// weaponParts не добывался ни одним способом: ни узла добычи, ни рецепта у
-// игрока, ни лута, ни торговца — пятнадцать модификаций из двадцати нельзя
-// было собрать в принципе. Рецепты экономики поселений (data/economy-recipes)
-// работают только у НПС и игроку недоступны, поэтому в счёт не идут.
+// Материалы модификаций должны иметь реальные игровые источники. Редкие
+// компоненты приходят только из авторских тайников и наград.
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -15,8 +12,8 @@ const read = (...parts) => fs.readFileSync(path.join(ROOT, ...parts), 'utf8');
 
 const server = read('server.js');
 const fieldRecipes = JSON.parse(read('data', 'kromka', 'field-recipes.json'));
-const loot = read('data', 'loot-tables.json');
-const traders = read('data', 'traders.json');
+const traders = JSON.parse(read('data', 'traders.json'));
+const quests = JSON.parse(read('data', 'quests.json'));
 
 // --- Что требуют модификации ---
 const catalog = /const SERVER_WEAPON_MODIFICATION_CATALOG = Object\.freeze\(\{([\s\S]*?)\n\}\);/.exec(server);
@@ -35,8 +32,10 @@ assert(required.size > 0, 'у модификаций не осталось ст�
 const recipes = Array.isArray(fieldRecipes.recipes) ? fieldRecipes.recipes : [];
 assert(recipes.length > 0, 'список рецептов игрока не найден');
 const crafted = new Set(recipes.map(row => row?.output?.id).filter(Boolean));
+const economy = JSON.parse(read('data', 'economy-recipes.json')).recipes;
 
 const harvested = new Set();
+const looted = new Set();
 const locationsDir = path.join(ROOT, 'data', 'locations');
 for (const file of fs.readdirSync(locationsDir).filter(name => name.endsWith('.json'))) {
   const location = JSON.parse(fs.readFileSync(path.join(locationsDir, file), 'utf8'));
@@ -48,14 +47,23 @@ for (const file of fs.readdirSync(locationsDir).filter(name => name.endsWith('.j
         : raw;
     harvested.add(key);
   }
+  for (const container of location.containers || [])
+    for (const row of container.loot || []) looted.add(row.id);
 }
+const zonesDir = path.join(ROOT, 'data', 'zones', 'authored');
+for (const file of fs.readdirSync(zonesDir).filter(name => name.endsWith('.json'))) {
+  const zone = JSON.parse(fs.readFileSync(path.join(zonesDir, file), 'utf8'));
+  for (const container of zone.containers || [])
+    for (const row of container.loot || []) looted.add(row.id);
+}
+const sold = new Set(Object.values(traders.profiles).flatMap(profile => (profile.stock || []).map(row => row.id)));
 
 function sources(material) {
   const found = [];
   if (harvested.has(material)) found.push('добыча');
   if (crafted.has(material)) found.push('крафт игрока');
-  if (loot.includes(`"${material}"`)) found.push('лут');
-  if (traders.includes(`"${material}"`)) found.push('торговцы');
+  if (looted.has(material)) found.push('лут');
+  if (sold.has(material)) found.push('торговцы');
   return found;
 }
 
@@ -66,28 +74,12 @@ for (const material of required.keys()) {
 assert(unreachable.length === 0,
   `модификации требуют материалы, которых игроку негде взять: ${unreachable.join(', ')}`);
 
-// --- Крафт деталей идёт на профильных станках ---
-for (const [recipe, station] of [['weaponpartscraft', 'weapon_bench'], ['electronicscraft', 'energy_bench']]) {
-  assert(recipes.find(row => row.id === recipe)?.station === station,
-    `рецепт ${recipe} должен быть привязан к станку ${station}`);
-}
-
-// --- Цена совпадает с экономикой поселений ---
-// Иначе игрок и НПС собирают одни и те же детали по разной цене.
-const economy = JSON.parse(read('data', 'economy-recipes.json'));
-const economyRows = Array.isArray(economy.recipes)
-  ? economy.recipes
-  : Object.entries(economy.recipes).map(([id, row]) => ({ id, ...row }));
-for (const [recipeId, material] of [['weaponpartscraft', 'weaponParts'], ['electronicscraft', 'electronics']]) {
-  const economyRow = economyRows.find(row => row.id === material);
-  assert(economyRow, `в экономике поселений нет рецепта ${material}`);
-  const playerRow = recipes.find(row => row.id === recipeId);
-  assert(playerRow, `рецепт ${recipeId} не найден у игрока`);
-  const playerCost = playerRow.inputs || {};
-  for (const [key, value] of Object.entries(economyRow.inputs || {})) {
-    assert(playerCost[key] === value,
-      `${recipeId}: ${key} стоит ${playerCost[key]} у игрока и ${value} в экономике поселений`);
-  }
+for (const id of ['scrap', 'electronics', 'weaponParts']) {
+  assert(looted.has(id), `${id}: редкий материал отсутствует в авторских тайниках`);
+  assert(Object.values(quests.quests || {}).some(quest => (quest.reward?.items || []).some(row => row.id === id && row.qty > 0)),
+    `${id}: редкий материал отсутствует в наградах заданий`);
+  assert(!harvested.has(id) && !crafted.has(id) && !economy[id] && !sold.has(id),
+    `${id}: редкий материал доступен вне лута или наград`);
 }
 
 const summary = [...required.entries()]

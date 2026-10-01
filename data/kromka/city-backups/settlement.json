@@ -79,7 +79,7 @@
       "lockDifficulty": "easy",
       "loot": [
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 3
         },
         {

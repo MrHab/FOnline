@@ -90,7 +90,7 @@
       },
       "ammo_bench": {
         "scrap": 16,
-        "chemicals": 6
+        "fuel": 6
       },
       "tool_bench": {
         "scrap": 18,
@@ -106,8 +106,8 @@
       },
       "chem_station": {
         "scrap": 12,
-        "chemicals": 10,
-        "medicine": 4
+        "fuel": 10,
+        "cloth": 4
       }
     },
     "regions": {

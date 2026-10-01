@@ -9,7 +9,7 @@
 const crypto = require('node:crypto');
 const { SLOT_METRES, chunkFits, rotatePoint, rotatedHalfExtents } = require('./zone-chunks');
 
-const BUILDER_VERSION = 5;
+const BUILDER_VERSION = 6;
 // Север зоны — +Z (большие tz), как у компаса, миникарты и карты мира; восток — +X.
 // Метку несёт каждое определение: закреплённая зона без неё собрана ещё зеркально.
 const COMPASS_NORTH = '+z';
@@ -42,7 +42,7 @@ const MODE_BUDGET = Object.freeze({
   pvpBlack: { lairs: 3, anomalies: 3, containers: 5, loot: 2.6 }
 });
 // В тайниках зон только материалы: оружие, броню и инструменты делают игроки.
-const LOOT_MATERIALS = Object.freeze(['scrap', 'chemicals', 'electronics', 'medicine', 'ammoParts', 'weaponParts', 'ore', 'wood']);
+const LOOT_MATERIALS = Object.freeze(['scrap', 'fuel', 'electronics', 'cloth', 'metalBar', 'weaponParts', 'ore', 'wood']);
 const ANOMALY_TYPES = Object.freeze(['sink', 'dew', 'glass', 'chime', 'seam', 'pull', 'carousel', 'mute']);
 
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
@@ -240,7 +240,11 @@ function containerRow(rng, recipe, id, tile, tierHint) {
   const lockDifficulty = recipe.difficulty >= 4 ? 'hard' : recipe.difficulty >= 2 ? 'medium' : 'easy';
   const scale = MODE_BUDGET[recipe.mode].loot * (locked ? 1.5 : 1);
   const loot = rng.shuffle(LOOT_MATERIALS).slice(0, locked ? 3 : 2).sort()
-    .map(itemId => ({ id: itemId, qty: Math.max(1, Math.round((2 + rng.int(0, 3)) * scale)) }));
+    .map(itemId => ({
+      id: ['fuel', 'cloth', 'metalBar'].includes(itemId) && recipe.difficulty > 1
+        ? `${itemId}T${Math.min(5, Math.floor(recipe.difficulty))}` : itemId,
+      qty: Math.max(1, Math.round((2 + rng.int(0, 3)) * scale))
+    }));
   if (locked && danger) loot.push({ id: 'silver', qty: Math.round((8 + rng.int(0, 8)) * recipe.difficulty) });
   const point = worldOf(tile);
   return {

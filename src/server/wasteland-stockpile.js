@@ -5,10 +5,11 @@ const RESOURCE_LABELS = {
   ore: 'руда',
   scrap: 'лом',
   oil: 'нефть',
-  chemicals: 'химикаты',
-  medicine: 'медикаменты',
+  fiber: 'волокно',
+  fuel: 'топливо',
+  cloth: 'ткань',
+  metalBar: 'металлические болванки',
   electronics: 'электроника',
-  ammoParts: 'детали патронов',
   food: 'еда',
   ammo9: 'патроны 9мм',
   ammo556: 'патроны .223',
@@ -59,13 +60,23 @@ function emptyStockpile() {
     ore: 0,
     scrap: 0,
     oil: 0,
-    chemicals: 0,
-    medicine: 0,
+    fiber: 0,
+    fuel: 0,
+    cloth: 0,
+    metalBar: 0,
     electronics: 0,
-    ammoParts: 0,
     napalm: 0,
     food: 0
   };
+}
+
+function migrateLegacyStockpile(input = {}) {
+  const out = { ...(input && typeof input === 'object' ? input : {}) };
+  for (const [oldId, newId] of Object.entries({ medicine: 'cloth', chemicals: 'fuel', ammoParts: 'metalBar' })) {
+    if (Number(out[oldId] || 0) > 0) out[newId] = Number(out[newId] || 0) + Number(out[oldId]);
+    delete out[oldId];
+  }
+  return out;
 }
 
 function addStockpile(target = {}, source = {}, mul = 1) {
@@ -120,6 +131,7 @@ module.exports = {
   addStockpile,
   compactStockpile,
   emptyStockpile,
+  migrateLegacyStockpile,
   stockpileSummary,
   stockpileTotal,
   takeStockpile

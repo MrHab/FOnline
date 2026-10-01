@@ -84,15 +84,6 @@ namespace RealmOfAshes.Game
             "reinforcedBoots", "backpack"
         });
 
-        private static readonly HashSet<string> SalvageableItems = new HashSet<string>(new[]
-        {
-            "pistol", "rifle", "assaultRifle", "machineGun", "laserPistol", "flamethrower",
-            "plasmaRifle", "shotgun", "rocketLauncher", "knife", "leather", "metalArmor",
-            "ballisticVest", "combatArmor", "hazmatSuit", "heavyArmor", "energySuit", "helmet",
-            "tacticalHelmet", "assaultHelmet", "boots", "scoutBoots", "reinforcedBoots", "backpack",
-            "pickaxe", "axe", "handPump", "repairKit"
-        });
-
         public struct Row
         {
             public string Id;
@@ -553,10 +544,6 @@ namespace RealmOfAshes.Game
                     _status = RoaItemData.Name(itemId) + ": состояние " + Mathf.RoundToInt(ack["condition"]?.ToObject<float>() ?? 100f) + "%";
                 else if (action == "unload")
                     _status = RoaItemData.Name(itemId) + ": возвращено патронов " + (ack["loaded"]?.ToObject<int>() ?? 0);
-                else if (action == "salvage")
-                    _status = ack["success"]?.ToObject<bool>() == true
-                        ? RoaItemData.Name(itemId) + ": материалы получены"
-                        : RoaItemData.Name(itemId) + ": разбор не удался";
                 else _status = "действие выполнено";
             });
         }
@@ -722,7 +709,6 @@ namespace RealmOfAshes.Game
                 completed?.Invoke(ack);
             };
             if (action == "stabilize") Socket.EmitWithAck("stabilizeArtifact", payload, onAck);
-            else if (action == "salvage") Socket.EmitWithAck("salvageArtifact", payload, onAck);
             else Socket.EmitWithAck("artifactLoadoutAction", payload, onAck);
             return true;
         }
@@ -741,7 +727,6 @@ namespace RealmOfAshes.Game
             return RepairableItems.Contains(RoaItemData.TierGroup(baseId))
                 || (RoaItemData.Contains(baseId) && baseId != "fists" && RoaItemData.ConditionMode(baseId) != "none");
         }
-        public bool IsSalvageable(string itemOrRuntimeId) { return SalvageableItems.Contains(BaseId(itemOrRuntimeId)); }
         /// <summary>
         /// Огнестрел определяется наличием типа патронов в каталоге: у ножа, кулаков
         /// и инструментов его нет. Список ниже работает, пока каталог не загружен.
@@ -755,7 +740,7 @@ namespace RealmOfAshes.Game
         }
         public bool IsMedical(string itemOrRuntimeId) { return MedicalItems.Contains(BaseId(itemOrRuntimeId)); }
         public float ConditionPercent(string itemOrRuntimeId) { return ItemCondition(itemOrRuntimeId); }
-        /// <summary>repair / unload / salvage — inventoryItemAction сервера.</summary>
+        /// <summary>repair / unload — inventoryItemAction сервера.</summary>
         public void ItemAction(string action, string itemRuntimeId) { SubmitItemAction(action, itemRuntimeId); }
 
         // --- Фасад для канва-верстака (RoaWorkbenchCanvas) ---

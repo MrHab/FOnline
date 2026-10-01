@@ -232,7 +232,7 @@ function checkTaskNormalization() {
     createdHour: 12,
     priority: 99,
     reward: { xp: 12.8, silver: 17.9, reputation: 2.9 },
-    details: { demand: { water: 2 } }
+    details: { demand: { water: 2, medicine: 3, cloth: 2, chemicals: 1, ammoParts: 4 } }
   }, 5);
   assert.strictEqual(task.id, 'legacy_task');
   assert.strictEqual(task.type, 'deliver_supplies');
@@ -242,6 +242,7 @@ function checkTaskNormalization() {
   assert.strictEqual(task.priority, 5);
   assert.deepStrictEqual(task.reward, { xp: 12, caps: 17, reputation: 2 });
   assert.notStrictEqual(task.details, undefined);
+  assert.deepStrictEqual(task.details.demand, { water: 2, cloth: 5, fuel: 1, metalBar: 4 });
   assert.strictEqual(localizeLegacyWorldText('Raiders vs patrol'), 'Рейдеры против патруля');
 }
 

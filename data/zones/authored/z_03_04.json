@@ -29883,7 +29883,7 @@
       "lockDifficulty": "medium",
       "loot": [
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 10
         },
         {
@@ -29914,7 +29914,7 @@
       "lockDifficulty": "medium",
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 10
         },
         {
@@ -29945,7 +29945,7 @@
       "lockDifficulty": "medium",
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 10
         },
         {
@@ -29953,7 +29953,7 @@
           "qty": 7
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 13
         },
         {

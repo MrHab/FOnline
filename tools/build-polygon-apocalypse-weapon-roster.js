@@ -255,7 +255,7 @@ function build() {
   const variantRecipes = entries.filter(row => row.itemId.startsWith('polygon')).map(row => {
     const base = recipeByOutput.get(row.combatId);
     const inputs = base ? { ...base.inputs } : row.kind === 'throwable'
-      ? { scrap: 2, chemicals: 1 } : { weaponParts: 3, scrap: 6 };
+      ? { scrap: 2, fuel: 1 } : { weaponParts: 3, scrap: 6 };
     return {
       id: row.itemId + 'craft', name: row.name,
       station: 'weapon_bench', inputs,

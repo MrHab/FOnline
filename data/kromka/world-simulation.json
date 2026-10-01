@@ -18,7 +18,7 @@
     "consumptionPer100PerDay": {
       "water": 8,
       "food": 6,
-      "medicine": 1
+      "medkit": 1
     },
     "shortageReserveDays": 3,
     "crisisReserveDays": 1,
@@ -46,7 +46,7 @@
       "health": 72,
       "integrity": 68,
       "tension": 24,
-      "initialStock": { "water": 90, "food": 72, "medicine": 18, "oil": 12 }
+      "initialStock": { "water": 90, "food": 72, "medkit": 18, "oil": 12 }
     },
     "scrapTown": {
       "population": 145,
@@ -55,7 +55,7 @@
       "health": 64,
       "integrity": 58,
       "tension": 31,
-      "initialStock": { "water": 64, "food": 50, "medicine": 12, "oil": 16 }
+      "initialStock": { "water": 64, "food": 50, "medkit": 12, "oil": 16 }
     },
     "relayStation": {
       "population": 96,
@@ -64,7 +64,7 @@
       "health": 70,
       "integrity": 82,
       "tension": 20,
-      "initialStock": { "water": 48, "food": 36, "medicine": 14, "oil": 20 }
+      "initialStock": { "water": 48, "food": 36, "medkit": 14, "oil": 20 }
     },
     "caravanCamp": {
       "population": 118,
@@ -73,7 +73,7 @@
       "health": 67,
       "integrity": 61,
       "tension": 28,
-      "initialStock": { "water": 58, "food": 54, "medicine": 12, "oil": 22 }
+      "initialStock": { "water": 58, "food": 54, "medkit": 12, "oil": 22 }
     },
     "sluiceCity": {
       "population": 230,
@@ -82,7 +82,7 @@
       "health": 74,
       "integrity": 76,
       "tension": 35,
-      "initialStock": { "water": 120, "food": 94, "medicine": 24, "oil": 28 }
+      "initialStock": { "water": 120, "food": 94, "medkit": 24, "oil": 28 }
     },
     "secondHaven": {
       "population": 104,
@@ -91,7 +91,7 @@
       "health": 61,
       "integrity": 52,
       "tension": 38,
-      "initialStock": { "water": 52, "food": 44, "medicine": 16, "oil": 10 }
+      "initialStock": { "water": 52, "food": 44, "medkit": 16, "oil": 10 }
     }
   },
   "anomalyCycle": {

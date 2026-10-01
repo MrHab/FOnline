@@ -19,7 +19,7 @@ const a = createPersonalBase('account-a', 100);
 const b = createPersonalBase('account-b', 100);
 assert.notEqual(a.accountId, b.accountId, 'Bases must be keyed by account, not shared.');
 a.rights.granted = true;
-const stock = { scrap: 999, wood: 999, electronics: 999, oil: 999 };
+const stock = { scrap: 999, wood: 999, electronics: 999, oil: 999, cloth: 999, fuel: 999 };
 const qty = id => stock[id] || 0;
 const placed = placeObject(a, { typeId: 'generator_small', x: 2.4, z: 1.6, rotation: 88 }, catalog, qty, 200);
 assert(placed.ok);
@@ -28,9 +28,9 @@ assert(!validatePlacement(a, { typeId: 'storage_crate', x: 2, z: 2, rotation: 0 
 assert(!validatePlacement(a, { typeId: 'wall_scrap', x: 30, z: 30 }, catalog).ok, 'Out-of-bounds build must be rejected.');
 assert(removeObject(a, placed.object.id, catalog, 300).ok, 'Built objects must be removable with a partial refund.');
 
-const bench = placeObject(a, { typeId: 'repair_bench', x: -3, z: 0 }, catalog, qty, 400);
+const bench = placeObject(a, { typeId: 'medical_bench', x: -3, z: 0 }, catalog, qty, 400);
 assert(bench.ok);
-const job = startBaseJob(a, 'parts', catalog, qty, 500);
+const job = startBaseJob(a, 'filters', catalog, qty, 500);
 assert(job.ok && !claimBaseJob(a, job.record.id, catalog, 501).ok, 'Offline job cannot be claimed early.');
 assert(claimBaseJob(a, job.record.id, catalog, job.record.completesAt).ok, 'Offline job is calculated by completion timestamp.');
 const roundTrip = sanitizePersonalBase(JSON.parse(JSON.stringify(a)), 'account-a', catalog, 999);

@@ -185,7 +185,6 @@ const {
 const {
   publicArtifactCatalog,
   publicArtifactRecord,
-  salvageYields: artifactSalvageYields,
   stabilizationCost: artifactStabilizationCost,
   stabilizeRecord: stabilizeArtifactRecord
 } = require('./src/server/artifact-instances');
@@ -4662,7 +4661,6 @@ const DEFAULT_LOCATIONS = {
         { id: 'pickaxe', price: 16, qty: 2 },
         { id: 'axe', price: 15, qty: 2 },
         { id: 'handPump', price: 22, qty: 2 },
-        { id: 'scrap', price: 3, qty: 18 },
         { id: 'oil', price: 8, qty: 8 },
         { id: 'ammo9', price: 2, qty: 90 },
         { id: 'ammo556', price: 4, qty: 80 },
@@ -5246,7 +5244,7 @@ function kromkaPublicWastelandSnapshot(raw = {}) {
     kromkaVirtualCapital('scrapTown', 'free_artels', { scrap: 42, blue: 8 }),
     kromkaVirtualCapital('relayStation', 'contour', { electronics: 28, blue: 12 }),
     kromkaVirtualCapital('caravanCamp', 'tract_league', { food: 16, blue: 6 }),
-    kromkaVirtualCapital('secondHaven', 'seconds', { medicine: 10, blue: 4 })
+    kromkaVirtualCapital('secondHaven', 'seconds', { medkit: 10, blue: 4 })
   ];
   for (const capital of requiredCapitals) {
     if (!byLocation.has(capital.locationId)) visibleSites.push(capital);
@@ -6679,10 +6677,10 @@ const SERVER_CONTEXT_ITEM_LABELS = {
   ore: 'руды',
   scrap: 'лома',
   oil: 'нефти',
-  chemicals: 'химикатов',
-  medicine: 'медицины',
+  fuel: 'топлива',
+  cloth: 'ткани',
   electronics: 'электроники',
-  ammoParts: 'деталей боеприпасов',
+  metalBar: 'металлических болванок',
   napalm: 'напалма',
   food: 'еды',
   weaponParts: 'оружейных деталей',
@@ -7377,22 +7375,6 @@ const SERVER_EQUIPMENT_SLOT_AP_COST = 1;
 const SERVER_REPAIRABLE_ITEM_IDS = new Set(KROMKA_ITEM_CATALOG.items
   .filter(item => item.conditionMode !== 'none')
   .map(item => item.id));
-const SERVER_SALVAGE_RULES = {
-  pistol: { chance: 0.44, out: { ore: 1 } }, rifle: { chance: 0.42, out: { ore: 2, wood: 1 } },
-  assaultRifle: { chance: 0.36, out: { ore: 3, wood: 1 } }, machineGun: { chance: 0.30, out: { ore: 5, wood: 1 } },
-  laserPistol: { chance: 0.32, tech: true, out: { ore: 2, silver: 2 } }, flamethrower: { chance: 0.28, tech: true, out: { ore: 4, wood: 1, silver: 2 } },
-  plasmaRifle: { chance: 0.26, tech: true, out: { ore: 4, silver: 4 } }, shotgun: { chance: 0.38, out: { ore: 3, wood: 2 } },
-  rocketLauncher: { chance: 0.24, tech: true, out: { ore: 5, wood: 1, silver: 3 } }, knife: { chance: 0.58, out: { ore: 1 } },
-  leather: { chance: 0.54, out: { wood: 1 } }, metalArmor: { chance: 0.36, out: { ore: 3 } },
-  ballisticVest: { chance: 0.34, out: { ore: 2, wood: 1 } }, combatArmor: { chance: 0.28, tech: true, out: { ore: 4, silver: 2 } },
-  hazmatSuit: { chance: 0.30, tech: true, out: { wood: 1, silver: 2 } }, heavyArmor: { chance: 0.24, tech: true, out: { ore: 6, silver: 2 } },
-  energySuit: { chance: 0.26, tech: true, out: { ore: 3, silver: 4 } }, helmet: { chance: 0.46, out: { ore: 1 } },
-  tacticalHelmet: { chance: 0.40, out: { ore: 2 } }, assaultHelmet: { chance: 0.36, out: { ore: 2, silver: 1 } },
-  boots: { chance: 0.56, out: { wood: 1 } }, scoutBoots: { chance: 0.48, out: { wood: 1, silver: 1 } },
-  reinforcedBoots: { chance: 0.46, out: { ore: 1, wood: 1 } }, backpack: { chance: 0.58, out: { wood: 2 } },
-  pickaxe: { chance: 0.50, out: { ore: 2, wood: 1 } }, axe: { chance: 0.52, out: { ore: 1, wood: 2 } },
-  handPump: { chance: 0.46, out: { ore: 1, scrap: 2 } }, repairKit: { chance: 0.42, out: { ore: 1, wood: 1 } }
-};
 const SERVER_NPC_AMMO_ITEM_IDS = new Set(['ammo9', 'ammo556', 'energyCell', 'napalm', 'shotgunShell', 'rocketAmmo']);
 const SERVER_NPC_WEAPON_ITEM_IDS = new Set(Object.keys(SERVER_WEAPONS).filter(id => id !== 'fists'));
 const SERVER_SKILL_POINTS_PER_LEVEL = KROMKA_CHARACTER_PROGRESSION_CATALOG.skills.pointsPerLevel;
@@ -8147,6 +8129,12 @@ function serverValidateClientHasItem(data = {}, itemId = '', qty = 1) {
   return Math.floor(before) >= Math.max(1, Math.floor(Number(qty || 1)));
 }
 
+const SERVER_LEGACY_MATERIAL_IDS = Object.freeze({ medicine: 'cloth', chemicals: 'fuel', ammoParts: 'metalBar' });
+
+function serverCurrentMaterialId(id = '') {
+  return SERVER_LEGACY_MATERIAL_IDS[id] || id;
+}
+
 function sanitizeServerInventorySnapshot(input = [], opts = {}) {
   const includeEquipped = opts.includeEquipped !== false;
   const equipped = new Set(Object.values(opts.equipment || {}).filter(Boolean).map(id => serverBaseItemId(id)));
@@ -8157,7 +8145,7 @@ function sanitizeServerInventorySnapshot(input = [], opts = {}) {
       ? Object.entries(input).map(([id, qty]) => ({ id, qty }))
       : []);
   for (const row of rows.slice(0, 160)) {
-    const id = serverBaseItemId(row?.id || row?.itemId || '');
+    const id = serverCurrentMaterialId(serverBaseItemId(row?.id || row?.itemId || ''));
     if (!id || id === 'fists' || !SERVER_ITEM_IDS.has(id)) continue;
     if (!includeEquipped && equipped.has(id)) continue;
     const limit = serverItemStackLimit(id);
@@ -8179,12 +8167,13 @@ function sanitizePersistedEconomyMap(input = {}, runtime = {}) {
     const runtimeBase = runtime && typeof runtime === 'object'
       ? serverBaseItemId(runtime[key]?.baseId || '')
       : '';
-    const base = runtimeBase || serverBaseItemId(key);
+    const base = serverCurrentMaterialId(runtimeBase || serverBaseItemId(key));
     if (!base || base === 'fists' || !SERVER_ITEM_IDS.has(base)) continue;
-    const limit = key === base ? serverItemStackLimit(base) : 1;
+    const normalizedKey = key in SERVER_LEGACY_MATERIAL_IDS ? base : key;
+    const limit = normalizedKey === base ? serverItemStackLimit(base) : 1;
     const qty = clamp(Math.floor(Number(rawQty || 0)), 0, limit);
     if (qty <= 0) continue;
-    out[key] = Math.min(limit, (out[key] || 0) + qty);
+    out[normalizedKey] = Math.min(limit, (out[normalizedKey] || 0) + qty);
   }
   return out;
 }
@@ -8595,24 +8584,6 @@ function serverPlayerOwnsBaseItem(player = {}, itemId = '') {
   return serverOwnedItemQty(player, itemId) > 0;
 }
 
-function serverSalvageChance(player = {}, itemId = '') {
-  const id = serverBaseItemId(itemId);
-  const rule = SERVER_SALVAGE_RULES[id];
-  if (!rule) return 0;
-  const condition = Math.max(10, Math.min(100, Number(serverPlayerItemCondition(player, id) ?? 65)));
-  const weaponOrTool = !!SERVER_WEAPONS[id];
-  const armorLike = ['leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet','preWarHelmet'].includes(id);
-  const chance = Number(rule.chance || 0.35)
-    + (condition - 65) * 0.002
-    + serverSkillNorm(player, 'repair') * 0.26
-    + serverSkillNorm(player, 'science') * (rule.tech ? 0.16 : 0.05)
-    + serverTalentLevel(player, 'recycler') * 0.12
-    + serverTalentLevel(player, 'engineer') * 0.06
-    + (weaponOrTool ? serverTalentLevel(player, 'weaponSmith') * 0.06 : 0)
-    + (armorLike ? serverTalentLevel(player, 'armorTraining') * 0.05 : 0);
-  return clamp(chance, 0.12, 0.95);
-}
-
 function performServerRepairItem(player = {}, data = {}) {
   const requestedRawId = String(data.itemRuntimeId || data.itemId || data.id || '');
   const id = serverBaseItemId(requestedRawId);
@@ -8677,37 +8648,6 @@ function performServerRepairItem(player = {}, data = {}) {
     serverRecordTutorialFact(player, 'weaponRepaired');
   sanitizeCarrySnapshot(player);
   return { ok: true, action: 'repair', itemId: id, mode, condition, inventory: player.inventory, self: publicAuthoritativePlayerState(player) };
-}
-
-function performServerSalvageItem(player = {}, data = {}) {
-  const id = serverBaseItemId(data.itemId || data.id || '');
-  const rule = SERVER_SALVAGE_RULES[id];
-  if (!rule || serverInventoryQty(player.inventory || [], id) <= 0) return { ok: false, error: 'Этот предмет нельзя разобрать или его нет в рюкзаке.' };
-  if (serverTalentLevel(player, 'recycler') <= 0) return { ok: false, error: 'Для разбора нужен перк «Утилизация».' };
-  const runtimeRemoval = serverValidateWeaponRuntimeRemoval(player, {
-    id,
-    qty: 1,
-    itemRuntimeId: data.itemRuntimeId
-  });
-  if (!runtimeRemoval.ok) return { ok: false, error: runtimeRemoval.error };
-  const chance = serverSalvageChance(player, id);
-  const success = Math.random() < chance;
-  const yields = Object.entries(rule.out || {}).map(([outId, qty]) => ({ id: serverBaseItemId(outId), qty: Math.max(0, Math.floor(Number(qty || 0))) })).filter(row => row.id && row.qty > 0);
-  let next = serverInventorySetRows(player.inventory || [], id, serverInventoryQty(player.inventory || [], id) - 1);
-  if (success) {
-    for (const row of yields) {
-      if (serverInventoryQty(next, row.id) + row.qty > serverItemStackLimit(row.id)) return { ok: false, error: 'Нет места для материалов после разбора.' };
-    }
-    next = serverInventoryMergeRows(next, yields);
-    const weight = serverInventoryWeightWithEquipment(next, player.equipment || {});
-    if (weight > serverCarryCapacity(player) + 0.0001) return { ok: false, error: 'После разбора будет перегруз.' };
-  }
-  player.inventory = next;
-  player.inventoryUpdatedAt = Date.now();
-  serverFinalizeWeaponRuntimeRemoval(player, { id, qty: 1 }, runtimeRemoval);
-  if (!serverPlayerOwnsBaseItem(player, id)) delete player.itemConditions?.[id];
-  sanitizeCarrySnapshot(player);
-  return { ok: true, action: 'salvage', itemId: id, success, chance, yields: success ? yields : [], inventory: player.inventory, self: publicAuthoritativePlayerState(player) };
 }
 
 function performServerUnloadWeapon(player = {}, data = {}) {
@@ -8974,10 +8914,7 @@ function performServerNpcQuestAction(player = {}, actor = {}, data = {}) {
 }
 
 const SERVER_WORLD_TASK_DELIVERY_OPTIONS = {
-  medicine: [{ id: 'medkit', qty: 1 }, { id: 'stim', qty: 1 }, { id: 'antibiotics', qty: 1 }, { id: 'doctorBag', qty: 1 }],
-  ammoParts: [{ id: 'ammo9', qty: 8 }, { id: 'ammo556', qty: 5 }, { id: 'shotgunShell', qty: 4 }, { id: 'energyCell', qty: 8 }, { id: 'napalm', qty: 6 }, { id: 'rocketAmmo', qty: 1 }],
   weaponParts: [{ id: 'repairKit', qty: 1 }, { id: 'scrap', qty: 2 }, { id: 'ore', qty: 2 }],
-  chemicals: [{ id: 'oil', qty: 1 }, { id: 'antibiotics', qty: 1 }],
   electronics: [{ id: 'energyCell', qty: 8 }, { id: 'repairKit', qty: 1 }],
   food: [{ id: 'water', qty: 1 }]
 };
@@ -17049,7 +16986,7 @@ function serverNpcPersonalBuyInterests(actor = {}) {
   if (['guard', 'patrol', 'defender'].includes(role)) return ['ammo', 'weapons', 'armor', 'aid'];
   if (['worker', 'scavenger', 'hauler', 'craftsman'].includes(role)) return ['materials', 'tools', 'aid'];
   if (role === 'mechanic') return ['materials', 'tools', 'electronics'];
-  if (role === 'medic') return ['aid', 'chemicals', 'materials'];
+  if (role === 'medic') return ['aid', 'materials'];
   return ['materials', 'tools', 'aid', 'ammo', 'misc'];
 }
 
@@ -17109,7 +17046,9 @@ function serverNpcTradeMarket(actor = {}) {
       price: serverTradeShelfPrice(id, entry?.price),
       qty: clamp(Math.floor(Number(entry?.qty || 0)), 0, 9999)
     };
-  }).filter(entry => entry.id && entry.id !== 'silver' && SERVER_ITEM_IDS.has(entry.id) && entry.qty > 0);
+  }).filter(entry => entry.id && entry.id !== 'silver'
+    && !['scrap', 'electronics', 'weaponParts'].includes(entry.id)
+    && SERVER_ITEM_IDS.has(entry.id) && entry.qty > 0);
   const refusedCategories = serverNpcTradeRefusedCategories();
   return {
     stock,
@@ -17369,8 +17308,8 @@ function locationObjectModelRef(row = {}) {
 }
 
 // Узлы добычи — только семейства тиров: руда, древесина, нефть и волокно растут
-// тиром локации. Лом, вода, пища, химия, электроника и детали — не узлы: их
-// дают разбор, трофеи, контейнеры и торговля.
+// тиром локации. Лом, электроника и оружейные детали приходят из трофеев,
+// контейнеров и контрактов.
 const SERVER_RESOURCE_DEFS = {
   ore: {
     itemId: 'ore',
@@ -19905,7 +19844,7 @@ function wastelandSiteWorkerTrade(role = '', faction = '', loc = {}, site = {}) 
     : normalizedRole === 'medic'
       ? {
           stock: [],
-          buyInterests: ['aid', 'chemicals'],
+          buyInterests: ['aid', 'materials'],
           caps: 260,
           quests: [],
           dialogueProfile: 'medic'
@@ -21519,30 +21458,8 @@ function serverPersonalBaseForAccount(accountId = '', create = true) {
   const base = current && typeof current === 'object' ? Object.assign(current, normalized) : normalized;
   base.inventoryRuntime = sanitizeServerWeaponRuntimeStore(base.inventoryRuntime || {});
   sanitizeResidentState(base, KROMKA_BASE_RESIDENT_CATALOG);
-  serverApplyResidentPassiveProduction(base, Date.now());
   savesDb.personalBases[id] = base;
   return base;
-}
-
-function serverApplyResidentPassiveProduction(base = {}, now = Date.now()) {
-  const bonuses = calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
-  const scrapPerHour = Math.max(0, Number(bonuses.scrapPerHour || 0));
-  const lastAt = Math.max(0, Number(base.lastResidentProductionAt || 0));
-  if (!lastAt) {
-    base.lastResidentProductionAt = now;
-    return 0;
-  }
-  if (scrapPerHour <= 0) {
-    base.lastResidentProductionAt = now;
-    return 0;
-  }
-  const elapsed = Math.min(72 * 3600000, Math.max(0, now - lastAt));
-  const produced = Math.floor(elapsed / 3600000 * scrapPerHour);
-  if (produced <= 0) return 0;
-  base.inventory.scrap = Math.min(serverItemStackLimit('scrap'), Number(base.inventory.scrap || 0) + produced);
-  base.lastResidentProductionAt = lastAt + produced / scrapPerHour * 3600000;
-  base.updatedAt = now;
-  return produced;
 }
 
 function serverResidentBonusesForPlayer(player = {}, requireOwnBase = false) {
@@ -31009,49 +30926,6 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ...payload, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
   });
 
-  // Разбор ненужного артефакта на компоненты: выход ниже цены стабилизации
-  // того же тира. Установленный в контейнер артефакт сначала нужно снять.
-  socket.on('salvageArtifact', (data = {}, ack) => {
-    const p = players.get(socket.id);
-    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
-    if (!p || p.dead || p.downed || p.onGlobalMap) return fail('Разбор сейчас недоступен.');
-    if (serverArtifactLoadoutCombatLocked(p, Date.now())) return fail('Нельзя разбирать артефакты в бою.');
-    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
-    const quoteOnly = String(data.action || '') === 'quote';
-    // Повтор после reconnect отвечает тем же результатом даже после того, как
-    // разобранный артефакт уже исчез из записей.
-    const transaction = quoteOnly ? null : beginCriticalAction(p, 'salvageArtifact', data, ['recordId']);
-    if (transaction && !transaction.ok) return fail(transaction.error);
-    if (transaction && transaction.replay) {
-      if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
-      return;
-    }
-    const record = p.artifactRecords.find(row => row.id === String(data.recordId || ''));
-    if (!record) return fail('Артефакт не найден.');
-    if (p.artifactSlots.includes(record.id)) return fail('Сначала снимите артефакт с пояса.');
-    const yields = artifactSalvageYields(record, KROMKA_ARTIFACT_CATALOG);
-    if (quoteOnly) {
-      if (typeof ack === 'function') ack({ ok: true, quote: true, yields, record: publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG) });
-      return;
-    }
-    const carryCheck = serverLimitItemsByCarry(p, data, yields.map(row => ({ id: row.id, qty: row.qty })), { apply: false });
-    if (yields.some(row => !carryCheck.items.some(item => item.id === row.id && item.qty >= row.qty)))
-      return fail('Нет места или грузоподъёмности для компонентов.');
-    const validation = serverValidateWeaponRuntimeRemoval(p, { id: record.itemId, qty: 1, itemRuntimeId: record.id });
-    if (!validation.ok) return fail(validation.error || 'Артефакт недоступен для разбора.');
-    serverInventoryRemove(p, record.itemId, 1);
-    serverFinalizeWeaponRuntimeRemoval(p, { id: record.itemId, qty: 1 }, validation);
-    for (const row of yields) serverInventoryAdd(p, row.id, row.qty);
-    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
-    const payload = { ok: true, recordId: record.id, itemId: record.itemId, tier: record.tier, yields };
-    commitCriticalAction(p, transaction, payload);
-    serverApplyDerivedVitals(p);
-    sanitizeCarrySnapshot(p);
-    persistActivePlayerState(p);
-    emitAuthoritativePlayerState(p, { reason: 'artifactSalvaged' });
-    if (typeof ack === 'function') ack({ ...payload, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
-  });
-
   socket.on('artifactLoadoutAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
@@ -31452,7 +31326,7 @@ io.on('connection', (socket) => {
         const bonuses = calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
         for (const [id, qty] of Object.entries(result.output || {})) {
           let multiplier = 1;
-          if (id === 'medicine' || id === 'water') multiplier += Number(id === 'medicine' ? bonuses.medicineOutputPct || 0 : bonuses.filterOutputPct || 0);
+          if (id === 'medkit' || id === 'water') multiplier += Number(id === 'medkit' ? bonuses.medkitOutputPct || 0 : bonuses.filterOutputPct || 0);
           if (id === 'food') multiplier += Number(bonuses.foodOutputPct || 0);
           base.inventory[id] = Number(base.inventory[id] || 0) + Math.max(1, Math.floor(Number(qty || 0) * multiplier));
         }
@@ -32552,7 +32426,6 @@ io.on('connection', (socket) => {
     }
     let result = null;
     if (action === 'repair') result = performServerRepairItem(p, data);
-    else if (action === 'salvage') result = performServerSalvageItem(p, data);
     else if (action === 'modifyweapon') {
       if (data.equipment && typeof data.equipment === 'object'
         && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {

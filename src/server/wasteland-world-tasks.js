@@ -29,10 +29,14 @@ function shortText(value = '', maxLength = 160) {
 
 function normalizeOperationCargo(input = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
-  return Object.fromEntries(Object.entries(input)
-    .map(([key, value]) => [safeId(key, ''), Math.max(0, Math.floor(Number(value || 0)))])
-    .filter(([key, value]) => key && value > 0)
-    .slice(0, 32));
+  const legacy = { medicine: 'cloth', chemicals: 'fuel', ammoParts: 'metalBar' };
+  const out = {};
+  for (const [key, value] of Object.entries(input).slice(0, 32)) {
+    const id = legacy[key] || safeId(key, '');
+    const qty = Math.max(0, Math.floor(Number(value || 0)));
+    if (id && qty > 0) out[id] = (out[id] || 0) + qty;
+  }
+  return out;
 }
 
 function operationStatusForPhase(phase = '') {
@@ -244,6 +248,7 @@ function normalizeWorldTask(input = {}, worldHour = 0) {
   const expiresHour = Number.isFinite(Number(input.expiresHour)) ? Number(input.expiresHour) : createdHour + 36;
   const reward = input.reward && typeof input.reward === 'object' ? input.reward : {};
   const details = input.details && typeof input.details === 'object' ? clone(input.details) : {};
+  if (details.demand) details.demand = normalizeOperationCargo(details.demand);
   if (details.operation) {
     const operation = normalizeWorldOperation(details.operation, worldHour);
     if (operation) details.operation = operation;

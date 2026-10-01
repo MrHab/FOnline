@@ -63,7 +63,7 @@ function normalizeRefugeeFlow(flow = {}) {
     supplies: {
       water: Math.max(0, Math.floor(Number(flow.supplies?.water || 0))),
       food: Math.max(0, Math.floor(Number(flow.supplies?.food || 0))),
-      medicine: Math.max(0, Math.floor(Number(flow.supplies?.medicine || 0)))
+      medkit: Math.max(0, Math.floor(Number(flow.supplies?.medkit || 0)))
     },
     status,
     createdHour: Math.max(0, Number(flow.createdHour || 0)),

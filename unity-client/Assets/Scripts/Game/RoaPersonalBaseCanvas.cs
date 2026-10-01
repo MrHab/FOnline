@@ -530,7 +530,7 @@ namespace RealmOfAshes.Game
             {
                 case "repairCostPct": return "ремонт дома " + Percent(-value);
                 case "weaponWearPct": return "износ оружия при стрельбе " + Percent(value);
-                case "medicineOutputPct": return "выход лекарств " + Percent(value);
+                case "medkitOutputPct": return "выход аптечек " + Percent(value);
                 case "filterOutputPct": return "выход фильтров " + Percent(value);
                 case "foodOutputPct": return "выход еды " + Percent(value);
                 case "injuryRecoveryPct": return "сумка врача дома " + Percent(value);
@@ -543,7 +543,6 @@ namespace RealmOfAshes.Game
                 case "productionSpeedPct": return "скорость станков " + Percent(value);
                 case "guestPermissionSlots": return "гостевые записи " + SignedNumber(Mathf.RoundToInt(value));
                 case "waterUsePct": return "вода грядки " + Percent(value) + " (не меньше 1 за цикл)";
-                case "scrapPerHour": return "лом " + SignedNumber(Mathf.RoundToInt(value)) + "/ч";
                 default: return string.Empty;
             }
         }

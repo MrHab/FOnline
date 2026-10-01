@@ -30108,7 +30108,7 @@
           "qty": 13
         },
         {
-          "id": "medicine",
+          "id": "clothT4",
           "qty": 7
         },
         {
@@ -30134,7 +30134,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT4",
           "qty": 7
         },
         {
@@ -30178,7 +30178,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT4",
           "qty": 7
         },
         {

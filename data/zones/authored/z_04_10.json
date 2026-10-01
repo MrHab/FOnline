@@ -28932,11 +28932,11 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 5
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 3
         }
       ]
@@ -28958,7 +28958,7 @@
           "qty": 2
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 2
         }
       ]
@@ -28976,7 +28976,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 3
         },
         {

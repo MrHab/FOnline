@@ -1129,10 +1129,10 @@ namespace RealmOfAshes.Game
             if (id == "ore") return "руда";
             if (id == "scrap") return "лом";
             if (id == "oil") return "нефть";
-            if (id == "chemicals") return "химикаты";
-            if (id == "medicine") return "медикаменты";
+            if (id == "fuel") return "топливо";
+            if (id == "cloth") return "ткань";
+            if (id == "metalBar") return "болванки";
             if (id == "electronics") return "электроника";
-            if (id == "ammoParts") return "детали";
             if (id == "food") return "еда";
             if (id == "weaponParts") return "оруж. детали";
             return RoaItemData.Name(id);

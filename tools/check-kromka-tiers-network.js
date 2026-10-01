@@ -47,6 +47,11 @@ function arenaWithTier(tier = TIER, id = LOCATION, { raider: withRaider = true }
     : row);
   assert(objects.some(row => row.id === NODE_ID && row.resourceType === 'ore'), 'the arena lost its resource node');
   return { ...arena, id, name: `Tier ${tier} arena`, tier, anomalyDensity: 0,
+    safe: !withRaider,
+    pvpMode: withRaider ? arena.pvpMode : 'peaceful',
+    enemyCap: withRaider ? arena.enemyCap : 0,
+    spawnCount: withRaider ? arena.spawnCount : 0,
+    noRespawn: !withRaider || arena.noRespawn,
     objects: withRaider ? [...objects, raider] : objects };
 }
 

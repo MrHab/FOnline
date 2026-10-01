@@ -76,11 +76,11 @@
       "lockDifficulty": "easy",
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 2
         },
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 2
         }
       ]

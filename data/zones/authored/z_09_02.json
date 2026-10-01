@@ -30133,7 +30133,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 4
         },
         {
@@ -30156,11 +30156,11 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 13
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 17
         },
         {

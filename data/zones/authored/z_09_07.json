@@ -30091,7 +30091,7 @@
       "lockDifficulty": "easy",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT5",
           "qty": 16
         },
         {
@@ -30099,7 +30099,7 @@
           "qty": 12
         },
         {
-          "id": "medicine",
+          "id": "clothT5",
           "qty": 16
         },
         {
@@ -30121,7 +30121,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT5",
           "qty": 13
         },
         {
@@ -30143,7 +30143,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "medicine",
+          "id": "clothT5",
           "qty": 10
         },
         {
@@ -30166,7 +30166,7 @@
       "lockDifficulty": "easy",
       "loot": [
         {
-          "id": "medicine",
+          "id": "clothT5",
           "qty": 8
         },
         {
@@ -30197,7 +30197,7 @@
       "lockDifficulty": "easy",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT5",
           "qty": 12
         },
         {

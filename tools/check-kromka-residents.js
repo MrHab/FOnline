@@ -50,7 +50,7 @@ assert(base.residents.every(id => typeof id === 'string'), 'Residents are assign
 const APPLIED_BONUS_KEYS = {
   repairCostPct: 'residentBonuses.repairCostPct',
   weaponWearPct: 'serverCachedResidentBonuses(p).weaponWearPct',
-  medicineOutputPct: 'bonuses.medicineOutputPct',
+  medkitOutputPct: 'bonuses.medkitOutputPct',
   filterOutputPct: 'bonuses.filterOutputPct',
   foodOutputPct: 'bonuses.foodOutputPct',
   injuryRecoveryPct: '.injuryRecoveryPct',
@@ -63,7 +63,6 @@ const APPLIED_BONUS_KEYS = {
   productionSpeedPct: 'bonuses.productionSpeedPct',
   guestPermissionSlots: '.guestPermissionSlots',
   waterUsePct: 'bonuses.waterUsePct',
-  scrapPerHour: 'bonuses.scrapPerHour'
 };
 const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 for (const [key, consumer] of Object.entries(APPLIED_BONUS_KEYS))

@@ -44,8 +44,8 @@ namespace RealmOfAshes.Game
             { "boots", "armor" }, { "scoutBoots", "armor" }, { "assaultBoots", "armor" }, { "reinforcedBoots", "armor" }, { "backpack", "armor" },
             { "ammo9", "ammo" }, { "ammo556", "ammo" }, { "energyCell", "ammo" }, { "napalm", "ammo" }, { "shotgunShell", "ammo" }, { "rocketAmmo", "ammo" },
             { "medkit", "aid" }, { "stim", "aid" }, { "doctorBag", "aid" }, { "antibiotics", "aid" },
-            { "ore", "materials" }, { "wood", "materials" }, { "scrap", "materials" }, { "oil", "materials" }, { "chemicals", "materials" },
-            { "medicine", "materials" }, { "electronics", "materials" }, { "ammoParts", "materials" }, { "weaponParts", "materials" },
+            { "ore", "materials" }, { "wood", "materials" }, { "scrap", "materials" }, { "oil", "materials" },
+            { "cloth", "materials" }, { "fuel", "materials" }, { "metalBar", "materials" }, { "electronics", "materials" }, { "weaponParts", "materials" },
             { "food", "misc" }, { "silver", "misc" }, { "trophy", "misc" }, { "water", "misc" },
             { "pickaxe", "tools" }, { "axe", "tools" }, { "handPump", "tools" }, { "repairKit", "tools" }
         };
@@ -54,7 +54,7 @@ namespace RealmOfAshes.Game
         {
             { "revolver", "misc" }, { "sawedOffShotgun", "misc" }, { "smg", "misc" },
             { "preWarHelmet", "helmet" }, { "weldedHelmet", "helmet" }, { "assaultBoots", "boots" },
-            { "chemicals", "misc" }, { "medicine", "misc" }, { "electronics", "misc" }, { "ammoParts", "misc" },
+            { "cloth", "misc" }, { "fuel", "misc" }, { "metalBar", "misc" }, { "electronics", "misc" },
             { "food", "misc" }, { "weaponParts", "misc" }
         };
 

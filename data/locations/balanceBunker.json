@@ -66,7 +66,7 @@
           "qty": 3
         },
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 2
         }
       ]
@@ -85,11 +85,11 @@
       "lockDifficulty": "easy",
       "loot": [
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 4
         },
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 4
         }
       ]

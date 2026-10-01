@@ -29582,7 +29582,7 @@
           "qty": 17
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 13
         },
         {
@@ -29609,7 +29609,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT3",
           "qty": 7
         },
         {
@@ -29644,7 +29644,7 @@
           "qty": 17
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 13
         },
         {
@@ -29671,7 +29671,7 @@
       "lockDifficulty": "hard",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT3",
           "qty": 7
         },
         {

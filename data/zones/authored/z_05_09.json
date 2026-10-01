@@ -29771,7 +29771,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT3",
           "qty": 4
         },
         {
@@ -29793,7 +29793,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT3",
           "qty": 7
         },
         {
@@ -29816,15 +29816,15 @@
       "lockDifficulty": "medium",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBarT3",
           "qty": 8
         },
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 8
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 10
         }
       ]

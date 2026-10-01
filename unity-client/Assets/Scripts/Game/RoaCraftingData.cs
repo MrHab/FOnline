@@ -110,15 +110,11 @@ namespace RealmOfAshes.Game
             Recipe("napalmcraft", "Напалм", "napalm", 12, "chem_station", "oil", 2, "scrap", 1, "wood", 1),
             Recipe("shellcraft", "Патроны 12 калибра", "shotgunShell", 6, "ammo_bench", "ore", 2, "wood", 1),
             Recipe("rocketammocraft", "Ракета", "rocketAmmo", 2, "ammo_bench", "ore", 5, "wood", 1, "oil", 1, "silver", 4),
-            Recipe("stimcraft", "Стимулятор", "stim", 3, "chem_station", "medicine", 2, "chemicals", 1),
-            Recipe("medkitcraft", "Аптечка", "medkit", 2, "chem_station", "medicine", 4, "chemicals", 1, "scrap", 1),
-            Recipe("doctorbagcraft", "Набор доктора", "doctorBag", 1, "chem_station", "medicine", 5, "electronics", 1, "scrap", 2),
-            Recipe("antibioticscraft", "Антибиотики", "antibiotics", 2, "chem_station", "medicine", 3, "chemicals", 2),
-            Recipe("medicinecraft", "Медикаменты", "medicine", 3, "chem_station", "chemicals", 2, "water", 1),
-            Recipe("reagentcraft", "Химикаты", "chemicals", 3, "chem_station", "oil", 2, "water", 1, "scrap", 1),
+            Recipe("stimcraft", "Стимулятор", "stim", 3, "chem_station", "cloth", 2, "fuel", 1),
+            Recipe("medkitcraft", "Аптечка", "medkit", 2, "chem_station", "cloth", 4, "fuel", 1, "scrap", 1),
+            Recipe("doctorbagcraft", "Набор доктора", "doctorBag", 1, "chem_station", "cloth", 5, "electronics", 1, "scrap", 2),
+            Recipe("antibioticscraft", "Антибиотики", "antibiotics", 2, "chem_station", "cloth", 3, "fuel", 2),
             Recipe("repairkitcraft", "Ремкомплект", "repairKit", 1, "repair_bench", "ore", 2, "wood", 2),
-            Recipe("weaponpartscraft", "Оружейные детали", "weaponParts", 2, "weapon_bench", "ore", 6, "scrap", 5),
-            Recipe("electronicscraft", "Электроника", "electronics", 2, "energy_bench", "scrap", 3, "chemicals", 1)
         };
 
         public static IReadOnlyList<RoaCraftRecipe> Recipes { get { return _recipes; } }

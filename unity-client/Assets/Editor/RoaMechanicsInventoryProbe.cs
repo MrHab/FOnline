@@ -171,19 +171,19 @@ namespace RealmOfAshes.EditorTools
                 Require(inventory.ConditionPercent("ui_pistol_b_2") == 87, "Other hand retains its own condition");
                 var options = (List<RoaItemPopups.Option>)typeof(RoaPipboyCanvas)
                     .GetMethod("BuildArtifactContextOptions", Private).Invoke(canvas, new object[] { "artifactSpring" });
-                // У каждого экземпляра свои действия: горячий стабилизируют или
-                // разбирают, стоящий на поясе снимают или смотрят предпросмотр.
-                Require(options.Count == 4, "Each artifact instance has its own actions: " + options.Count);
-                Require(options[0].Label.StartsWith("Стабилизировать") && options[1].Label.StartsWith("Разобрать"),
-                    "Hot artifact exposes stabilization and salvage");
-                Require(options[2].Label.StartsWith("Снять с пояса") && options[3].Label.StartsWith("Предпросмотр"),
+                // У каждого экземпляра свои действия: горячий стабилизируют,
+                // стоящий на поясе снимают или смотрят предпросмотр.
+                Require(options.Count == 3, "Each artifact instance has its own actions: " + options.Count);
+                Require(options[0].Label.StartsWith("Стабилизировать"),
+                    "Hot artifact exposes stabilization");
+                Require(options[1].Label.StartsWith("Снять с пояса") && options[2].Label.StartsWith("Предпросмотр"),
                     "Slotted artifact can be removed and previewed");
-                Require(options.FindAll(option => option.Label.StartsWith("Разобрать")).Count == 1, "A slotted artifact cannot be salvaged");
+                Require(options.TrueForAll(option => !option.Label.StartsWith("Разобрать")), "Artifacts cannot be dismantled");
                 self["artifactSlots"] = new JArray();
                 typeof(RoaInventory).GetMethod("ApplySelf", Private).Invoke(inventory, new object[] { self });
                 options = (List<RoaItemPopups.Option>)typeof(RoaPipboyCanvas)
                     .GetMethod("BuildArtifactContextOptions", Private).Invoke(canvas, new object[] { "artifactSpring" });
-                Require(options.Count == 5 && options[2].Label.StartsWith("Установить на пояс"), "Stable artifact exposes equip");
+                Require(options.Count == 3 && options[1].Label.StartsWith("Установить на пояс"), "Stable artifact exposes equip");
                 Require(!inventory.SubmitArtifactAction("equip", "stable"), "Disconnected UI must not mutate loadout");
                 Require(inventory.IsQuickAssignable("water") && inventory.IsQuickAssignable("food"), "Provisions work from the quickbar");
                 Require(RoaItemInfo.Get("water").Usable && RoaItemInfo.Get("food").Usable, "Provisions expose Use in the inventory");

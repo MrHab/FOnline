@@ -64,11 +64,11 @@
       "lockDifficulty": "medium",
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 6
         },
         {
-          "id": "medicine",
+          "id": "clothT3",
           "qty": 3
         }
       ]
@@ -86,7 +86,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuelT3",
           "qty": 3
         },
         {

@@ -31843,7 +31843,7 @@
       "lockDifficulty": "medium",
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBar",
           "qty": 4
         },
         {
@@ -31869,7 +31869,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 3
         },
         {
@@ -31891,7 +31891,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBar",
           "qty": 3
         },
         {
@@ -31913,7 +31913,7 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 7
         },
         {

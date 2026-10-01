@@ -30227,11 +30227,11 @@
       "locked": false,
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 5
         },
         {
-          "id": "medicine",
+          "id": "cloth",
           "qty": 4
         }
       ]

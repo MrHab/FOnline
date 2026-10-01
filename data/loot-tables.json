@@ -65,19 +65,19 @@
       { "oneOf": ["water", "food"], "min": 1, "max": 2 },
       { "id": "silver", "min": 2, "max": 6, "chance": 0.32 },
       { "id": "ammo9", "min": 3, "max": 8, "chance": 0.25 },
-      { "oneOf": ["medicine", "chemicals"], "min": 1, "max": 2, "chance": 0.22 },
+      { "oneOf": ["cloth", "fuel"], "min": 1, "max": 2, "chance": 0.22 },
       { "id": "antibiotics", "min": 1, "max": 1, "chance": 0.1 }
     ],
     "fold": [
       { "id": "bioReagent", "min": 1, "max": 2 },
-      { "id": "medicine", "min": 1, "max": 3 },
-      { "id": "chemicals", "min": 2, "max": 4, "chance": 0.3 },
+      { "id": "cloth", "min": 1, "max": 3 },
+      { "id": "fuel", "min": 2, "max": 4, "chance": 0.3 },
       { "id": "alloyPlate", "min": 1, "max": 2, "chance": 0.14 },
       { "id": "stabilizerCatalyst", "min": 1, "max": 1, "chance": 0.1 }
     ],
     "gari": [
       { "id": "food", "min": 1, "max": 2 },
-      { "id": "medicine", "min": 1, "max": 2, "chance": 0.18 },
+      { "id": "cloth", "min": 1, "max": 2, "chance": 0.18 },
       { "id": "bioReagent", "min": 1, "max": 1, "chance": 0.12 }
     ],
     "rykhlyak": [
@@ -88,26 +88,26 @@
       { "id": "bioReagent", "min": 1, "max": 1, "chance": 0.1 }
     ],
     "dustling": [
-      { "id": "chemicals", "min": 1, "max": 3 },
+      { "id": "fuel", "min": 1, "max": 3 },
       { "id": "scrap", "min": 1, "max": 2, "chance": 0.28 },
-      { "id": "ammoParts", "min": 2, "max": 5, "chance": 0.22 },
+      { "id": "metalBar", "min": 2, "max": 5, "chance": 0.22 },
       { "id": "electronics", "min": 1, "max": 1, "chance": 0.1 }
     ],
     "listener": [
       { "id": "food", "min": 1, "max": 2 },
-      { "id": "medicine", "min": 1, "max": 2 },
+      { "id": "cloth", "min": 1, "max": 2 },
       { "id": "bioReagent", "min": 1, "max": 1, "chance": 0.16 },
-      { "id": "chemicals", "min": 1, "max": 2, "chance": 0.2 }
+      { "id": "fuel", "min": 1, "max": 2, "chance": 0.2 }
     ],
     "mourner": [
       { "id": "electronics", "min": 1, "max": 2 },
       { "id": "food", "min": 1, "max": 1 },
-      { "id": "ammoParts", "min": 2, "max": 4, "chance": 0.22 },
+      { "id": "metalBar", "min": 2, "max": 4, "chance": 0.22 },
       { "id": "circuitModule", "min": 1, "max": 1, "chance": 0.09 }
     ],
     "lantern": [
       { "id": "food", "min": 2, "max": 3 },
-      { "id": "chemicals", "min": 1, "max": 2, "chance": 0.3 },
+      { "id": "fuel", "min": 1, "max": 2, "chance": 0.3 },
       { "id": "spectrumSample", "min": 1, "max": 1, "chance": 0.12 }
     ],
     "rat": [

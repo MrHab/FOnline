@@ -8,12 +8,13 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { readTieredCatalogs } = require('../src/server/kromka-tiers');
 
 const root = path.resolve(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const catalog = JSON.parse(read('data/artifacts.json'));
 const anomalies = JSON.parse(read('data/anomalies.json'));
-const items = JSON.parse(read('data/kromka/items.json'));
+const items = readTieredCatalogs(path.join(root, 'data')).itemCatalog;
 const itemById = Object.fromEntries(items.items.map(row => [row.id, row]));
 const inst = require('../src/server/artifact-instances');
 const {
@@ -43,7 +44,7 @@ for (const type of catalog.types) {
 }
 for (const family of Object.values(catalog.families)) assert(itemById[family.componentItemId], `family component ${family.componentItemId} missing`);
 for (const row of tiers) {
-  for (const item of [...row.stabilization.items, ...row.salvage.items]) assert(itemById[item.id], `tier ${row.tier}: unknown item ${item.id}`);
+  for (const item of row.stabilization.items) assert(itemById[item.id], `tier ${row.tier}: unknown item ${item.id}`);
 }
 for (const type of anomalies.types) {
   const sources = catalog.anomalySources[type.id];
@@ -140,6 +141,7 @@ assert.equal(publicRaw.tier, 4);
 assert.equal(publicRaw.tierColor, '#9fd7ff');
 assert.equal(publicRaw.displayName, 'Пружина');
 assert.deepEqual(publicRaw.stabilizationCost, { silver: 320, items: [{ id: 'stabilizerCatalyst', qty: 2 }, { id: 'circuitModule', qty: 1 }] });
+assert(!('salvageYields' in publicRaw), 'Artifact records no longer advertise disassembly.');
 inst.stabilizeRecord(raw);
 const publicStable = inst.publicArtifactRecord(raw, catalog);
 assert(publicStable.revealed && publicStable.properties && publicStable.properties.effects.speedPct > 0, 'Stabilization reveals the fixed properties.');
@@ -150,25 +152,20 @@ const publicCatalog = inst.publicArtifactCatalog(catalog);
 assert.equal(publicCatalog.tiers.length, 5);
 assert(!JSON.stringify(publicCatalog).includes('"seed"'));
 
-// --- стоимость стабилизации и разбора -----------------------------------------
-const price = rows => rows.reduce((sum, row) => sum + Number(itemById[row.id]?.basePrice || 0) * row.qty, 0);
+// --- стоимость стабилизации ---------------------------------------------------
 for (let tier = 1; tier <= 5; tier += 1) {
   for (const type of catalog.types) {
     if (type.baseTier > tier) continue;
     const row = { typeId: type.id, itemId: type.itemId, tier, seed: 'p', stabilized: true };
     const cost = inst.stabilizationCost(row, catalog);
-    const yields = inst.salvageYields(row, catalog);
-    assert(yields.length >= 1, `${type.id} T${tier}: salvage must yield something.`);
-    assert(price(yields) < cost.silver + price(cost.items), `${type.id} T${tier}: salvage value must stay below stabilization cost.`);
+    assert(cost.silver > 0 && cost.items.every(item => itemById[item.id]), `${type.id} T${tier}: stabilization must have a valid cost.`);
     if (tier >= 4) {
       const component = catalog.families[type.family].componentItemId;
       assert(cost.items.some(item => item.id === component), `${type.id} T${tier}: stabilization needs the family component.`);
-      assert(yields.some(item => item.id === component), `${type.id} T${tier}: salvage returns the family component.`);
     }
   }
 }
-assert.deepEqual(inst.stabilizationCost({ typeId: 'vein', tier: 1 }, catalog), { silver: 40, items: [{ id: 'chemicals', qty: 1 }] });
-assert.deepEqual(inst.salvageYields({ typeId: 'vein', tier: 1 }, catalog), [{ id: 'chemicals', qty: 1 }]);
+assert.deepEqual(inst.stabilizationCost({ typeId: 'vein', tier: 1 }, catalog), { silver: 40, items: [{ id: 'fuel', qty: 1 }] });
 
 // --- подбор без контейнера, эффекты только после стабилизации -----------------
 const room = { id: 'room', locationId: 'test', kromkaArtifactState: { shiftId: 'one', artifacts: [
@@ -243,9 +240,7 @@ const server = read('server.js');
 for (const needle of [
   "app.get('/api/kromka/artifacts'",
   '...publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG)',
-  "socket.on('salvageArtifact'",
   "beginCriticalAction(p, 'stabilizeArtifact', data, ['recordId'])",
-  "beginCriticalAction(p, 'salvageArtifact', data, ['recordId'])",
   'serverArtifactStabilizationPlace(p, loc)',
   'serverArtifactLoadoutCombatLocked(p, Date.now())',
   "if (action === 'preview') {",
@@ -285,7 +280,4 @@ assert(soldItemIds.has('artifactDetectorMk1'), 'The first detector is sold at a 
 // Старшие ступени тянут лабораторные компоненты: у лабораторий есть спрос.
 assert(Object.keys(recipes.artifactBelt4.inputs).some(id => ['alloyPlate', 'circuitModule', 'spectrumSample', 'bioReagent'].includes(id)),
   'The largest belt consumes laboratory components.');
-const unityInventory = read('unity-client/Assets/Scripts/Game/RoaInventory.cs');
-assert(unityInventory.includes('Socket.EmitWithAck("salvageArtifact", payload, onAck)'), 'Unity must be able to salvage artifacts.');
-
-console.log('Artifact instances OK: 5 tiers with shared colors, deterministic hidden properties, legacy migration, stabilization/salvage prices, container-free pickup, preview and stacking.');
+console.log('Artifact instances OK: 5 tiers with shared colors, deterministic hidden properties, legacy migration, stabilization prices, container-free pickup, preview and stacking.');

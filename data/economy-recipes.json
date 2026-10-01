@@ -2,49 +2,31 @@
   "schema": "realm.economyRecipes.v1",
   "version": 1,
   "recipes": {
-    "ammoParts": {
-      "station": "ammo_bench",
-      "workHours": 1.5,
-      "outputQty": 4,
-      "inputs": {
-        "scrap": 3,
-        "ore": 1.5
-      }
-    },
-    "electronics": {
-      "station": "energy_bench",
-      "workHours": 2,
+    "metalBar": {
+      "station": "repair_bench",
+      "workHours": 1,
       "outputQty": 2,
-      "inputs": {
-        "scrap": 3,
-        "chemicals": 1
-      }
+      "inputs": { "ore": 3 }
     },
-    "weaponParts": {
-      "station": "weapon_bench",
-      "workHours": 3,
+    "cloth": {
+      "station": "repair_bench",
+      "workHours": 1,
       "outputQty": 2,
-      "inputs": {
-        "ore": 6,
-        "scrap": 5
-      }
+      "inputs": { "fiber": 3 }
     },
-    "medicine": {
+    "fuel": {
       "station": "chem_station",
-      "workHours": 2,
-      "outputQty": 3,
-      "inputs": {
-        "water": 4,
-        "chemicals": 1
-      }
+      "workHours": 1,
+      "outputQty": 2,
+      "inputs": { "oil": 3 }
     },
     "ammo9": {
       "station": "ammo_bench",
       "workHours": 1,
       "outputQty": 24,
       "inputs": {
-        "ammoParts": 5,
-        "scrap": 1
+        "scrap": 1,
+        "metalBar": 5
       }
     },
     "ammo556": {
@@ -52,8 +34,8 @@
       "workHours": 1.5,
       "outputQty": 16,
       "inputs": {
-        "ammoParts": 6,
-        "scrap": 1
+        "scrap": 1,
+        "metalBar": 6
       }
     },
     "shotgunShell": {
@@ -61,8 +43,8 @@
       "workHours": 1.5,
       "outputQty": 10,
       "inputs": {
-        "ammoParts": 5,
-        "scrap": 1
+        "scrap": 1,
+        "metalBar": 5
       }
     },
     "rocketAmmo": {
@@ -70,9 +52,9 @@
       "workHours": 4,
       "outputQty": 2,
       "inputs": {
-        "ammoParts": 5,
         "electronics": 2,
-        "oil": 1
+        "oil": 1,
+        "metalBar": 5
       }
     },
     "energyCell": {
@@ -81,7 +63,7 @@
       "outputQty": 12,
       "inputs": {
         "electronics": 4,
-        "chemicals": 1
+        "fuel": 1
       }
     },
     "napalm": {
@@ -90,7 +72,7 @@
       "outputQty": 6,
       "inputs": {
         "oil": 3,
-        "chemicals": 1
+        "fuel": 1
       }
     },
     "stim": {
@@ -98,8 +80,8 @@
       "workHours": 2,
       "outputQty": 3,
       "inputs": {
-        "medicine": 2,
-        "chemicals": 1
+        "cloth": 2,
+        "fuel": 1
       }
     },
     "medkit": {
@@ -107,9 +89,9 @@
       "workHours": 3,
       "outputQty": 2,
       "inputs": {
-        "medicine": 4,
-        "chemicals": 1,
-        "scrap": 1
+        "scrap": 1,
+        "cloth": 4,
+        "fuel": 1
       }
     },
     "doctorBag": {
@@ -117,9 +99,9 @@
       "workHours": 5,
       "outputQty": 1,
       "inputs": {
-        "medicine": 5,
         "electronics": 1,
-        "scrap": 2
+        "scrap": 2,
+        "cloth": 5
       }
     },
     "antibiotics": {
@@ -127,8 +109,8 @@
       "workHours": 3,
       "outputQty": 2,
       "inputs": {
-        "medicine": 3,
-        "chemicals": 2
+        "cloth": 3,
+        "fuel": 2
       }
     },
     "repairKit": {
@@ -183,7 +165,7 @@
       "inputs": {
         "weaponParts": 1,
         "scrap": 4,
-        "ammoParts": 2
+        "metalBar": 2
       }
     },
     "rifle": {
@@ -213,7 +195,7 @@
       "inputs": {
         "weaponParts": 4,
         "scrap": 8,
-        "ammoParts": 4
+        "metalBar": 4
       }
     },
     "machineGun": {
@@ -223,7 +205,7 @@
       "inputs": {
         "weaponParts": 6,
         "scrap": 12,
-        "ammoParts": 6
+        "metalBar": 6
       }
     },
     "laserPistol": {
@@ -233,7 +215,7 @@
       "inputs": {
         "weaponParts": 2,
         "electronics": 7,
-        "chemicals": 1
+        "fuel": 1
       }
     },
     "plasmaRifle": {
@@ -243,7 +225,7 @@
       "inputs": {
         "weaponParts": 5,
         "electronics": 12,
-        "chemicals": 5
+        "fuel": 5
       }
     },
     "flamethrower": {
@@ -272,7 +254,7 @@
       "outputQty": 1,
       "inputs": {
         "scrap": 5,
-        "chemicals": 1
+        "fuel": 1
       }
     },
     "metalArmor": {
@@ -290,8 +272,8 @@
       "outputQty": 1,
       "inputs": {
         "scrap": 10,
-        "ammoParts": 5,
-        "chemicals": 2
+        "fuel": 2,
+        "metalBar": 5
       }
     },
     "combatArmor": {
@@ -301,7 +283,7 @@
       "inputs": {
         "scrap": 18,
         "electronics": 6,
-        "chemicals": 4
+        "fuel": 4
       }
     },
     "hazmatSuit": {
@@ -309,8 +291,8 @@
       "workHours": 12,
       "outputQty": 1,
       "inputs": {
-        "chemicals": 10,
-        "scrap": 6
+        "scrap": 6,
+        "fuel": 10
       }
     },
     "heavyArmor": {
@@ -329,8 +311,8 @@
       "outputQty": 1,
       "inputs": {
         "electronics": 16,
-        "chemicals": 8,
-        "scrap": 10
+        "scrap": 10,
+        "fuel": 8
       }
     },
     "helmet": {
@@ -365,7 +347,7 @@
       "outputQty": 1,
       "inputs": {
         "scrap": 3,
-        "chemicals": 1
+        "fuel": 1
       }
     },
     "scoutBoots": {
@@ -374,7 +356,7 @@
       "outputQty": 1,
       "inputs": {
         "scrap": 4,
-        "chemicals": 2
+        "fuel": 2
       }
     },
     "reinforcedBoots": {
@@ -392,7 +374,7 @@
       "outputQty": 1,
       "inputs": {
         "scrap": 5,
-        "chemicals": 1
+        "fuel": 1
       }
     },
     "revolver": {
@@ -455,8 +437,8 @@
       "workHours": 3,
       "outputQty": 2,
       "inputs": {
-        "chemicals": 2,
-        "medicine": 1
+        "cloth": 1,
+        "fuel": 2
       }
     },
     "circuitModule": {
@@ -482,8 +464,8 @@
       "workHours": 3,
       "outputQty": 2,
       "inputs": {
-        "chemicals": 2,
-        "energyCell": 1
+        "energyCell": 1,
+        "fuel": 2
       }
     },
     "stabilizerCatalyst": {
@@ -491,8 +473,8 @@
       "workHours": 4,
       "outputQty": 1,
       "inputs": {
-        "chemicals": 3,
-        "electronics": 1
+        "electronics": 1,
+        "fuel": 3
       }
     },
     "artifactBelt2": {

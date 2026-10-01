@@ -30382,11 +30382,11 @@
       "locked": false,
       "loot": [
         {
-          "id": "ammoParts",
+          "id": "metalBar",
           "qty": 4
         },
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 5
         }
       ]
@@ -30454,7 +30454,7 @@
       "lockDifficulty": "medium",
       "loot": [
         {
-          "id": "chemicals",
+          "id": "fuel",
           "qty": 4
         },
         {

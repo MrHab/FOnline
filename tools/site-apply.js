@@ -9,7 +9,7 @@
 // Kromka.EditorTools.KromkaSiteBuilder по тому же макету, а его экспорт дописывает
 // позиции и коллизию к строкам, которые записал этот инструмент.
 //
-//   node tools/site-apply.js Build/sites/<id>/layout.json [--check]
+//   node tools/site-apply.js data/kromka/site-layouts/<id>.json [--check]
 //
 // Макет — `roa.siteLayout.v1`; координаты объектов — метры в осях площадки (её центр,
 // +Z — её «север» при повороте 0). Повторный запуск заменяет прежнее целиком.
@@ -167,6 +167,28 @@ function main() {
     const point = place(layout.approach);
     Object.assign(navNode, { tx: metresToTile(point.x), tz: metresToTile(point.z) });
     report.approach = { tx: navNode.tx, tz: navNode.tz };
+  }
+  // Тропы площадки (trails): от её выходов к узлам троп сектора. Узлы и рёбра пишутся в
+  // zone.nav — по ним клиент рисует колею, а покров земли её не закрывает.
+  if (zone.zone?.nav) {
+    const nav = zone.zone.nav;
+    const prefix = `site_${siteId}_`;
+    nav.nodes = (nav.nodes || []).filter(node => !String(node.id).startsWith(prefix));
+    nav.links = (nav.links || []).filter(link => !link.some(id => String(id).startsWith(prefix)));
+    const known = new Set(nav.nodes.map(node => String(node.id)));
+    (layout.trails || []).forEach((trail, index) => {
+      const target = String(trail.to || '');
+      if (target && !known.has(target)) throw new Error(`trail ${trail.id || index}: no zone trail node ${target}`);
+      const ids = (trail.points || []).map((point, step) => {
+        const at = place(point);
+        const id = safeId(`${prefix}${trail.id || index}_${step}`);
+        nav.nodes.push({ id, tx: metresToTile(at.x), tz: metresToTile(at.z) });
+        return id;
+      });
+      for (let step = 1; step < ids.length; step++) nav.links.push([ids[step - 1], ids[step]]);
+      if (ids.length && target) nav.links.push([ids[ids.length - 1], target]);
+    });
+    if ((layout.trails || []).length) report.trails = layout.trails.length;
   }
 
   zone.sites = [...(zone.sites || []).filter(row => row?.id !== siteId), {

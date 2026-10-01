@@ -1,0 +1,2515 @@
+{
+  "schema": "roa.siteLayout.v1",
+  "site": {
+    "id": "roadOutpost",
+    "zone": "z_10_10",
+    "name": "Застава 17",
+    "kind": "outpost",
+    "safe": true,
+    "center": {
+      "x": -82,
+      "z": -106
+    },
+    "size": {
+      "x": 56,
+      "z": 32
+    },
+    "rotationY": 0
+  },
+  "clear": {
+    "margin": 8,
+    "points": [
+      {
+        "x": -36.8,
+        "z": 10.2,
+        "r": 2.5
+      },
+      {
+        "x": -25,
+        "z": -35,
+        "r": 2.8
+      },
+      {
+        "x": -21.2,
+        "z": -32.1,
+        "r": 2.2
+      }
+    ]
+  },
+  "approach": {
+    "x": 40,
+    "z": 0
+  },
+  "objects": [
+    {
+      "id": "canal_north_east",
+      "prefab": "SM_Env_StormCanal_Straight_02",
+      "x": -22.755,
+      "z": 18.35,
+      "y": 2.52,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "none",
+      "role": "landmark",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_north_west",
+      "prefab": "SM_Env_StormCanal_Straight_02",
+      "x": -22.755,
+      "z": 3.35,
+      "y": 2.52,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "landmark",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_far_north_east",
+      "prefab": "SM_Env_StormCanal_Straight_02",
+      "x": -22.755,
+      "z": 33.35,
+      "y": 2.52,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_far_north_west",
+      "prefab": "SM_Env_StormCanal_Straight_02",
+      "x": -22.755,
+      "z": 18.35,
+      "y": 2.52,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_east",
+      "prefab": "SM_Env_StormCanal_Straight_02",
+      "x": -22.755,
+      "z": -3.35,
+      "y": 2.52,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "none",
+      "role": "landmark",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_west",
+      "prefab": "SM_Env_StormCanal_Straight_02",
+      "x": -22.755,
+      "z": -18.35,
+      "y": 2.52,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "landmark",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_tail_east",
+      "prefab": "SM_Env_StormCanal_Straight_02",
+      "x": -22.755,
+      "z": -18.35,
+      "y": 2.52,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_tail_west",
+      "prefab": "SM_Env_StormCanal_Straight_02",
+      "x": -22.755,
+      "z": -33.35,
+      "y": 2.52,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_cap_north_east",
+      "prefab": "SM_Env_StormCanal_Divider_02",
+      "x": -22.755,
+      "z": 3.63,
+      "y": 2.52,
+      "rotY": 270,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_cap_north_west",
+      "prefab": "SM_Env_StormCanal_Divider_02",
+      "x": -22.755,
+      "z": 3.63,
+      "y": 2.52,
+      "rotY": 90,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_cap_south_east",
+      "prefab": "SM_Env_StormCanal_Divider_02",
+      "x": -22.755,
+      "z": -3.63,
+      "y": 2.52,
+      "rotY": 270,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_cap_south_west",
+      "prefab": "SM_Env_StormCanal_Divider_02",
+      "x": -22.755,
+      "z": -3.63,
+      "y": 2.52,
+      "rotY": 90,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_cap_far_north_east",
+      "prefab": "SM_Env_StormCanal_Divider_02",
+      "x": -22.755,
+      "z": 33.07,
+      "y": 2.52,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_cap_far_north_west",
+      "prefab": "SM_Env_StormCanal_Divider_02",
+      "x": -22.755,
+      "z": 33.07,
+      "y": 2.52,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_cap_tail_east",
+      "prefab": "SM_Env_StormCanal_Divider_02",
+      "x": -22.755,
+      "z": -33.07,
+      "y": 2.52,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_cap_tail_west",
+      "prefab": "SM_Env_StormCanal_Divider_02",
+      "x": -22.755,
+      "z": -33.07,
+      "y": 2.52,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "sluice_north_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_02",
+      "x": -17.745,
+      "z": 18.51,
+      "y": -0.39,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "block",
+      "role": "structure",
+      "name": "Шлюз водосброса",
+      "tags": [
+        "canal",
+        "perimeter"
+      ]
+    },
+    {
+      "id": "sluice_north_2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_02",
+      "x": -22.755,
+      "z": 18.51,
+      "y": -0.39,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "block",
+      "role": "structure",
+      "tags": [
+        "canal",
+        "perimeter"
+      ]
+    },
+    {
+      "id": "sluice_south_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_02",
+      "x": -17.745,
+      "z": -18.51,
+      "y": -0.39,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "block",
+      "role": "structure",
+      "tags": [
+        "canal",
+        "perimeter"
+      ]
+    },
+    {
+      "id": "sluice_south_2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_02",
+      "x": -22.755,
+      "z": -18.51,
+      "y": -0.39,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "block",
+      "role": "structure",
+      "tags": [
+        "canal",
+        "perimeter"
+      ]
+    },
+    {
+      "id": "bridge_deck_north_a",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -17.755,
+      "z": 2.995,
+      "y": 0.42,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "name": "Мост-дамба",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_deck_north_b",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -22.755,
+      "z": 2.995,
+      "y": 0.42,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_deck_south_a",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -27.755,
+      "z": -2.995,
+      "y": 0.47,
+      "rotY": 180,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_deck_south_b",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -22.755,
+      "z": -2.995,
+      "y": 0.47,
+      "rotY": 180,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_rail_n1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -17.755,
+      "z": 3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "bridge_rail_n2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -22.765,
+      "z": 3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "bridge_rail_s1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -17.755,
+      "z": -3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "bridge_rail_s2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -22.765,
+      "z": -3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "far_barrier",
+      "prefab": "SM_Prop_Roadblock_01",
+      "x": -27.6,
+      "z": -1.6,
+      "y": 0.08,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "name": "Дальний шлагбаум",
+      "tags": []
+    },
+    {
+      "id": "west_apron",
+      "prefab": "SM_Env_Sidewalk_02",
+      "x": -27.755,
+      "z": 2.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Съезд к Большому тракту",
+      "tags": []
+    },
+    {
+      "id": "charge_cable_bridge",
+      "prefab": "SM_Prop_Powerpole_Single_Line_02",
+      "x": -12.9,
+      "z": 2.9,
+      "y": 0.58,
+      "rotY": 270,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "name": "Провод подрыва",
+      "tags": []
+    },
+    {
+      "id": "old_pier_west",
+      "prefab": "SM_Env_StormCanal_Bridge_Pillar_01",
+      "x": -23.8,
+      "z": -27,
+      "y": 3.21,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "landmark",
+      "name": "Бык старого моста «ТРАКТ»",
+      "tags": [
+        "old-bridge"
+      ]
+    },
+    {
+      "id": "old_pier_east",
+      "prefab": "SM_Env_StormCanal_Bridge_Pillar_01",
+      "x": -21.7,
+      "z": -27,
+      "y": 3.21,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "landmark",
+      "tags": [
+        "old-bridge"
+      ]
+    },
+    {
+      "id": "hedgehog_1",
+      "prefab": "SM_Prop_TankTrap_01",
+      "x": -14.8,
+      "z": -1.9,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "hedgehog"
+      ]
+    },
+    {
+      "id": "hedgehog_2",
+      "prefab": "SM_Prop_TankTrap_01",
+      "x": -10.5,
+      "z": 1.9,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "hedgehog"
+      ]
+    },
+    {
+      "id": "hedgehog_3",
+      "prefab": "SM_Prop_TankTrap_01",
+      "x": -6,
+      "z": -1.9,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "hedgehog"
+      ]
+    },
+    {
+      "id": "somov_nest_west",
+      "prefab": "SM_Prop_Sandbag_Wall_02",
+      "x": -14.15,
+      "z": 6.225,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "name": "Гнездо Сомова",
+      "tags": []
+    },
+    {
+      "id": "somov_nest_north",
+      "prefab": "SM_Prop_Sandbag_Wall_End_01",
+      "x": -12.9,
+      "z": 7.74,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": []
+    },
+    {
+      "id": "somov_spool",
+      "prefab": "SM_Prop_Spool_01",
+      "x": -13.35,
+      "z": 4.2,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Катушка подрывного провода",
+      "tags": []
+    },
+    {
+      "id": "slab_stack_1",
+      "prefab": "SM_Prop_Construction_Blocks_03",
+      "x": -14,
+      "z": -10.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "tent_1",
+      "prefab": "SM_Prop_Tent_Long_01",
+      "x": -7.8,
+      "z": 14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "name": "Палатка 1",
+      "tags": []
+    },
+    {
+      "id": "tent_2",
+      "prefab": "SM_Prop_Tent_Long_01",
+      "x": -5.56,
+      "z": 14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "name": "Палатка 2",
+      "tags": []
+    },
+    {
+      "id": "tent_3",
+      "prefab": "SM_Prop_Tent_Long_01",
+      "x": -3.32,
+      "z": 14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "name": "Палатка 3",
+      "tags": []
+    },
+    {
+      "id": "tent_4",
+      "prefab": "SM_Prop_Tent_Long_01",
+      "x": -1.08,
+      "z": 14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "name": "Палатка 4",
+      "tags": []
+    },
+    {
+      "id": "armband_line",
+      "prefab": "SM_Prop_WashingLine_03",
+      "x": -2.2,
+      "z": 8.2,
+      "y": 1.35,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "name": "Верёвка с повязками",
+      "tags": []
+    },
+    {
+      "id": "armband_post_e",
+      "prefab": "SM_Prop_Fence_Wood_Post_01",
+      "x": -2.2,
+      "z": 8.2,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "none",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "armband_post_w",
+      "prefab": "SM_Prop_Fence_Wood_Post_01",
+      "x": -7.2,
+      "z": 8.2,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "none",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "parade_flagpole",
+      "prefab": "SM_Prop_LightPole_Base_04",
+      "x": 4.5,
+      "z": 7,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "none",
+      "role": "landmark",
+      "name": "Флагшток заставы",
+      "tags": []
+    },
+    {
+      "id": "parade_flag",
+      "prefab": "SM_Prop_Window_Curtain_01",
+      "x": 4.5,
+      "z": 6.88,
+      "y": 5.7,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "landmark",
+      "tags": [
+        "flag"
+      ]
+    },
+    {
+      "id": "cable_stake",
+      "prefab": "SM_Prop_Fence_Wood_Post_02",
+      "x": -7.45,
+      "z": 11.6,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "latrine",
+      "prefab": "SM_Prop_Toilet_Junk_01",
+      "x": -8,
+      "z": -15.195,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "name": "Сортир",
+      "tags": []
+    },
+    {
+      "id": "kitchen_fire",
+      "prefab": "SM_Prop_FirePit_01",
+      "x": -6.5,
+      "z": -9.3,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Полевая кухня",
+      "tags": []
+    },
+    {
+      "id": "kitchen_spit",
+      "prefab": "SM_Prop_FirePit_Frame_01",
+      "x": -6.5,
+      "z": -9.3,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "kitchen_fire_fx",
+      "prefab": "FX_Fire_02",
+      "x": -6.5,
+      "z": -9.3,
+      "y": 0.05,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "kitchen_table",
+      "prefab": "SM_Prop_Table_02",
+      "x": -2.5,
+      "z": -9,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "kitchen_bench",
+      "prefab": "SM_Prop_Plank_Bench_01",
+      "x": -2.5,
+      "z": -9.875,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "water_barrel_1",
+      "prefab": "SM_Prop_Barrel_Water_01",
+      "x": -4,
+      "z": -15.745,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "water_barrel_2",
+      "prefab": "SM_Prop_Barrel_Water_01",
+      "x": -3.22,
+      "z": -15.745,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Питьевая. Норма — 2 л на лицо",
+      "tags": []
+    },
+    {
+      "id": "water_barrel_3",
+      "prefab": "SM_Prop_Barrel_Water_01",
+      "x": -2.44,
+      "z": -15.745,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "kitchen_crate",
+      "prefab": "SM_Prop_Crate_Large_02",
+      "x": -1.33,
+      "z": -15.74,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Ящик кухни",
+      "tags": []
+    },
+    {
+      "id": "hq_trailer",
+      "prefab": "SM_Bld_Trailer_01",
+      "x": 7.81,
+      "z": 14.015,
+      "y": 0,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "landmark",
+      "name": "Штаб заставы",
+      "tags": []
+    },
+    {
+      "id": "hq_aerial",
+      "prefab": "SM_Prop_Trailer_Aerial_02",
+      "x": 2.9,
+      "z": 13.9,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "landmark",
+      "name": "Антенна штаба",
+      "tags": []
+    },
+    {
+      "id": "hq_gap_stack",
+      "prefab": "SM_Prop_SupplyPile_01",
+      "x": 14.31,
+      "z": 14.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": []
+    },
+    {
+      "id": "kartsev_desk",
+      "prefab": "SM_Prop_Desk_02",
+      "x": 12,
+      "z": 8.8,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Стол коменданта",
+      "tags": []
+    },
+    {
+      "id": "kartsev_radio",
+      "prefab": "SM_Prop_Radio_01",
+      "x": 12.55,
+      "z": 8.95,
+      "y": 0.87,
+      "rotY": 200,
+      "collision": "none",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Рация",
+      "tags": []
+    },
+    {
+      "id": "demolition_panel",
+      "prefab": "SM_Prop_PowerBoxes_01",
+      "x": 7.5,
+      "z": 12.14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "name": "Щит подрыва: только по письменному приказу",
+      "tags": [
+        "demolition"
+      ]
+    },
+    {
+      "id": "charge_cable_hq",
+      "prefab": "SM_Prop_Powerpole_Single_Line_02",
+      "x": 7.5,
+      "z": 11.95,
+      "y": 0.58,
+      "rotY": 269,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "name": "Кабель подрыва",
+      "tags": []
+    },
+    {
+      "id": "charge_cable_link",
+      "prefab": "SM_Prop_Powerpole_Single_Line_02",
+      "x": -7.45,
+      "z": 11.6,
+      "y": 0.58,
+      "rotY": 229,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "name": "Кабель подрыва к мосту",
+      "tags": []
+    },
+    {
+      "id": "hq_sandbags_west",
+      "prefab": "SM_Prop_Sandbag_Wall_02",
+      "x": 6.8,
+      "z": 11.82,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": []
+    },
+    {
+      "id": "hq_sandbags_east",
+      "prefab": "SM_Prop_Sandbag_Wall_02",
+      "x": 11.3,
+      "z": 11.82,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": []
+    },
+    {
+      "id": "league_trailer",
+      "prefab": "SM_Bld_Trailer_02",
+      "x": 22.025,
+      "z": 13.93,
+      "y": 0,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "landmark",
+      "name": "Трейлер экспедитора Лиги",
+      "tags": []
+    },
+    {
+      "id": "league_awning",
+      "prefab": "SM_Bld_Sunshade_Round_03",
+      "x": 19.3,
+      "z": 11.65,
+      "y": 2.7,
+      "rotY": 180,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "name": "Бордовый тент",
+      "tags": []
+    },
+    {
+      "id": "league_price_board",
+      "prefab": "SM_Prop_Blackboard_01",
+      "x": 17.4,
+      "z": 9.2,
+      "y": 0,
+      "rotY": 200,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Мостовой сбор — по описи груза",
+      "tags": []
+    },
+    {
+      "id": "league_ledger_box",
+      "prefab": "SM_Prop_Crate_Large_01",
+      "x": 20.6,
+      "z": 11.7,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Опломбированный ящик Лиги",
+      "tags": [
+        "quest-landmark"
+      ]
+    },
+    {
+      "id": "kpp_slab_outer",
+      "prefab": "SM_Env_Sidewalk_02",
+      "x": 28,
+      "z": 2.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "kpp_slab_inner",
+      "prefab": "SM_Env_Sidewalk_02",
+      "x": 23,
+      "z": 2.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "axis_slab_1",
+      "prefab": "SM_Env_Sidewalk_02",
+      "x": 18,
+      "z": 2.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "axis_slab_2",
+      "prefab": "SM_Env_Sidewalk_02",
+      "x": 13,
+      "z": 2.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "axis_slab_3",
+      "prefab": "SM_Env_Sidewalk_02",
+      "x": 8,
+      "z": 2.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "axis_slab_4",
+      "prefab": "SM_Env_Sidewalk_02",
+      "x": 3,
+      "z": 2.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "axis_slab_5",
+      "prefab": "SM_Env_Sidewalk_02",
+      "x": -2,
+      "z": 2.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "axis_slab_6",
+      "prefab": "SM_Env_Sidewalk_02",
+      "x": -7,
+      "z": 2.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "axis_slab_7",
+      "prefab": "SM_Env_Sidewalk_02",
+      "x": -12,
+      "z": 2.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "convoy_truck",
+      "prefab": "SM_Veh_Army_Truck_01",
+      "x": 5.6,
+      "z": -9.5,
+      "y": 0,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "landmark",
+      "name": "Грузовик колонны: ждёт графика",
+      "tags": []
+    },
+    {
+      "id": "convoy_rations",
+      "prefab": "SM_Prop_SupplyPile_02",
+      "x": 6,
+      "z": -14.95,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Пайки колонны: по описи",
+      "tags": []
+    },
+    {
+      "id": "kpp_booth",
+      "prefab": "SM_Prop_Shipping_Container_02",
+      "x": 24.9,
+      "z": 3.75,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "name": "КПП. Застава 17 — здесь не стреляют",
+      "tags": []
+    },
+    {
+      "id": "kpp_booth_sandbags",
+      "prefab": "SM_Prop_Sandbag_Wall_End_01",
+      "x": 21.46,
+      "z": 3.75,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": []
+    },
+    {
+      "id": "kpp_booth_roof_bags_w",
+      "prefab": "SM_Prop_Sandbag_Wall_01",
+      "x": 23.8,
+      "z": 3.75,
+      "y": 2.78,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "kpp_booth_roof_bags_e",
+      "prefab": "SM_Prop_Sandbag_Wall_02",
+      "x": 26.85,
+      "z": 3.75,
+      "y": 2.74,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "kpp_journal_table",
+      "prefab": "SM_Prop_Table_01",
+      "x": 20.52,
+      "z": 3.15,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Журнал проводки",
+      "tags": []
+    },
+    {
+      "id": "kpp_boom",
+      "prefab": "SM_Prop_Road_Barrier_01",
+      "x": 26.6,
+      "z": 2.25,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "name": "Шлагбаум КПП",
+      "tags": []
+    },
+    {
+      "id": "kpp_post_south",
+      "prefab": "SM_Prop_Barrier_Plastic_02",
+      "x": 27.05,
+      "z": -2.9,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "name": "Оружие — в чехол. Мост один",
+      "tags": []
+    },
+    {
+      "id": "kpp_gate_post_s",
+      "prefab": "SM_Prop_Wall_Quarantine_Column_Short_01",
+      "x": 28.7,
+      "z": -3.2,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "perimeter",
+        "gate"
+      ]
+    },
+    {
+      "id": "kpp_gate_post_n",
+      "prefab": "SM_Prop_Wall_Quarantine_Column_Short_01",
+      "x": 28.7,
+      "z": 8.75,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "perimeter",
+        "gate"
+      ]
+    },
+    {
+      "id": "kpp_banner_s",
+      "prefab": "SM_Prop_Window_Curtain_01",
+      "x": 28.17,
+      "z": -3.2,
+      "y": 4.95,
+      "rotY": 90,
+      "collision": "none",
+      "vision": "none",
+      "role": "landmark",
+      "tags": [
+        "flag"
+      ]
+    },
+    {
+      "id": "kpp_banner_n",
+      "prefab": "SM_Prop_Window_Curtain_01",
+      "x": 28.17,
+      "z": 9,
+      "y": 4.95,
+      "rotY": 90,
+      "collision": "none",
+      "vision": "none",
+      "role": "landmark",
+      "tags": [
+        "flag"
+      ]
+    },
+    {
+      "id": "search_board",
+      "prefab": "SM_Prop_Barricade_Metal_01",
+      "x": 19,
+      "z": -3.6,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "name": "Доска «Ищу»",
+      "tags": []
+    },
+    {
+      "id": "search_board_papers",
+      "prefab": "SM_Prop_Sign_MissingPapers_01",
+      "x": 19,
+      "z": -3.715,
+      "y": 0.85,
+      "rotY": 180,
+      "collision": "none",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "anisya_crate",
+      "prefab": "SM_Prop_Crate_01",
+      "x": 16.5,
+      "z": -5.95,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Узел Анисьи",
+      "tags": []
+    },
+    {
+      "id": "anisya_blanket",
+      "prefab": "SM_Prop_Sleeping_Bag_Rolled_01",
+      "x": 16.45,
+      "z": -5.95,
+      "y": 1.02,
+      "rotY": 90,
+      "collision": "none",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "mast_tower",
+      "prefab": "SM_Bld_RadioTower_01",
+      "x": 26.96,
+      "z": 11.045,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "landmark",
+      "name": "Прожекторная мачта",
+      "tags": []
+    },
+    {
+      "id": "mast_red_lamp",
+      "prefab": "Fx_Road_Flare_01",
+      "x": 26.96,
+      "z": 11.045,
+      "y": 8.3,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "name": "Красный фонарь: закрыто для огня",
+      "tags": []
+    },
+    {
+      "id": "mast_floodlight",
+      "prefab": "SM_Prop_Floodlights_01",
+      "x": 23.905,
+      "z": 11.39,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "name": "Прожектор с генератором",
+      "tags": []
+    },
+    {
+      "id": "mast_tally",
+      "prefab": "SM_Prop_Blackboard_01",
+      "x": 26.15,
+      "z": 9.69,
+      "y": 0,
+      "rotY": 180,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Счёт ночей",
+      "tags": []
+    },
+    {
+      "id": "mast_diesel",
+      "prefab": "SM_Prop_Gas_Table_01",
+      "x": 24.32,
+      "z": 10.06,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "name": "Бочки солярки",
+      "tags": []
+    },
+    {
+      "id": "storage_container",
+      "prefab": "SM_Prop_Shipping_Container_01",
+      "x": 17.095,
+      "z": -14.915,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "name": "Склад изъятого",
+      "tags": []
+    },
+    {
+      "id": "cage_west_1",
+      "prefab": "SM_Prop_Wall_Wire_Preset_01",
+      "x": 14.1,
+      "z": -12.215,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "cage"
+      ]
+    },
+    {
+      "id": "cage_west_2",
+      "prefab": "SM_Prop_Wall_Wire_Preset_01",
+      "x": 14.1,
+      "z": -9.265,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "cage"
+      ]
+    },
+    {
+      "id": "cage_east_1",
+      "prefab": "SM_Prop_Wall_Wire_Preset_01",
+      "x": 20,
+      "z": -12.215,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "cage"
+      ]
+    },
+    {
+      "id": "cage_east_2",
+      "prefab": "SM_Prop_Wall_Wire_Preset_01",
+      "x": 20,
+      "z": -9.265,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "cage"
+      ]
+    },
+    {
+      "id": "confiscated_cage",
+      "prefab": "SM_Prop_Wall_Wire_Preset_01",
+      "x": 15.575,
+      "z": -7.79,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "none",
+      "role": "structure",
+      "name": "Клетка: изъято до выяснения",
+      "tags": [
+        "cage",
+        "quest-landmark"
+      ]
+    },
+    {
+      "id": "cargo_crate",
+      "prefab": "SM_Prop_Crate_03",
+      "x": 15.4,
+      "z": -10.9,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Артельный ящик",
+      "tags": []
+    },
+    {
+      "id": "cargo_crate_open",
+      "prefab": "SM_Prop_Crate_Open_03",
+      "x": 15.4,
+      "z": -11.8,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "cage_hedgehog",
+      "prefab": "SM_Prop_TankTrap_01",
+      "x": 18.45,
+      "z": -12.65,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "cage_wire",
+      "prefab": "SM_Prop_Wire_02",
+      "x": 15.17,
+      "z": -8.55,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "cage_sandbags",
+      "prefab": "SM_Prop_Sandbag_Wall_End_01",
+      "x": 19.45,
+      "z": -11,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "se_nest_east",
+      "prefab": "SM_Prop_Sandbag_Wall_02",
+      "x": 25.02,
+      "z": -11.805,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "name": "Гнездо ЮВ",
+      "tags": []
+    },
+    {
+      "id": "se_nest_south",
+      "prefab": "SM_Prop_Sandbag_Wall_End_01",
+      "x": 23.935,
+      "z": -12.64,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": []
+    },
+    {
+      "id": "se_ammo_box",
+      "prefab": "SM_Prop_Ammo_Box_01",
+      "x": 25,
+      "z": -10.4,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Патронный короб",
+      "tags": []
+    },
+    {
+      "id": "fence_south_1",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": -17.365,
+      "z": -16.14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_south_2",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": -12.885,
+      "z": -16.14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_south_3",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": -8.405,
+      "z": -16.14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_south_4",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": -3.925,
+      "z": -16.14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_south_5",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 0.555,
+      "z": -16.14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_south_6",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 5.035,
+      "z": -16.14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_south_7",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 9.515,
+      "z": -16.14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_south_8",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 20.19,
+      "z": -16.14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_south_9",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 24.67,
+      "z": -16.14,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_north_1",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": -12.885,
+      "z": 16.14,
+      "y": 0,
+      "rotY": 180,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_north_2",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": -8.405,
+      "z": 16.14,
+      "y": 0,
+      "rotY": 180,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_north_3",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": -3.925,
+      "z": 16.14,
+      "y": 0,
+      "rotY": 180,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_north_4",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 0.555,
+      "z": 16.14,
+      "y": 0,
+      "rotY": 180,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_north_5",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 5.035,
+      "z": 16.14,
+      "y": 0,
+      "rotY": 180,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_east_1",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 29.25,
+      "z": -2.7,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_east_2",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 29.25,
+      "z": -7.18,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_east_3",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 29.25,
+      "z": -11.66,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "fence_east_4",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 29.25,
+      "z": 12.73,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "structure",
+      "name": "За чертой жалобы не принимаются",
+      "tags": [
+        "perimeter"
+      ]
+    },
+    {
+      "id": "discharge_barrel",
+      "prefab": "SM_Prop_Barrel_Open_01",
+      "x": 29.6,
+      "z": -3,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "name": "Разряжать сюда",
+      "tags": []
+    },
+    {
+      "id": "route_post",
+      "prefab": "SM_Prop_Wood_Pole_01",
+      "x": 33,
+      "z": 4.5,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "none",
+      "role": "landmark",
+      "name": "Столб маршрутных меток Лиги",
+      "tags": [
+        "quest-landmark"
+      ]
+    },
+    {
+      "id": "route_tin_1",
+      "prefab": "SM_Veh_Attach_Plating_07",
+      "x": 33,
+      "z": 4.34,
+      "y": 2.1,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "auto",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "queue_a_1",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 30.9,
+      "z": -4.4,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "name": "Отстойник: места очереди",
+      "tags": [
+        "queue"
+      ]
+    },
+    {
+      "id": "queue_a_2",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 40,
+      "z": -4.4,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "queue"
+      ]
+    },
+    {
+      "id": "queue_b_1",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 30.9,
+      "z": -8.1,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "queue"
+      ]
+    },
+    {
+      "id": "queue_b_2",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 38.4,
+      "z": -8.1,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "queue"
+      ]
+    },
+    {
+      "id": "queue_c_1",
+      "prefab": "SM_Prop_Barrier_Long_Bare_01",
+      "x": 32.045,
+      "z": -12.35,
+      "y": 0,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "queue"
+      ]
+    },
+    {
+      "id": "queue_c_2",
+      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
+      "x": 36.3,
+      "z": -11.8,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "queue"
+      ]
+    },
+    {
+      "id": "queue_barrow",
+      "prefab": "SM_Prop_Wheelbarrow_01",
+      "x": 36.3,
+      "z": -2.5,
+      "y": 0,
+      "rotY": 80,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "dressing",
+      "name": "Брошенная тачка с узлами",
+      "tags": []
+    },
+    {
+      "id": "burnt_truck",
+      "prefab": "SM_Prop_Car_Wrecked_Van_01",
+      "x": 50.5,
+      "z": -9,
+      "y": 0,
+      "rotY": 95,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "name": "Выгоревший фургон",
+      "tags": []
+    },
+    {
+      "id": "ring_barrel_1",
+      "prefab": "SM_Prop_Barrel_Open_01",
+      "x": -10,
+      "z": 19.6,
+      "y": 0,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "barrel-ring"
+      ]
+    },
+    {
+      "id": "ring_barrel_2",
+      "prefab": "SM_Prop_Barrel_Old_01",
+      "x": 0,
+      "z": 19.6,
+      "y": 0,
+      "rotY": 37,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "barrel-ring"
+      ]
+    },
+    {
+      "id": "ring_barrel_3",
+      "prefab": "SM_Prop_Barrel_Open_01",
+      "x": 10,
+      "z": 19.6,
+      "y": 0,
+      "rotY": 74,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "barrel-ring"
+      ]
+    },
+    {
+      "id": "ring_barrel_4",
+      "prefab": "SM_Prop_Barrel_Old_01",
+      "x": 20,
+      "z": 19.6,
+      "y": 0,
+      "rotY": 111,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "barrel-ring"
+      ]
+    },
+    {
+      "id": "ring_barrel_5",
+      "prefab": "SM_Prop_Barrel_Open_01",
+      "x": -10,
+      "z": -19.8,
+      "y": 0,
+      "rotY": 148,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "barrel-ring"
+      ]
+    },
+    {
+      "id": "ring_barrel_6",
+      "prefab": "SM_Prop_Barrel_Old_01",
+      "x": 0,
+      "z": -19.8,
+      "y": 0,
+      "rotY": 185,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "barrel-ring"
+      ]
+    },
+    {
+      "id": "ring_barrel_7",
+      "prefab": "SM_Prop_Barrel_Open_01",
+      "x": 10,
+      "z": -19.8,
+      "y": 0,
+      "rotY": 222,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "barrel-ring"
+      ]
+    },
+    {
+      "id": "ring_barrel_8",
+      "prefab": "SM_Prop_Barrel_Old_01",
+      "x": 20,
+      "z": -19.8,
+      "y": 0,
+      "rotY": 259,
+      "collision": "auto",
+      "vision": "auto",
+      "role": "cover",
+      "tags": [
+        "barrel-ring"
+      ]
+    },
+    {
+      "id": "ring_fire_1",
+      "prefab": "FX_Fire_01",
+      "x": -10,
+      "z": 19.6,
+      "y": 0.8,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "ring_fire_3",
+      "prefab": "FX_Fire_01",
+      "x": 10,
+      "z": 19.6,
+      "y": 0.8,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "ring_fire_5",
+      "prefab": "FX_Fire_01",
+      "x": -10,
+      "z": -19.8,
+      "y": 0.8,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "tags": []
+    },
+    {
+      "id": "ring_fire_7",
+      "prefab": "FX_Fire_01",
+      "x": 10,
+      "z": -19.8,
+      "y": 0.8,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
+      "tags": []
+    }
+  ],
+  "npcs": [
+    {
+      "id": "lev_kartsev",
+      "named": true,
+      "x": 12,
+      "z": 10.3,
+      "rotY": 113,
+      "appearance": {
+        "sex": "male",
+        "hairId": "shaved",
+        "skinToneId": "skin_03",
+        "hairColorId": "hair_02"
+      },
+      "equipment": {
+        "weapon": "fists",
+        "armor": "leather",
+        "helmet": "",
+        "boots": "boots",
+        "backpack": ""
+      }
+    },
+    {
+      "id": "post17_drobot",
+      "name": "Сержант Ульяна Дробот",
+      "role": "guard",
+      "faction": "uprava",
+      "x": 24,
+      "z": -3.5,
+      "rotY": 90,
+      "dialogue": false,
+      "appearance": {
+        "sex": "female",
+        "hairId": "tied_back",
+        "skinToneId": "skin_03",
+        "hairColorId": "hair_01"
+      },
+      "equipment": {
+        "weapon": "assaultRifle",
+        "armor": "ballisticVest",
+        "helmet": "helmet",
+        "boots": "boots",
+        "backpack": ""
+      },
+      "tags": [
+        "post17"
+      ]
+    },
+    {
+      "id": "post17_somov",
+      "name": "Ефрейтор Прохор Сомов «Тихий»",
+      "role": "guard",
+      "faction": "uprava",
+      "x": -12.7,
+      "z": 6,
+      "rotY": 270,
+      "dialogue": false,
+      "appearance": {
+        "sex": "male",
+        "hairId": "short_crop",
+        "skinToneId": "skin_03",
+        "hairColorId": "hair_03"
+      },
+      "equipment": {
+        "weapon": "rifle",
+        "armor": "leather",
+        "helmet": "",
+        "boots": "boots",
+        "backpack": "backpack"
+      },
+      "tags": [
+        "post17",
+        "sapper"
+      ]
+    },
+    {
+      "id": "post17_mytarev",
+      "name": "Гордей Мытарев, экспедитор Лиги",
+      "role": "civilian",
+      "faction": "tract_league",
+      "x": 19,
+      "z": 9.5,
+      "rotY": 180,
+      "dialogue": false,
+      "appearance": {
+        "sex": "male",
+        "hairId": "shaved",
+        "skinToneId": "skin_03",
+        "hairColorId": "hair_06"
+      },
+      "equipment": {
+        "weapon": "fists",
+        "armor": "leather",
+        "helmet": "",
+        "boots": "boots",
+        "backpack": ""
+      },
+      "tags": [
+        "post17"
+      ]
+    },
+    {
+      "id": "post17_anisya",
+      "name": "Анисья, беженка",
+      "role": "civilian",
+      "faction": "neutral",
+      "x": 18,
+      "z": -5.5,
+      "rotY": 45,
+      "dialogue": false,
+      "appearance": {
+        "sex": "female",
+        "hairId": "tied_back",
+        "skinToneId": "skin_03",
+        "hairColorId": "hair_04"
+      },
+      "equipment": {
+        "weapon": "fists",
+        "armor": "leather",
+        "helmet": "",
+        "boots": "boots",
+        "backpack": ""
+      },
+      "tags": [
+        "post17",
+        "refugee"
+      ]
+    },
+    {
+      "id": "post17_sentry_se",
+      "name": "Часовой юго-восточного гнезда",
+      "role": "guard",
+      "faction": "uprava",
+      "x": 23.55,
+      "z": -11.25,
+      "rotY": 135,
+      "dialogue": false,
+      "appearance": {
+        "sex": "male",
+        "hairId": "short_crop",
+        "skinToneId": "skin_03",
+        "hairColorId": "hair_05"
+      },
+      "equipment": {
+        "weapon": "assaultRifle",
+        "armor": "ballisticVest",
+        "helmet": "helmet",
+        "boots": "boots",
+        "backpack": ""
+      },
+      "tags": [
+        "post17"
+      ]
+    },
+    {
+      "id": "post17_sentry_bridge",
+      "name": "Часовой моста",
+      "role": "guard",
+      "faction": "uprava",
+      "x": -25,
+      "z": -1.7,
+      "rotY": 270,
+      "dialogue": false,
+      "appearance": {
+        "sex": "female",
+        "hairId": "shaved",
+        "skinToneId": "skin_03",
+        "hairColorId": "hair_08"
+      },
+      "equipment": {
+        "weapon": "assaultRifle",
+        "armor": "ballisticVest",
+        "helmet": "helmet",
+        "boots": "boots",
+        "backpack": ""
+      },
+      "tags": [
+        "post17"
+      ]
+    }
+  ],
+  "containers": [
+    {
+      "id": "post17_ammo_box",
+      "name": "Патронный короб караула",
+      "tier": "ammo",
+      "locked": false,
+      "x": 25,
+      "z": -10.4,
+      "rotY": 90,
+      "visual": "se_ammo_box",
+      "loot": [
+        {
+          "id": "ammo556",
+          "qty": 6
+        },
+        {
+          "id": "ammoParts",
+          "qty": 8
+        }
+      ]
+    },
+    {
+      "id": "post17_cargo_crate",
+      "name": "Артельный ящик в клетке",
+      "tier": "wasteland",
+      "locked": true,
+      "lockDifficulty": "easy",
+      "x": 15.4,
+      "z": -10.9,
+      "rotY": 0,
+      "visual": "cargo_crate",
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 6
+        },
+        {
+          "id": "ammoParts",
+          "qty": 6
+        },
+        {
+          "id": "water",
+          "qty": 2
+        },
+        {
+          "id": "silver",
+          "qty": 15
+        }
+      ]
+    },
+    {
+      "id": "post17_kitchen_crate",
+      "name": "Ящик полевой кухни",
+      "tier": "survival",
+      "locked": false,
+      "x": -1.33,
+      "z": -15.74,
+      "rotY": 0,
+      "visual": "kitchen_crate",
+      "loot": [
+        {
+          "id": "food",
+          "qty": 5
+        },
+        {
+          "id": "water",
+          "qty": 3
+        }
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "id": "west",
+      "points": [
+        {
+          "x": -33,
+          "z": 1
+        },
+        {
+          "x": -55,
+          "z": 5
+        },
+        {
+          "x": -57,
+          "z": 17
+        },
+        {
+          "x": -63,
+          "z": 33
+        },
+        {
+          "x": -61,
+          "z": 99
+        },
+        {
+          "x": -57,
+          "z": 125
+        },
+        {
+          "x": -61,
+          "z": 163
+        },
+        {
+          "x": -57,
+          "z": 195
+        }
+      ],
+      "to": "gate_west"
+    }
+  ],
+  "viewpoints": [
+    {
+      "label": "kpp-mobile",
+      "x": 21.5,
+      "z": -0.5,
+      "distance": 11.5
+    },
+    {
+      "label": "shtab",
+      "x": 10,
+      "z": 8,
+      "distance": 16
+    },
+    {
+      "label": "bridge",
+      "x": -21,
+      "z": 0,
+      "distance": 16
+    },
+    {
+      "label": "river",
+      "x": -31,
+      "z": -28,
+      "distance": 16
+    },
+    {
+      "label": "approach",
+      "x": 34,
+      "z": 2.5,
+      "distance": 21.5
+    },
+    {
+      "label": "yard-south",
+      "x": 1,
+      "z": -15,
+      "distance": 18
+    }
+  ],
+  "notes": "Застава 17 по design.md, раунд 3. Лотки StormCanal подняты на 2.52 (стенки 2.67 м) и сами держат коллизию, настил Bridge_01 без коллизии, проход держат четыре скрытые стены Bunker_Wall внутри парапетов. Раунд 3: верёвка с повязками на двух столбах, флагшток с синим полотнищем на плацу, пайки колонны за грузовиком, знамёна на колоннах ворот, красный фонарь над тарелкой вышки, туман русла снят, тропа от калитки по старому тракту к западным воротам зоны. Подробности и риски — layout-notes.md."
+}

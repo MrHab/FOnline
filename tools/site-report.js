@@ -8,7 +8,7 @@
 // проходимости walk.png (чёрное — преграда, светлое — дошёл, серое — свободно, но
 // недостижимо, рамка — островок, красные точки — недостижимые цели).
 //
-//   node tools/site-report.js Build/sites/<id>/layout.json
+//   node tools/site-report.js data/kromka/site-layouts/<id>.json
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -154,7 +154,8 @@ function main() {
     targets: results,
     problems
   };
-  const outDir = path.join(path.dirname(path.resolve(layoutFile)), 'renders');
+  if (!/^[A-Za-z0-9_-]+$/.test(site.id)) throw new Error(`invalid site id: ${site.id}`);
+  const outDir = path.join(ROOT, 'Build', 'sites', site.id, 'renders');
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'site-report.json'), `${JSON.stringify(report, null, 2)}\n`);
   writeWalkMap(path.join(outDir, 'walk.png'), n, free, reached, area, cellX, cellZ, results.filter(row => !row.reachable || row.insideCollision), minX, minZ)

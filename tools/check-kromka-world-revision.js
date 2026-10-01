@@ -106,8 +106,11 @@ for (const capital of ['sluiceCity', 'scrapTown', 'relayStation', 'caravanCamp',
 const sceneCatalog = fs.readFileSync(path.join(root, 'unity-client', 'Assets', 'Scripts',
   'Kromka', 'KromkaLocationSceneCatalog.cs'), 'utf8');
 const serverRuntime = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+// Место, стоящее площадкой в своей зоне (zone-sites.js), живёт в сцене сектора.
+const siteIds = new Set(JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone-graph.json'), 'utf8'))
+  .zones.flatMap(zone => (zone.places || []).filter(place => place.site).map(place => place.locationId)));
 for (const location of catalog.locations) {
-  assert(sceneCatalog.includes(`"${location.id}"`),
+  assert(siteIds.has(location.id) || sceneCatalog.includes(`"${location.id}"`),
     `Unity scene catalog has no ${location.id}`);
 }
 assert(serverRuntime.includes("const preserveAuthoredNodePoints = String(src.worldRevision || '') === 'kromka-1'"),

@@ -16,7 +16,7 @@ namespace Kromka
         private static readonly HashSet<string> LocationIds = new HashSet<string>(
             new[]
             {
-                "settlement", "caravanCamp", "scrapTown", "relayStation", "roadOutpost",
+                "settlement", "caravanCamp", "scrapTown", "relayStation",
                 "klimAmmoWorks", "scrapOutpost", "scrapFoundry", "relayOutpost",
                 "relayWorkshop", "solarArray", "oldDepot", "resourceDryWaterPump",
                 "resourceChemSpring", "resourceIronMine", "resourceKlimQuarry",

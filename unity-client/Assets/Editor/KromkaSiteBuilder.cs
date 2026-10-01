@@ -16,7 +16,7 @@ namespace Kromka.EditorTools
 {
     /// <summary>
     /// Собирает площадку места (аванпост, точку добычи, кланбазу) прямо в сцене сектора по
-    /// макету архитектора (`roa.siteLayout.v1`, Build/sites/&lt;id&gt;/layout.json):
+    /// макету архитектора (`roa.siteLayout.v1`, data/kromka/site-layouts/&lt;id&gt;.json):
     /// снимает содержимое сектора под площадкой, ставит модели PolygonApocalypse в
     /// авторском масштабе, режет их меш-коллайдеры на высоте тела в коробки (их видит и
     /// сервер, и tools/check-kromka-collision-parity.js), ставит маркер площадки и якоря
@@ -53,9 +53,9 @@ namespace Kromka.EditorTools
         [MenuItem("Кромка/Авторинг/Собрать площадку места по макету…")]
         public static void BuildFromMenu()
         {
-            string path = EditorUtility.OpenFilePanel("Макет площадки", Path.Combine(ProjectRoot(), "Build/sites"), "json");
+            string path = EditorUtility.OpenFilePanel("Макет площадки", Path.Combine(ProjectRoot(), "data/kromka/site-layouts"), "json");
             if (string.IsNullOrEmpty(path)) return;
-            Build(path, Path.Combine(Path.GetDirectoryName(path) ?? ".", "renders"), true);
+            Build(path, Path.Combine(ProjectRoot(), "Build/sites", Path.GetFileNameWithoutExtension(path), "renders"), true);
         }
 
         public static void RunBatch()
@@ -65,7 +65,7 @@ namespace Kromka.EditorTools
                 throw new FileNotFoundException("ROA_SITE_LAYOUT: нет макета площадки", layout ?? "");
             string output = Environment.GetEnvironmentVariable("ROA_SITE_OUT");
             if (string.IsNullOrWhiteSpace(output))
-                output = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(layout)) ?? ".", "renders");
+                output = Path.Combine(ProjectRoot(), "Build/sites", Path.GetFileNameWithoutExtension(layout), "renders");
             bool capture = Environment.GetEnvironmentVariable("ROA_SITE_CAPTURE") != "0";
             if (Environment.GetEnvironmentVariable("ROA_SITE_PREVIEW") == "1") Preview(layout, output);
             else Build(layout, output, capture);
@@ -524,6 +524,10 @@ namespace Kromka.EditorTools
             Light[] lights = UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
                 .Where(light => light.enabled).ToArray();
             foreach (Light light in lights) light.enabled = false;
+            // Огонь, дым и туман пака — частицы: в редакторе они не идут сами, и без прогрева
+            // критик не видел бы их на кадрах.
+            foreach (ParticleSystem system in UnityEngine.Object.FindObjectsByType<ParticleSystem>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                system.Simulate(4f, false, true, true);
             UnityEngine.Rendering.AmbientMode mode = RenderSettings.ambientMode;
             Color ambient = RenderSettings.ambientLight;
             UnityEngine.Rendering.SphericalHarmonicsL2 probe = RenderSettings.ambientProbe;

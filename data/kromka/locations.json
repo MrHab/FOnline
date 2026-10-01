@@ -141,7 +141,7 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "outpost-safe-side",
       "legacyStable": true,
-      "unityScene": "Assets/Scenes/Kromka/Locations/roadOutpost.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/z_10_10.unity"
     },
     {
       "id": "klimAmmoWorks",

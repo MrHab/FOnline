@@ -3,8 +3,7 @@
 
 // Сетевая проверка тихих торговцев на настоящем сервере: стационарные
 // торговцы и служебные NPC столицы не двигаются и не идут проверять
-// выстрелы рядом с собой, торговля с ними не закрывается, а торговец Ключей
-// снова торгует.
+// выстрелы рядом с собой; обычные полки NPC остаются закрытыми.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -73,30 +72,27 @@ const quiet = row => row && !row.dead && row.hostileToPlayer === false
       const moved = Math.hypot(Number(now.x) - Number(row.x), Number(now.z) - Number(row.z));
       assert(moved < 0.05, `${row.name} (${row.role || row.service}) не сдвинулся после выстрелов: ${moved.toFixed(2)} м`);
       assert.notEqual(now.aiState, 'investigate', `${row.name} не пошёл проверять выстрел`);
-      assert.notEqual(now.serviceAvailable, false, `${row.name} не закрыл торговлю`);
+      assert.notEqual(now.serviceAvailable, false, `${row.name} не закрыл службу`);
     }
-    const merchant = before.find(row => row.role === 'merchant' && row.tradeOpen === true);
-    assert(merchant, 'торговец Раздолья торгует');
+    const merchant = before.find(row => row.role === 'merchant');
+    assert(merchant && merchant.tradeOpen === false, 'полка торговца Раздолья закрыта');
     const trade = await h.socketAck(shooter.socket, 'syncNpcTradeState', { enemyId: merchant.id });
-    assert(trade.ok, 'торговля после выстрелов открыта: ' + JSON.stringify(trade).slice(0, 200));
-    console.log(`PASS ${before.length} capital traders and service NPCs ignore gunfire and keep trading`);
+    assert(trade.ok === false && /не торгует/.test(trade.error || ''),
+      'выстрелы не открыли полку NPC: ' + JSON.stringify(trade).slice(0, 200));
+    console.log(`PASS ${before.length} capital traders and service NPCs ignore gunfire; the NPC shelf stays closed`);
 
     // --- Ключи ----------------------------------------------------------------------------
     const keys = (accounts.target.join.worldState?.enemies || [])
       .filter(row => row.hostileToPlayer === false && ['merchant', 'trader'].includes(String(row.role || '').toLowerCase()));
-    const keysTrader = keys.find(row => row.tradeOpen === true);
-    assert(keysTrader, 'торговец Ключей торгует: ' + JSON.stringify(keys.map(row => ({ name: row.name, tradeOpen: row.tradeOpen }))));
-    // tradeOpen сервер считает той же проверкой, что и доступ к обмену; обмен
-    // отказал бы только из-за расстояния до торговца.
-    const keysTrade = await h.socketAck(accounts.target.socket, 'syncNpcTradeState', { enemyId: keysTrader.id });
-    assert(keysTrade.ok || /далеко/.test(keysTrade.error || ''), 'Ключи не закрыты для торговли: ' + JSON.stringify(keysTrade).slice(0, 200));
-    console.log('PASS the Keys trader trades again (' + keysTrader.name + ')');
+    assert(keys.length > 0 && keys.every(row => row.tradeOpen === false),
+      'полки торговцев Ключей закрыты: ' + JSON.stringify(keys.map(row => ({ name: row.name, tradeOpen: row.tradeOpen }))));
+    console.log('PASS the Keys merchants remain present with closed shelves');
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();
     h.cleanupSync();
   }
-  console.log('Quiet traders network OK: capital traders stand still and keep trading under gunfire, and the Keys trader is back.');
+  console.log('Quiet traders network OK: capital merchants stand still under gunfire and their NPC shelves stay closed.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

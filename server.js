@@ -17160,7 +17160,7 @@ function serverNpcTradeResalePrice(itemId = '', market = {}, player = {}) {
     Math.ceil((sellPrice + 1) / (1 - SERVER_TRADE_MAX_BUY_DISCOUNT))));
 }
 
-const SERVER_NPC_TRADE_CLOSED_ERROR = 'Этот человек не торгует. Квестовые персонажи ведут дела, остальные товары доступны у торговцев и на аукционе.';
+const SERVER_NPC_TRADE_CLOSED_ERROR = 'Этот человек не торгует. Товары доступны на аукционе и у игроков, снаряжение скупает Чёрный рынок.';
 
 function serverNpcHasQuestDialogue(actor = null) {
   return !!actor && (!!String(actor.kromkaNamedNpcId || '')

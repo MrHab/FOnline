@@ -280,13 +280,13 @@ const servicePosition = (locationId, service) => {
     }, null, 2));
   }
 
-  // --- торгуют только торговцы-люди -----------------------------------------
+  // --- обычные NPC больше не открывают товарные полки -------------------------
   const scrapActors = accounts.target.join.worldState?.enemies || [];
-  const merchant = scrapActors.find(row => row.role === 'merchant' && row.tradeOpen === true);
+  const merchant = scrapActors.find(row => row.role === 'merchant' && row.traderProfile === 'scrap');
   const questMerchant = scrapActors.find(row => row.role === 'merchant'
     && Array.isArray(row.traderQuests) && row.traderQuests.length > 0);
   const auctioneer = scrapActors.find(row => row.service === 'auction');
-  assert(merchant?.tradeOpen === true, 'торговец столицы торгует: ' + JSON.stringify(merchant && { name: merchant.name, tradeOpen: merchant.tradeOpen }));
+  assert(merchant && merchant.tradeOpen === false, 'торговец столицы присутствует, но его полка закрыта');
   assert(questMerchant && questMerchant.canDialogue === true && questMerchant.tradeOpen === false,
     'квестовый торговец ведёт только диалог и не открывает рынок');
   assert(auctioneer && auctioneer.tradeOpen === false, 'аукционер «Покажи товары» не предлагает');
@@ -330,7 +330,7 @@ const servicePosition = (locationId, service) => {
   await send('target', 'baseServiceAction', { service: 'repair', action: 'state' }, false);
   await send('trade', 'baseServiceAction', { service: 'tinker', action: 'state' }, false);
 
-  console.log('Capital services network OK: a book per capital without faction membership, 8% tax and 2.5% fee, the shared book moved onto owner shelves, fills at the resting price, only human traders trade, repairman restores gear for marks, and every service needs its own NPC nearby.');
+  console.log('Capital services network OK: a book per capital without faction membership, 8% tax and 2.5% fee, the shared book moved onto owner shelves, fills at the resting price, NPC shop shelves stay closed, repairman restores gear for marks, and every service needs its own NPC nearby.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   Object.values(accounts).forEach(h.closeSocket);
   await h.stopServer();

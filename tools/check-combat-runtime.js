@@ -2081,9 +2081,9 @@ async function assertKnownInstanceKeepsItsMagazine(accounts) {
   assertRuntimeWeaponInventory(second.ack.self, spare, 2, 'legacy-mix known spare stays in the bag');
 }
 
-// Экономика v3: оружие и броню у игроков скупает только Чёрный рынок (его
+// Обычный торговец не открывает полку: снаряжение скупает Чёрный рынок (его
 // проверка — check-black-market-network: там же разряжается проданный пистолет).
-// Торговец Раздолья отказывает, и заряженный пистолет остаётся в сумке как был.
+// Отказ не меняет заряженный пистолет в сумке.
 /** Место у прилавка торговца Раздолья: город собирает конструктор, точка — оттуда. */
 function scrapMerchantSpot() {
   const city = require('./lib/zone-walk').cityDefinition('scrapTown');
@@ -2093,7 +2093,7 @@ function scrapMerchantSpot() {
   return { x: Number(merchant.position.x) + 1.5, z: Number(merchant.position.z) + 1.5 };
 }
 
-async function assertTraderLeavesWeaponsToBlackMarket(accounts) {
+async function assertNpcTraderShelfClosed(accounts) {
   const account = accounts.trade;
   const keptRuntimeId = account.weaponRuntimeIds[1];
   await connectAndJoin(account);
@@ -2105,9 +2105,9 @@ async function assertTraderLeavesWeaponsToBlackMarket(accounts) {
   const trader = (Array.isArray(account.join.worldState?.enemies) ? account.join.worldState.enemies : [])
     .find(enemy => enemy?.hostileToPlayer === false
       && enemy?.role === 'merchant'
-      && enemy?.traderProfile === 'scrap'
-      && enemy?.tradeOpen === true);
-  invariant(trader?.id, 'Scrap Town trader is missing from authoritative world state', account.join.worldState);
+      && enemy?.traderProfile === 'scrap');
+  invariant(trader?.id && trader.tradeOpen === false,
+    'Scrap Town merchant must remain present with a closed NPC shelf', account.join.worldState?.enemies);
   // NPC встаёт на ближайший свободный тайл: если он ушёл от своей точки, доходим шагами.
   const spot = { x: Number(account.join.x || 0), z: Number(account.join.z || 0) };
   for (let frame = 0; frame < 200; frame += 1) {
@@ -2129,10 +2129,8 @@ async function assertTraderLeavesWeaponsToBlackMarket(accounts) {
     'Trade fixture could not reach the trader', { player: spot, trader });
 
   const view = await socketAck(account.socket, 'syncNpcTradeState', { enemyId: trader.id });
-  invariant(view.ok && Array.isArray(view.market?.refusedCategories)
-    && view.market.refusedCategories.includes('weapons') && view.market.refusedCategories.includes('armor')
-    && !(view.market.buyInterests || []).includes('weapons'),
-  'The trade window must say that the trader leaves weapons and armour to the Black Market', view);
+  invariant(view.ok === false && /не торгует/.test(String(view.error || '')),
+    'The NPC shelf must stay closed when the player requests its market', view);
   const offer = await socketAck(account.socket, 'npcTradeExchange', {
     enemyId: trader.id,
     buys: [],
@@ -2140,8 +2138,8 @@ async function assertTraderLeavesWeaponsToBlackMarket(accounts) {
     skillRanks: {},
     talentRanks: {}
   });
-  invariant(offer.ok === false && /Чёрного рынка/.test(String(offer.error || '')),
-    'Scrap Town trader bought a weapon that only the Black Market buys', offer);
+  invariant(offer.ok === false && /не торгует/.test(String(offer.error || '')),
+    'Scrap Town merchant accepted an item despite its closed NPC shelf', offer);
   assertRuntimeWeaponInventory(offer.self, keptRuntimeId, 5, 'refused offer keeps the loaded pistol');
   invariant(inventoryRowQty(offer.self?.inventory, 'energyCell') === ammoBefore
     && inventoryRowQty(offer.self?.inventory, 'silver') === silverBefore,
@@ -2240,7 +2238,7 @@ async function main() {
     await assertStrictServerAp(accounts);
     await assertEquipmentActionAuthority(accounts);
     await assertKnownInstanceKeepsItsMagazine(accounts);
-    await assertTraderLeavesWeaponsToBlackMarket(accounts);
+    await assertNpcTraderShelfClosed(accounts);
     await assertProgressionAllocationAuthority(accounts);
     // The shooter fixtures intentionally share one combat arena so they can
     // target each other. They must not influence the safe-spawn search for the
@@ -2267,7 +2265,7 @@ async function main() {
       + 'a revolver and a sawed-off fired a paired volley from their own magazines, '
       + 'gathering ran in timed cycles only after it was started, a bagged tool sped it up and wore once per cycle without spending AP, '
       + 'a node drained outside a world-map site scheduled a respawn and came back at full capacity, '
-      + 'NPC traders left weapons to the Black Market and a refused loaded pistol stayed untouched, '
+      + 'NPC shelves stayed closed and a refused loaded pistol stayed untouched, '
       + 'equipment changes were revisioned/idempotent, hand slots persisted, and one-/two-handed conflicts were atomic, '
       + 'a known bag instance joined a legacy base-id pistol without taking over its magazine, '
       + 'a second identical pistol was equipped under a new instance id, '

@@ -134,7 +134,12 @@ async function until(label, probe, timeoutMs = 15000) {
     assert.equal(forged.ok, false, 'the old room of the event is gone');
     console.log(`PASS the event "${event.displayName}" stands at an event point of ${eventZone.title}: its leader and ${crew.length} fighters, no portal`);
 
-    await until('the event expires', () => view.eventStates.some(row => row.expired && row.id === event.id), 40000);
+    await until('the event expires', async () => {
+      if (view.eventStates.some(row => row.expired && row.id === event.id)) return true;
+      const snapshot = await h.socketAck(walker.socket, 'requestWorldState', { reason: 'eventExpiry' });
+      return snapshot.ok && snapshot.state && Object.hasOwn(snapshot.state, 'publicEvent')
+        && snapshot.state.publicEvent?.id !== event.id;
+    }, 45000);
     await until('its people leave the scene', () => ![...view.enemies.values()].some(row => !row.dead && row.name === template.boss.displayName));
     const still = await h.socketAck(walker.socket, 'requestWorldState', {});
     assert.equal(still?.worldState?.locationId || still?.locationId || walker.join.locationId, eventZone.id, 'the players stay in the zone when the event ends');

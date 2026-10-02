@@ -134,6 +134,10 @@ Shader "Realm of Ashes/Dam Road River"
                 half foamBreakup = saturate(0.43 + shortWave.x * 0.6
                     + longWave.y * 0.22 + sin(along.y * 2.7 - t * 6.0) * 0.13);
                 half foam = bank * bank * foamBreakup * _MineralVeil * 1.75;
+                half contact = (1.0 - smoothstep(0.08, 0.65, bankMetres))
+                    * smoothstep(0.31, 0.68, RiverNoise(input.positionWS.xz * 1.4
+                        + float2(0.0, -t * 1.8)));
+                foam = max(foam, contact * 0.45);
                 water = lerp(water, _FoamColor.rgb, foam);
 
                 Light sun = GetMainLight();

@@ -14,9 +14,9 @@ namespace RealmOfAshes.World
         private const string WaterMaterialKey = "RealmOfAshes/DamRoadRiver";
         private const float MapWorldScale = 0.1f;
         private const float CanalX = -104.755f;
-        private const float CanalMinZ = -115f;
+        private const float CanalMinZ = -140f;
         private const float CanalMaxZ = -72f;
-        private const float WaterGradeBreakZ = -125f;
+        private const float WaterGradeBreakZ = -140f;
         private const float CanalWaterHalfWidth = 14.6f;
         private const float BridgeHalfLength = 18f;
         private const float BedDepth = 1.65f;

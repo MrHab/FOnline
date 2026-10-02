@@ -28,10 +28,13 @@ namespace RealmOfAshes.World
         private Texture2D _albedo;
         private Texture2D _microDetail;
         private Texture2D _surfaceMask;
+        private Texture2D _riverBankMask;
+        private Color32[] _riverBankPixels;
         // Маска поверхности на время покраски: R — тропа, G — гарь, B — вода (шейдер земли).
         private Color32[] _maskPixels;
         private static readonly int SurfaceMaskId = Shader.PropertyToID("_SurfaceMask");
         private static readonly int MacroMeanId = Shader.PropertyToID("_MacroMean");
+        private static readonly int RiverBankMaskId = Shader.PropertyToID("_RiverBankMask");
         private int _textureSize;
         private float _visualWidth;
         private float _visualDepth;
@@ -215,11 +218,14 @@ namespace RealmOfAshes.World
             if (IsSettlement) PaintSettlementLayers(pixels);
             else PaintAuthoritativeTiles(pixels, stateMap, mapWidth, mapDepth);
             PaintAmbientAge(pixels);
-            if (RoaZoneReliefProjection.Supports(_location?.Id)) PaintRiverBanks(pixels);
+            _riverBankPixels = RoaZoneReliefProjection.Supports(_location?.Id)
+                ? new Color32[pixels.Length] : null;
+            if (_riverBankPixels != null) PaintRiverBanks(pixels);
             if (_mirrorAlbedoX || _mirrorAlbedoZ)
             {
                 MirrorPixels(pixels, _textureSize, _mirrorAlbedoX, _mirrorAlbedoZ);
                 if (_maskPixels != null) MirrorPixels(_maskPixels, _textureSize, _mirrorAlbedoX, _mirrorAlbedoZ);
+                if (_riverBankPixels != null) MirrorPixels(_riverBankPixels, _textureSize, _mirrorAlbedoX, _mirrorAlbedoZ);
             }
 
             _albedo.SetPixels32(pixels);
@@ -234,8 +240,26 @@ namespace RealmOfAshes.World
                     _material.SetTexture(SurfaceMaskId, _surfaceMask);
                     _material.SetColor(MacroMeanId, MeanColor(pixels));
                 }
+                if (_riverBankPixels != null && _material.HasProperty(RiverBankMaskId))
+                {
+                    if (_riverBankMask == null || _riverBankMask.width != _textureSize)
+                    {
+                        DestroyRuntime(_riverBankMask);
+                        _riverBankMask = new Texture2D(_textureSize, _textureSize,
+                            TextureFormat.RGBA32, true, true)
+                        {
+                            name = "RuntimeRiverBankMask:" + _location.Id,
+                            filterMode = FilterMode.Bilinear,
+                            wrapMode = TextureWrapMode.Clamp
+                        };
+                    }
+                    _riverBankMask.SetPixels32(_riverBankPixels);
+                    _riverBankMask.Apply(true, false);
+                    _material.SetTexture(RiverBankMaskId, _riverBankMask);
+                }
             }
             _maskPixels = null;
+            _riverBankPixels = null;
             return true;
         }
 
@@ -271,6 +295,14 @@ namespace RealmOfAshes.World
                         distance / Mathf.Lerp(1.3f, 2.1f, variation)))
                         * Mathf.Lerp(0.18f, 0.30f, variation);
                     int index = row * _textureSize + column;
+                    // R: permanently wet silt at the actual waterline; G: the
+                    // wider gravel/sand deposit. Uneven widths avoid a painted stripe.
+                    float wetWidth = Mathf.Lerp(1.4f, 2.3f, variation);
+                    float wet = 1f - Mathf.SmoothStep(0f, 1f, distance / wetWidth);
+                    float deposit = (1f - Mathf.SmoothStep(0f, 1f,
+                        distance / Mathf.Lerp(4.2f, 5.8f, variation))) * 0.88f;
+                    _riverBankPixels[index] = new Color32(
+                        (byte)(wet * 255f), (byte)(deposit * 255f), 0, 255);
                     Color32 baseColor = pixels[index];
                     pixels[index] = new Color32(
                         (byte)Mathf.Lerp(baseColor.r * (1f - stain), 139f, silt),
@@ -961,6 +993,7 @@ namespace RealmOfAshes.World
             DestroyRuntime(_albedo);
             DestroyRuntime(_microDetail);
             DestroyRuntime(_surfaceMask);
+            DestroyRuntime(_riverBankMask);
             DestroyRuntime(_material);
             DestroyRuntime(_mesh);
             _albedo = null;

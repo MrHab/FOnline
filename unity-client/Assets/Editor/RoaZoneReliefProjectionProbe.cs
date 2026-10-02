@@ -144,7 +144,7 @@ namespace RealmOfAshes.EditorTools
                 Require(bendBlocked, "The river bend can be crossed without using the bridge.");
                 Require(!dryBankBlocked, "The river bend has an invisible wall on dry land.");
                 Require(Mathf.Abs(RoaZoneReliefProjection.GroundHeightAt(-104.755f, -106f)
-                    - RoaDamRoadWaterProjection.BridgeDeckHeight) < 0.01f,
+                    - RoaDamRoadWaterProjection.BridgeWalkHeightAt(-106f)) < 0.01f,
                     "The bridge deck is not at the authored walk height.");
                 Require(water.transform.Find("OutpostBridgeWalkSurface")?.GetComponent<BoxCollider>() != null,
                     "The outpost bridge cannot be crossed.");
@@ -153,7 +153,7 @@ namespace RealmOfAshes.EditorTools
                 foreach (RaycastHit hit in Physics.RaycastAll(new Vector3(-104.755f, 3f, -106f),
                              Vector3.down, 6f))
                     crossesBridge |= hit.collider.name == "OutpostBridgeWalkSurface"
-                        && Mathf.Abs(hit.point.y - RoaDamRoadWaterProjection.BridgeDeckHeight) < 0.01f;
+                        && Mathf.Abs(hit.point.y - RoaDamRoadWaterProjection.BridgeWalkHeightAt(-106f)) < 0.01f;
                 Require(crossesBridge, "The bridge collider does not cover the carved channel.");
                 Require(RoaDamRoadWaterProjection.InWater(new Vector3(-104.755f, -1f, -106f)),
                     "The spillway does not register as water.");

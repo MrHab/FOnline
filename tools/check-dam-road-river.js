@@ -74,7 +74,7 @@ for (const tz of [0, 1, 158, 159]) {
   assert.equal(rows[tz][tx], 3, `water does not reach sector edge tz=${tz}`);
 }
 
-function place(role, point, vehicle = false) {
+function place(role, point, vehicle = false, angle = 0) {
   zoneWalk.placeInZone(h, accounts, role, zone.id, point);
   if (!vehicle) return;
   const users = JSON.parse(fs.readFileSync(path.join(h.DATA_DIR, 'users.json')));
@@ -82,15 +82,16 @@ function place(role, point, vehicle = false) {
   const saves = JSON.parse(fs.readFileSync(savesPath));
   const account = accounts[role];
   const state = saves.characters[users.users[account.login].id][account.characterId].state;
-  state.inventory = { ...(state.inventory || {}), motorcycle: 1 };
+  state.inventory = { ...(state.inventory || {}), [vehicle === true ? 'motorcycle' : vehicle]: 1 };
+  state.player.angle = angle;
   fs.writeFileSync(savesPath, JSON.stringify(saves));
 }
 
-async function step(account, x, z) {
+async function step(account, x, z, angle = 0, speed = 5) {
   const ack = await h.socketAck(account.socket, 'state', {
     seq: account.movementSeq = (account.movementSeq || 0) + 1,
-    x, z, angle: 0, moving: true, turning: false, crouching: false,
-    vx: 5, vz: 0
+    x, z, angle, moving: true, turning: false, crouching: false,
+    vx: angle === 0 ? speed : speed * Math.sin(angle), vz: angle === 0 ? 0 : speed * Math.cos(angle)
   });
   const self = ack?.self || ack;
   assert(Number.isFinite(Number(self.x)) && Number.isFinite(Number(self.z)), 'movement ack lacks a position');
@@ -103,6 +104,18 @@ async function step(account, x, z) {
   place('trade', { x: spillwayWest - 3, z: -116 }, true);
   place('progression', { x: bridgeWest, z: -107.5 });
   place('cadence', { x: bridgeWest, z: -104.5 }, true);
+  const vehicles = require('../data/kromka/vehicles.json').vehicles;
+  const heavyCrossings = [
+    ['untargeted', 'pickup', 1], ['dualPistols', 'pickup', -1],
+    ['strictAp', 'armyTruck', 1], ['legacyMix', 'armyTruck', -1]
+  ].map(([role, item, direction]) => {
+    const hull = vehicles.find(v => v.itemId === item).hull;
+    const z = -106 + direction * hull.offsetX;
+    const startX = direction > 0 ? -130 : -19, endX = direction > 0 ? -19 : -130;
+    const angle = direction * Math.PI / 2;
+    place(role, { x: startX, z }, item, angle);
+    return { role, item, direction, z, startX, endX, angle, hull };
+  });
   await h.startServer();
   try {
     const walker = accounts.target;
@@ -187,7 +200,29 @@ async function step(account, x, z) {
     }
     assert(position.x <= bridgeWest + 0.5,
       `motorcycle could not return to the west bank by bridge; stopped at x=${position.x}`);
-    console.log('Dam-road river network OK: player and motorcycle stop at water and cross by bridge; entries stay dry.');
+    for (const crossing of heavyCrossings) {
+      const vehicleAccount = accounts[crossing.role];
+      await h.connectAndJoin(vehicleAccount);
+      const equip = await h.socketAck(vehicleAccount.socket, 'equipmentAction', {
+        requestId: 'dam-road-' + crossing.role, slot: 'vehicle', itemRuntimeId: crossing.item,
+        expectedRevision: vehicleAccount.join.self.equipmentRevision
+      });
+      assert(equip.ok, crossing.item + ' could not be equipped');
+      const mount = await h.socketAck(vehicleAccount.socket, 'vehicleAction', { action: 'mount' });
+      assert(mount.ok && mount.mounted, crossing.item + ' could not be mounted');
+      assert.equal(mount.vehicle.hull.length, crossing.hull.length, 'test vehicle lost its actual hull');
+      position = { x: Number(vehicleAccount.join.self.x), z: Number(vehicleAccount.join.self.z) };
+      for (let i = 0; i < 600 && (crossing.endX - position.x) * crossing.direction > 0.5; i++) {
+        position = await step(vehicleAccount, crossing.endX, crossing.z, crossing.angle, 7);
+        assert(Math.abs(position.z - crossing.z) < 0.6, crossing.item + ' was pushed out of the rail crossing');
+        await zoneWalk.delay(55);
+      }
+      assert((crossing.endX - position.x) * crossing.direction <= 0.5,
+        `${crossing.item} stopped at x=${position.x}, direction=${crossing.direction}`);
+      h.closeSocket(vehicleAccount);
+      console.log(`PASS ${crossing.item}: full hull crosses bridge and checkpoint direction ${crossing.direction}`);
+    }
+    console.log('Dam-road river network OK: player and motorcycle stop at water; walker, motorcycle, pickup and truck cross by bridge; entries stay dry.');
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();

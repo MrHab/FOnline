@@ -22,6 +22,11 @@ namespace RealmOfAshes.World
         // Native SM_Env_StormCanal_Bridge_01 driving surface at the authored
         // south-row placement (0.47 - 0.3965827). Keep actor feet and rails on it.
         public const float BridgeDeckHeight = 0.0734173f;
+        public static float BridgeFoundationHeightAt(float x) => Mathf.Lerp(-0.05f, BridgeDeckHeight,
+            Mathf.Clamp01((BridgeHalfLength - Mathf.Abs(x - CanalX)) / 3f));
+        public static float BridgeWalkHeightAt(float x, float z) => BridgeFoundationHeightAt(x)
+            + RoaDamRoadRailProjection.BridgeBedRiseAt(z);
+        public static float BridgeWalkHeightAt(float z) => BridgeWalkHeightAt(CanalX, z);
         private const float BedDepth = 1.65f;
         private const int Segments = 256;
 
@@ -283,7 +288,31 @@ namespace RealmOfAshes.World
             deck.transform.SetParent(transform, false);
             deck.transform.localPosition = new Vector3(CanalX, BridgeDeckHeight - 0.12f, -106f);
             var collider = deck.AddComponent<BoxCollider>();
-            collider.size = new Vector3(BridgeHalfLength * 2f, 0.24f, 7.2f);
+            collider.size = new Vector3((BridgeHalfLength - 3f) * 2f, 0.24f, 7.2f);
+            // The centre follows the ballast crown; the shoulders descend to
+            // the bare maintenance strips. This is walkable surface, not a wall.
+            float[] offsets = { -3.6f, -2.1f, -1.5f, 1.5f, 2.1f, 3.6f };
+            float[] spans = { -BridgeHalfLength, -BridgeHalfLength + 3f, BridgeHalfLength - 3f, BridgeHalfLength };
+            var vertices = new Vector3[offsets.Length * spans.Length];
+            var triangles = new int[(offsets.Length - 1) * (spans.Length - 1) * 6];
+            int next = 0;
+            for (int i = 0; i < offsets.Length; i++)
+            for (int j = 0; j < spans.Length; j++)
+            {
+                float y = BridgeWalkHeightAt(CanalX + spans[j], -106f + offsets[i]) - BridgeDeckHeight + 0.12f;
+                vertices[i * spans.Length + j] = new Vector3(spans[j], y, offsets[i]);
+                if (i == offsets.Length - 1 || j == spans.Length - 1) continue;
+                int a = i * spans.Length + j, c = a + spans.Length;
+                triangles[next++] = a; triangles[next++] = c; triangles[next++] = a + 1;
+                triangles[next++] = a + 1; triangles[next++] = c; triangles[next++] = c + 1;
+            }
+            var surface = new Mesh { name = "OutpostBridgeBallastWalkSurface" };
+            surface.vertices = vertices;
+            surface.triangles = triangles;
+            surface.RecalculateNormals();
+            surface.RecalculateBounds();
+            deck.AddComponent<MeshCollider>().sharedMesh = surface;
+            _barrierMeshes.Add(surface);
         }
 
         private void BuildImpassableChannel()

@@ -38,7 +38,7 @@ namespace RealmOfAshes.World
             if (Mathf.Abs(localX) > _active._width * 0.5f
                 || Mathf.Abs(localZ) > _active._depth * 0.5f) return 0f;
             return RoaDamRoadWaterProjection.IsBridgeDeck(localX, localZ)
-                ? RoaDamRoadWaterProjection.BridgeDeckHeight
+                ? RoaDamRoadWaterProjection.BridgeWalkHeightAt(localX, localZ)
                 : HeightAt(_active._relief, localX, localZ, _active._width, _active._depth);
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using RealmOfAshes.World;
 using UnityEditor;
@@ -31,6 +32,7 @@ namespace RealmOfAshes.EditorTools
                 if (rail.GetComponentsInChildren<Collider>().Length != 0)
                     throw new InvalidOperationException("Rail components block the shared deck.");
                 AssertVisibleDeckRails(location);
+                AssertHeavyVehicleCorridor(root);
                 var points = rail.Profile.points;
                 if (Mathf.Abs(points[0].x + 160f) > 0.001f || Mathf.Abs(points[points.Length - 1].x - 160f) > 0.001f)
                     throw new InvalidOperationException("Railway does not reach both sector edges.");
@@ -49,7 +51,7 @@ namespace RealmOfAshes.EditorTools
                         if (collider.bounds.max.y > y + 0.4f)
                             throw new InvalidOperationException($"Track blocked at {p.x}, {p.z} by {collider.name} < {collider.transform.parent?.name}.");
                 }
-                Debug.Log("[ROA DAM ROAD RAIL] PASS: continuous railway on both banks, flush shared crossing, clear route corridor.");
+                Debug.Log("[ROA DAM ROAD RAIL] PASS: continuous ballasted railway on both banks, walkable bridge crown, clear route corridor.");
             }
             finally
             {
@@ -88,14 +90,33 @@ namespace RealmOfAshes.EditorTools
                         if (deck.Raycast(new Ray(new Vector3(x, 3f, z), Vector3.down), out RaycastHit hit, 6f))
                             top = Mathf.Max(top, hit.point.y);
                     if (!float.IsFinite(top)) throw new InvalidOperationException("No imported deck under railway.");
-                    float railTop = RoaDamRoadRailProjection.SurfaceAt(x, z) + 0.032f;
-                    if (railTop < top + 0.004f || railTop > top + 0.04f)
+                    float railTop = RoaDamRoadRailProjection.SurfaceAt(x, z) + RoaDamRoadRailProjection.RailHeadRise;
+                    if (railTop < top + 0.235f || railTop > top + 0.255f)
                         throw new InvalidOperationException($"Rail head at {railTop} is buried or floating above native deck {top}.");
-                    if (Mathf.Abs(top - RoaZoneReliefProjection.GroundHeightAt(x, z)) > 0.01f)
-                        throw new InvalidOperationException("Actor feet and the native bridge deck disagree.");
+                    if (Mathf.Abs(top + RoaDamRoadRailProjection.BridgeBedRiseAt(z)
+                        - RoaZoneReliefProjection.GroundHeightAt(x, z)) > 0.01f)
+                        throw new InvalidOperationException("Actor feet and the ballast crown disagree.");
                 }
             }
             finally { foreach (GameObject proxy in proxies) UnityEngine.Object.DestroyImmediate(proxy); }
+        }
+
+        private static void AssertHeavyVehicleCorridor(string root)
+        {
+            var vehicles = JObject.Parse(File.ReadAllText(Path.Combine(root, "data/kromka/vehicles.json")));
+            foreach (JObject vehicle in vehicles["vehicles"])
+            {
+                string id = (string)vehicle["itemId"];
+                if (id != "pickup" && id != "armyTruck") continue;
+                Vector3 half = new Vector3((float)vehicle["hull"]["length"] * 0.5f, 0.4f,
+                    (float)vehicle["hull"]["width"] * 0.5f);
+                for (float x = -130f; x <= -19f; x += 0.5f)
+                {
+                    float y = RoaZoneReliefProjection.GroundHeightAt(x, -106f);
+                    foreach (Collider collider in Physics.OverlapBox(new Vector3(x, y + 0.65f, -106f), half))
+                        throw new InvalidOperationException($"{id} full rectangle blocked at x={x} by {collider.name} < {collider.transform.parent?.name}.");
+                }
+            }
         }
     }
 }

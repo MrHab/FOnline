@@ -1206,19 +1206,6 @@
       "tags": []
     },
     {
-      "id": "west_apron",
-      "prefab": "SM_Env_Road_Bare_01",
-      "x": -37.755,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "name": "Съезд к Большому тракту",
-      "tags": []
-    },
-    {
       "id": "charge_cable_bridge",
       "prefab": "SM_Prop_Powerpole_Single_Line_02",
       "x": -2.9,
@@ -1757,114 +1744,6 @@
       "tags": [
         "quest-landmark"
       ]
-    },
-    {
-      "id": "kpp_slab_outer",
-      "prefab": "SM_Env_Road_Bare_01",
-      "x": 38,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "kpp_slab_inner",
-      "prefab": "SM_Env_Road_01",
-      "x": 33,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_1",
-      "prefab": "SM_Env_Road_Bare_01",
-      "x": 28,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_2",
-      "prefab": "SM_Env_Road_01",
-      "x": 23,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_3",
-      "prefab": "SM_Env_Road_01",
-      "x": 18,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_4",
-      "prefab": "SM_Env_Road_Bare_01",
-      "x": 13,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_5",
-      "prefab": "SM_Env_Road_01",
-      "x": 8,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_6",
-      "prefab": "SM_Env_Road_01",
-      "x": 3,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_7",
-      "prefab": "SM_Env_Road_Bare_01",
-      "x": -2,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
     },
     {
       "id": "convoy_truck",
@@ -2728,18 +2607,6 @@
       "tags": []
     },
     {
-      "id": "road_faded_lines",
-      "prefab": "SM_Env_Road_YellowLines_01",
-      "x": 38,
-      "z": 2.5,
-      "y": 0.068,
-      "rotY": 0,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
       "id": "old_bridge_rubble_e",
       "prefab": "SM_Prop_Rubble_Concrete_02",
       "x": 2,
@@ -2852,66 +2719,6 @@
       "z": -13.7,
       "y": 0.01,
       "rotY": 80,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "approach_road_1",
-      "prefab": "SM_Env_Road_Bare_01",
-      "x": 43,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "approach_road_2",
-      "prefab": "SM_Env_Road_01",
-      "x": 48,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "approach_road_3",
-      "prefab": "SM_Env_Road_01",
-      "x": 53,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "approach_road_4",
-      "prefab": "SM_Env_Road_01",
-      "x": 58,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "approach_road_5",
-      "prefab": "SM_Env_Road_Bare_01",
-      "x": 63,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
       "collision": "none",
       "vision": "none",
       "role": "dressing",
@@ -3247,5 +3054,5 @@
       "distance": 18
     }
   ],
-  "notes": "Застава 17 встроена в z_10_10. Дорога проходит через мост и КПП; знаки, старая переправа и лагерные детали служат ориентирами. Рельеф сектора проецируется из GlobalMapRelief.asset с ровной площадкой под заставой; все проходы и точки проверяются site-report.js. Канал расширен до 29,2 м; мост длиной 30 м собран из секций в исходном масштабе. Рудная ветвь проходит по мосту и оси КПП; за восточным въездом плавно возвращается на маршрут глобальной карты. Рельсы на мосту утоплены в общий настил."
+  "notes": "Застава 17 встроена в z_10_10. Рудная ветвь проходит через мост и КПП; за восточным въездом плавно возвращается на маршрут глобальной карты. Под рельсами непрерывное щебёночное полотно с плечами насыпи, частично заглублёнными деревянными шпалами и металлическими креплениями; автомобильные дорожные секции убраны. На мосту балласт лежит поверх несущего бетона, по бокам оставлены служебные полосы. Рельеф сектора проецируется из GlobalMapRelief.asset с ровной площадкой под заставой; все проходы и точки проверяются site-report.js. Канал шириной 29,2 м; мост длиной 30 м собран из секций в исходном масштабе."
 }

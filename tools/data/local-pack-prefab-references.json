@@ -145,10 +145,6 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Gaspump_01.prefab"
     },
     {
-      "guid": "47f6a2feb2be4cf4689c07e18d4826d2",
-      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_Road_YellowLines_01.prefab"
-    },
-    {
       "guid": "4885767d079f05a4581a8eeba98b325c",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Fence_Wood_Post_01.prefab"
     },

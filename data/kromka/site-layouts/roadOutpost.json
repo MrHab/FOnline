@@ -468,7 +468,7 @@
       "id": "hedgehog_2",
       "prefab": "SM_Prop_TankTrap_01",
       "x": -10.5,
-      "z": 1.9,
+      "z": 4.7,
       "y": 0,
       "rotY": 0,
       "collision": "auto",

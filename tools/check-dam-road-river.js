@@ -109,15 +109,20 @@ async function step(account, x, z) {
     const bridge = accounts.progression;
     await h.connectAndJoin(bridge);
     position = { x: Number(bridge.join.self.x), z: Number(bridge.join.self.z) };
-    const eastBank = river.banksAt(-106).center + river.banksAt(-106).halfWidth;
-    for (let i = 0; i < 90 && position.x < -97.5; i++) {
-      position = await step(bridge, -97, -107.5);
+    for (let i = 0; i < 100 && position.x < -94.5; i++) {
+      position = await step(bridge, -94, -107.5);
       assert(!river.isWaterAt(position.x, position.z, 0.48), 'bridge approach entered water');
       await zoneWalk.delay(55);
     }
-    assert(position.x >= -97.5, `bridge could not be crossed; stopped at x=${position.x}`);
+    assert(position.x >= -94.5, `bridge could not be crossed; stopped at x=${position.x}`);
     assert(Math.abs(position.z + 107.5) < 0.6,
       `walker was pushed out of the southern bridge lane to z=${position.z}`);
+    for (let i = 0; i < 100 && position.x > -113.5; i++) {
+      position = await step(bridge, -114, -107.5);
+      assert(!river.isWaterAt(position.x, position.z, 0.48), 'return across bridge entered water');
+      await zoneWalk.delay(55);
+    }
+    assert(position.x <= -113.5, `bridge could not be crossed back; stopped at x=${position.x}`);
 
     const bridgeRider = accounts.cadence;
     await h.connectAndJoin(bridgeRider);
@@ -129,12 +134,12 @@ async function step(account, x, z) {
     const bridgeMount = await h.socketAck(bridgeRider.socket, 'vehicleAction', { action: 'mount' });
     assert(bridgeMount.ok && bridgeMount.mounted, 'bridge motorcycle could not be mounted');
     position = { x: Number(bridgeRider.join.self.x), z: Number(bridgeRider.join.self.z) };
-    for (let i = 0; i < 90 && position.x < eastBank + 0.5; i++) {
-      position = await step(bridgeRider, -97, -104.5);
+    for (let i = 0; i < 110 && position.x < -94.5; i++) {
+      position = await step(bridgeRider, -94, -104.5);
       assert(!river.isWaterAt(position.x, position.z, 0.48), 'motorcycle left the bridge into water');
       await zoneWalk.delay(55);
     }
-    assert(position.x >= eastBank + 0.5,
+    assert(position.x >= -94.5,
       `motorcycle could not reach the east bank by bridge; stopped at x=${position.x}`);
     assert(Math.abs(position.z + 104.5) < 0.6,
       `motorcycle was pushed out of the northern bridge lane to z=${position.z}`);

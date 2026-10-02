@@ -2,6 +2,7 @@ Shader "Realm of Ashes/Railway Ballast"
 {
     Properties
     {
+        _SurfaceWorldTransform ("Surface coordinates: scale and offset", Vector) = (1,0,0,0)
         [MainColor] _BaseColor ("Crushed stone colour", Color) = (0.48, 0.49, 0.47, 1)
         _StoneScale ("Stones per metre", Float) = 16
     }
@@ -23,6 +24,7 @@ Shader "Realm of Ashes/Railway Ballast"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             CBUFFER_START(UnityPerMaterial)
+                float4 _SurfaceWorldTransform;
                 float4 _BaseColor;
                 float _StoneScale;
             CBUFFER_END
@@ -53,7 +55,8 @@ Shader "Realm of Ashes/Railway Ballast"
             {
                 // Irregular angular cells: pale stone faces and dark voids between
                 // them, at ballast size rather than the size of a ground texture.
-                float2 p = input.positionWS.xz * _StoneScale;
+                float2 worldXZ = input.positionWS.xz * _SurfaceWorldTransform.x + _SurfaceWorldTransform.yz;
+                float2 p = worldXZ * _StoneScale;
                 float2 cell = floor(p), local = frac(p);
                 float nearest = 10, second = 10;
                 float2 stone = 0;
@@ -71,7 +74,7 @@ Shader "Realm of Ashes/Railway Ballast"
                 float face = smoothstep(0.012, 0.095, second - nearest);
                 half shade = lerp(0.97, lerp(0.46, 0.78 + stone.x * 0.46, face), detail);
                 half3 albedo = _BaseColor.rgb * shade;
-                albedo *= lerp(0.93, 1.04, Hash(floor(input.positionWS.xz * 0.9)).x);
+                albedo *= lerp(0.93, 1.04, Hash(floor(worldXZ * 0.9)).x);
                 half3 normal = normalize(input.normalWS + half3((stone.x - 0.5) * 0.36,
                     0, (stone.y - 0.5) * 0.36) * detail * face);
                 InputData lighting = (InputData)0;

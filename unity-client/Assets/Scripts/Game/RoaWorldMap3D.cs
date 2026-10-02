@@ -65,6 +65,7 @@ namespace RealmOfAshes.Game
         private Scene _scene;
         private Transform _root;
         private RoaGlobalMapRelief _relief;
+        private RoaWorldMapSectorAppearance[] _sectorAppearances;
         private Camera _camera;
         private Camera _previewCamera;
         private Camera _hiddenMain;
@@ -178,6 +179,7 @@ namespace RealmOfAshes.Game
             _scene = scene;
             _root = authored.transform;
             _relief = Resources.Load<RoaGlobalMapRelief>(RoaGlobalMapRelief.ResourceKey);
+            _sectorAppearances = null;
             Isolate(scene);
             if (mobile) ReduceDetail();
             _playerMarker = Marker("WorldMapPlayer", PlayerColor, 0.22f);
@@ -244,6 +246,7 @@ namespace RealmOfAshes.Game
             _scene = scene;
             _root = authored.transform;
             _relief = Resources.Load<RoaGlobalMapRelief>(RoaGlobalMapRelief.ResourceKey);
+            _sectorAppearances = null;
             Isolate(scene);
             if (_mobile) ReduceDetail();
             _playerMarker = Marker("WorldMapPlayer", PlayerColor, 0.22f);
@@ -313,6 +316,11 @@ namespace RealmOfAshes.Game
 
         public float ReliefAt(Vector2 point)
         {
+            if (_sectorAppearances == null && _root != null)
+                _sectorAppearances = _root.GetComponentsInChildren<RoaWorldMapSectorAppearance>(true);
+            if (_sectorAppearances != null)
+                foreach (var appearance in _sectorAppearances)
+                    if (appearance != null && appearance.TryHeight(point, out float height)) return height;
             return _relief != null && _relief.Ready ? _relief.HeightAt(point.x, point.y) : 0f;
         }
 

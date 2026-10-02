@@ -131,6 +131,7 @@ const {
   locationObjectPosition,
   locationObjectTags
 } = require('./src/server/location-collision');
+const damRoadRiver = require('./src/server/dam-road-river');
 const {
   NPC_PERSONAL_INVENTORY_VERSION,
   NPC_INVENTORY_VERSION,
@@ -11153,6 +11154,8 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
   };
   const moveAllowed = (toX, toZ) => {
     if (!room) return true;
+    if (room.damRoadRiverVersion
+      && damRoadRiver.crossesWater(fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS)) return false;
     if (hull) return poseAllowed(toX, toZ, angle);
     return (!closedBounds || serverPointInsideClosedLocationBounds(toX, toZ, closedBounds))
       && isRoomTerrainWalkableWorld(room, toX, toZ, PLAYER_COLLISION_RADIUS)
@@ -20090,10 +20093,14 @@ function buildAuthoredRoomWorld(room, loc) {
     ...(Array.isArray(loc.transitions) ? loc.transitions : [])
   ];
   specialPoints.forEach(p => clearSpawnArea(room, p));
+  if (loc.id === damRoadRiver.profile.locationId) {
+    damRoadRiver.paintWaterTiles(room.map, TILE, TILE_TYPES.WATER);
+  }
   spawnRoomWorldContainers(room, { silent: true });
   ensureWastelandSiteResourceNodes(room, loc);
   ensureTierResourceNodes(room, loc);
   room.environmentVersion = WORLD_ENVIRONMENT_VERSION;
+  if (loc.id === damRoadRiver.profile.locationId) room.damRoadRiverVersion = damRoadRiver.profile.schema;
   room.worldReady = true;
   room.worldSiteTemplateSignature = String(loc.worldSiteTemplateSignature || '');
   room.locationOccupantKey = wastelandLocationOccupantKey(loc, room);
@@ -20133,6 +20140,11 @@ function generateRoomWorld(room) {
   };
   if (buildAuthoredRoomWorld(room, loc)) {
     applyWorldExitEdges();
+    // Edge gates paint their band PATH; the Tesma must still reach both sector
+    // edges so the bank cannot be bypassed along a dry border tile.
+    if (loc.id === damRoadRiver.profile.locationId) {
+      damRoadRiver.paintWaterTiles(room.map, TILE, TILE_TYPES.WATER);
+    }
     return;
   }
   const genDims = roomTileDims(room);
@@ -20371,9 +20383,12 @@ function ensureRoomWorld(room) {
   const expectedLocation = roomLocation(room);
   const worldSiteDefinitionChanged = (expectedLocation.worldSiteInstance === true || expectedLocation.runtimeMode === 'worldSiteInstance')
     && String(room.worldSiteTemplateSignature || '') !== String(expectedLocation.worldSiteTemplateSignature || '');
-  if (!room.worldReady || room.environmentVersion !== WORLD_ENVIRONMENT_VERSION || worldSiteDefinitionChanged) {
+  const damRoadRiverChanged = expectedLocation.id === damRoadRiver.profile.locationId
+    && room.damRoadRiverVersion !== damRoadRiver.profile.schema;
+  if (!room.worldReady || room.environmentVersion !== WORLD_ENVIRONMENT_VERSION
+    || worldSiteDefinitionChanged || damRoadRiverChanged) {
     const environmentRebuild = room.worldReady && room.environmentVersion !== WORLD_ENVIRONMENT_VERSION;
-    if (environmentRebuild || worldSiteDefinitionChanged) clearRoomEnemies(room);
+    if (environmentRebuild || worldSiteDefinitionChanged || damRoadRiverChanged) clearRoomEnemies(room);
     generateRoomWorld(room);
     serverWakeZoneRoom(room);
     const loc = roomLocation(room);
@@ -35145,6 +35160,8 @@ setInterval(() => {
       const closedBounds = serverClosedLocationMovementBounds(p, room, PLAYER_COLLISION_RADIUS);
       if (!room || (
         (!closedBounds || serverPointInsideClosedLocationBounds(nextX, nextZ, closedBounds))
+        && (!room.damRoadRiverVersion
+          || !damRoadRiver.crossesWater(p.x, p.z, nextX, nextZ, PLAYER_COLLISION_RADIUS))
         && isRoomTerrainWalkableWorld(room, nextX, nextZ, PLAYER_COLLISION_RADIUS)
         && roomStaticCollisionMoveAllowed(room, p.x, p.z, nextX, nextZ, PLAYER_COLLISION_RADIUS)
         && roomEnemyCollisionMoveAllowed(room, p.x, p.z, nextX, nextZ, PLAYER_COLLISION_RADIUS)

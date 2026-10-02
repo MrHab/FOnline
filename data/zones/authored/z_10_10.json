@@ -2202,7 +2202,7 @@
       "name": "roadOutpost canal cap far north east",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -72.93
       },
       "rotation": {
@@ -2223,18 +2223,18 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.25,
+        "x": 1.75,
         "z": 0.75
       },
       "collisionParts": [
         {
           "center": {
-            "x": 0.004,
-            "z": -2.552
+            "x": 0.003,
+            "z": -4.302
           },
           "size": {
             "x": 0.75,
-            "z": 5.25
+            "z": 1.75
           }
         }
       ],
@@ -2249,7 +2249,7 @@
       "name": "roadOutpost canal cap far north west",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -72.93
       },
       "rotation": {
@@ -2270,18 +2270,18 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.25,
+        "x": 1.75,
         "z": 0.75
       },
       "collisionParts": [
         {
           "center": {
             "x": 0.006,
-            "z": -2.552
+            "z": -4.302
           },
           "size": {
             "x": 0.75,
-            "z": 5.25
+            "z": 1.75
           }
         }
       ],
@@ -2296,7 +2296,7 @@
       "name": "roadOutpost canal cap north east",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -102.37
       },
       "rotation": {
@@ -2331,7 +2331,7 @@
       "name": "roadOutpost canal cap north west",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -102.37
       },
       "rotation": {
@@ -2366,7 +2366,7 @@
       "name": "roadOutpost canal cap south east",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -109.63
       },
       "rotation": {
@@ -2401,7 +2401,7 @@
       "name": "roadOutpost canal cap south west",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -109.63
       },
       "rotation": {
@@ -2436,7 +2436,7 @@
       "name": "roadOutpost canal cap tail east",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -139.07
       },
       "rotation": {
@@ -2457,7 +2457,7 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.25,
+        "x": 1.75,
         "z": 0.75
       },
       "vision": {
@@ -2468,12 +2468,12 @@
       "collisionParts": [
         {
           "center": {
-            "x": 0.004,
-            "z": -2.552
+            "x": 0.003,
+            "z": -4.302
           },
           "size": {
             "x": 0.75,
-            "z": 5.25
+            "z": 1.75
           }
         }
       ]
@@ -2483,7 +2483,7 @@
       "name": "roadOutpost canal cap tail west",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -139.07
       },
       "rotation": {
@@ -2504,7 +2504,7 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.25,
+        "x": 1.75,
         "z": 0.75
       },
       "vision": {
@@ -2516,11 +2516,11 @@
         {
           "center": {
             "x": 0.006,
-            "z": -2.552
+            "z": -4.302
           },
           "size": {
             "x": 0.75,
-            "z": 5.25
+            "z": 1.75
           }
         }
       ]
@@ -2530,7 +2530,7 @@
       "name": "roadOutpost canal far north east",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -72.65
       },
       "rotation": {
@@ -2551,48 +2551,68 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.5,
+        "x": 2.25,
         "z": 15.25
       },
       "collisionParts": [
         {
           "center": {
-            "x": -7.001,
-            "z": -2.513
+            "x": -3.627,
+            "z": -4.265
           },
           "size": {
-            "x": 14.25,
-            "z": 5.5
+            "x": 7.5,
+            "z": 2.0
           }
         },
         {
           "center": {
-            "x": -14.376,
-            "z": -2.385
+            "x": -8.502,
+            "z": -4.138
           },
           "size": {
-            "x": 0.5,
-            "z": 5.25
+            "x": 2.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": -10.877,
+            "z": -4.012
+          },
+          "size": {
+            "x": 2.5,
+            "z": 1.5
+          }
+        },
+        {
+          "center": {
+            "x": -13.252,
+            "z": -3.886
+          },
+          "size": {
+            "x": 2.25,
+            "z": 1.25
           }
         },
         {
           "center": {
             "x": -14.751,
-            "z": -2.26
+            "z": -3.76
           },
           "size": {
-            "x": 0.25,
-            "z": 5.0
+            "x": 0.75,
+            "z": 1.0
           }
         },
         {
           "center": {
-            "x": -15.001,
-            "z": -2.01
+            "x": -9.751,
+            "z": -3.137
           },
           "size": {
-            "x": 0.25,
-            "z": 4.5
+            "x": 2.25,
+            "z": 0.25
           }
         }
       ],
@@ -2607,7 +2627,7 @@
       "name": "roadOutpost canal far north west",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -87.65
       },
       "rotation": {
@@ -2628,48 +2648,68 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.5,
+        "x": 2.25,
         "z": 15.25
       },
       "collisionParts": [
         {
           "center": {
-            "x": -6.999,
-            "z": -2.517
+            "x": -3.624,
+            "z": -4.267
           },
           "size": {
-            "x": 14.25,
-            "z": 5.5
+            "x": 7.5,
+            "z": 2.0
           }
         },
         {
           "center": {
-            "x": -14.375,
-            "z": -2.394
+            "x": -8.499,
+            "z": -4.143
           },
           "size": {
-            "x": 0.5,
-            "z": 5.25
+            "x": 2.25,
+            "z": 1.75
           }
         },
         {
           "center": {
-            "x": -14.75,
-            "z": -2.269
+            "x": -10.874,
+            "z": -4.018
           },
           "size": {
-            "x": 0.25,
-            "z": 5.0
+            "x": 2.5,
+            "z": 1.5
           }
         },
         {
           "center": {
-            "x": -15.0,
-            "z": -2.019
+            "x": -13.249,
+            "z": -3.894
           },
           "size": {
-            "x": 0.25,
-            "z": 4.5
+            "x": 2.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -14.749,
+            "z": -3.769
+          },
+          "size": {
+            "x": 0.75,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": -9.749,
+            "z": -3.143
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.25
           }
         }
       ],
@@ -2684,7 +2724,7 @@
       "name": "roadOutpost canal north east",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -87.65
       },
       "rotation": {
@@ -2705,7 +2745,7 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.5,
+        "x": 2.25,
         "z": 15.25
       },
       "vision": {
@@ -2716,42 +2756,62 @@
       "collisionParts": [
         {
           "center": {
-            "x": -7.001,
-            "z": -2.513
+            "x": -3.627,
+            "z": -4.265
           },
           "size": {
-            "x": 14.25,
-            "z": 5.5
+            "x": 7.5,
+            "z": 2.0
           }
         },
         {
           "center": {
-            "x": -14.376,
-            "z": -2.385
+            "x": -8.502,
+            "z": -4.138
           },
           "size": {
-            "x": 0.5,
-            "z": 5.25
+            "x": 2.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": -10.877,
+            "z": -4.012
+          },
+          "size": {
+            "x": 2.5,
+            "z": 1.5
+          }
+        },
+        {
+          "center": {
+            "x": -13.252,
+            "z": -3.886
+          },
+          "size": {
+            "x": 2.25,
+            "z": 1.25
           }
         },
         {
           "center": {
             "x": -14.751,
-            "z": -2.26
+            "z": -3.76
           },
           "size": {
-            "x": 0.25,
-            "z": 5.0
+            "x": 0.75,
+            "z": 1.0
           }
         },
         {
           "center": {
-            "x": -15.001,
-            "z": -2.01
+            "x": -9.751,
+            "z": -3.137
           },
           "size": {
-            "x": 0.25,
-            "z": 4.5
+            "x": 2.25,
+            "z": 0.25
           }
         }
       ]
@@ -2761,7 +2821,7 @@
       "name": "roadOutpost canal north west",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -102.65
       },
       "rotation": {
@@ -2782,7 +2842,7 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.5,
+        "x": 2.25,
         "z": 15.25
       },
       "vision": {
@@ -2793,42 +2853,62 @@
       "collisionParts": [
         {
           "center": {
-            "x": -6.999,
-            "z": -2.517
+            "x": -3.624,
+            "z": -4.267
           },
           "size": {
-            "x": 14.25,
-            "z": 5.5
+            "x": 7.5,
+            "z": 2.0
           }
         },
         {
           "center": {
-            "x": -14.375,
-            "z": -2.394
+            "x": -8.499,
+            "z": -4.143
           },
           "size": {
-            "x": 0.5,
-            "z": 5.25
+            "x": 2.25,
+            "z": 1.75
           }
         },
         {
           "center": {
-            "x": -14.75,
-            "z": -2.269
+            "x": -10.874,
+            "z": -4.018
           },
           "size": {
-            "x": 0.25,
-            "z": 5.0
+            "x": 2.5,
+            "z": 1.5
           }
         },
         {
           "center": {
-            "x": -15.0,
-            "z": -2.019
+            "x": -13.249,
+            "z": -3.894
           },
           "size": {
-            "x": 0.25,
-            "z": 4.5
+            "x": 2.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -14.749,
+            "z": -3.769
+          },
+          "size": {
+            "x": 0.75,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": -9.749,
+            "z": -3.143
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.25
           }
         }
       ]
@@ -2838,7 +2918,7 @@
       "name": "roadOutpost canal south east",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -109.35
       },
       "rotation": {
@@ -2859,7 +2939,7 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.5,
+        "x": 2.25,
         "z": 15.25
       },
       "vision": {
@@ -2870,42 +2950,62 @@
       "collisionParts": [
         {
           "center": {
-            "x": -7.001,
-            "z": -2.513
+            "x": -3.627,
+            "z": -4.265
           },
           "size": {
-            "x": 14.25,
-            "z": 5.5
+            "x": 7.5,
+            "z": 2.0
           }
         },
         {
           "center": {
-            "x": -14.376,
-            "z": -2.385
+            "x": -8.502,
+            "z": -4.138
           },
           "size": {
-            "x": 0.5,
-            "z": 5.25
+            "x": 2.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": -10.877,
+            "z": -4.012
+          },
+          "size": {
+            "x": 2.5,
+            "z": 1.5
+          }
+        },
+        {
+          "center": {
+            "x": -13.252,
+            "z": -3.886
+          },
+          "size": {
+            "x": 2.25,
+            "z": 1.25
           }
         },
         {
           "center": {
             "x": -14.751,
-            "z": -2.26
+            "z": -3.76
           },
           "size": {
-            "x": 0.25,
-            "z": 5.0
+            "x": 0.75,
+            "z": 1.0
           }
         },
         {
           "center": {
-            "x": -15.001,
-            "z": -2.01
+            "x": -9.751,
+            "z": -3.137
           },
           "size": {
-            "x": 0.25,
-            "z": 4.5
+            "x": 2.25,
+            "z": 0.25
           }
         }
       ]
@@ -2915,7 +3015,7 @@
       "name": "roadOutpost canal south west",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -124.35
       },
       "rotation": {
@@ -2936,7 +3036,7 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.5,
+        "x": 2.25,
         "z": 15.25
       },
       "vision": {
@@ -2947,42 +3047,62 @@
       "collisionParts": [
         {
           "center": {
-            "x": -6.999,
-            "z": -2.517
+            "x": -3.624,
+            "z": -4.267
           },
           "size": {
-            "x": 14.25,
-            "z": 5.5
+            "x": 7.5,
+            "z": 2.0
           }
         },
         {
           "center": {
-            "x": -14.375,
-            "z": -2.394
+            "x": -8.499,
+            "z": -4.143
           },
           "size": {
-            "x": 0.5,
-            "z": 5.25
+            "x": 2.25,
+            "z": 1.75
           }
         },
         {
           "center": {
-            "x": -14.75,
-            "z": -2.269
+            "x": -10.874,
+            "z": -4.018
           },
           "size": {
-            "x": 0.25,
-            "z": 5.0
+            "x": 2.5,
+            "z": 1.5
           }
         },
         {
           "center": {
-            "x": -15.0,
-            "z": -2.019
+            "x": -13.249,
+            "z": -3.894
           },
           "size": {
-            "x": 0.25,
-            "z": 4.5
+            "x": 2.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -14.749,
+            "z": -3.769
+          },
+          "size": {
+            "x": 0.75,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": -9.749,
+            "z": -3.143
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.25
           }
         }
       ]
@@ -2992,7 +3112,7 @@
       "name": "roadOutpost canal tail east",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -124.35
       },
       "rotation": {
@@ -3013,7 +3133,7 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.5,
+        "x": 2.25,
         "z": 15.25
       },
       "vision": {
@@ -3024,42 +3144,62 @@
       "collisionParts": [
         {
           "center": {
-            "x": -7.001,
-            "z": -2.513
+            "x": -3.627,
+            "z": -4.265
           },
           "size": {
-            "x": 14.25,
-            "z": 5.5
+            "x": 7.5,
+            "z": 2.0
           }
         },
         {
           "center": {
-            "x": -14.376,
-            "z": -2.385
+            "x": -8.502,
+            "z": -4.138
           },
           "size": {
-            "x": 0.5,
-            "z": 5.25
+            "x": 2.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": -10.877,
+            "z": -4.012
+          },
+          "size": {
+            "x": 2.5,
+            "z": 1.5
+          }
+        },
+        {
+          "center": {
+            "x": -13.252,
+            "z": -3.886
+          },
+          "size": {
+            "x": 2.25,
+            "z": 1.25
           }
         },
         {
           "center": {
             "x": -14.751,
-            "z": -2.26
+            "z": -3.76
           },
           "size": {
-            "x": 0.25,
-            "z": 5.0
+            "x": 0.75,
+            "z": 1.0
           }
         },
         {
           "center": {
-            "x": -15.001,
-            "z": -2.01
+            "x": -9.751,
+            "z": -3.137
           },
           "size": {
-            "x": 0.25,
-            "z": 4.5
+            "x": 2.25,
+            "z": 0.25
           }
         }
       ]
@@ -3069,7 +3209,7 @@
       "name": "roadOutpost canal tail west",
       "position": {
         "x": -104.755,
-        "y": 2.52,
+        "y": 0.02,
         "z": -139.35
       },
       "rotation": {
@@ -3090,7 +3230,7 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.5,
+        "x": 2.25,
         "z": 15.25
       },
       "vision": {
@@ -3101,42 +3241,62 @@
       "collisionParts": [
         {
           "center": {
-            "x": -6.999,
-            "z": -2.517
+            "x": -3.624,
+            "z": -4.267
           },
           "size": {
-            "x": 14.25,
-            "z": 5.5
+            "x": 7.5,
+            "z": 2.0
           }
         },
         {
           "center": {
-            "x": -14.375,
-            "z": -2.394
+            "x": -8.499,
+            "z": -4.143
           },
           "size": {
-            "x": 0.5,
-            "z": 5.25
+            "x": 2.25,
+            "z": 1.75
           }
         },
         {
           "center": {
-            "x": -14.75,
-            "z": -2.269
+            "x": -10.874,
+            "z": -4.018
           },
           "size": {
-            "x": 0.25,
-            "z": 5.0
+            "x": 2.5,
+            "z": 1.5
           }
         },
         {
           "center": {
-            "x": -15.0,
-            "z": -2.019
+            "x": -13.249,
+            "z": -3.894
           },
           "size": {
-            "x": 0.25,
-            "z": 4.5
+            "x": 2.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -14.749,
+            "z": -3.769
+          },
+          "size": {
+            "x": 0.75,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": -9.749,
+            "z": -3.143
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.25
           }
         }
       ]
@@ -7714,199 +7874,6 @@
       ],
       "vision": {
         "mode": "cover"
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_sluice_north_1",
-      "name": "Шлюз водосброса",
-      "position": {
-        "x": -99.745,
-        "y": -0.39,
-        "z": -87.49
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "tags": [
-        "canal",
-        "perimeter",
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "structure",
-      "footprint": {
-        "x": 5.25,
-        "z": 0.25
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -2.5,
-            "z": 0.0
-          },
-          "size": {
-            "x": 5.25,
-            "z": 0.25
-          }
-        }
-      ],
-      "vision": {
-        "blocks": true
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_sluice_north_2",
-      "name": "roadOutpost sluice north 2",
-      "position": {
-        "x": -104.755,
-        "y": -0.39,
-        "z": -87.49
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "structure",
-      "tags": [
-        "canal",
-        "perimeter",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 5.25,
-        "z": 0.25
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -2.5,
-            "z": 0.0
-          },
-          "size": {
-            "x": 5.25,
-            "z": 0.25
-          }
-        }
-      ],
-      "vision": {
-        "blocks": true
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_sluice_south_1",
-      "name": "roadOutpost sluice south 1",
-      "position": {
-        "x": -99.745,
-        "y": -0.39,
-        "z": -124.51
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "structure",
-      "tags": [
-        "canal",
-        "perimeter",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 5.25,
-        "z": 0.25
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -2.5,
-            "z": 0.0
-          },
-          "size": {
-            "x": 5.25,
-            "z": 0.25
-          }
-        }
-      ],
-      "vision": {
-        "blocks": true
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_sluice_south_2",
-      "name": "roadOutpost sluice south 2",
-      "position": {
-        "x": -104.755,
-        "y": -0.39,
-        "z": -124.51
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "structure",
-      "tags": [
-        "canal",
-        "perimeter",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 5.25,
-        "z": 0.25
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": -2.5,
-            "z": 0.0
-          },
-          "size": {
-            "x": 5.25,
-            "z": 0.25
-          }
-        }
-      ],
-      "vision": {
-        "blocks": true
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
@@ -16473,9 +16440,9 @@
       "prefab": "barrel_cluster",
       "name": "Бочки",
       "position": {
-        "x": -52.0,
+        "x": 43.0,
         "y": 0.0,
-        "z": -25.0
+        "z": -45.0
       },
       "rotation": {
         "x": 0.0,
@@ -16524,9 +16491,9 @@
       "prefab": "cargo_stack",
       "name": "Штабель груза",
       "position": {
-        "x": -67.0,
+        "x": 28.0,
         "y": 0.0,
-        "z": -14.0
+        "z": -34.0
       },
       "rotation": {
         "x": 0.0,
@@ -16575,9 +16542,9 @@
       "prefab": "cargo_stack",
       "name": "Штабель груза",
       "position": {
-        "x": -67.0,
+        "x": 28.0,
         "y": 0.0,
-        "z": -16.5
+        "z": -36.5
       },
       "rotation": {
         "x": 0.0,
@@ -16626,9 +16593,9 @@
       "prefab": "cargo_stack",
       "name": "Штабель груза",
       "position": {
-        "x": -67.0,
+        "x": 28.0,
         "y": 0.0,
-        "z": -19.0
+        "z": -39.0
       },
       "rotation": {
         "x": 0.0,
@@ -16677,9 +16644,9 @@
       "prefab": "storage_lean_to",
       "name": "Навес‑склад",
       "position": {
-        "x": -62.0,
+        "x": 33.0,
         "y": 0.0,
-        "z": -30.0
+        "z": -50.0
       },
       "rotation": {
         "x": 0.0,
@@ -16728,9 +16695,9 @@
       "prefab": "storage_lean_to",
       "name": "Навес‑склад",
       "position": {
-        "x": -57.0,
+        "x": 38.0,
         "y": 0.0,
-        "z": -30.0
+        "z": -50.0
       },
       "rotation": {
         "x": 0.0,
@@ -16779,9 +16746,9 @@
       "prefab": "tire_stack",
       "name": "Покрышки",
       "position": {
-        "x": -69.13,
+        "x": 25.87,
         "y": 0.0,
-        "z": -34.5
+        "z": -54.5
       },
       "rotation": {
         "x": 0.0,
@@ -16831,9 +16798,9 @@
       "prefab": "tire_stack",
       "name": "Покрышки",
       "position": {
-        "x": -74.25,
+        "x": 20.75,
         "y": 0.0,
-        "z": -17.34
+        "z": -37.34
       },
       "rotation": {
         "x": 0.0,
@@ -16883,9 +16850,9 @@
       "prefab": "tire_stack",
       "name": "Покрышки",
       "position": {
-        "x": -49.48,
+        "x": 45.52,
         "y": 0.0,
-        "z": -32.39
+        "z": -52.39
       },
       "rotation": {
         "x": 0.0,
@@ -16935,9 +16902,9 @@
       "prefab": "dry_bush",
       "name": "Сухой куст",
       "position": {
-        "x": -52.32,
+        "x": 42.68,
         "y": 0.0,
-        "z": -37.63
+        "z": -57.63
       },
       "rotation": {
         "x": 0.0,
@@ -16971,9 +16938,9 @@
       "prefab": "dry_bush",
       "name": "Сухой куст",
       "position": {
-        "x": -56.17,
+        "x": 38.83,
         "y": 0.0,
-        "z": -1.82
+        "z": -21.82
       },
       "rotation": {
         "x": 0.0,
@@ -17007,9 +16974,9 @@
       "prefab": "workshop_bench",
       "name": "Верстак",
       "position": {
-        "x": -56.0,
+        "x": 39.0,
         "y": 0.0,
-        "z": -20.0
+        "z": -40.0
       },
       "rotation": {
         "x": 0.0,

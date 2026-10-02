@@ -14,6 +14,7 @@ Shader "Realm of Ashes/Kromka Global Water"
         _FresnelPower ("Fresnel Power", Range(1, 8)) = 4.2
         _MineralVeil ("Mineral Veil", Range(0, 0.5)) = 0.10
         _ToxicPulse ("Toxic Pulse", Range(0, 1)) = 0
+        _ShoreBothSides ("Both River Banks", Range(0, 1)) = 0
     }
 
     SubShader
@@ -55,6 +56,7 @@ Shader "Realm of Ashes/Kromka Global Water"
                 float _FresnelPower;
                 float _MineralVeil;
                 float _ToxicPulse;
+                float _ShoreBothSides;
             CBUFFER_END
 
             struct Attributes
@@ -114,18 +116,22 @@ Shader "Realm of Ashes/Kromka Global Water"
                 half3 reflected = reflect(-mainLight.direction, normalWS);
                 half specular = pow(saturate(dot(reflected, viewDirection)),
                     lerp(22.0, 96.0, _Smoothness));
-                half shore = pow(1.0 - saturate(input.uv.x), 2.4);
+                half bankDistance = lerp(saturate(input.uv.x),
+                    saturate(min(input.uv.x, 1.0 - input.uv.x) * 2.0),
+                    _ShoreBothSides);
+                half shore = pow(1.0 - bankDistance, 2.4);
                 half mineral = saturate(abs(rippleA.x - rippleB.y) * 0.65
-                    + fresnel * 0.22 + shore * 0.72) * _MineralVeil;
+                    + fresnel * 0.22 + shore * lerp(0.72, 1.5, _ShoreBothSides)) * _MineralVeil;
                 half toxicPulse = (sin(_Time.y * 0.42
                     + input.positionWS.x * 0.29 + input.positionWS.z * 0.23)
                     * 0.5 + 0.5) * _ToxicPulse;
                 water = lerp(water, _FoamColor.rgb, mineral + toxicPulse * 0.10);
                 water += mainLight.color * specular * (0.10 + _Smoothness * 0.34);
                 water = MixFog(water, input.fogFactor);
-                half shorePresence = smoothstep(0.0, 0.46, input.uv.x);
+                half shorePresence = smoothstep(0.0, 0.46, bankDistance);
                 half alpha = saturate(_Opacity + fresnel * 0.08
-                    + toxicPulse * 0.035) * lerp(0.48, 1.0, shorePresence);
+                    + toxicPulse * 0.035) * lerp(lerp(0.48, 0.72, _ShoreBothSides),
+                    1.0, shorePresence);
                 return half4(water, alpha);
             }
             ENDHLSL

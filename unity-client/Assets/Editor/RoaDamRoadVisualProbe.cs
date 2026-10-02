@@ -73,6 +73,18 @@ namespace RealmOfAshes.EditorTools
                     new Vector3(-20f, 0f, 70f), 65f, 1280, 720);
                 Capture(camera, Path.Combine(output, "mobile-upstream.png"),
                     new Vector3(-20f, 0f, 70f), 70f, 844, 390);
+                camera.orthographic = false;
+                camera.fieldOfView = 64f;
+                camera.transform.position = new Vector3(-104.755f, 1.8f, -133f);
+                camera.transform.LookAt(new Vector3(-104.755f, -0.15f, -96f));
+                KromkaSceneShot.Capture(camera, Path.Combine(output, "desktop-canal-eye.png"), 1280, 720);
+                KromkaSceneShot.Capture(camera, Path.Combine(output, "mobile-canal-eye.png"), 844, 390);
+                camera.transform.position = new Vector3(-104.755f, 1.8f, -79f);
+                camera.transform.LookAt(new Vector3(-104.755f, -0.15f, -118f));
+                KromkaSceneShot.Capture(camera, Path.Combine(output, "desktop-canal-north-eye.png"), 1280, 720);
+                camera.transform.position = new Vector3(-52f, 2.8f, 76f);
+                camera.transform.LookAt(new Vector3(-10f, 0.1f, 90f));
+                KromkaSceneShot.Capture(camera, Path.Combine(output, "desktop-riverbank-eye.png"), 1280, 720);
                 camera.fieldOfView = 60f;
                 camera.transform.position = new Vector3(-112f, 39f, -131f);
                 camera.transform.LookAt(new Vector3(94f, 10f, 42f));

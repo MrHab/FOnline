@@ -28,6 +28,7 @@ namespace RealmOfAshes.World
         private static RoaDamRoadWaterProjection _active;
 
         private Mesh _mesh;
+        private readonly List<Mesh> _barrierMeshes = new List<Mesh>(2);
         private RoaGlobalMapRelief _relief;
         private float _width;
         private float _depth;
@@ -121,6 +122,7 @@ namespace RealmOfAshes.World
             projection._width = worldWidth;
             projection._depth = worldDepth;
             projection.BuildRiver(water);
+            projection.BuildImpassableChannel();
             projection.BuildBridgeWalkSurface();
             _active = projection;
         }
@@ -168,10 +170,13 @@ namespace RealmOfAshes.World
         {
             if (!ProfileAt(z, out float center, out _)) return float.NegativeInfinity;
             float land = RoaZoneReliefProjection.RawHeightAt(_relief, center, z, _width, _depth);
-            float level = Mathf.Lerp(-0.45f, 0.8f, Pinch(z, _depth));
-            float underBridge = 1f - Smoothstep(3f, 7f, Mathf.Abs(z + 106f));
-            return land + Mathf.Lerp(level, -0.4f, underBridge);
+            // Fill the cut channel nearly to the source bank line. The concrete
+            // spillway stays at the same surface level beneath the dry bridge.
+            return land - 0.18f;
         }
+
+        public static float SurfaceHeightAt(float z) =>
+            _active != null ? _active.WaterHeightAt(z) : float.NegativeInfinity;
 
         private void BuildRiver(Material material)
         {
@@ -216,6 +221,71 @@ namespace RealmOfAshes.World
             collider.size = new Vector3(16f, 0.24f, 7.2f);
         }
 
+        private void BuildImpassableChannel()
+        {
+            var barriers = new GameObject("TesmaImpassableChannel");
+            barriers.transform.SetParent(transform, false);
+            float bridgeSouth = -106f - 3.6f;
+            float bridgeNorth = -106f + 3.6f;
+            AddBarrier(-_depth * 0.5f, bridgeSouth, "TesmaBarrierSouth", barriers);
+            AddBarrier(bridgeNorth, _depth * 0.5f, "TesmaBarrierNorth", barriers);
+        }
+
+        private void AddBarrier(float startZ, float endZ, string name, GameObject barriers)
+        {
+            var samples = new List<float> { startZ };
+            for (int index = 1; index < Segments; index++)
+            {
+                float z = (index / (float)Segments - 0.5f) * _depth;
+                if (z > startZ && z < endZ) samples.Add(z);
+            }
+            samples.Add(endZ);
+            var vertices = new List<Vector3>(samples.Count * 4);
+            var triangles = new List<int>((samples.Count - 1) * 24 + 12);
+            foreach (float z in samples)
+            {
+                ProfileAt(z, out float center, out float halfWidth);
+                // Keep the physical bank inside the visible water. The player's
+                // own collision radius supplies the same shore clearance as the server.
+                float left = center - halfWidth + 0.02f;
+                float right = center + halfWidth - 0.02f;
+                float low = WaterHeightAt(z) - BedDepth - 2f;
+                float high = Mathf.Max(
+                    RoaZoneReliefProjection.RawHeightAt(_relief, left, z, _width, _depth),
+                    RoaZoneReliefProjection.RawHeightAt(_relief, right, z, _width, _depth)) + 3f;
+                vertices.Add(new Vector3(left, low, z));
+                vertices.Add(new Vector3(right, low, z));
+                vertices.Add(new Vector3(left, high, z));
+                vertices.Add(new Vector3(right, high, z));
+            }
+            for (int index = 0; index < samples.Count - 1; index++)
+            {
+                int a = index * 4, b = a + 4;
+                AddQuad(triangles, a + 2, b + 2, a + 3, b + 3); // top
+                AddQuad(triangles, a, a + 1, b, b + 1); // bottom
+                AddQuad(triangles, a, b, a + 2, b + 2); // west bank
+                AddQuad(triangles, a + 3, b + 3, a + 1, b + 1); // east bank
+            }
+            AddQuad(triangles, 0, 2, 1, 3);
+            int last = (samples.Count - 1) * 4;
+            AddQuad(triangles, last + 1, last + 3, last, last + 2);
+            var mesh = new Mesh { name = name };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            _barrierMeshes.Add(mesh);
+            var barrier = new GameObject(name);
+            barrier.transform.SetParent(barriers.transform, false);
+            barrier.AddComponent<MeshCollider>().sharedMesh = mesh;
+        }
+
+        private static void AddQuad(List<int> triangles, int a, int b, int c, int d)
+        {
+            triangles.Add(a); triangles.Add(b); triangles.Add(c);
+            triangles.Add(c); triangles.Add(b); triangles.Add(d);
+        }
+
         private static float Smoothstep(float start, float end, float value)
         {
             float t = Mathf.Clamp01((value - start) / (end - start));
@@ -230,9 +300,16 @@ namespace RealmOfAshes.World
         private void OnDestroy()
         {
             if (_active == this) _active = null;
-            if (_mesh == null) return;
-            if (Application.isPlaying) Destroy(_mesh);
-            else DestroyImmediate(_mesh);
+            if (_mesh != null)
+            {
+                if (Application.isPlaying) Destroy(_mesh);
+                else DestroyImmediate(_mesh);
+            }
+            foreach (Mesh barrier in _barrierMeshes)
+            {
+                if (Application.isPlaying) Destroy(barrier);
+                else DestroyImmediate(barrier);
+            }
         }
     }
 }

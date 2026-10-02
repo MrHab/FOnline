@@ -93,10 +93,6 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_FirePit_Frame_01.prefab"
     },
     {
-      "guid": "344cc7583e3bff840bfa8ab0ee79aff9",
-      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Bunker_Wall_Concrete_x2_02.prefab"
-    },
-    {
       "guid": "346855a62eb2ac047bad52a7b7e47549",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Tire_Pile_01.prefab"
     },

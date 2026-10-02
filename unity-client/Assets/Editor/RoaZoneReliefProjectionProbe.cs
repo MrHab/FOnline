@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.World;
 using UnityEditor;
 using UnityEngine;
@@ -63,6 +65,22 @@ namespace RealmOfAshes.EditorTools
                 AssertBankProjection(river, sourceRiver, relief, -7f, 0);
                 AssertBankProjection(river, sourceRiver, relief, -5.5f, 96 * 2);
                 AssertBankProjection(river, sourceRiver, relief, -5f, river.vertexCount - 2);
+                string root = Path.GetFullPath(Path.Combine(Application.dataPath, "../.."));
+                JObject profile = JObject.Parse(File.ReadAllText(Path.Combine(root,
+                    "data/kromka/dam-road-river-profile.json")));
+                JArray centers = (JArray)profile["centers"];
+                JArray halfWidths = (JArray)profile["halfWidths"];
+                Require(centers.Count == 129 && halfWidths.Count == 129,
+                    "Server river profile has a different sample count.");
+                Vector3[] riverVertices = river.vertices;
+                for (int index = 0; index < centers.Count; index++)
+                {
+                    float center = (riverVertices[index * 2].x + riverVertices[index * 2 + 1].x) * 0.5f;
+                    float halfWidth = (riverVertices[index * 2 + 1].x - riverVertices[index * 2].x) * 0.5f;
+                    Require(Mathf.Abs(center - centers[index].Value<float>()) < 0.025f
+                        && Mathf.Abs(halfWidth - halfWidths[index].Value<float>()) < 0.025f,
+                        "Server and Unity river banks differ at sample " + index);
+                }
                 Require(RoaDamRoadWaterProjection.Contains(-104.755f, -106f),
                     "The outpost bridge does not cross water.");
                 Require(RoaDamRoadWaterProjection.Contains(-30f, 80f),
@@ -71,6 +89,37 @@ namespace RealmOfAshes.EditorTools
                     "The checkpoint NPC area was flooded by the river.");
                 Require(RoaDamRoadWaterProjection.BedDepthAt(-104.755f, -106f) > 1.6f,
                     "The outpost spillway has no recessed bed.");
+                Require(RoaDamRoadWaterProjection.SurfaceHeightAt(-106f) > -0.3f
+                    && RoaDamRoadWaterProjection.SurfaceHeightAt(-106f) < -0.05f,
+                    "Water does not fill the spillway below the bridge deck.");
+                Transform barriers = water.transform.Find("TesmaImpassableChannel");
+                MeshCollider[] channels = barriers?.GetComponentsInChildren<MeshCollider>();
+                Require(channels != null && channels.Length == 2,
+                    "The river needs two continuous collision volumes around the bridge.");
+                float bendZ = -151.25f;
+                float bendIndex = (bendZ / 320f + 0.5f) * 128f;
+                int bendLow = Mathf.FloorToInt(bendIndex);
+                float bendCenter = Mathf.Lerp(centers[bendLow].Value<float>(),
+                    centers[bendLow + 1].Value<float>(), bendIndex - bendLow);
+                float bendWidth = Mathf.Lerp(halfWidths[bendLow].Value<float>(),
+                    halfWidths[bendLow + 1].Value<float>(), bendIndex - bendLow);
+                float bendSurface = RoaDamRoadWaterProjection.SurfaceHeightAt(bendZ);
+                bool bendBlocked = false;
+                bool dryBankBlocked = false;
+                foreach (MeshCollider channel in channels)
+                {
+                    bendBlocked |= channel.Raycast(new Ray(
+                        new Vector3(bendCenter, bendSurface + 8f, bendZ), Vector3.down),
+                        out _, 16f);
+                    dryBankBlocked |= channel.Raycast(new Ray(
+                        new Vector3(bendCenter + bendWidth + 0.7f, bendSurface + 8f, bendZ),
+                        Vector3.down), out _, 16f);
+                    foreach (float bridgeZ in new[] { -107.5f, -106f, -104.5f })
+                        Require(!channel.bounds.Contains(new Vector3(-104.755f, 0.25f, bridgeZ)),
+                            "The water barrier obstructs a vehicle on the bridge.");
+                }
+                Require(bendBlocked, "The river bend can be crossed without using the bridge.");
+                Require(!dryBankBlocked, "The river bend has an invisible wall on dry land.");
                 Require(Mathf.Abs(RoaZoneReliefProjection.GroundHeightAt(-104.755f, -106f)) < 0.01f,
                     "The bridge deck is not at the authored walk height.");
                 Require(water.transform.Find("OutpostBridgeWalkSurface")?.GetComponent<BoxCollider>() != null,

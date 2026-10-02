@@ -11,7 +11,7 @@
       "z": -106
     },
     "size": {
-      "x": 56,
+      "x": 76,
       "z": 32
     },
     "rotationY": 0
@@ -33,20 +33,514 @@
         "x": -21.2,
         "z": -32.1,
         "r": 2.2
+      },
+      {
+        "x": -9,
+        "z": -37,
+        "r": 4.2
+      },
+      {
+        "x": -78,
+        "z": 1.31429,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -74,
+        "z": 0.73429,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -70,
+        "z": 0.15833,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -66,
+        "z": -0.31605,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -62,
+        "z": -0.58608,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -58,
+        "z": -0.61203,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -54,
+        "z": -0.44374,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -50,
+        "z": -0.20522,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -46,
+        "z": -0.03756,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -42,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -38,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -34,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -30,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -26,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -22,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -18,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -14,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -10,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -6,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -2,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 2,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 6,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 10,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 14,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 18,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 22,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 26,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 30,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 34,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 38,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 42,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 46,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 50,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 54,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 58,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 62,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 66,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 70,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 74,
+        "z": -0.03163,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 78,
+        "z": -0.23937,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 82,
+        "z": -0.76089,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 86,
+        "z": -1.69122,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 90,
+        "z": -3.0829,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 94,
+        "z": -4.94754,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 98,
+        "z": -7.25844,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 102,
+        "z": -9.95456,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 106,
+        "z": -12.94568,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 110,
+        "z": -16.11873,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 114,
+        "z": -19.34543,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 118,
+        "z": -22.49111,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 122,
+        "z": -25.42477,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 126,
+        "z": -28.03035,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 130,
+        "z": -30.21924,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 134,
+        "z": -31.94405,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 138,
+        "z": -33.2135,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 142,
+        "z": -34.10868,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 146,
+        "z": -34.79387,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 150,
+        "z": -35.24587,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 154,
+        "z": -35.3912,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 158,
+        "z": -35.22987,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 162,
+        "z": -34.76187,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 166,
+        "z": -33.9872,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 170,
+        "z": -32.90587,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 174,
+        "z": -31.51787,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 178,
+        "z": -29.8232,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 182,
+        "z": -27.82187,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 186,
+        "z": -25.52,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 190,
+        "z": -23.12,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 194,
+        "z": -20.72,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 198,
+        "z": -18.32,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 202,
+        "z": -15.92,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 206,
+        "z": -13.52,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 210,
+        "z": -11.12,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 214,
+        "z": -8.72,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 218,
+        "z": -6.32,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 222,
+        "z": -3.92,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 226,
+        "z": -1.52,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 230,
+        "z": 0.88,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 234,
+        "z": 3.28,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 238,
+        "z": 5.68,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 242,
+        "z": 8.08,
+        "r": 6,
+        "route": "ore_freight_rail"
       }
     ]
   },
+  "clearRiver": {
+    "margin": 2
+  },
   "approach": {
-    "x": 40,
+    "x": 50,
     "z": 0
   },
   "objects": [
     {
       "id": "canal_north_east",
       "prefab": "SM_Env_StormCanal_Straight_02",
-      "x": -22.755,
+      "x": -12.755,
       "z": 18.35,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 270,
       "collision": "auto",
       "vision": "none",
@@ -58,9 +552,9 @@
     {
       "id": "canal_north_west",
       "prefab": "SM_Env_StormCanal_Straight_02",
-      "x": -22.755,
+      "x": -32.755,
       "z": 3.35,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 90,
       "collision": "auto",
       "vision": "none",
@@ -72,9 +566,9 @@
     {
       "id": "canal_far_north_east",
       "prefab": "SM_Env_StormCanal_Straight_02",
-      "x": -22.755,
+      "x": -12.755,
       "z": 33.35,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 270,
       "collision": "auto",
       "vision": "none",
@@ -86,9 +580,9 @@
     {
       "id": "canal_far_north_west",
       "prefab": "SM_Env_StormCanal_Straight_02",
-      "x": -22.755,
+      "x": -32.755,
       "z": 18.35,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 90,
       "collision": "auto",
       "vision": "none",
@@ -99,10 +593,10 @@
     },
     {
       "id": "canal_south_east",
-      "prefab": "SM_Env_StormCanal_Straight_02",
-      "x": -22.755,
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -12.755,
       "z": -3.35,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 270,
       "collision": "auto",
       "vision": "none",
@@ -112,25 +606,11 @@
       ]
     },
     {
-      "id": "canal_south_west",
-      "prefab": "SM_Env_StormCanal_Straight_02",
-      "x": -22.755,
-      "z": -18.35,
-      "y": 2.52,
-      "rotY": 90,
-      "collision": "auto",
-      "vision": "none",
-      "role": "landmark",
-      "tags": [
-        "canal"
-      ]
-    },
-    {
-      "id": "canal_tail_east",
-      "prefab": "SM_Env_StormCanal_Straight_02",
-      "x": -22.755,
-      "z": -18.35,
-      "y": 2.52,
+      "id": "canal_south_east_2",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -12.755,
+      "z": -8.35,
+      "y": 0.02,
       "rotY": 270,
       "collision": "auto",
       "vision": "none",
@@ -140,11 +620,137 @@
       ]
     },
     {
-      "id": "canal_tail_west",
-      "prefab": "SM_Env_StormCanal_Straight_02",
-      "x": -22.755,
+      "id": "canal_south_east_3",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -12.755,
+      "z": -13.35,
+      "y": 0.02,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_east_4",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -12.755,
+      "z": -18.35,
+      "y": 0.02,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_east_5",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -12.755,
+      "z": -23.35,
+      "y": 0.02,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_east_6",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -12.755,
+      "z": -28.35,
+      "y": 0.02,
+      "rotY": 270,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_west",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -32.755,
+      "z": -8.35,
+      "y": 0.02,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "landmark",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_west_2",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -32.755,
+      "z": -13.35,
+      "y": 0.02,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_west_3",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -32.755,
+      "z": -18.35,
+      "y": 0.02,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_west_4",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -32.755,
+      "z": -23.35,
+      "y": 0.02,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_west_5",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -32.755,
+      "z": -28.35,
+      "y": 0.02,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_west_6",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -32.755,
       "z": -33.35,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 90,
       "collision": "auto",
       "vision": "none",
@@ -156,9 +762,9 @@
     {
       "id": "canal_cap_north_east",
       "prefab": "SM_Env_StormCanal_Divider_02",
-      "x": -22.755,
+      "x": -12.755,
       "z": 3.63,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 270,
       "collision": "none",
       "vision": "none",
@@ -170,9 +776,9 @@
     {
       "id": "canal_cap_north_west",
       "prefab": "SM_Env_StormCanal_Divider_02",
-      "x": -22.755,
+      "x": -32.755,
       "z": 3.63,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 90,
       "collision": "none",
       "vision": "none",
@@ -184,9 +790,9 @@
     {
       "id": "canal_cap_south_east",
       "prefab": "SM_Env_StormCanal_Divider_02",
-      "x": -22.755,
+      "x": -12.755,
       "z": -3.63,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 270,
       "collision": "none",
       "vision": "none",
@@ -198,9 +804,9 @@
     {
       "id": "canal_cap_south_west",
       "prefab": "SM_Env_StormCanal_Divider_02",
-      "x": -22.755,
+      "x": -32.755,
       "z": -3.63,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 90,
       "collision": "none",
       "vision": "none",
@@ -212,9 +818,9 @@
     {
       "id": "canal_cap_far_north_east",
       "prefab": "SM_Env_StormCanal_Divider_02",
-      "x": -22.755,
+      "x": -12.755,
       "z": 33.07,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 270,
       "collision": "auto",
       "vision": "none",
@@ -226,110 +832,21 @@
     {
       "id": "canal_cap_far_north_west",
       "prefab": "SM_Env_StormCanal_Divider_02",
-      "x": -22.755,
+      "x": -32.755,
       "z": 33.07,
-      "y": 2.52,
+      "y": 0.02,
       "rotY": 90,
       "collision": "auto",
       "vision": "none",
       "role": "structure",
       "tags": [
         "canal"
-      ]
-    },
-    {
-      "id": "canal_cap_tail_east",
-      "prefab": "SM_Env_StormCanal_Divider_02",
-      "x": -22.755,
-      "z": -33.07,
-      "y": 2.52,
-      "rotY": 270,
-      "collision": "auto",
-      "vision": "none",
-      "role": "structure",
-      "tags": [
-        "canal"
-      ]
-    },
-    {
-      "id": "canal_cap_tail_west",
-      "prefab": "SM_Env_StormCanal_Divider_02",
-      "x": -22.755,
-      "z": -33.07,
-      "y": 2.52,
-      "rotY": 90,
-      "collision": "auto",
-      "vision": "none",
-      "role": "structure",
-      "tags": [
-        "canal"
-      ]
-    },
-    {
-      "id": "sluice_north_1",
-      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_02",
-      "x": -17.745,
-      "z": 18.51,
-      "y": -0.39,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "block",
-      "role": "structure",
-      "name": "Шлюз водосброса",
-      "tags": [
-        "canal",
-        "perimeter"
-      ]
-    },
-    {
-      "id": "sluice_north_2",
-      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_02",
-      "x": -22.755,
-      "z": 18.51,
-      "y": -0.39,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "block",
-      "role": "structure",
-      "tags": [
-        "canal",
-        "perimeter"
-      ]
-    },
-    {
-      "id": "sluice_south_1",
-      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_02",
-      "x": -17.745,
-      "z": -18.51,
-      "y": -0.39,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "block",
-      "role": "structure",
-      "tags": [
-        "canal",
-        "perimeter"
-      ]
-    },
-    {
-      "id": "sluice_south_2",
-      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_02",
-      "x": -22.755,
-      "z": -18.51,
-      "y": -0.39,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "block",
-      "role": "structure",
-      "tags": [
-        "canal",
-        "perimeter"
       ]
     },
     {
       "id": "bridge_deck_north_a",
       "prefab": "SM_Env_StormCanal_Bridge_01",
-      "x": -17.755,
+      "x": -7.755,
       "z": 2.995,
       "y": 0.42,
       "rotY": 0,
@@ -344,7 +861,63 @@
     {
       "id": "bridge_deck_north_b",
       "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -12.755,
+      "z": 2.995,
+      "y": 0.42,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_deck_north_c",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -17.755,
+      "z": 2.995,
+      "y": 0.42,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_deck_north_d",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
       "x": -22.755,
+      "z": 2.995,
+      "y": 0.42,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_deck_north_e",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -27.755,
+      "z": 2.995,
+      "y": 0.42,
+      "rotY": 0,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_deck_north_f",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -32.755,
       "z": 2.995,
       "y": 0.42,
       "rotY": 0,
@@ -358,7 +931,7 @@
     {
       "id": "bridge_deck_south_a",
       "prefab": "SM_Env_StormCanal_Bridge_01",
-      "x": -27.755,
+      "x": -37.755,
       "z": -2.995,
       "y": 0.47,
       "rotY": 180,
@@ -372,7 +945,63 @@
     {
       "id": "bridge_deck_south_b",
       "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -32.755,
+      "z": -2.995,
+      "y": 0.47,
+      "rotY": 180,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_deck_south_c",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -27.755,
+      "z": -2.995,
+      "y": 0.47,
+      "rotY": 180,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_deck_south_d",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
       "x": -22.755,
+      "z": -2.995,
+      "y": 0.47,
+      "rotY": 180,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_deck_south_e",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -17.755,
+      "z": -2.995,
+      "y": 0.47,
+      "rotY": 180,
+      "collision": "none",
+      "vision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "bridge_deck_south_f",
+      "prefab": "SM_Env_StormCanal_Bridge_01",
+      "x": -12.755,
       "z": -2.995,
       "y": 0.47,
       "rotY": 180,
@@ -386,7 +1015,7 @@
     {
       "id": "bridge_rail_n1",
       "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
-      "x": -17.755,
+      "x": -7.755,
       "z": 3.17,
       "y": -1.7,
       "rotY": 0,
@@ -401,7 +1030,67 @@
     {
       "id": "bridge_rail_n2",
       "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
-      "x": -22.765,
+      "x": -12.765,
+      "z": 3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "bridge_rail_n3",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -17.775,
+      "z": 3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "bridge_rail_n4",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -22.785,
+      "z": 3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "bridge_rail_n5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -27.795,
+      "z": 3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "bridge_rail_n6",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -32.805,
       "z": 3.17,
       "y": -1.7,
       "rotY": 0,
@@ -416,7 +1105,7 @@
     {
       "id": "bridge_rail_s1",
       "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
-      "x": -17.755,
+      "x": -7.755,
       "z": -3.17,
       "y": -1.7,
       "rotY": 0,
@@ -431,7 +1120,67 @@
     {
       "id": "bridge_rail_s2",
       "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
-      "x": -22.765,
+      "x": -12.765,
+      "z": -3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "bridge_rail_s3",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -17.775,
+      "z": -3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "bridge_rail_s4",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -22.785,
+      "z": -3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "bridge_rail_s5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -27.795,
+      "z": -3.17,
+      "y": -1.7,
+      "rotY": 0,
+      "collision": "auto",
+      "vision": "cover",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet"
+      ]
+    },
+    {
+      "id": "bridge_rail_s6",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -32.805,
       "z": -3.17,
       "y": -1.7,
       "rotY": 0,
@@ -446,8 +1195,8 @@
     {
       "id": "far_barrier",
       "prefab": "SM_Prop_Roadblock_01",
-      "x": -27.6,
-      "z": -1.6,
+      "x": -40,
+      "z": -4.6,
       "y": 0.08,
       "rotY": 90,
       "collision": "auto",
@@ -457,22 +1206,9 @@
       "tags": []
     },
     {
-      "id": "west_apron",
-      "prefab": "SM_Env_Sidewalk_02",
-      "x": -27.755,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "name": "Съезд к Большому тракту",
-      "tags": []
-    },
-    {
       "id": "charge_cable_bridge",
       "prefab": "SM_Prop_Powerpole_Single_Line_02",
-      "x": -12.9,
+      "x": -2.9,
       "z": 2.9,
       "y": 0.58,
       "rotY": 270,
@@ -483,39 +1219,10 @@
       "tags": []
     },
     {
-      "id": "old_pier_west",
-      "prefab": "SM_Env_StormCanal_Bridge_Pillar_01",
-      "x": -23.8,
-      "z": -27,
-      "y": 3.21,
-      "rotY": 90,
-      "collision": "auto",
-      "vision": "none",
-      "role": "landmark",
-      "name": "Бык старого моста «ТРАКТ»",
-      "tags": [
-        "old-bridge"
-      ]
-    },
-    {
-      "id": "old_pier_east",
-      "prefab": "SM_Env_StormCanal_Bridge_Pillar_01",
-      "x": -21.7,
-      "z": -27,
-      "y": 3.21,
-      "rotY": 90,
-      "collision": "auto",
-      "vision": "none",
-      "role": "landmark",
-      "tags": [
-        "old-bridge"
-      ]
-    },
-    {
       "id": "hedgehog_1",
       "prefab": "SM_Prop_TankTrap_01",
-      "x": -14.8,
-      "z": -1.9,
+      "x": -4.8,
+      "z": -4.7,
       "y": 0,
       "rotY": 0,
       "collision": "auto",
@@ -528,8 +1235,8 @@
     {
       "id": "hedgehog_2",
       "prefab": "SM_Prop_TankTrap_01",
-      "x": -10.5,
-      "z": 1.9,
+      "x": -0.5,
+      "z": 4.7,
       "y": 0,
       "rotY": 0,
       "collision": "auto",
@@ -542,8 +1249,8 @@
     {
       "id": "hedgehog_3",
       "prefab": "SM_Prop_TankTrap_01",
-      "x": -6,
-      "z": -1.9,
+      "x": 4,
+      "z": -4.8,
       "y": 0,
       "rotY": 0,
       "collision": "auto",
@@ -556,7 +1263,7 @@
     {
       "id": "somov_nest_west",
       "prefab": "SM_Prop_Sandbag_Wall_02",
-      "x": -14.15,
+      "x": -4.15,
       "z": 6.225,
       "y": 0,
       "rotY": 90,
@@ -569,7 +1276,7 @@
     {
       "id": "somov_nest_north",
       "prefab": "SM_Prop_Sandbag_Wall_End_01",
-      "x": -12.9,
+      "x": -2.9,
       "z": 7.74,
       "y": 0,
       "rotY": 0,
@@ -581,7 +1288,7 @@
     {
       "id": "somov_spool",
       "prefab": "SM_Prop_Spool_01",
-      "x": -13.35,
+      "x": -3.35,
       "z": 4.2,
       "y": 0,
       "rotY": 0,
@@ -594,7 +1301,7 @@
     {
       "id": "slab_stack_1",
       "prefab": "SM_Prop_Construction_Blocks_03",
-      "x": -14,
+      "x": -4,
       "z": -10.5,
       "y": 0,
       "rotY": 0,
@@ -606,7 +1313,7 @@
     {
       "id": "tent_1",
       "prefab": "SM_Prop_Tent_Long_01",
-      "x": -7.8,
+      "x": 2.2,
       "z": 14,
       "y": 0,
       "rotY": 0,
@@ -619,7 +1326,7 @@
     {
       "id": "tent_2",
       "prefab": "SM_Prop_Tent_Long_01",
-      "x": -5.56,
+      "x": 4.44,
       "z": 14,
       "y": 0,
       "rotY": 0,
@@ -632,7 +1339,7 @@
     {
       "id": "tent_3",
       "prefab": "SM_Prop_Tent_Long_01",
-      "x": -3.32,
+      "x": 6.68,
       "z": 14,
       "y": 0,
       "rotY": 0,
@@ -645,7 +1352,7 @@
     {
       "id": "tent_4",
       "prefab": "SM_Prop_Tent_Long_01",
-      "x": -1.08,
+      "x": 8.92,
       "z": 14,
       "y": 0,
       "rotY": 0,
@@ -658,7 +1365,7 @@
     {
       "id": "armband_line",
       "prefab": "SM_Prop_WashingLine_03",
-      "x": -2.2,
+      "x": 7.8,
       "z": 8.2,
       "y": 1.35,
       "rotY": 0,
@@ -671,7 +1378,7 @@
     {
       "id": "armband_post_e",
       "prefab": "SM_Prop_Fence_Wood_Post_01",
-      "x": -2.2,
+      "x": 7.8,
       "z": 8.2,
       "y": 0,
       "rotY": 0,
@@ -683,7 +1390,7 @@
     {
       "id": "armband_post_w",
       "prefab": "SM_Prop_Fence_Wood_Post_01",
-      "x": -7.2,
+      "x": 2.8,
       "z": 8.2,
       "y": 0,
       "rotY": 0,
@@ -695,7 +1402,7 @@
     {
       "id": "parade_flagpole",
       "prefab": "SM_Prop_LightPole_Base_04",
-      "x": 4.5,
+      "x": 14.5,
       "z": 7,
       "y": 0,
       "rotY": 0,
@@ -708,7 +1415,7 @@
     {
       "id": "parade_flag",
       "prefab": "SM_Prop_Window_Curtain_01",
-      "x": 4.5,
+      "x": 14.5,
       "z": 6.88,
       "y": 5.7,
       "rotY": 0,
@@ -722,7 +1429,7 @@
     {
       "id": "cable_stake",
       "prefab": "SM_Prop_Fence_Wood_Post_02",
-      "x": -7.45,
+      "x": 2.55,
       "z": 11.6,
       "y": 0,
       "rotY": 0,
@@ -734,7 +1441,7 @@
     {
       "id": "latrine",
       "prefab": "SM_Prop_Toilet_Junk_01",
-      "x": -8,
+      "x": 2,
       "z": -15.195,
       "y": 0,
       "rotY": 0,
@@ -747,7 +1454,7 @@
     {
       "id": "kitchen_fire",
       "prefab": "SM_Prop_FirePit_01",
-      "x": -6.5,
+      "x": 3.5,
       "z": -9.3,
       "y": 0,
       "rotY": 0,
@@ -760,7 +1467,7 @@
     {
       "id": "kitchen_spit",
       "prefab": "SM_Prop_FirePit_Frame_01",
-      "x": -6.5,
+      "x": 3.5,
       "z": -9.3,
       "y": 0,
       "rotY": 0,
@@ -772,7 +1479,7 @@
     {
       "id": "kitchen_fire_fx",
       "prefab": "FX_Fire_02",
-      "x": -6.5,
+      "x": 3.5,
       "z": -9.3,
       "y": 0.05,
       "rotY": 0,
@@ -784,7 +1491,7 @@
     {
       "id": "kitchen_table",
       "prefab": "SM_Prop_Table_02",
-      "x": -2.5,
+      "x": 7.5,
       "z": -9,
       "y": 0,
       "rotY": 0,
@@ -796,7 +1503,7 @@
     {
       "id": "kitchen_bench",
       "prefab": "SM_Prop_Plank_Bench_01",
-      "x": -2.5,
+      "x": 7.5,
       "z": -9.875,
       "y": 0,
       "rotY": 90,
@@ -808,7 +1515,7 @@
     {
       "id": "water_barrel_1",
       "prefab": "SM_Prop_Barrel_Water_01",
-      "x": -4,
+      "x": 6,
       "z": -15.745,
       "y": 0,
       "rotY": 0,
@@ -820,7 +1527,7 @@
     {
       "id": "water_barrel_2",
       "prefab": "SM_Prop_Barrel_Water_01",
-      "x": -3.22,
+      "x": 6.78,
       "z": -15.745,
       "y": 0,
       "rotY": 0,
@@ -833,7 +1540,7 @@
     {
       "id": "water_barrel_3",
       "prefab": "SM_Prop_Barrel_Water_01",
-      "x": -2.44,
+      "x": 7.56,
       "z": -15.745,
       "y": 0,
       "rotY": 0,
@@ -845,7 +1552,7 @@
     {
       "id": "kitchen_crate",
       "prefab": "SM_Prop_Crate_Large_02",
-      "x": -1.33,
+      "x": 8.67,
       "z": -15.74,
       "y": 0,
       "rotY": 0,
@@ -858,7 +1565,7 @@
     {
       "id": "hq_trailer",
       "prefab": "SM_Bld_Trailer_01",
-      "x": 7.81,
+      "x": 17.81,
       "z": 14.015,
       "y": 0,
       "rotY": 270,
@@ -871,7 +1578,7 @@
     {
       "id": "hq_aerial",
       "prefab": "SM_Prop_Trailer_Aerial_02",
-      "x": 2.9,
+      "x": 12.9,
       "z": 13.9,
       "y": 0,
       "rotY": 0,
@@ -884,7 +1591,7 @@
     {
       "id": "hq_gap_stack",
       "prefab": "SM_Prop_SupplyPile_01",
-      "x": 14.31,
+      "x": 24.31,
       "z": 14.5,
       "y": 0,
       "rotY": 0,
@@ -896,7 +1603,7 @@
     {
       "id": "kartsev_desk",
       "prefab": "SM_Prop_Desk_02",
-      "x": 12,
+      "x": 22,
       "z": 8.8,
       "y": 0,
       "rotY": 0,
@@ -909,7 +1616,7 @@
     {
       "id": "kartsev_radio",
       "prefab": "SM_Prop_Radio_01",
-      "x": 12.55,
+      "x": 22.55,
       "z": 8.95,
       "y": 0.87,
       "rotY": 200,
@@ -922,7 +1629,7 @@
     {
       "id": "demolition_panel",
       "prefab": "SM_Prop_PowerBoxes_01",
-      "x": 7.5,
+      "x": 17.5,
       "z": 12.14,
       "y": 0,
       "rotY": 0,
@@ -937,7 +1644,7 @@
     {
       "id": "charge_cable_hq",
       "prefab": "SM_Prop_Powerpole_Single_Line_02",
-      "x": 7.5,
+      "x": 17.5,
       "z": 11.95,
       "y": 0.58,
       "rotY": 269,
@@ -950,7 +1657,7 @@
     {
       "id": "charge_cable_link",
       "prefab": "SM_Prop_Powerpole_Single_Line_02",
-      "x": -7.45,
+      "x": 2.55,
       "z": 11.6,
       "y": 0.58,
       "rotY": 229,
@@ -963,7 +1670,7 @@
     {
       "id": "hq_sandbags_west",
       "prefab": "SM_Prop_Sandbag_Wall_02",
-      "x": 6.8,
+      "x": 16.8,
       "z": 11.82,
       "y": 0,
       "rotY": 0,
@@ -975,7 +1682,7 @@
     {
       "id": "hq_sandbags_east",
       "prefab": "SM_Prop_Sandbag_Wall_02",
-      "x": 11.3,
+      "x": 21.3,
       "z": 11.82,
       "y": 0,
       "rotY": 0,
@@ -987,7 +1694,7 @@
     {
       "id": "league_trailer",
       "prefab": "SM_Bld_Trailer_02",
-      "x": 22.025,
+      "x": 32.025,
       "z": 13.93,
       "y": 0,
       "rotY": 270,
@@ -1000,7 +1707,7 @@
     {
       "id": "league_awning",
       "prefab": "SM_Bld_Sunshade_Round_03",
-      "x": 19.3,
+      "x": 29.3,
       "z": 11.65,
       "y": 2.7,
       "rotY": 180,
@@ -1013,7 +1720,7 @@
     {
       "id": "league_price_board",
       "prefab": "SM_Prop_Blackboard_01",
-      "x": 17.4,
+      "x": 27.4,
       "z": 9.2,
       "y": 0,
       "rotY": 200,
@@ -1026,7 +1733,7 @@
     {
       "id": "league_ledger_box",
       "prefab": "SM_Prop_Crate_Large_01",
-      "x": 20.6,
+      "x": 30.6,
       "z": 11.7,
       "y": 0,
       "rotY": 90,
@@ -1039,117 +1746,9 @@
       ]
     },
     {
-      "id": "kpp_slab_outer",
-      "prefab": "SM_Env_Sidewalk_02",
-      "x": 28,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "kpp_slab_inner",
-      "prefab": "SM_Env_Sidewalk_02",
-      "x": 23,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_1",
-      "prefab": "SM_Env_Sidewalk_02",
-      "x": 18,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_2",
-      "prefab": "SM_Env_Sidewalk_02",
-      "x": 13,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_3",
-      "prefab": "SM_Env_Sidewalk_02",
-      "x": 8,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_4",
-      "prefab": "SM_Env_Sidewalk_02",
-      "x": 3,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_5",
-      "prefab": "SM_Env_Sidewalk_02",
-      "x": -2,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_6",
-      "prefab": "SM_Env_Sidewalk_02",
-      "x": -7,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "axis_slab_7",
-      "prefab": "SM_Env_Sidewalk_02",
-      "x": -12,
-      "z": 2.5,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "dressing",
-      "tags": []
-    },
-    {
       "id": "convoy_truck",
       "prefab": "SM_Veh_Army_Truck_01",
-      "x": 5.6,
+      "x": 15.6,
       "z": -9.5,
       "y": 0,
       "rotY": 270,
@@ -1162,7 +1761,7 @@
     {
       "id": "convoy_rations",
       "prefab": "SM_Prop_SupplyPile_02",
-      "x": 6,
+      "x": 16,
       "z": -14.95,
       "y": 0,
       "rotY": 0,
@@ -1175,7 +1774,7 @@
     {
       "id": "kpp_booth",
       "prefab": "SM_Prop_Shipping_Container_02",
-      "x": 24.9,
+      "x": 34.9,
       "z": 3.75,
       "y": 0,
       "rotY": 90,
@@ -1188,7 +1787,7 @@
     {
       "id": "kpp_booth_sandbags",
       "prefab": "SM_Prop_Sandbag_Wall_End_01",
-      "x": 21.46,
+      "x": 31.46,
       "z": 3.75,
       "y": 0,
       "rotY": 90,
@@ -1200,7 +1799,7 @@
     {
       "id": "kpp_booth_roof_bags_w",
       "prefab": "SM_Prop_Sandbag_Wall_01",
-      "x": 23.8,
+      "x": 33.8,
       "z": 3.75,
       "y": 2.78,
       "rotY": 0,
@@ -1212,7 +1811,7 @@
     {
       "id": "kpp_booth_roof_bags_e",
       "prefab": "SM_Prop_Sandbag_Wall_02",
-      "x": 26.85,
+      "x": 36.85,
       "z": 3.75,
       "y": 2.74,
       "rotY": 0,
@@ -1224,7 +1823,7 @@
     {
       "id": "kpp_journal_table",
       "prefab": "SM_Prop_Table_01",
-      "x": 20.52,
+      "x": 30.52,
       "z": 3.15,
       "y": 0,
       "rotY": 0,
@@ -1237,7 +1836,7 @@
     {
       "id": "kpp_boom",
       "prefab": "SM_Prop_Road_Barrier_01",
-      "x": 26.6,
+      "x": 36.6,
       "z": 2.25,
       "y": 0,
       "rotY": 0,
@@ -1250,7 +1849,7 @@
     {
       "id": "kpp_post_south",
       "prefab": "SM_Prop_Barrier_Plastic_02",
-      "x": 27.05,
+      "x": 37.05,
       "z": -2.9,
       "y": 0,
       "rotY": 90,
@@ -1263,7 +1862,7 @@
     {
       "id": "kpp_gate_post_s",
       "prefab": "SM_Prop_Wall_Quarantine_Column_Short_01",
-      "x": 28.7,
+      "x": 38.7,
       "z": -3.2,
       "y": 0,
       "rotY": 0,
@@ -1278,7 +1877,7 @@
     {
       "id": "kpp_gate_post_n",
       "prefab": "SM_Prop_Wall_Quarantine_Column_Short_01",
-      "x": 28.7,
+      "x": 38.7,
       "z": 8.75,
       "y": 0,
       "rotY": 0,
@@ -1293,7 +1892,7 @@
     {
       "id": "kpp_banner_s",
       "prefab": "SM_Prop_Window_Curtain_01",
-      "x": 28.17,
+      "x": 38.17,
       "z": -3.2,
       "y": 4.95,
       "rotY": 90,
@@ -1307,7 +1906,7 @@
     {
       "id": "kpp_banner_n",
       "prefab": "SM_Prop_Window_Curtain_01",
-      "x": 28.17,
+      "x": 38.17,
       "z": 9,
       "y": 4.95,
       "rotY": 90,
@@ -1321,7 +1920,7 @@
     {
       "id": "search_board",
       "prefab": "SM_Prop_Barricade_Metal_01",
-      "x": 19,
+      "x": 29,
       "z": -3.6,
       "y": 0,
       "rotY": 0,
@@ -1334,7 +1933,7 @@
     {
       "id": "search_board_papers",
       "prefab": "SM_Prop_Sign_MissingPapers_01",
-      "x": 19,
+      "x": 29,
       "z": -3.715,
       "y": 0.85,
       "rotY": 180,
@@ -1346,7 +1945,7 @@
     {
       "id": "anisya_crate",
       "prefab": "SM_Prop_Crate_01",
-      "x": 16.5,
+      "x": 26.5,
       "z": -5.95,
       "y": 0,
       "rotY": 0,
@@ -1359,7 +1958,7 @@
     {
       "id": "anisya_blanket",
       "prefab": "SM_Prop_Sleeping_Bag_Rolled_01",
-      "x": 16.45,
+      "x": 26.45,
       "z": -5.95,
       "y": 1.02,
       "rotY": 90,
@@ -1371,7 +1970,7 @@
     {
       "id": "mast_tower",
       "prefab": "SM_Bld_RadioTower_01",
-      "x": 26.96,
+      "x": 36.96,
       "z": 11.045,
       "y": 0,
       "rotY": 0,
@@ -1384,7 +1983,7 @@
     {
       "id": "mast_red_lamp",
       "prefab": "Fx_Road_Flare_01",
-      "x": 26.96,
+      "x": 36.96,
       "z": 11.045,
       "y": 8.3,
       "rotY": 0,
@@ -1397,7 +1996,7 @@
     {
       "id": "mast_floodlight",
       "prefab": "SM_Prop_Floodlights_01",
-      "x": 23.905,
+      "x": 33.905,
       "z": 11.39,
       "y": 0,
       "rotY": 90,
@@ -1410,7 +2009,7 @@
     {
       "id": "mast_tally",
       "prefab": "SM_Prop_Blackboard_01",
-      "x": 26.15,
+      "x": 36.15,
       "z": 9.69,
       "y": 0,
       "rotY": 180,
@@ -1423,7 +2022,7 @@
     {
       "id": "mast_diesel",
       "prefab": "SM_Prop_Gas_Table_01",
-      "x": 24.32,
+      "x": 34.32,
       "z": 10.06,
       "y": 0,
       "rotY": 0,
@@ -1436,7 +2035,7 @@
     {
       "id": "storage_container",
       "prefab": "SM_Prop_Shipping_Container_01",
-      "x": 17.095,
+      "x": 27.095,
       "z": -14.915,
       "y": 0,
       "rotY": 90,
@@ -1449,7 +2048,7 @@
     {
       "id": "cage_west_1",
       "prefab": "SM_Prop_Wall_Wire_Preset_01",
-      "x": 14.1,
+      "x": 24.1,
       "z": -12.215,
       "y": 0,
       "rotY": 90,
@@ -1463,7 +2062,7 @@
     {
       "id": "cage_west_2",
       "prefab": "SM_Prop_Wall_Wire_Preset_01",
-      "x": 14.1,
+      "x": 24.1,
       "z": -9.265,
       "y": 0,
       "rotY": 90,
@@ -1477,7 +2076,7 @@
     {
       "id": "cage_east_1",
       "prefab": "SM_Prop_Wall_Wire_Preset_01",
-      "x": 20,
+      "x": 30,
       "z": -12.215,
       "y": 0,
       "rotY": 90,
@@ -1491,7 +2090,7 @@
     {
       "id": "cage_east_2",
       "prefab": "SM_Prop_Wall_Wire_Preset_01",
-      "x": 20,
+      "x": 30,
       "z": -9.265,
       "y": 0,
       "rotY": 90,
@@ -1505,7 +2104,7 @@
     {
       "id": "confiscated_cage",
       "prefab": "SM_Prop_Wall_Wire_Preset_01",
-      "x": 15.575,
+      "x": 25.575,
       "z": -7.79,
       "y": 0,
       "rotY": 0,
@@ -1521,7 +2120,7 @@
     {
       "id": "cargo_crate",
       "prefab": "SM_Prop_Crate_03",
-      "x": 15.4,
+      "x": 25.4,
       "z": -10.9,
       "y": 0,
       "rotY": 0,
@@ -1534,7 +2133,7 @@
     {
       "id": "cargo_crate_open",
       "prefab": "SM_Prop_Crate_Open_03",
-      "x": 15.4,
+      "x": 25.4,
       "z": -11.8,
       "y": 0,
       "rotY": 0,
@@ -1546,7 +2145,7 @@
     {
       "id": "cage_hedgehog",
       "prefab": "SM_Prop_TankTrap_01",
-      "x": 18.45,
+      "x": 28.45,
       "z": -12.65,
       "y": 0,
       "rotY": 0,
@@ -1558,7 +2157,7 @@
     {
       "id": "cage_wire",
       "prefab": "SM_Prop_Wire_02",
-      "x": 15.17,
+      "x": 25.17,
       "z": -8.55,
       "y": 0,
       "rotY": 0,
@@ -1570,7 +2169,7 @@
     {
       "id": "cage_sandbags",
       "prefab": "SM_Prop_Sandbag_Wall_End_01",
-      "x": 19.45,
+      "x": 29.45,
       "z": -11,
       "y": 0,
       "rotY": 90,
@@ -1582,7 +2181,7 @@
     {
       "id": "se_nest_east",
       "prefab": "SM_Prop_Sandbag_Wall_02",
-      "x": 25.02,
+      "x": 35.02,
       "z": -11.805,
       "y": 0,
       "rotY": 90,
@@ -1595,7 +2194,7 @@
     {
       "id": "se_nest_south",
       "prefab": "SM_Prop_Sandbag_Wall_End_01",
-      "x": 23.935,
+      "x": 33.935,
       "z": -12.64,
       "y": 0,
       "rotY": 0,
@@ -1607,7 +2206,7 @@
     {
       "id": "se_ammo_box",
       "prefab": "SM_Prop_Ammo_Box_01",
-      "x": 25,
+      "x": 35,
       "z": -10.4,
       "y": 0,
       "rotY": 90,
@@ -1618,23 +2217,9 @@
       "tags": []
     },
     {
-      "id": "fence_south_1",
-      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": -17.365,
-      "z": -16.14,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "structure",
-      "tags": [
-        "perimeter"
-      ]
-    },
-    {
       "id": "fence_south_2",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": -12.885,
+      "x": -2.885,
       "z": -16.14,
       "y": 0,
       "rotY": 0,
@@ -1648,7 +2233,7 @@
     {
       "id": "fence_south_3",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": -8.405,
+      "x": 1.595,
       "z": -16.14,
       "y": 0,
       "rotY": 0,
@@ -1662,7 +2247,7 @@
     {
       "id": "fence_south_4",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": -3.925,
+      "x": 6.075,
       "z": -16.14,
       "y": 0,
       "rotY": 0,
@@ -1676,7 +2261,7 @@
     {
       "id": "fence_south_5",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 0.555,
+      "x": 10.555,
       "z": -16.14,
       "y": 0,
       "rotY": 0,
@@ -1690,7 +2275,7 @@
     {
       "id": "fence_south_6",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 5.035,
+      "x": 15.035,
       "z": -16.14,
       "y": 0,
       "rotY": 0,
@@ -1704,7 +2289,7 @@
     {
       "id": "fence_south_7",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 9.515,
+      "x": 19.515,
       "z": -16.14,
       "y": 0,
       "rotY": 0,
@@ -1718,7 +2303,7 @@
     {
       "id": "fence_south_8",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 20.19,
+      "x": 30.19,
       "z": -16.14,
       "y": 0,
       "rotY": 0,
@@ -1732,7 +2317,7 @@
     {
       "id": "fence_south_9",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 24.67,
+      "x": 34.67,
       "z": -16.14,
       "y": 0,
       "rotY": 0,
@@ -1746,7 +2331,7 @@
     {
       "id": "fence_north_1",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": -12.885,
+      "x": -2.885,
       "z": 16.14,
       "y": 0,
       "rotY": 180,
@@ -1760,7 +2345,7 @@
     {
       "id": "fence_north_2",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": -8.405,
+      "x": 1.595,
       "z": 16.14,
       "y": 0,
       "rotY": 180,
@@ -1774,7 +2359,7 @@
     {
       "id": "fence_north_3",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": -3.925,
+      "x": 6.075,
       "z": 16.14,
       "y": 0,
       "rotY": 180,
@@ -1788,7 +2373,7 @@
     {
       "id": "fence_north_4",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 0.555,
+      "x": 10.555,
       "z": 16.14,
       "y": 0,
       "rotY": 180,
@@ -1802,7 +2387,7 @@
     {
       "id": "fence_north_5",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 5.035,
+      "x": 15.035,
       "z": 16.14,
       "y": 0,
       "rotY": 180,
@@ -1816,7 +2401,7 @@
     {
       "id": "fence_east_1",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 29.25,
+      "x": 39.25,
       "z": -2.7,
       "y": 0,
       "rotY": 90,
@@ -1830,7 +2415,7 @@
     {
       "id": "fence_east_2",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 29.25,
+      "x": 39.25,
       "z": -7.18,
       "y": 0,
       "rotY": 90,
@@ -1844,7 +2429,7 @@
     {
       "id": "fence_east_3",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 29.25,
+      "x": 39.25,
       "z": -11.66,
       "y": 0,
       "rotY": 90,
@@ -1858,7 +2443,7 @@
     {
       "id": "fence_east_4",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 29.25,
+      "x": 39.25,
       "z": 12.73,
       "y": 0,
       "rotY": 90,
@@ -1873,7 +2458,7 @@
     {
       "id": "discharge_barrel",
       "prefab": "SM_Prop_Barrel_Open_01",
-      "x": 29.6,
+      "x": 39.6,
       "z": -3,
       "y": 0,
       "rotY": 0,
@@ -1886,7 +2471,7 @@
     {
       "id": "route_post",
       "prefab": "SM_Prop_Wood_Pole_01",
-      "x": 33,
+      "x": 43,
       "z": 4.5,
       "y": 0,
       "rotY": 0,
@@ -1901,7 +2486,7 @@
     {
       "id": "route_tin_1",
       "prefab": "SM_Veh_Attach_Plating_07",
-      "x": 33,
+      "x": 43,
       "z": 4.34,
       "y": 2.1,
       "rotY": 0,
@@ -1913,7 +2498,7 @@
     {
       "id": "queue_a_1",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 30.9,
+      "x": 40.9,
       "z": -4.4,
       "y": 0,
       "rotY": 0,
@@ -1928,7 +2513,7 @@
     {
       "id": "queue_a_2",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 40,
+      "x": 50,
       "z": -4.4,
       "y": 0,
       "rotY": 0,
@@ -1942,7 +2527,7 @@
     {
       "id": "queue_b_1",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 30.9,
+      "x": 40.9,
       "z": -8.1,
       "y": 0,
       "rotY": 0,
@@ -1956,7 +2541,7 @@
     {
       "id": "queue_b_2",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 38.4,
+      "x": 48.4,
       "z": -8.1,
       "y": 0,
       "rotY": 0,
@@ -1970,7 +2555,7 @@
     {
       "id": "queue_c_1",
       "prefab": "SM_Prop_Barrier_Long_Bare_01",
-      "x": 32.045,
+      "x": 42.045,
       "z": -12.35,
       "y": 0,
       "rotY": 90,
@@ -1984,7 +2569,7 @@
     {
       "id": "queue_c_2",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": 36.3,
+      "x": 46.3,
       "z": -11.8,
       "y": 0,
       "rotY": 0,
@@ -1998,7 +2583,7 @@
     {
       "id": "queue_barrow",
       "prefab": "SM_Prop_Wheelbarrow_01",
-      "x": 36.3,
+      "x": 46.3,
       "z": -2.5,
       "y": 0,
       "rotY": 80,
@@ -2011,7 +2596,7 @@
     {
       "id": "burnt_truck",
       "prefab": "SM_Prop_Car_Wrecked_Van_01",
-      "x": 50.5,
+      "x": 60.5,
       "z": -9,
       "y": 0,
       "rotY": 95,
@@ -2022,160 +2607,118 @@
       "tags": []
     },
     {
-      "id": "ring_barrel_1",
-      "prefab": "SM_Prop_Barrel_Open_01",
-      "x": -10,
-      "z": 19.6,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "cover",
-      "tags": [
-        "barrel-ring"
-      ]
-    },
-    {
-      "id": "ring_barrel_2",
-      "prefab": "SM_Prop_Barrel_Old_01",
-      "x": 0,
-      "z": 19.6,
-      "y": 0,
-      "rotY": 37,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "cover",
-      "tags": [
-        "barrel-ring"
-      ]
-    },
-    {
-      "id": "ring_barrel_3",
-      "prefab": "SM_Prop_Barrel_Open_01",
-      "x": 10,
-      "z": 19.6,
+      "id": "old_bridge_rubble_e",
+      "prefab": "SM_Prop_Rubble_Concrete_02",
+      "x": 2,
+      "z": -29,
       "y": 0,
       "rotY": 74,
       "collision": "auto",
-      "vision": "auto",
-      "role": "cover",
+      "vision": "none",
+      "role": "scenery",
       "tags": [
-        "barrel-ring"
+        "old-bridge"
       ]
     },
     {
-      "id": "ring_barrel_4",
-      "prefab": "SM_Prop_Barrel_Old_01",
-      "x": 20,
-      "z": 19.6,
+      "id": "approach_stop_sign",
+      "prefab": "SM_Prop_Sign_Stop_01",
+      "x": 41.2,
+      "z": 8.6,
       "y": 0,
-      "rotY": 111,
+      "rotY": 90,
       "collision": "auto",
-      "vision": "auto",
-      "role": "cover",
+      "vision": "none",
+      "role": "landmark",
       "tags": [
-        "barrel-ring"
+        "checkpoint"
       ]
     },
     {
-      "id": "ring_barrel_5",
-      "prefab": "SM_Prop_Barrel_Open_01",
-      "x": -10,
-      "z": -19.8,
-      "y": 0,
-      "rotY": 148,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "cover",
+      "id": "gate_military_sign",
+      "prefab": "SM_Prop_Sign_Military_01",
+      "x": 38.75,
+      "z": 8.75,
+      "y": 2.25,
+      "rotY": 90,
+      "collision": "none",
+      "vision": "none",
+      "role": "landmark",
       "tags": [
-        "barrel-ring"
+        "checkpoint"
       ]
     },
     {
-      "id": "ring_barrel_6",
-      "prefab": "SM_Prop_Barrel_Old_01",
-      "x": 0,
-      "z": -19.8,
-      "y": 0,
-      "rotY": 185,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "cover",
+      "id": "gate_warning_sign",
+      "prefab": "SM_Prop_Sign_Quarantine_01",
+      "x": 38.75,
+      "z": -3.2,
+      "y": 1.4,
+      "rotY": 90,
+      "collision": "none",
+      "vision": "none",
+      "role": "dressing",
       "tags": [
-        "barrel-ring"
+        "checkpoint"
       ]
     },
     {
-      "id": "ring_barrel_7",
-      "prefab": "SM_Prop_Barrel_Open_01",
-      "x": 10,
-      "z": -19.8,
-      "y": 0,
-      "rotY": 222,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "cover",
-      "tags": [
-        "barrel-ring"
-      ]
-    },
-    {
-      "id": "ring_barrel_8",
-      "prefab": "SM_Prop_Barrel_Old_01",
-      "x": 20,
-      "z": -19.8,
-      "y": 0,
-      "rotY": 259,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "cover",
-      "tags": [
-        "barrel-ring"
-      ]
-    },
-    {
-      "id": "ring_fire_1",
-      "prefab": "FX_Fire_01",
-      "x": -10,
-      "z": 19.6,
-      "y": 0.8,
-      "rotY": 0,
+      "id": "bridge_caution_sign",
+      "prefab": "SM_Prop_Sign_Danger_01",
+      "x": -2.7,
+      "z": -4.6,
+      "y": 1.25,
+      "rotY": 90,
       "collision": "none",
       "vision": "none",
       "role": "dressing",
       "tags": []
     },
     {
-      "id": "ring_fire_3",
-      "prefab": "FX_Fire_01",
-      "x": 10,
-      "z": 19.6,
-      "y": 0.8,
-      "rotY": 0,
+      "id": "queue_tires",
+      "prefab": "SM_Prop_Tire_Pile_02",
+      "x": 44.4,
+      "z": -15.2,
+      "y": 0,
+      "rotY": 19,
+      "collision": "auto",
+      "vision": "none",
+      "role": "dressing",
+      "tags": [
+        "queue"
+      ]
+    },
+    {
+      "id": "approach_broken_barrier",
+      "prefab": "SM_Prop_Barrier_Concrete_Bare_Broken_01",
+      "x": 55.6,
+      "z": 9.2,
+      "y": 0,
+      "rotY": 75,
+      "collision": "auto",
+      "vision": "none",
+      "role": "cover",
+      "tags": []
+    },
+    {
+      "id": "yard_ground_wear",
+      "prefab": "SM_Env_GroundLeaves_02",
+      "x": -1,
+      "z": 11.5,
+      "y": 0.01,
+      "rotY": 35,
       "collision": "none",
       "vision": "none",
       "role": "dressing",
       "tags": []
     },
     {
-      "id": "ring_fire_5",
-      "prefab": "FX_Fire_01",
-      "x": -10,
-      "z": -19.8,
-      "y": 0.8,
-      "rotY": 0,
-      "collision": "none",
-      "vision": "none",
-      "role": "dressing",
-      "tags": []
-    },
-    {
-      "id": "ring_fire_7",
-      "prefab": "FX_Fire_01",
-      "x": 10,
-      "z": -19.8,
-      "y": 0.8,
-      "rotY": 0,
+      "id": "convoy_ground_wear",
+      "prefab": "SM_Env_GroundLeaves_03",
+      "x": 19.1,
+      "z": -13.7,
+      "y": 0.01,
+      "rotY": 80,
       "collision": "none",
       "vision": "none",
       "role": "dressing",
@@ -2186,7 +2729,7 @@
     {
       "id": "lev_kartsev",
       "named": true,
-      "x": 12,
+      "x": 22,
       "z": 10.3,
       "rotY": 113,
       "appearance": {
@@ -2208,7 +2751,7 @@
       "name": "Сержант Ульяна Дробот",
       "role": "guard",
       "faction": "uprava",
-      "x": 24,
+      "x": 34,
       "z": -3.5,
       "rotY": 90,
       "dialogue": false,
@@ -2234,7 +2777,7 @@
       "name": "Ефрейтор Прохор Сомов «Тихий»",
       "role": "guard",
       "faction": "uprava",
-      "x": -12.7,
+      "x": -2.7,
       "z": 6,
       "rotY": 270,
       "dialogue": false,
@@ -2261,7 +2804,7 @@
       "name": "Гордей Мытарев, экспедитор Лиги",
       "role": "civilian",
       "faction": "tract_league",
-      "x": 19,
+      "x": 29,
       "z": 9.5,
       "rotY": 180,
       "dialogue": false,
@@ -2287,7 +2830,7 @@
       "name": "Анисья, беженка",
       "role": "civilian",
       "faction": "neutral",
-      "x": 18,
+      "x": 28,
       "z": -5.5,
       "rotY": 45,
       "dialogue": false,
@@ -2314,7 +2857,7 @@
       "name": "Часовой юго-восточного гнезда",
       "role": "guard",
       "faction": "uprava",
-      "x": 23.55,
+      "x": 33.55,
       "z": -11.25,
       "rotY": 135,
       "dialogue": false,
@@ -2340,8 +2883,8 @@
       "name": "Часовой моста",
       "role": "guard",
       "faction": "uprava",
-      "x": -25,
-      "z": -1.7,
+      "x": -40,
+      "z": 4.5,
       "rotY": 270,
       "dialogue": false,
       "appearance": {
@@ -2368,7 +2911,7 @@
       "name": "Патронный короб караула",
       "tier": "ammo",
       "locked": false,
-      "x": 25,
+      "x": 35,
       "z": -10.4,
       "rotY": 90,
       "visual": "se_ammo_box",
@@ -2389,7 +2932,7 @@
       "tier": "wasteland",
       "locked": true,
       "lockDifficulty": "easy",
-      "x": 15.4,
+      "x": 25.4,
       "z": -10.9,
       "rotY": 0,
       "visual": "cargo_crate",
@@ -2417,7 +2960,7 @@
       "name": "Ящик полевой кухни",
       "tier": "survival",
       "locked": false,
-      "x": -1.33,
+      "x": 8.67,
       "z": -15.74,
       "rotY": 0,
       "visual": "kitchen_crate",
@@ -2438,7 +2981,7 @@
       "id": "west",
       "points": [
         {
-          "x": -33,
+          "x": -43,
           "z": 1
         },
         {
@@ -2476,13 +3019,13 @@
   "viewpoints": [
     {
       "label": "kpp-mobile",
-      "x": 21.5,
+      "x": 31.5,
       "z": -0.5,
       "distance": 11.5
     },
     {
       "label": "shtab",
-      "x": 10,
+      "x": 20,
       "z": 8,
       "distance": 16
     },
@@ -2490,7 +3033,7 @@
       "label": "bridge",
       "x": -21,
       "z": 0,
-      "distance": 16
+      "distance": 34
     },
     {
       "label": "river",
@@ -2500,16 +3043,16 @@
     },
     {
       "label": "approach",
-      "x": 34,
+      "x": 44,
       "z": 2.5,
       "distance": 21.5
     },
     {
       "label": "yard-south",
-      "x": 1,
+      "x": 11,
       "z": -15,
       "distance": 18
     }
   ],
-  "notes": "Застава 17 по design.md, раунд 3. Лотки StormCanal подняты на 2.52 (стенки 2.67 м) и сами держат коллизию, настил Bridge_01 без коллизии, проход держат четыре скрытые стены Bunker_Wall внутри парапетов. Раунд 3: верёвка с повязками на двух столбах, флагшток с синим полотнищем на плацу, пайки колонны за грузовиком, знамёна на колоннах ворот, красный фонарь над тарелкой вышки, туман русла снят, тропа от калитки по старому тракту к западным воротам зоны. Подробности и риски — layout-notes.md."
+  "notes": "Застава 17 встроена в z_10_10. Рудная ветвь проходит через мост и КПП; за восточным въездом плавно возвращается на маршрут глобальной карты. Под рельсами непрерывное щебёночное полотно с плечами насыпи, частично заглублёнными деревянными шпалами и металлическими креплениями; автомобильные дорожные секции убраны. На мосту балласт лежит поверх несущего бетона, по бокам оставлены служебные полосы. Рельеф сектора проецируется из GlobalMapRelief.asset с ровной площадкой под заставой; все проходы и точки проверяются site-report.js. Канал шириной 29,2 м; мост длиной 30 м собран из секций в исходном масштабе."
 }

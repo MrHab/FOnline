@@ -135,6 +135,26 @@ namespace Kromka.EditorTools
                     UnityEngine.Object.DestroyImmediate(marker.gameObject);
                 }
             }
+            if (zoneId == RoaZoneReliefProjection.DamRoadZone
+                && layout["clearRiver"] is JObject riverClear)
+            {
+                RoaGlobalMapRelief relief = Resources.Load<RoaGlobalMapRelief>(
+                    RoaGlobalMapRelief.ResourceKey);
+                if (relief == null || !relief.Ready)
+                    throw new InvalidOperationException("Рельеф Тесьмы не найден для расчистки русла.");
+                RoaDamRoadWaterProjection.Prepare(relief, 320f, 320f);
+                float margin = Num(riverClear["margin"], 0f);
+                foreach (KromkaPlacedObjectAuthoring marker in location
+                    .GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true))
+                {
+                    if (marker == null || marker.Role == "terrain") continue;
+                    Vector3 at = marker.transform.position;
+                    if (!RoaDamRoadWaterProjection.TryBanksAt(at.z, out float left, out float right)
+                        || at.x < left - margin || at.x > right + margin) continue;
+                    removed.Add(marker.StableObjectId);
+                    UnityEngine.Object.DestroyImmediate(marker.gameObject);
+                }
+            }
             report["removedZoneObjects"] = removed;
 
             var siteObject = new GameObject("Site_" + siteId);

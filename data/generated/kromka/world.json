@@ -495,8 +495,8 @@
     },
     {
       "id": "roadOutpost",
-      "x": 205,
-      "y": 218,
+      "x": 201,
+      "y": 217,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "roadOutpost",
@@ -1618,5 +1618,5 @@
       "spawnId": "keys-arrival"
     }
   ],
-  "contentHash": "6d05af78adf4ddff3d4eab2c3dce359202a03e154c5e6ce302205b979b8a8325"
+  "contentHash": "77b830e78f48be8024023454a6b47a95f7ab982ae87bf7da7de90d1924d7b0c7"
 }

@@ -41,10 +41,6 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Trailer_01.prefab"
     },
     {
-      "guid": "18512a19d514c1e448cadb4ac410f327",
-      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_StormCanal_Bridge_Pillar_01.prefab"
-    },
-    {
       "guid": "19791b5830f82344187d841faf6ac223",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Crate_03.prefab"
     },
@@ -65,8 +61,16 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Barricade_Metal_01.prefab"
     },
     {
+      "guid": "1ca58549e822d3a48a4ce50680c06085",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_StormCanal_Straight_01.prefab"
+    },
+    {
       "guid": "2129790febcf2f942a8cc4578597095b",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Road_Barrier_01.prefab"
+    },
+    {
+      "guid": "240ae9d003d73b845b5ece35219c2de9",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Sign_Military_01.prefab"
     },
     {
       "guid": "24fafb288dd79c64697b8bc01a50aeba",
@@ -87,10 +91,6 @@
     {
       "guid": "31b0f5421e075ad4abc0222da922caf7",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_FirePit_Frame_01.prefab"
-    },
-    {
-      "guid": "344cc7583e3bff840bfa8ab0ee79aff9",
-      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Bunker_Wall_Concrete_x2_02.prefab"
     },
     {
       "guid": "346855a62eb2ac047bad52a7b7e47549",
@@ -193,6 +193,14 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Shipping_Container_02.prefab"
     },
     {
+      "guid": "57765ca4085e2dd429c5269354fd64a5",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Sign_Quarantine_01.prefab"
+    },
+    {
+      "guid": "5ca6e11b99563d94a80d00a34d7e5ce1",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Rubble_Concrete_02.prefab"
+    },
+    {
       "guid": "5f0a587201ef70a48836ebd1572c155b",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Radio_01.prefab"
     },
@@ -219,6 +227,10 @@
     {
       "guid": "70fb46fb4d63e3340b0f223f24a9af39",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_BarrelStack_01.prefab"
+    },
+    {
+      "guid": "722d0a7e731042a45a948ee12058e3a6",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_GroundLeaves_02.prefab"
     },
     {
       "guid": "72c55d02f43923547a5a694f08963584",
@@ -253,6 +265,10 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_Rock_02.prefab"
     },
     {
+      "guid": "97e64d2ab35bbe34d9a34e327dcaf5ea",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Barrier_Concrete_Bare_Broken_01.prefab"
+    },
+    {
       "guid": "97eeef42e1d4d814db88bb348f6c5315",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_Tree_Dead_01.prefab"
     },
@@ -277,10 +293,6 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Table_01.prefab"
     },
     {
-      "guid": "a2483fbde120a8c4a86e0e53b2f21afc",
-      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_Sidewalk_02.prefab"
-    },
-    {
       "guid": "a284ce8a02abbd940b690c338a51f6d9",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Ammo_Box_01.prefab"
     },
@@ -297,8 +309,16 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Wire_02.prefab"
     },
     {
+      "guid": "ad32ea783bfd0904387b5cbf4f64727b",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Tire_Pile_02.prefab"
+    },
+    {
       "guid": "adddff29adf9d4a4eb57ece5f4bf545a",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Industrial_Small_01.prefab"
+    },
+    {
+      "guid": "ae17207bcfd499342a62f94495a10cfa",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_GroundLeaves_03.prefab"
     },
     {
       "guid": "b092211bc2fc70a44b2d0923759d5c16",
@@ -349,10 +369,6 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Crate_Large_02.prefab"
     },
     {
-      "guid": "cd0cbcca82f24d3f95c6299907b9b097",
-      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/FX/FX_Fire_01.prefab"
-    },
-    {
       "guid": "cf1ca93e39800834a9cd58abef9893d1",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Table_02.prefab"
     },
@@ -395,6 +411,10 @@
     {
       "guid": "ef32c9bc91a73284a946e32e4a43115a",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Sandbag_Wall_End_01.prefab"
+    },
+    {
+      "guid": "efd8fba603d437541bc8e3244488ea6d",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Sign_Danger_01.prefab"
     },
     {
       "guid": "f3bb2a070b022d8478a13ea41149c4a3",

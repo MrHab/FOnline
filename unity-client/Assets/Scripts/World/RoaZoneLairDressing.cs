@@ -43,7 +43,7 @@ namespace RealmOfAshes.World
                 string anchorId = row["id"]?.ToString() ?? built.ToString();
                 var group = new GameObject("Lair_" + speciesId + "_" + anchorId);
                 group.transform.SetParent(root.transform, false);
-                group.transform.localPosition = new Vector3(x, 0f, z);
+                group.transform.localPosition = RoaCoords.ToUnity(x, z);
                 group.transform.localRotation = Quaternion.Euler(0f, StableYaw(anchorId), 0f);
                 Dress(speciesId, group.transform, catalog);
                 built++;
@@ -190,6 +190,7 @@ namespace RealmOfAshes.World
             var visual = new GameObject("LairRemains_" + modelKey);
             visual.transform.SetParent(parent, false);
             visual.transform.localPosition = new Vector3(x, height, z);
+            AlignToTerrain(visual.transform, parent);
             visual.transform.localRotation = Quaternion.Euler(0f, yaw, roll);
             visual.AddComponent<RoaLairCreatureRemains>().Initialize(modelKey, showBody);
         }
@@ -206,10 +207,19 @@ namespace RealmOfAshes.World
             GameObject visual = UnityEngine.Object.Instantiate(prefab, parent);
             visual.name = "LairProp_" + key;
             visual.transform.localPosition = new Vector3(x, height, z);
+            AlignToTerrain(visual.transform, parent);
             visual.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
             foreach (Collider collider in visual.GetComponentsInChildren<Collider>(true))
                 collider.enabled = false;
             return visual;
+        }
+
+        private static void AlignToTerrain(Transform visual, Transform parent)
+        {
+            Vector3 world = visual.position;
+            visual.position += Vector3.up *
+                (RoaZoneReliefProjection.GroundHeightAt(world.x, world.z)
+                    - RoaZoneReliefProjection.GroundHeightAt(parent.position.x, parent.position.z));
         }
 
         private static void AddLight(GameObject visual, Color color, float intensity, float range)

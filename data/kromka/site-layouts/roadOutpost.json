@@ -38,6 +38,492 @@
         "x": -9,
         "z": -37,
         "r": 4.2
+      },
+      {
+        "x": -78,
+        "z": 1.31429,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -74,
+        "z": 0.73429,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -70,
+        "z": 0.15833,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -66,
+        "z": -0.31605,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -62,
+        "z": -0.58608,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -58,
+        "z": -0.61203,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -54,
+        "z": -0.44374,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -50,
+        "z": -0.20522,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -46,
+        "z": -0.03756,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -42,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -38,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -34,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -30,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -26,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -22,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -18,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -14,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -10,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -6,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": -2,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 2,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 6,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 10,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 14,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 18,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 22,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 26,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 30,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 34,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 38,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 42,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 46,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 50,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 54,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 58,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 62,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 66,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 70,
+        "z": 0,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 74,
+        "z": -0.03163,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 78,
+        "z": -0.23937,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 82,
+        "z": -0.76089,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 86,
+        "z": -1.69122,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 90,
+        "z": -3.0829,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 94,
+        "z": -4.94754,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 98,
+        "z": -7.25844,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 102,
+        "z": -9.95456,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 106,
+        "z": -12.94568,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 110,
+        "z": -16.11873,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 114,
+        "z": -19.34543,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 118,
+        "z": -22.49111,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 122,
+        "z": -25.42477,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 126,
+        "z": -28.03035,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 130,
+        "z": -30.21924,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 134,
+        "z": -31.94405,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 138,
+        "z": -33.2135,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 142,
+        "z": -34.10868,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 146,
+        "z": -34.79387,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 150,
+        "z": -35.24587,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 154,
+        "z": -35.3912,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 158,
+        "z": -35.22987,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 162,
+        "z": -34.76187,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 166,
+        "z": -33.9872,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 170,
+        "z": -32.90587,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 174,
+        "z": -31.51787,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 178,
+        "z": -29.8232,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 182,
+        "z": -27.82187,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 186,
+        "z": -25.52,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 190,
+        "z": -23.12,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 194,
+        "z": -20.72,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 198,
+        "z": -18.32,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 202,
+        "z": -15.92,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 206,
+        "z": -13.52,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 210,
+        "z": -11.12,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 214,
+        "z": -8.72,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 218,
+        "z": -6.32,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 222,
+        "z": -3.92,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 226,
+        "z": -1.52,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 230,
+        "z": 0.88,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 234,
+        "z": 3.28,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 238,
+        "z": 5.68,
+        "r": 6,
+        "route": "ore_freight_rail"
+      },
+      {
+        "x": 242,
+        "z": 8.08,
+        "r": 6,
+        "route": "ore_freight_rail"
       }
     ]
   },
@@ -777,7 +1263,7 @@
       "id": "hedgehog_3",
       "prefab": "SM_Prop_TankTrap_01",
       "x": 4,
-      "z": -1.9,
+      "z": -4.8,
       "y": 0,
       "rotY": 0,
       "collision": "auto",
@@ -2761,5 +3247,5 @@
       "distance": 18
     }
   ],
-  "notes": "Застава 17 встроена в z_10_10. Дорога проходит через мост и КПП; знаки, старая переправа и лагерные детали служат ориентирами. Рельеф сектора проецируется из GlobalMapRelief.asset с ровной площадкой под заставой; все проходы и точки проверяются site-report.js. Канал расширен до 29,2 м; мост длиной 30 м собран из секций в исходном масштабе."
+  "notes": "Застава 17 встроена в z_10_10. Дорога проходит через мост и КПП; знаки, старая переправа и лагерные детали служат ориентирами. Рельеф сектора проецируется из GlobalMapRelief.asset с ровной площадкой под заставой; все проходы и точки проверяются site-report.js. Канал расширен до 29,2 м; мост длиной 30 м собран из секций в исходном масштабе. Рудная ветвь проходит по мосту и оси КПП; за восточным въездом плавно возвращается на маршрут глобальной карты. Рельсы на мосту утоплены в общий настил."
 }

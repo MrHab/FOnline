@@ -19,6 +19,9 @@ namespace RealmOfAshes.World
         private const float WaterGradeBreakZ = -140f;
         private const float CanalWaterHalfWidth = 14.6f;
         private const float BridgeHalfLength = 18f;
+        // Native SM_Env_StormCanal_Bridge_01 driving surface at the authored
+        // south-row placement (0.47 - 0.3965827). Keep actor feet and rails on it.
+        public const float BridgeDeckHeight = 0.0734173f;
         private const float BedDepth = 1.65f;
         private const int Segments = 256;
 
@@ -278,7 +281,7 @@ namespace RealmOfAshes.World
         {
             var deck = new GameObject("OutpostBridgeWalkSurface");
             deck.transform.SetParent(transform, false);
-            deck.transform.localPosition = new Vector3(CanalX, -0.12f, -106f);
+            deck.transform.localPosition = new Vector3(CanalX, BridgeDeckHeight - 0.12f, -106f);
             var collider = deck.AddComponent<BoxCollider>();
             collider.size = new Vector3(BridgeHalfLength * 2f, 0.24f, 7.2f);
         }

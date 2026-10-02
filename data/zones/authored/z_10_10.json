@@ -3755,7 +3755,7 @@
       ],
       "footprint": {
         "x": 5.135,
-        "z": 5.0
+        "z": 5
       },
       "vision": {
         "blocks": false
@@ -3790,7 +3790,7 @@
       ],
       "footprint": {
         "x": 5.135,
-        "z": 5.0
+        "z": 5
       },
       "vision": {
         "blocks": false
@@ -3825,7 +3825,7 @@
       ],
       "footprint": {
         "x": 5.135,
-        "z": 5.0
+        "z": 5
       },
       "vision": {
         "blocks": false
@@ -3860,7 +3860,7 @@
       ],
       "footprint": {
         "x": 5.135,
-        "z": 5.0
+        "z": 5
       },
       "vision": {
         "blocks": false
@@ -3895,7 +3895,7 @@
       ],
       "footprint": {
         "x": 5.135,
-        "z": 5.0
+        "z": 5
       },
       "vision": {
         "blocks": false
@@ -5580,7 +5580,7 @@
       "position": {
         "x": -78.0,
         "y": 0.0,
-        "z": -107.9
+        "z": -110.8
       },
       "rotation": {
         "x": 0.0,
@@ -11520,57 +11520,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "s06_c1",
-      "model": "carWreck",
-      "prefab": "car_wreck",
-      "name": "Остов машины",
-      "position": {
-        "x": -131.0,
-        "y": 0.0,
-        "z": -111.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 3.495,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.0,
-            "z": 0.0
-          },
-          "size": {
-            "x": 3.92,
-            "z": 1.714
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 3.92,
-        "depth": 1.71
-      },
-      "footprint": {
-        "x": 4.271,
-        "z": 2.964
-      },
-      "vision": {
-        "blocks": true
-      },
-      "role": "cover",
-      "tags": [
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "s06_s1",
       "model": "asphaltSlab",
       "prefab": "asphalt_slab",
@@ -11635,93 +11584,6 @@
       },
       "role": "scenery",
       "tags": [
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s06_s3",
-      "model": "asphaltSlab",
-      "prefab": "asphalt_slab",
-      "name": "Плита асфальта",
-      "position": {
-        "x": -139.0,
-        "y": 0.0,
-        "z": -107.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 4.625,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.8,
-        "y": 1.0,
-        "z": 1.2
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 4.32,
-        "z": 2.19
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s06_sc0_0",
-      "model": "rustBarrelV1",
-      "prefab": "rust_barrel_v1",
-      "name": "Ржавая бочка",
-      "position": {
-        "x": -133.98,
-        "y": 0.0,
-        "z": -106.17
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.922,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.06,
-        "y": 1.06,
-        "z": 1.06
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": -0.105,
-            "z": -0.123
-          },
-          "size": {
-            "x": 0.898,
-            "z": 0.891
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 0.95,
-        "depth": 0.94
-      },
-      "footprint": {
-        "x": 1.328,
-        "z": 1.329
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "cover",
-      "tags": [
-        "scatter",
         "zone-kit"
       ],
       "unityAuthored": true,
@@ -17922,58 +17784,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "s36_sc0_1",
-      "model": "rubbleRock",
-      "prefab": "rubble_rock",
-      "name": "Глыба",
-      "position": {
-        "x": -29.44,
-        "y": 0.0,
-        "z": -109.58
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 5.485,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.44,
-        "y": 1.44,
-        "z": 1.44
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.04,
-            "z": -0.044
-          },
-          "size": {
-            "x": 1.156,
-            "z": 1.731
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.66,
-        "depth": 2.49
-      },
-      "footprint": {
-        "x": 2.947,
-        "z": 2.932
-      },
-      "vision": {
-        "blocks": true
-      },
-      "role": "cover",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "s36_sc0_2",
       "model": "rubbleRock",
       "prefab": "rubble_rock",
@@ -18122,42 +17932,6 @@
         "blocks": true
       },
       "role": "cover",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s36_sc1_0",
-      "model": "perimeterDebris",
-      "prefab": "perimeter_debris",
-      "name": "Обломки",
-      "position": {
-        "x": -7.64,
-        "y": 0.0,
-        "z": -108.52
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 3.315,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.31,
-        "y": 1.31,
-        "z": 1.31
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 1.21,
-        "z": 1.21
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
       "tags": [
         "scatter",
         "zone-kit"
@@ -21282,42 +21056,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "s46_sc0_1",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": 14.85,
-        "y": 0.0,
-        "z": -107.6
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 3.295,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.64,
-        "y": 1.64,
-        "z": 1.64
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.72,
-        "z": 0.74
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "s46_sc0_10",
       "model": "dryBush",
       "prefab": "dry_bush",
@@ -21341,42 +21079,6 @@
       "footprint": {
         "x": 0.76,
         "z": 0.78
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s46_sc0_11",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": 4.57,
-        "y": 0.0,
-        "z": -108.29
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 4.675,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.39,
-        "y": 1.39,
-        "z": 1.39
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.61,
-        "z": 0.63
       },
       "vision": {
         "blocks": false
@@ -21786,42 +21488,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "s46_sc1_1",
-      "model": "perimeterDebris",
-      "prefab": "perimeter_debris",
-      "name": "Обломки",
-      "position": {
-        "x": 19.09,
-        "y": 0.0,
-        "z": -116.88
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 4.795,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.01,
-        "y": 1.01,
-        "z": 1.01
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.93,
-        "z": 0.93
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "s47_sc0_0",
       "model": "rubbleRock",
       "prefab": "rubble_rock",
@@ -22109,42 +21775,6 @@
       "footprint": {
         "x": 0.42,
         "z": 0.43
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s47_sc2_1",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": 33.17,
-        "y": 0.0,
-        "z": -122.9
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 5.215,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.17,
-        "y": 1.17,
-        "z": 1.17
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.52,
-        "z": 0.53
       },
       "vision": {
         "blocks": false
@@ -25660,57 +25290,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "s57_r1",
-      "model": "rubbleRock",
-      "prefab": "rubble_rock",
-      "name": "Глыба",
-      "position": {
-        "x": 72.0,
-        "y": 0.0,
-        "z": -146.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 4.715,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.6,
-        "y": 1.6,
-        "z": 1.6
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.04,
-            "z": -0.044
-          },
-          "size": {
-            "x": 1.156,
-            "z": 1.731
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.85,
-        "depth": 2.77
-      },
-      "footprint": {
-        "x": 2.774,
-        "z": 1.856
-      },
-      "vision": {
-        "blocks": true
-      },
-      "role": "cover",
-      "tags": [
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "s57_r2",
       "model": "rubbleRock",
       "prefab": "rubble_rock",
@@ -25960,57 +25539,6 @@
       "footprint": {
         "x": 1.845,
         "z": 2.122
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "cover",
-      "tags": [
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s57_t2",
-      "model": "deadTreeA",
-      "prefab": "dead_tree_a",
-      "name": "Сухое дерево",
-      "position": {
-        "x": 48.0,
-        "y": 0.0,
-        "z": -137.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.002,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.6,
-        "y": 1.6,
-        "z": 1.6
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": -0.008,
-            "z": -0.02
-          },
-          "size": {
-            "x": 0.949,
-            "z": 1.177
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.52,
-        "depth": 1.88
-      },
-      "footprint": {
-        "x": 1.521,
-        "z": 1.886
       },
       "vision": {
         "blocks": false
@@ -29418,162 +28946,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "s67_sc0_2",
-      "model": "rubbleRock",
-      "prefab": "rubble_rock",
-      "name": "Глыба",
-      "position": {
-        "x": 85.73,
-        "y": 0.0,
-        "z": -145.17
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 3.665,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.48,
-        "y": 1.48,
-        "z": 1.48
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.04,
-            "z": -0.044
-          },
-          "size": {
-            "x": 1.156,
-            "z": 1.731
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.71,
-        "depth": 2.56
-      },
-      "footprint": {
-        "x": 2.762,
-        "z": 3.074
-      },
-      "vision": {
-        "blocks": true
-      },
-      "role": "cover",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s67_sc0_3",
-      "model": "rubbleRock",
-      "prefab": "rubble_rock",
-      "name": "Глыба",
-      "position": {
-        "x": 98.68,
-        "y": 0.0,
-        "z": -141.1
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 4.695,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.11,
-        "y": 1.11,
-        "z": 1.11
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.04,
-            "z": -0.044
-          },
-          "size": {
-            "x": 1.156,
-            "z": 1.731
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.28,
-        "depth": 1.92
-      },
-      "footprint": {
-        "x": 1.944,
-        "z": 1.317
-      },
-      "vision": {
-        "blocks": true
-      },
-      "role": "cover",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s67_sc0_4",
-      "model": "rubbleRock",
-      "prefab": "rubble_rock",
-      "name": "Глыба",
-      "position": {
-        "x": 88.42,
-        "y": 0.0,
-        "z": -138.59
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.472,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.65,
-        "y": 1.65,
-        "z": 1.65
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.04,
-            "z": -0.044
-          },
-          "size": {
-            "x": 1.156,
-            "z": 1.731
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.91,
-        "depth": 2.86
-      },
-      "footprint": {
-        "x": 2.997,
-        "z": 3.411
-      },
-      "vision": {
-        "blocks": true
-      },
-      "role": "cover",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "s67_sc0_5",
       "model": "rubbleRock",
       "prefab": "rubble_rock",
@@ -29618,42 +28990,6 @@
         "blocks": true
       },
       "role": "cover",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s67_sc1_0",
-      "model": "perimeterDebris",
-      "prefab": "perimeter_debris",
-      "name": "Обломки",
-      "position": {
-        "x": 81.57,
-        "y": 0.0,
-        "z": -142.91
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 3.365,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.42,
-        "y": 1.42,
-        "z": 1.42
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 1.31,
-        "z": 1.31
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
       "tags": [
         "scatter",
         "zone-kit"
@@ -29721,42 +29057,6 @@
       "footprint": {
         "x": 1.05,
         "z": 1.04
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s67_sc2_0",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": 101.42,
-        "y": 0.0,
-        "z": -128.51
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.782,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 0.89,
-        "y": 0.89,
-        "z": 0.89
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.39,
-        "z": 0.4
       },
       "vision": {
         "blocks": false
@@ -33078,42 +32378,6 @@
       "footprint": {
         "x": 0.79,
         "z": 0.81
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s76_sc1_2",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": 132.26,
-        "y": 0.0,
-        "z": -114.79
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.572,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.19,
-        "y": 1.19,
-        "z": 1.19
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.52,
-        "z": 0.54
       },
       "vision": {
         "blocks": false

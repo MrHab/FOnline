@@ -16,6 +16,7 @@ namespace RealmOfAshes.EditorTools
         [MenuItem("Realm of Ashes/Zones/Capture dam road desktop and mobile")]
         public static void Run()
         {
+            RoaDamRoadRailProbe.Run();
             RoaZoneReliefProjectionProbe.Run();
             string root = Path.GetFullPath(Path.Combine(Application.dataPath, "../.."));
             string output = Environment.GetEnvironmentVariable("ROA_DAM_ROAD_CAPTURE");
@@ -67,6 +68,12 @@ namespace RealmOfAshes.EditorTools
                     site + new Vector3(-21f, 0f, 0f), 42f, 1280, 720);
                 Capture(camera, Path.Combine(output, "mobile-bridge.png"),
                     site + new Vector3(-21f, 0f, 0f), 46f, 844, 390);
+                Capture(camera, Path.Combine(output, "desktop-rail-deck.png"),
+                    new Vector3(-105f, 0f, -106f), 24f, 1280, 720);
+                Capture(camera, Path.Combine(output, "mobile-rail-deck.png"),
+                    new Vector3(-105f, 0f, -106f), 26f, 844, 390);
+                Capture(camera, Path.Combine(output, "desktop-rail-approach.png"),
+                    new Vector3(42f, 0f, -130f), 64f, 1280, 720);
                 Capture(camera, Path.Combine(output, "desktop-river.png"),
                     site + new Vector3(-31f, 0f, -28f), 30f, 1280, 720);
                 Capture(camera, Path.Combine(output, "desktop-upstream.png"),

@@ -18,7 +18,7 @@ namespace RealmOfAshes.World
         public const float DamRoadMapWest = 195.8f;
         public const float DamRoadCenterX = -82f;
         public const float DamRoadCenterZ = -106f;
-        private const float LevelHalfWidth = 52f;
+        private const float LevelHalfWidth = 70f;
         private const float LevelHalfDepth = 30f;
         private const float BlendWidth = 24f;
         // The map renders 20 points across this cell at 0.1 units per point.
@@ -38,7 +38,7 @@ namespace RealmOfAshes.World
             if (Mathf.Abs(localX) > _active._width * 0.5f
                 || Mathf.Abs(localZ) > _active._depth * 0.5f) return 0f;
             return RoaDamRoadWaterProjection.IsBridgeDeck(localX, localZ)
-                ? RawHeightAt(_active._relief, localX, localZ, _active._width, _active._depth)
+                ? RoaDamRoadWaterProjection.BridgeDeckHeight
                 : HeightAt(_active._relief, localX, localZ, _active._width, _active._depth);
         }
 
@@ -100,6 +100,7 @@ namespace RealmOfAshes.World
             surface.sharedMesh = projection._mesh;
             _active = projection;
             RoaDamRoadWaterProjection.Build(ground, relief, worldWidth, worldDepth);
+            RoaDamRoadRailProjection.Build(ground);
 
             // Static models elsewhere in the zone follow the projected surface.
             // The checkpoint and bridge keep their authored heights and collision.

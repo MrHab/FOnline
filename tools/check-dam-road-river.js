@@ -9,6 +9,31 @@ const river = require('../src/server/dam-road-river');
 
 const accounts = {};
 const zone = require('../data/zones/authored/z_10_10.json');
+const rail = require('../data/kromka/dam-road-rail.json');
+const { createLocationCollision, circleBlockerPenalty } = require('../src/server/location-collision');
+const collision = createLocationCollision();
+const railBlockers = zone.objects.flatMap(object => collision.locationObjectBlocksMovement(object)
+  ? collision.locationObjectBlockers(object).map(blocker => ({ ...blocker, id: object.id })) : []);
+require('node:child_process').execFileSync(process.execPath,
+  [path.join(__dirname, 'build-dam-road-rail.js'), '--check']);
+assert.equal(rail.route, 'ore_freight_rail');
+assert.equal(rail.gauge, 1.52);
+assert.equal(rail.points[0].x, -160);
+assert.equal(rail.points.at(-1).x, 160);
+for (let i = 0; i < rail.points.length; i++) {
+  const p = rail.points[i];
+  assert(!river.isWaterAt(p.x, p.z, 0.48), `railway enters water at ${p.x}, ${p.z}`);
+  if (Math.abs(p.x) < 155) for (const blocker of railBlockers) {
+    assert(circleBlockerPenalty(p.x, p.z, 0.48, blocker) < 0.03,
+      `railway is blocked by ${blocker.id} at ${p.x}, ${p.z}`);
+  }
+  if (p.x >= -124 && p.x <= -12) assert.equal(p.z, -106, 'track misses the shared bridge and checkpoint');
+  if (i > 0) {
+    const prev = rail.points[i - 1];
+    assert(Math.hypot(p.x - prev.x, p.z - prev.z) < 0.8, 'gap in the continuous railway');
+  }
+}
+assert(Math.abs(rail.points.at(-1).z + 97.92) < 0.01, 'east railway exit misses the next global-map segment');
 const bridgeWest = river.profile.bridge.x - river.profile.bridge.halfWidth - 2;
 const bridgeEast = river.profile.bridge.x + river.profile.bridge.halfWidth + 2;
 const spillway = river.banksAt(-116);

@@ -204,6 +204,76 @@
       ]
     },
     {
+      "id": "canal_south_west_2",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -32.755,
+      "z": -13.35,
+      "y": 0.02,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_west_3",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -32.755,
+      "z": -18.35,
+      "y": 0.02,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_west_4",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -32.755,
+      "z": -23.35,
+      "y": 0.02,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_west_5",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -32.755,
+      "z": -28.35,
+      "y": 0.02,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
+      "id": "canal_south_west_6",
+      "prefab": "SM_Env_StormCanal_Straight_01",
+      "x": -32.755,
+      "z": -33.35,
+      "y": 0.02,
+      "rotY": 90,
+      "collision": "auto",
+      "vision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal"
+      ]
+    },
+    {
       "id": "canal_cap_north_east",
       "prefab": "SM_Env_StormCanal_Divider_02",
       "x": -12.755,

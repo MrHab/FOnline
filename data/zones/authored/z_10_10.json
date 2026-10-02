@@ -3545,7 +3545,7 @@
       ],
       "footprint": {
         "x": 5.135,
-        "z": 5.0
+        "z": 5
       },
       "vision": {
         "blocks": false
@@ -3580,7 +3580,7 @@
       ],
       "footprint": {
         "x": 5.135,
-        "z": 5.0
+        "z": 5
       },
       "vision": {
         "blocks": false
@@ -3615,7 +3615,7 @@
       ],
       "footprint": {
         "x": 5.135,
-        "z": 5.0
+        "z": 5
       },
       "vision": {
         "blocks": false
@@ -3650,7 +3650,7 @@
       ],
       "footprint": {
         "x": 5.135,
-        "z": 5.0
+        "z": 5
       },
       "vision": {
         "blocks": false
@@ -3685,7 +3685,7 @@
       ],
       "footprint": {
         "x": 5.135,
-        "z": 5.0
+        "z": 5
       },
       "vision": {
         "blocks": false
@@ -3721,6 +3721,181 @@
       "footprint": {
         "x": 2.25,
         "z": 15.25
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_canal_south_west_2",
+      "name": "roadOutpost canal south west 2",
+      "position": {
+        "x": -114.755,
+        "y": 0.02,
+        "z": -119.35
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.135,
+        "z": 5.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_canal_south_west_3",
+      "name": "roadOutpost canal south west 3",
+      "position": {
+        "x": -114.755,
+        "y": 0.02,
+        "z": -124.35
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.135,
+        "z": 5.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_canal_south_west_4",
+      "name": "roadOutpost canal south west 4",
+      "position": {
+        "x": -114.755,
+        "y": 0.02,
+        "z": -129.35
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.135,
+        "z": 5.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_canal_south_west_5",
+      "name": "roadOutpost canal south west 5",
+      "position": {
+        "x": -114.755,
+        "y": 0.02,
+        "z": -134.35
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.135,
+        "z": 5.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_canal_south_west_6",
+      "name": "roadOutpost canal south west 6",
+      "position": {
+        "x": -114.755,
+        "y": 0.02,
+        "z": -139.35
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "canal",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.135,
+        "z": 5.0
       },
       "vision": {
         "blocks": false

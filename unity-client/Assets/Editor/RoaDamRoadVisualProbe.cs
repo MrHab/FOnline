@@ -97,6 +97,11 @@ namespace RealmOfAshes.EditorTools
                 KromkaSceneShot.Capture(camera, Path.Combine(output, "desktop-relief.png"), 1280, 720);
                 KromkaSceneShot.Capture(camera, Path.Combine(output, "mobile-relief.png"), 844, 390);
                 camera.orthographic = true;
+                camera.orthographicSize = 43f;
+                camera.transform.SetPositionAndRotation(new Vector3(-104.755f, 140f, -106f),
+                    Quaternion.Euler(90f, 0f, 0f));
+                KromkaSceneShot.Capture(camera, Path.Combine(output, "desktop-canal-symmetry.png"), 1280, 720);
+                KromkaSceneShot.Capture(camera, Path.Combine(output, "mobile-canal-symmetry.png"), 844, 390);
                 camera.orthographicSize = 185f;
                 camera.transform.SetPositionAndRotation(new Vector3(0f, 430f, 0f),
                     Quaternion.Euler(90f, 0f, 0f));

@@ -21,8 +21,10 @@ for (const z of [-159, -140, -116, -90, 0, 80, 159]) {
   const banks = river.banksAt(z);
   assert(banks && river.isWaterAt(banks.center, z), `river gap at z=${z}`);
 }
-for (let x = -112; x <= -97; x += 0.5) {
-  assert(!river.isWaterAt(x, -106, 0.48), 'the bridge must stay walkable');
+for (const z of [-107.5, -106, -104.5]) {
+  for (let x = -112; x <= -97; x += 0.5) {
+    assert(!river.isWaterAt(x, z, 0.48), 'the bridge must stay walkable');
+  }
 }
 assert(!river.crossesWater(-112, -106, -97, -106, 0.48), 'the bridge crossing is blocked');
 assert(river.crossesWater(-112, -116, -97, -116, 0.48), 'the spillway can be jumped');
@@ -61,8 +63,8 @@ async function step(account, x, z) {
   await h.bootstrapCharacters(accounts);
   place('target', { x: -55, z: 80 });
   place('trade', { x: -112, z: -116 }, true);
-  place('progression', { x: -113, z: -106 });
-  place('cadence', { x: -113, z: -106 }, true);
+  place('progression', { x: -113, z: -107.5 });
+  place('cadence', { x: -113, z: -104.5 }, true);
   await h.startServer();
   try {
     const walker = accounts.target;
@@ -109,11 +111,13 @@ async function step(account, x, z) {
     position = { x: Number(bridge.join.self.x), z: Number(bridge.join.self.z) };
     const eastBank = river.banksAt(-106).center + river.banksAt(-106).halfWidth;
     for (let i = 0; i < 90 && position.x < -97.5; i++) {
-      position = await step(bridge, -97, -106);
+      position = await step(bridge, -97, -107.5);
       assert(!river.isWaterAt(position.x, position.z, 0.48), 'bridge approach entered water');
       await zoneWalk.delay(55);
     }
     assert(position.x >= -97.5, `bridge could not be crossed; stopped at x=${position.x}`);
+    assert(Math.abs(position.z + 107.5) < 0.6,
+      `walker was pushed out of the southern bridge lane to z=${position.z}`);
 
     const bridgeRider = accounts.cadence;
     await h.connectAndJoin(bridgeRider);
@@ -126,12 +130,14 @@ async function step(account, x, z) {
     assert(bridgeMount.ok && bridgeMount.mounted, 'bridge motorcycle could not be mounted');
     position = { x: Number(bridgeRider.join.self.x), z: Number(bridgeRider.join.self.z) };
     for (let i = 0; i < 90 && position.x < eastBank + 0.5; i++) {
-      position = await step(bridgeRider, -97, -106);
+      position = await step(bridgeRider, -97, -104.5);
       assert(!river.isWaterAt(position.x, position.z, 0.48), 'motorcycle left the bridge into water');
       await zoneWalk.delay(55);
     }
     assert(position.x >= eastBank + 0.5,
       `motorcycle could not reach the east bank by bridge; stopped at x=${position.x}`);
+    assert(Math.abs(position.z + 104.5) < 0.6,
+      `motorcycle was pushed out of the northern bridge lane to z=${position.z}`);
     console.log('Dam-road river network OK: player and motorcycle stop at water and cross by bridge; entries stay dry.');
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);

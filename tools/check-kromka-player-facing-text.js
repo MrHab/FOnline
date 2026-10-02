@@ -50,7 +50,9 @@ function filesUnder(relPath) {
 }
 
 function stringLiterals(source) {
-  return source.match(/@?"(?:\\.|""|[^"\\])*"|'(?:\\.|[^'\\])*'/gsu) || [];
+  // Ordinary JS/C# string literals cannot span raw newlines; allowing them to
+  // do so also mistakes apostrophes in comments for enormous string literals.
+  return source.match(/@"(?:""|[^"])*"|"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*'/gsu) || [];
 }
 
 function inspect(relPath, source, literalsOnly) {

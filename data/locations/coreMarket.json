@@ -18,8 +18,8 @@
   "territoryRole": "marketHub",
   "factionAccess": "territory",
   "marketHub": {
-    "service": "blackMarket",
-    "description": "Нейтральный подземный рынок под Объектом Ноль. Скупщик берёт любое оружие и броню; стрелять здесь нельзя, но дорога сюда идёт через всю Сердцевину."
+    "service": "auction",
+    "description": "Нейтральный подземный аукцион под Объектом Ноль. Чёрный рынок выкупает оружие и броню по заявкам; стрелять здесь нельзя, но дорога сюда идёт через всю Сердцевину."
   },
   "ground": {
     "preset": "concreteFloor",
@@ -78,9 +78,9 @@
   "containers": [],
   "objects": [
     {
-      "id": "broker",
+      "id": "auctioneer",
       "model": "traderNpc",
-      "name": "Скупщик Ядра",
+      "name": "Аукционер Чёрного рынка",
       "position": {
         "x": 0.0,
         "y": 0.0,
@@ -101,9 +101,8 @@
         "npc",
         "friendly",
         "service",
-        "service-blackMarket",
-        "merchant",
-        "trader",
+        "service-auction",
+        "auction",
         "black-market"
       ],
       "entity": {
@@ -122,14 +121,12 @@
           "hairColorId": "hair_06"
         },
         "kind": "npc",
-        "role": "merchant",
+        "role": "auctioneer",
         "faction": "neutral",
         "hostileToPlayer": false,
         "stationary": true,
-        "service": "blackMarket",
-        "traderProfile": "blackMarket",
-        "tradeProfile": "blackMarket",
-        "dialogueProfile": "blackMarket"
+        "service": "auction",
+        "dialogueProfile": "auction"
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
@@ -1452,7 +1449,7 @@
     {
       "id": "stall_east",
       "model": "storageLeanTo",
-      "name": "Склад скупщика",
+      "name": "Склад аукциона",
       "position": {
         "x": 12.0,
         "y": 0.0,
@@ -1487,7 +1484,7 @@
     {
       "id": "stall_west",
       "model": "wastelandShack",
-      "name": "Прилавок скупщика",
+      "name": "Прилавок аукциона",
       "position": {
         "x": -12.0,
         "y": 0.0,
@@ -1522,7 +1519,7 @@
     {
       "id": "workbench",
       "model": "workshopBench",
-      "name": "Верстак скупщика",
+      "name": "Верстак аукциона",
       "position": {
         "x": 0.0,
         "y": 0.0,

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.UI;
@@ -66,16 +67,19 @@ namespace RealmOfAshes.Game
         private int _sort;
         private int _page;
         private int _pageCount = 1;
-        // Show every tradeable item on entry; the active offers remain a filter.
-        private int _availability = 2;
+        // Open on live offers; the full catalog remains available as a filter.
+        private int _availability = 3;
         private int _priceBand;
         private string _typeFilter = "all";
+        private int _tierFilter;
         private RectTransform _filterPopup;
         private Text _categoryFilterLabel;
         private Text _typeFilterLabel;
+        private Text _tierFilterLabel;
         private Text _availabilityFilterLabel;
         private Text _priceFilterLabel;
         private RectTransform _marketModal;
+        private RectTransform _inspectPanel;
         private RectTransform _modalLeft;
         private RectTransform _modalRight;
         private InputField _modalQty;
@@ -148,6 +152,7 @@ namespace RealmOfAshes.Game
             {
                 if (_root != null && _root.activeSelf)
                 {
+                    CloseInspector();
                     _root.SetActive(false);
                     _state = null;
                     _sinAccount = null;
@@ -187,6 +192,7 @@ namespace RealmOfAshes.Game
 
         private void Close()
         {
+            CloseInspector();
             if (Interaction != null) Interaction.DialogueClose();
             if (_root != null) _root.SetActive(false);
         }
@@ -311,6 +317,7 @@ namespace RealmOfAshes.Game
             _actionBusy = false;
             if (ack != null && ack["ok"]?.Value<bool>() == true)
             {
+                CloseInspector();
                 _note = ActionNote(ack);
                 Apply(ack);
             }
@@ -323,6 +330,7 @@ namespace RealmOfAshes.Game
         private static string ActionNote(JObject ack)
         {
             int qty = ack["qty"]?.Value<int>() ?? 0;
+            bool blackMarket = ack["auction"]?["blackMarket"]?.Value<bool>() == true;
             switch (ack["action"]?.ToString() ?? string.Empty)
             {
                 case "sell":
@@ -331,7 +339,8 @@ namespace RealmOfAshes.Game
                     int resting = ack["restingQty"]?.Value<int>() ?? 0;
                     string note = sold > 0 ? "Продано сразу: " + sold + " шт за " + RoaPlural.Marks((ack["proceeds"]?.Value<int>() ?? 0)) + "." : string.Empty;
                     if (resting > 0) note += (note.Length > 0 ? " " : string.Empty) + "В книге: " + resting + " шт.";
-                    return note + " Сбор " + (ack["setupFee"]?.Value<int>() ?? 0) + ".";
+                    return note + " Сбор " + (ack["setupFee"]?.Value<int>() ?? 0) + "."
+                        + (blackMarket && sold > 0 ? " Выручка на полке." : string.Empty);
                 }
                 case "buy":
                 {
@@ -344,7 +353,8 @@ namespace RealmOfAshes.Game
                 }
                 case "buyNow": return "Куплено " + qty + " шт за " + RoaPlural.Marks((ack["cost"]?.Value<int>() ?? 0)) + "."
                     + ((ack["shelved"]?.Value<int>() ?? 0) > 0 ? " Покупка ждёт на полке." : string.Empty);
-                case "sellNow": return "Продано " + qty + " шт, на руки " + RoaPlural.Marks((ack["proceeds"]?.Value<int>() ?? 0)) + ".";
+                case "sellNow": return "Продано " + qty + " шт, получите " + RoaPlural.Marks((ack["proceeds"]?.Value<int>() ?? 0)) + "."
+                    + ((ack["shelvedSilver"]?.Value<int>() ?? 0) > 0 ? " Часть выручки на полке." : string.Empty);
                 case "cancel": return "Ордер отменён, товар и марки ждут на полке.";
                 case "update": return "Ордер обновлён. Сбор " + (ack["setupFee"]?.Value<int>() ?? 0)
                     + ". Купленное и возвращённые предметы ждут на полке.";
@@ -357,7 +367,17 @@ namespace RealmOfAshes.Game
         {
             JObject market = ack["auction"] as JObject;
             if (market == null) return;
+            bool enteringBlackMarket = market["blackMarket"]?.Value<bool>() == true
+                && _state?["blackMarket"]?.Value<bool>() != true;
+            bool leavingBlackMarket = market["blackMarket"]?.Value<bool>() != true
+                && _state?["blackMarket"]?.Value<bool>() == true;
             _state = market;
+            if (enteringBlackMarket)
+            {
+                _availability = 1;
+                _modalMode = 1;
+            }
+            if (leavingBlackMarket) _availability = 3;
             _snapshotAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (_durationHours <= 0)
             {
@@ -377,6 +397,8 @@ namespace RealmOfAshes.Game
         private float SetupFeePct { get { return _state?["setupFeePct"]?.Value<float>() ?? 0.015f; } }
 
         private JObject Shelf { get { return _state?["shelf"] as JObject; } }
+
+        private bool BlackMarket { get { return _state?["blackMarket"]?.Value<bool>() == true; } }
 
         private int SinBalance { get { return _sinAccount?["sin"]?.Value<int>() ?? 0; } }
 
@@ -483,6 +505,7 @@ namespace RealmOfAshes.Game
         {
             _orderId = order["id"]?.ToString() ?? string.Empty;
             _itemId = order["itemId"]?.ToString() ?? string.Empty;
+            _saleRuntimeId = SaleInstances(_itemId).FirstOrDefault() ?? string.Empty;
             if (mine) _tab = Tab.Mine;
             _priceInput.text = (order["price"]?.Value<int>() ?? 1).ToString();
             _qtyInput.text = mine ? (order["qty"]?.Value<int>() ?? 1).ToString() : "1";
@@ -632,19 +655,25 @@ namespace RealmOfAshes.Game
             _searchInput = NumberInput("Search", _toolbar, "Поиск предмета…");
             _searchInput.contentType = InputField.ContentType.Standard;
             _searchInput.characterLimit = 64;
-            Place((RectTransform)_searchInput.transform, 0f, 0f, 0.31f, 1f, Vector2.zero, new Vector2(-5f, 0f));
+            Place((RectTransform)_searchInput.transform, 0f, 0f, 0.25f, 1f, Vector2.zero, new Vector2(-5f, 0f));
             _searchInput.onValueChanged.AddListener(value => { _page = 0; ResetBrowseScroll(); Rebuild(); });
-            AddFilterButton("CategoryFilter", 0.31f, 0.49f, out _categoryFilterLabel,
-                () => ShowFilterMenu(_categoryFilterLabel, CategoryChoices(), value => { _category = value; _typeFilter = "all"; _page = 0; ResetBrowseScroll(); Rebuild(); }));
-            AddFilterButton("TypeFilter", 0.49f, 0.68f, out _typeFilterLabel,
+            AddFilterButton("CategoryFilter", 0.25f, 0.41f, out _categoryFilterLabel,
+                () => ShowFilterMenu(_categoryFilterLabel, CategoryChoices(), value => { _category = value; _typeFilter = "all"; _tierFilter = 0; _page = 0; ResetBrowseScroll(); Rebuild(); }));
+            AddFilterButton("TypeFilter", 0.41f, 0.57f, out _typeFilterLabel,
                 () => ShowFilterMenu(_typeFilterLabel, TypeChoices(), value => {
-                    _typeFilter = value; if (value.StartsWith("tier:")) _availability = 0;
+                    _typeFilter = value; _tierFilter = 0;
                     _page = 0; ResetBrowseScroll(); Rebuild();
+                }));
+            AddFilterButton("TierFilter", 0.57f, 0.68f, out _tierFilterLabel,
+                () => ShowFilterMenu(_tierFilterLabel, TierChoices(), value => {
+                    _tierFilter = int.Parse(value); _page = 0; ResetBrowseScroll(); Rebuild();
                 }));
             AddFilterButton("AvailabilityFilter", 0.68f, 0.84f, out _availabilityFilterLabel,
                 () => ShowFilterMenu(_availabilityFilterLabel, new[] { new KeyValuePair<string, string>("0", "Продают"),
-                    new KeyValuePair<string, string>("1", "Выкупают"), new KeyValuePair<string, string>("2", "Все товары") },
-                    value => { _availability = int.Parse(value); _page = 0; ResetBrowseScroll(); Rebuild(); }));
+                    new KeyValuePair<string, string>("1", "Выкупают"), new KeyValuePair<string, string>("3", "Все предложения"),
+                    new KeyValuePair<string, string>("2", "Каталог") },
+                    value => { _availability = int.Parse(value); _typeFilter = "all"; _tierFilter = 0;
+                        _page = 0; ResetBrowseScroll(); Rebuild(); }));
             AddFilterButton("PriceFilter", 0.84f, 1f, out _priceFilterLabel,
                 () => ShowFilterMenu(_priceFilterLabel, new[] { new KeyValuePair<string, string>("0", "Любая цена"),
                     new KeyValuePair<string, string>("1", "До 100"), new KeyValuePair<string, string>("2", "101–500"),
@@ -727,18 +756,33 @@ namespace RealmOfAshes.Game
         private IEnumerable<KeyValuePair<string, string>> TypeChoices()
         {
             yield return new KeyValuePair<string, string>("all", "Все типы");
-            if (_category == "all") yield break;
-            if (_category == "artifacts")
-            {
-                foreach (int tier in Orders.OfType<JObject>().Where(row => row["category"]?.ToString() == "artifacts")
-                    .Select(ArtifactTier).Where(value => value > 0).Distinct().OrderBy(value => value))
-                    yield return new KeyValuePair<string, string>("tier:" + tier, "Ранг " + tier);
-                yield break;
-            }
-            foreach (string type in MarketItems.OfType<JObject>()
-                .Where(row => row["category"]?.ToString() == _category)
+            foreach (string type in BrowseSourceRows()
+                .Where(row => _category == "all" || row["category"]?.ToString() == _category)
                 .Select(row => MarketType(row["itemId"]?.ToString())).Distinct().OrderBy(value => value))
                 yield return new KeyValuePair<string, string>(type, type);
+        }
+
+        private IEnumerable<KeyValuePair<string, string>> TierChoices()
+        {
+            yield return new KeyValuePair<string, string>("0", "Все ранги");
+            IEnumerable<JObject> rows = BrowseSourceRows();
+            foreach (int tier in rows.Where(row => (_category == "all" || row["category"]?.ToString() == _category)
+                    && (_typeFilter == "all" || MarketType(row["itemId"]?.ToString()) == _typeFilter))
+                .Select(MarketTier).Where(value => value > 0).Distinct().OrderBy(value => value))
+                yield return new KeyValuePair<string, string>(tier.ToString(), "Ранг " + tier);
+        }
+
+        private static int MarketTier(JObject row)
+        {
+            int artifact = ArtifactTier(row);
+            return artifact > 0 ? artifact : RoaItemData.Tier(row?["itemId"]?.ToString());
+        }
+
+        private IEnumerable<JObject> BrowseSourceRows()
+        {
+            return _availability == 2 ? MarketItems.OfType<JObject>()
+                : Orders.OfType<JObject>().Where(row => _availability == 3
+                    || row["side"]?.ToString() == (_availability == 0 ? "sell" : "buy"));
         }
 
         private static int ArtifactTier(JObject row)
@@ -791,12 +835,22 @@ namespace RealmOfAshes.Game
             _filterPopup.anchorMin = _filterPopup.anchorMax = new Vector2(x, 0f);
             _filterPopup.pivot = new Vector2(0f, 1f);
             _filterPopup.anchoredPosition = new Vector2(3f, -4f);
-            _filterPopup.sizeDelta = new Vector2(width, options.Count * 30f + 8f);
+            _filterPopup.sizeDelta = new Vector2(width, Mathf.Min(options.Count * 30f + 8f, 228f));
+            _filterPopup.gameObject.AddComponent<RectMask2D>();
+            ScrollRect menuScroll = _filterPopup.gameObject.AddComponent<ScrollRect>();
+            RectTransform content = Child("OptionsContent", _filterPopup);
+            content.anchorMin = content.anchorMax = new Vector2(0f, 1f);
+            content.pivot = new Vector2(0f, 1f);
+            content.anchoredPosition = Vector2.zero;
+            content.sizeDelta = new Vector2(width, options.Count * 30f + 8f);
+            menuScroll.viewport = _filterPopup;
+            menuScroll.content = content;
+            RoaUiScroll.Configure(menuScroll);
             RectTransform openedMenu = _filterPopup;
             for (int i = 0; i < options.Count; i++)
             {
                 KeyValuePair<string, string> option = options[i];
-                Button button = TextButton("Option", _filterPopup, option.Value, 12, out Text label);
+                Button button = TextButton("Option", content, option.Value, 12, out Text label);
                 label.alignment = TextAnchor.MiddleLeft;
                 Place((RectTransform)button.transform, 0f, 1f, 1f, 1f,
                     new Vector2(5f, -7f - (i + 1) * 30f), new Vector2(-5f, -7f - i * 30f));
@@ -824,7 +878,7 @@ namespace RealmOfAshes.Game
             Place(_scrollArea, 0f, 0f, 1f, 1f, new Vector2(222f, browse ? 70f : 32f),
                 new Vector2(browse ? -14f : -396f, browse ? -158f : -116f));
             Place(_toolbar, 0f, 1f, 1f, 1f, new Vector2(222f, -110f), new Vector2(buyTab ? -14f : -396f, -76f));
-            Place((RectTransform)_searchInput.transform, 0f, 0f, buyTab ? 0.31f : 1f, 1f,
+            Place((RectTransform)_searchInput.transform, 0f, 0f, buyTab ? 0.25f : 1f, 1f,
                 Vector2.zero, new Vector2(buyTab ? -5f : 0f, 0f));
             foreach (Transform child in _toolbar)
                 if (child != _searchInput.transform && child != _filterPopup) child.gameObject.SetActive(buyTab);
@@ -837,7 +891,7 @@ namespace RealmOfAshes.Game
             _terms.text = _tab == Tab.Sin
                 ? "Обменник сини: сбор за ордер " + RoaPlural.Marks(SinOrderFee) + ", налога нет · у вас " + Marks
                     + " марок, на счёте " + SinBalance + " сини"
-                : "Налог с продажи " + (TaxPct * 100f).ToString("0.#") + "% · сбор за ордер "
+                : (BlackMarket ? "Выкуп из казны · " : "") + "Налог с продажи " + (TaxPct * 100f).ToString("0.#") + "% · сбор за ордер "
                     + (SetupFeePct * 100f).ToString("0.#") + "% · у вас " + RoaPlural.Marks(Marks);
             _status.text = string.IsNullOrEmpty(_note)
                 ? (_pending ? "Аукционер сверяет книгу…" : "Купленное, проданное и возвраты ждут на полке у аукционера.")
@@ -866,6 +920,7 @@ namespace RealmOfAshes.Game
             if (!modal) RebuildDetail();
             _marketModal.gameObject.SetActive(modal);
             if (modal) { _marketModal.SetAsLastSibling(); RebuildMarketModal(); }
+            if (_inspectPanel != null) _inspectPanel.SetAsLastSibling();
             TickTimers();
         }
 
@@ -873,9 +928,9 @@ namespace RealmOfAshes.Game
         {
             string category = CategoryChoices().FirstOrDefault(row => row.Key == _category).Value;
             _categoryFilterLabel.text = string.IsNullOrEmpty(category) ? "Категория ▾" : category + " ▾";
-            _typeFilterLabel.text = (_typeFilter == "all" ? "Тип / ранг" : _typeFilter.StartsWith("tier:")
-                ? "Ранг " + _typeFilter.Substring(5) : _typeFilter) + " ▾";
-            _availabilityFilterLabel.text = new[] { "Продают", "Выкупают", "Все товары" }[Mathf.Clamp(_availability, 0, 2)] + " ▾";
+            _typeFilterLabel.text = (_typeFilter == "all" ? "Тип" : _typeFilter) + " ▾";
+            _tierFilterLabel.text = (_tierFilter == 0 ? "Ранг" : "Ранг " + _tierFilter) + " ▾";
+            _availabilityFilterLabel.text = new[] { "Продают", "Выкупают", "Каталог", "Предложения" }[Mathf.Clamp(_availability, 0, 3)] + " ▾";
             _priceFilterLabel.text = new[] { "Любая цена", "До 100", "101–500", "От 501" }[Mathf.Clamp(_priceBand, 0, 3)] + " ▾";
         }
 
@@ -952,6 +1007,9 @@ namespace RealmOfAshes.Game
             _modalPrice.gameObject.SetActive(_modalMode >= 2);
             string itemName = RoaItemData.Name(_itemId);
             GameObject itemTile = AddItemTile(_marketModal, _itemId, 20f, 0f, 54f);
+            Button inspectItem = itemTile.AddComponent<Button>();
+            inspectItem.targetGraphic = itemTile.GetComponent<Image>();
+            inspectItem.onClick.AddListener(() => ShowItemDetails(_itemId, SelectedOrder()));
             RectTransform tileRect = (RectTransform)itemTile.transform;
             tileRect.anchorMin = tileRect.anchorMax = new Vector2(0f, 1f);
             tileRect.pivot = new Vector2(0f, 1f);
@@ -968,6 +1026,7 @@ namespace RealmOfAshes.Game
             close.GetComponent<Image>().color = QuietBg;
             for (int i = 0; i < 4; i++)
             {
+                if (BlackMarket && (i == 0 || i == 3)) continue;
                 int mode = i;
                 string label = new[] { "Купить", "Продать", "Заявка на продажу", "Заявка на покупку" }[i];
                 ModalButton(_modalLeft, (_modalMode == i ? "●  " : "○  ") + label,
@@ -1031,12 +1090,15 @@ namespace RealmOfAshes.Game
                 ready &= _modalMode == 2 ? quantity <= Backpack(_itemId) && fee <= Marks
                     && (Fungible(_itemId) || quantity == 1) : Fungible(_itemId) && total + fee <= Marks;
                 ModalText(_modalLeft, _modalMode == 2 ? "В рюкзаке: " + Backpack(_itemId)
-                    + " · полностью отремонтируйте снаряжение" : Fungible(_itemId)
+                    + " · на аукцион выставляют только при 100% прочности" : Fungible(_itemId)
                     ? "Марки будут зарезервированы до сделки или отмены."
                     : "Заявка на выкуп недоступна для снаряжения и артефактов.",
                     11, InkDim, 0.02f, 0.98f, -207f, 30f);
                 AddMarketDurationButtons();
             }
+            if (BlackMarket && _modalMode == 1)
+                ModalText(_modalLeft, "Цена заявки указана для целой вещи. Для изношенной сервер пересчитает выплату по состоянию.",
+                    11, InkDim, 0.02f, 0.98f, -238f, 42f);
             if ((_modalMode == 1 || _modalMode == 2)
                 && (RoaItemData.Category(_itemId) == "artifacts" || RoaItemData.ConditionMode(_itemId) == "runtime"))
             {
@@ -1058,13 +1120,24 @@ namespace RealmOfAshes.Game
                         if (instances.Count > 1) { _saleRuntimeId = instances[(index + 1) % instances.Count]; Rebuild(); }
                     });
                 if (RoaItemData.Category(_itemId) == "artifacts") ready &= instances.Count > 0;
+                if (BlackMarket && RoaItemData.ConditionMode(_itemId) == "runtime") ready &= instances.Count > 0;
+            }
+            if (_modalMode == 2 && Inventory != null)
+            {
+                if (RoaItemData.ConditionMode(_itemId) == "shared")
+                    ready &= Inventory.BagConditionPercent(_itemId) >= 100f;
+                else if (RoaItemData.ConditionMode(_itemId) == "runtime")
+                    ready &= SaleInstances(_itemId).Count(id => Inventory.BagConditionPercent(id) >= 100f) >= quantity
+                        && Inventory.BagConditionPercent(_saleRuntimeId) >= 100f;
             }
             if (_modalMode == 0 || _modalMode == 3)
                 ModalButton(_modalLeft, (_buyToBag ? "☑" : "□") + " Купленное сразу в рюкзак",
                     0.02f, 0.98f, -285f, 24f, _buyToBag, () => { _buyToBag = !_buyToBag; Rebuild(); });
             ready &= !_actionBusy;
             string summary = _modalMode == 0 ? "К оплате: " + total + " марок · у вас " + Marks
-                : _modalMode == 1 ? "Налог: " + tax + " · получите " + (total - tax) + " марок"
+                : _modalMode == 1 ? (BlackMarket
+                    ? "До " + (total - tax) + " марок после налога; точная сумма зависит от состояния"
+                    : "Налог: " + tax + " · получите " + (total - tax) + " марок")
                 : _modalMode == 2 ? "Сбор: " + fee + " · после налога получите " + (total - tax - fee)
                 : "Резерв: " + total + " · сбор: " + fee + " · всего " + (total + fee);
             Text summaryLabel = ModalText(_modalLeft, summary, 13, ready ? Accent : Warn, 0.02f, 0.98f, -310f, 32f);
@@ -1254,12 +1327,12 @@ namespace RealmOfAshes.Game
             int shelfItems = 0;
             foreach (JToken row in shelf?["items"] as JArray ?? new JArray()) shelfItems += row["qty"]?.Value<int>() ?? 0;
 
-            AddTab(Tab.Buy, "ПОКУПКА");
+            AddTab(Tab.Buy, BlackMarket ? "ЗАЯВКИ НА ВЫКУП" : "ПОКУПКА");
             AddTab(Tab.Sell, "ПРОДАЖА");
             AddTab(Tab.Mine, "МОИ ОРДЕРА" + (mine > 0 ? " (" + mine + ")" : string.Empty));
             AddTab(Tab.Shelf, "ПОЛКА" + (shelfSilver > 0 || shelfItems > 0 ? " ●" : string.Empty));
             AddTab(Tab.Journal, "ЖУРНАЛ СДЕЛОК");
-            if (_sinAccount != null) AddTab(Tab.Sin, "СИНЬ · " + SinBalance + (SinPremium ? " ★" : string.Empty));
+            if (_sinAccount != null && !BlackMarket) AddTab(Tab.Sin, "СИНЬ · " + SinBalance + (SinPremium ? " ★" : string.Empty));
         }
 
         private void AddTab(Tab tab, string caption)
@@ -1334,7 +1407,7 @@ namespace RealmOfAshes.Game
             Place(text.rectTransform, 0f, 0f, 1f, 1f, new Vector2(10f, 0f), new Vector2(-8f, 0f));
             text.text = label + "  " + count;
             string captured = id;
-            button.onClick.AddListener(() => { _category = captured; _typeFilter = "all"; _page = 0; ResetBrowseScroll(); Rebuild(); });
+            button.onClick.AddListener(() => { _category = captured; _typeFilter = "all"; _tierFilter = 0; _page = 0; ResetBrowseScroll(); Rebuild(); });
             _categoryRows.Add(row);
         }
 
@@ -1342,16 +1415,16 @@ namespace RealmOfAshes.Game
 
         private void BuildMarketPage()
         {
-            AddHeading(_availability == 1 ? "ЗАЯВКИ НА ВЫКУП" : _availability == 2 ? "КАТАЛОГ РЫНКА" : "КУПИТЬ С РЫНКА");
+            AddHeading(_availability == 1 ? "ЗАЯВКИ НА ВЫКУП" : _availability == 2 ? "КАТАЛОГ РЫНКА"
+                : _availability == 3 ? "ПРЕДЛОЖЕНИЯ РЫНКА" : "КУПИТЬ С РЫНКА");
             if (_state == null) { AddNote(_pending ? "Аукционер раскладывает книгу…" : "Рынок не ответил."); return; }
-            IEnumerable<JObject> rows = _availability == 2 ? MarketItems.OfType<JObject>()
-                : Orders.OfType<JObject>().Where(row => row["side"]?.ToString() == (_availability == 0 ? "sell" : "buy"));
+            IEnumerable<JObject> rows = BrowseSourceRows();
             rows = rows.Where(row =>
             {
                 string itemId = row["itemId"]?.ToString() ?? string.Empty;
                 if (!MatchesSearch(itemId) || (_category != "all" && row["category"]?.ToString() != _category)) return false;
-                if (_typeFilter != "all" && (_typeFilter.StartsWith("tier:")
-                    ? ArtifactTier(row).ToString() != _typeFilter.Substring(5) : MarketType(itemId) != _typeFilter)) return false;
+                if (_typeFilter != "all" && MarketType(itemId) != _typeFilter) return false;
+                if (_tierFilter > 0 && MarketTier(row) != _tierFilter) return false;
                 int price = BrowsePrice(row);
                 return _priceBand == 0 || (_priceBand == 1 && price > 0 && price <= 100)
                     || (_priceBand == 2 && price >= 101 && price <= 500) || (_priceBand == 3 && price >= 501);
@@ -1372,7 +1445,7 @@ namespace RealmOfAshes.Game
             AddBrowseColumns();
             foreach (JObject row in visible.Skip(_page * 7).Take(7)) AddMarketItemRow(row);
             if (visible.Count == 0) AddNote(_availability == 0
-                ? "Продаж по фильтру нет. Выберите «Все товары», чтобы поставить заявку на выкуп."
+                ? "Продаж по фильтру нет. Выберите «Каталог», чтобы поставить заявку на выкуп."
                 : "По запросу ничего не найдено. Измените фильтры или поиск.");
         }
 
@@ -1420,7 +1493,10 @@ namespace RealmOfAshes.Game
             button.targetGraphic = back;
             var rect = (RectTransform)go.transform;
 
-            AddItemTile(rect, itemId, 9f, 6f, 47f);
+            GameObject tile = AddItemTile(rect, itemId, 9f, 6f, 47f);
+            Button inspect = tile.AddComponent<Button>();
+            inspect.targetGraphic = tile.GetComponent<Image>();
+            inspect.onClick.AddListener(() => ShowItemDetails(itemId, row));
             Text name = Label("Name", rect, 14, TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
             Place(name.rectTransform, 0f, 0f, 0.45f, 1f, new Vector2(66f, 11f), new Vector2(-4f, -5f));
             name.text = RoaItemData.Name(itemId);
@@ -1430,20 +1506,34 @@ namespace RealmOfAshes.Game
             if (RoaItemData.Category(itemId) == "artifacts" && row["artifacts"] is JArray artifacts
                 && artifacts.Count > 0 && artifacts[0]?["tier"] != null)
                 detail += " · ранг " + artifacts[0]["tier"];
-            category.text = detail + " · " + (quantity > 0 ? quantity + " шт" : "нет предложений");
+            category.text = detail + " · " + (quantity > 0 ? quantity + " шт" : "нет предложений")
+                + (!catalog ? row["side"]?.ToString() == "buy" ? " · выкуп" : " · продажа" : "");
             Text timer = Label("Time", rect, 12, TextAnchor.MiddleCenter, InkDim);
             Place(timer.rectTransform, 0.45f, 0f, 0.67f, 1f, Vector2.zero, Vector2.zero);
             if (catalog) timer.text = "—";
+            else if (row["npc"]?.Value<bool>() == true) timer.text = "до исполнения";
             else _timers.Add(new KeyValuePair<Text, long>(timer, DeadlineFor(row)));
             Text cost = Label("Price", rect, 15, TextAnchor.MiddleCenter, price > 0 ? Accent : InkDim, FontStyle.Bold);
             Place(cost.rectTransform, 0.67f, 0f, 0.85f, 1f, Vector2.zero, Vector2.zero);
             cost.text = price > 0 ? price + " марок" : "—";
-            Button buy = TextButton("Open", rect, catalog ? "ОТКРЫТЬ" : _availability == 0 ? "КУПИТЬ" : "ПРОДАТЬ", 12, out Text buyText);
+            bool mine = row["mine"]?.Value<bool>() == true;
+            bool isSell = row["side"]?.ToString() == "sell";
+            bool quickSale = !isSell && CanQuickSell(row);
+            bool needsQuote = !isSell && BlackMarket && !quickSale && Backpack(itemId) > 0;
+            bool canAct = catalog || mine || (!_actionBusy && (isSell ? Marks >= price : quickSale || needsQuote));
+            string actionLabel = catalog ? "ОТКРЫТЬ" : mine ? "МОЙ ОРДЕР" : isSell ? "КУПИТЬ 1"
+                : needsQuote ? "УТОЧНИТЬ" : quickSale ? "ПРОДАТЬ 1"
+                : Backpack(itemId) > 0 ? "НУЖНО 100%" : "НЕТ ТОВАРА";
+            Button buy = TextButton("Act", rect, actionLabel, 12, out Text buyText);
             Place((RectTransform)buy.transform, 0.85f, 0f, 1f, 1f, new Vector2(4f, 12f), new Vector2(-10f, -12f));
-            buy.GetComponent<Image>().color = ButtonBg;
-            buyText.color = Accent;
+            buy.GetComponent<Image>().color = canAct ? ButtonBg : QuietBg;
+            buyText.color = canAct ? Accent : InkDim;
+            buy.interactable = canAct;
             button.onClick.AddListener(() => OpenBrowseRow(row, catalog));
-            buy.onClick.AddListener(() => OpenBrowseRow(row, catalog));
+            buy.onClick.AddListener(() => {
+                if (catalog || mine || needsQuote) OpenBrowseRow(row, catalog);
+                else ExecuteOffer(row);
+            });
             _rows.Add(go);
         }
 
@@ -1451,6 +1541,171 @@ namespace RealmOfAshes.Game
         {
             if (catalog) { SelectItem(row["itemId"]?.ToString() ?? string.Empty); return; }
             SelectOrder(row, false);
+        }
+
+        private string QuickSaleRuntimeId(JObject order)
+        {
+            string itemId = order?["itemId"]?.ToString() ?? string.Empty;
+            if (Backpack(itemId) < 1) return null;
+            if (RoaItemData.ConditionMode(itemId) == "shared"
+                && Inventory != null && Inventory.BagConditionPercent(itemId) < 100f) return null;
+            if (RoaItemData.ConditionMode(itemId) != "runtime" && RoaItemData.Category(itemId) != "artifacts")
+                return string.Empty;
+            return SaleInstances(itemId).FirstOrDefault(id => Inventory != null
+                && Inventory.BagConditionPercent(id) >= 100f);
+        }
+
+        private bool CanQuickSell(JObject order)
+        {
+            return QuickSaleRuntimeId(order) != null;
+        }
+
+        private void ExecuteOffer(JObject order)
+        {
+            if (_actionBusy || Interaction == null || Interaction.Socket == null) return;
+            string id = order?["id"]?.ToString() ?? string.Empty;
+            int price = order?["price"]?.Value<int>() ?? 0;
+            if (string.IsNullOrEmpty(id) || price <= 0) return;
+            if (order["side"]?.ToString() == "sell")
+            {
+                if (Marks < price) return;
+                SendMarket(done => RoaAuctionNet.BuyNow(Interaction.Socket, id, 1, done, price, _buyToBag));
+            }
+            else
+            {
+                string runtimeId = QuickSaleRuntimeId(order);
+                if (runtimeId == null) return;
+                SendMarket(done => RoaAuctionNet.SellNow(Interaction.Socket, id, 1, runtimeId, done, price));
+            }
+        }
+
+        private void CloseInspector()
+        {
+            if (_inspectPanel != null) Destroy(_inspectPanel.gameObject);
+            _inspectPanel = null;
+        }
+
+        private void ShowItemDetails(string itemId, JObject offer)
+        {
+            CloseInspector();
+            JObject details = offer?["itemDetails"] as JObject;
+            string name = RoaItemData.Name(itemId);
+            _inspectPanel = Child("ItemInspector", _panel);
+            Place(_inspectPanel, 0f, 0f, 1f, 1f, Vector2.zero, Vector2.zero);
+            _inspectPanel.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.88f);
+            RectTransform card = Child("InspectCard", _inspectPanel);
+            Place(card, 0.5f, 0.5f, 0.5f, 0.5f, new Vector2(-430f, -280f), new Vector2(430f, 280f));
+            card.gameObject.AddComponent<Image>().color = PanelBg;
+            card.gameObject.AddComponent<Outline>().effectColor = PanelBorder;
+            GameObject tile = AddItemTile(card, itemId, 16f, 0f, 58f);
+            RectTransform icon = (RectTransform)tile.transform;
+            icon.anchorMin = icon.anchorMax = new Vector2(0f, 1f);
+            icon.pivot = new Vector2(0f, 1f);
+            icon.anchoredPosition = new Vector2(16f, -12f);
+            Text heading = Label("InspectTitle", card, 19, TextAnchor.MiddleLeft, Accent, FontStyle.Bold);
+            Place(heading.rectTransform, 0f, 1f, 1f, 1f, new Vector2(86f, -68f), new Vector2(-64f, -12f));
+            heading.text = name;
+            Button close = TextButton("InspectClose", card, "✕", 18, out Text closeText);
+            Place((RectTransform)close.transform, 1f, 1f, 1f, 1f,
+                new Vector2(-54f, -54f), new Vector2(-14f, -14f));
+            closeText.color = Accent;
+            close.onClick.AddListener(CloseInspector);
+
+            RectTransform viewport = Child("InspectViewport", card);
+            Place(viewport, 0f, 0f, 1f, 1f, new Vector2(16f, 14f), new Vector2(-16f, -84f));
+            viewport.gameObject.AddComponent<RectMask2D>();
+            ScrollRect scroll = viewport.gameObject.AddComponent<ScrollRect>();
+            Text body = Label("InspectText", viewport, 16, TextAnchor.UpperLeft, Ink);
+            body.rectTransform.anchorMin = new Vector2(0f, 1f);
+            body.rectTransform.anchorMax = new Vector2(1f, 1f);
+            body.rectTransform.pivot = new Vector2(0.5f, 1f);
+            body.rectTransform.sizeDelta = Vector2.zero;
+            body.rectTransform.anchoredPosition = Vector2.zero;
+            body.horizontalOverflow = HorizontalWrapMode.Wrap;
+            body.verticalOverflow = VerticalWrapMode.Overflow;
+            body.text = ItemDetailText(itemId, offer, details);
+            body.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            scroll.viewport = viewport;
+            scroll.content = body.rectTransform;
+            RoaUiScroll.Configure(scroll);
+            _inspectPanel.SetAsLastSibling();
+        }
+
+        private static string ItemDetailText(string itemId, JObject offer, JObject details)
+        {
+            var text = new StringBuilder();
+            int tier = RoaItemData.Tier(itemId);
+            text.Append(MarketType(itemId));
+            if (tier > 0) text.Append(" · ранг ").Append(tier);
+            text.Append("\nВес: ").Append(RoaItemData.Weight(itemId).ToString("0.#")).Append(" кг");
+            if (offer != null && offer["price"] != null)
+                text.Append("\n").Append(offer["side"]?.ToString() == "buy" ? "Заявка на выкуп" : "Предложение")
+                    .Append(": ").Append(offer["price"]).Append(" марок · ").Append(offer["qty"]).Append(" шт");
+            if (RoaItemData.ConditionMode(itemId) != "none" && details != null
+                && offer?["id"] != null)
+                text.Append("\nПрочность: ").Append((details["condition"]?.Value<float>() ?? 100f).ToString("0.#")).Append('%');
+            JObject weapon = details?["weapon"] as JObject;
+            if (weapon != null)
+            {
+                text.Append("\n\nХАРАКТЕРИСТИКИ\nУрон: ").Append(weapon["damageMin"]).Append('–').Append(weapon["damageMax"])
+                    .Append(" · дальность: ").Append(weapon["range"]).Append(" м")
+                    .Append("\nАтака: ").Append(weapon["apCost"]).Append(" ОД");
+                if (weapon["ammoType"]?.ToString().Length > 0)
+                    text.Append(" · магазин: ").Append(weapon["magazine"])
+                        .Append(" · боеприпас: ").Append(RoaItemData.Name(weapon["ammoType"]?.ToString()));
+            }
+            JObject armor = details?["armor"] as JObject;
+            if (armor != null)
+            {
+                text.Append("\n\nЗАЩИТА");
+                JObject protection = armor["protection"] as JObject;
+                foreach (JProperty part in protection?.Properties() ?? Enumerable.Empty<JProperty>())
+                {
+                    float percent = part.Value.Value<float>() * 100f;
+                    float threshold = armor["thresholds"]?[part.Name]?.Value<float>() ?? 0f;
+                    text.Append("\n").Append(DamageLabel(part.Name)).Append(": ")
+                        .Append(percent.ToString("0.#")).Append('%');
+                    if (threshold > 0) text.Append(" · порог ").Append(threshold.ToString("0.#"));
+                }
+            }
+            JObject mods = details?["weaponMods"] as JObject;
+            if (RoaWeaponModificationData.IsFirearm(itemId))
+            {
+                text.Append("\n\nУСТАНОВЛЕННЫЕ МОДИФИКАЦИИ");
+                if (offer?["id"] == null) text.Append("\nЗависят от выбранного лота");
+                else if (offer?["side"]?.ToString() == "buy") text.Append("\nЭкземпляр ещё не выбран");
+                else if (details == null) text.Append("\nДанные экземпляра недоступны");
+                else if (mods == null || !mods.Properties().Any()) text.Append("\nНет");
+                else foreach (JProperty slot in mods.Properties())
+                {
+                    RoaWeaponModificationData.Definition mod = RoaWeaponModificationData.Find(slot.Value.ToString());
+                    text.Append("\n").Append(RoaWeaponModificationData.SlotLabel(slot.Name)).Append(": ")
+                        .Append(mod?.Name ?? slot.Value.ToString());
+                    if (mod != null) text.Append(" — ").Append(mod.Effect);
+                }
+            }
+            string artifact = offer != null ? AuctionArtifactLine(offer).Trim() : string.Empty;
+            if (!string.IsNullOrEmpty(artifact)) text.Append("\n\n").Append(artifact);
+            string description = RoaItemData.Description(itemId);
+            if (!string.IsNullOrEmpty(description)) text.Append("\n\n").Append(description);
+            if (offer != null && offer["side"]?.ToString() == "sell"
+                && offer["qty"]?.Value<int>() > 1 && RoaItemData.ConditionMode(itemId) == "runtime")
+                text.Append("\n\nПоказан следующий экземпляр из предложения. Другие экземпляры могут отличаться.");
+            return text.ToString();
+        }
+
+        private static string DamageLabel(string type)
+        {
+            switch (type)
+            {
+                case "ballistic": return "Пули";
+                case "explosive": return "Взрывы";
+                case "energy": return "Энергия";
+                case "fire": return "Огонь";
+                case "radiation": return "Радиация";
+                case "toxic": return "Яд";
+                default: return type;
+            }
         }
 
         private GameObject AddItemTile(RectTransform parent, string itemId, float x, float y, float size)
@@ -1462,13 +1717,23 @@ namespace RealmOfAshes.Game
             tile.sizeDelta = new Vector2(size, size);
             tile.gameObject.AddComponent<Image>().color = RowSelected;
             tile.gameObject.AddComponent<Outline>().effectColor = PanelBorder;
-            string category = RoaItemData.Category(itemId);
-            string initials = category == "weapons" ? "ОР" : category == "armor" ? "БР"
-                : category == "ammo" ? "ПТ" : category == "artifacts" ? "АР"
-                : category == "aid" ? "МД" : category == "materials" ? "РС" : "ВЩ";
-            Text glyph = Label("Symbol", tile, 15, TextAnchor.MiddleCenter, Accent, FontStyle.Bold);
-            Stretch(glyph.rectTransform, 0f);
-            glyph.text = initials;
+            Sprite sprite = RoaApocalypseItemIcons.For(itemId);
+            if (sprite != null)
+            {
+                RectTransform art = Child("ItemIcon", tile);
+                Place(art, 0f, 0f, 1f, 1f, new Vector2(3f, 3f), new Vector2(-3f, -3f));
+                Image icon = art.gameObject.AddComponent<Image>();
+                icon.sprite = sprite;
+                icon.preserveAspect = true;
+                icon.raycastTarget = false;
+            }
+            else
+            {
+                Text glyph = Label("Symbol", tile, 15, TextAnchor.MiddleCenter, Accent, FontStyle.Bold);
+                Stretch(glyph.rectTransform, 0f);
+                glyph.text = "?";
+                glyph.raycastTarget = false;
+            }
             return tile.gameObject;
         }
 
@@ -1489,7 +1754,7 @@ namespace RealmOfAshes.Game
             {
                 _modalQty.text = "1";
                 _modalPrice.text = suggested.ToString();
-                bool selling = _tab == Tab.Sell;
+                bool selling = _tab == Tab.Sell || BlackMarket;
                 JObject best = BestAvailableOrder(itemId, selling ? "buy" : "sell");
                 _modalMode = selling ? (best != null ? 1 : 2) : (best != null ? 0 : 3);
                 _orderId = best?["id"]?.ToString() ?? string.Empty;
@@ -1593,16 +1858,21 @@ namespace RealmOfAshes.Game
 
             var go = new GameObject("Order", typeof(RectTransform));
             go.transform.SetParent(_list, false);
-            go.AddComponent<LayoutElement>().preferredHeight = 44f;
+            go.AddComponent<LayoutElement>().preferredHeight = 52f;
             go.AddComponent<Image>().color = mine ? RowSelected : RowBg;
             var rect = (RectTransform)go.transform;
 
+            GameObject tile = AddItemTile(rect, itemId, 5f, 5f, 42f);
+            Button inspect = tile.AddComponent<Button>();
+            inspect.targetGraphic = tile.GetComponent<Image>();
+            inspect.onClick.AddListener(() => ShowItemDetails(itemId, order));
+
             Text priceText = Label("Price", rect, 15, TextAnchor.UpperLeft, side == "sell" ? Ink : Good, FontStyle.Bold);
-            Place(priceText.rectTransform, 0f, 0f, 0.3f, 1f, new Vector2(10f, 20f), new Vector2(-4f, -3f));
+            Place(priceText.rectTransform, 0f, 0f, 0.3f, 1f, new Vector2(55f, 26f), new Vector2(-4f, -3f));
             priceText.text = price + " за шт";
 
             Text qtyText = Label("Qty", rect, 11, TextAnchor.LowerLeft, InkDim);
-            Place(qtyText.rectTransform, 0f, 0f, 0.3f, 1f, new Vector2(10f, 4f), new Vector2(-4f, -22f));
+            Place(qtyText.rectTransform, 0f, 0f, 0.3f, 1f, new Vector2(55f, 4f), new Vector2(-4f, -27f));
             qtyText.text = qty + " шт · всего " + (qty * price);
 
             Text owner = Label("Owner", rect, 12, TextAnchor.UpperLeft, InkDim);
@@ -1618,7 +1888,8 @@ namespace RealmOfAshes.Game
 
             Text timer = Label("Timer", rect, 11, TextAnchor.UpperRight, InkDim);
             Place(timer.rectTransform, 0.62f, 0f, 1f, 1f, new Vector2(0f, 20f), new Vector2(-10f, -3f));
-            _timers.Add(new KeyValuePair<Text, long>(timer, DeadlineFor(order)));
+            if (order["npc"]?.Value<bool>() == true) timer.text = "до исполнения";
+            else _timers.Add(new KeyValuePair<Text, long>(timer, DeadlineFor(order)));
 
             string label;
             Action action;
@@ -1629,15 +1900,17 @@ namespace RealmOfAshes.Game
             }
             else if (side == "sell")
             {
-                label = "Купить…";
-                action = () => SelectOrder(order, false);
+                label = Marks >= price ? "Купить 1" : "Нет марок";
+                action = Marks >= price ? (Action)(() => ExecuteOffer(order)) : null;
             }
             else
             {
-                int have = Backpack(itemId);
-                int take = Mathf.Min(qty, have);
-                label = have > 0 ? "Продать…" : "Нет товара";
-                action = have > 0 ? (Action)(() => SelectOrder(order, false)) : null;
+                bool canSell = CanQuickSell(order);
+                bool needsQuote = BlackMarket && !canSell && Backpack(itemId) > 0;
+                label = canSell ? "Продать 1" : needsQuote ? "Уточнить"
+                    : Backpack(itemId) > 0 ? "Нужно 100%" : "Нет товара";
+                action = canSell ? (Action)(() => ExecuteOffer(order))
+                    : needsQuote ? (Action)(() => SelectOrder(order, false)) : null;
             }
             Button button = TextButton("Act", rect, label, 12, out Text buttonLabel);
             var buttonRect = (RectTransform)button.transform;
@@ -2096,7 +2369,7 @@ namespace RealmOfAshes.Game
                 ready ? ButtonBg : QuietBg, () => {
                     if (!ready) return;
                     SendMarket(done => buying ? RoaAuctionNet.BuyNow(Interaction.Socket, id, quantity, done, price)
-                        : RoaAuctionNet.SellNow(Interaction.Socket, id, quantity, string.Empty, done, price));
+                        : RoaAuctionNet.SellNow(Interaction.Socket, id, quantity, _saleRuntimeId, done, price));
                 });
             AddDetailButton("К ФОРМЕ ЗАЯВКИ", QuietBg, () => { _orderId = string.Empty; Rebuild(); });
         }
@@ -2151,14 +2424,17 @@ namespace RealmOfAshes.Game
             AddDurationRow();
             AddDetailText("Сбор за ордер " + fee + " · налог с продажи " + tax
                 + " · итог после сборов " + Math.Max(0, FormTotal - tax - fee) + ".", 11, fee > Marks ? Warn : InkDim, 40f);
-            if (!Fungible(_itemId)) AddDetailText("Снаряжение принимается полностью отремонтированным. Предметы с собственными свойствами выставляются по одному.", 11, InkDim, 48f);
+            if (!Fungible(_itemId)) AddDetailText(BlackMarket
+                ? "Чёрный рынок принимает снаряжение от " + (_state?["minCondition"]?.Value<int>() ?? 10)
+                    + "% состояния. Каждый предмет выставляется отдельно."
+                : "Снаряжение принимается полностью отремонтированным. Предметы с собственными свойствами выставляются по одному.", 11, InkDim, 48f);
 
             bool ready = ValidOrderForm && qty <= have && fee <= Marks && (Fungible(_itemId) || qty == 1);
             AddDetailButton(ready ? "ВЫСТАВИТЬ ОРДЕР НА " + _durationHours + " Ч" : "УКАЖИТЕ ЦЕНУ И КОЛИЧЕСТВО",
                 ready ? ButtonBg : QuietBg, () =>
                 {
                     if (!ready) return;
-                    SendMarket(done => RoaAuctionNet.SellOrder(Interaction.Socket, _itemId, qty, price, _durationHours, string.Empty, done));
+                    SendMarket(done => RoaAuctionNet.SellOrder(Interaction.Socket, _itemId, qty, price, _durationHours, _saleRuntimeId, done));
                 });
         }
 

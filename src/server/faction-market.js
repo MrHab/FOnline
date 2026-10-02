@@ -118,6 +118,7 @@ function sanitizeOrder(input = {}) {
     qty,
     filled: Math.max(0, Math.floor(Number(input?.filled || 0))),
     price,
+    condition: side === 'sell' ? clamp(input?.condition ?? 100, 1, 100) : 100,
     // Ордер на выкуп держит марки покупателя до исполнения, отмены или срока.
     escrow: side === 'buy' ? Math.max(0, Math.floor(Number(input?.escrow ?? qty * price))) : 0,
     ownerCharacterId,
@@ -144,6 +145,7 @@ function sanitizeShelf(input = {}) {
         itemId: cleanId(row?.itemId, 64),
         qty: Math.max(0, Math.floor(Number(row?.qty || 0))),
         records: sanitizeRecords(row?.records),
+        condition: clamp(row?.condition ?? 100, 1, 100),
         reason: String(row?.reason || 'returned').slice(0, 16),
         at: Math.max(0, Math.floor(Number(row?.at || 0)))
       }))
@@ -349,6 +351,7 @@ function placeSellOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Dat
       ownerCharacterId,
       ownerName: input.ownerName,
       records,
+      condition: input.condition,
       taxPct: input.taxPct,
       createdAt: now,
       durationMs,
@@ -397,7 +400,7 @@ function placeBuyOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Date
     remaining -= take;
     spent += value;
     recordTrade(book, itemId, take, sell.price, ownerCharacterId, sell.ownerCharacterId, fillTax, now);
-    bought.push({ itemId, qty: take, records, price: sell.price });
+    bought.push({ itemId, qty: take, records, condition: sell.condition, price: sell.price });
     fills.push({ orderId: sell.id, sellerCharacterId: sell.ownerCharacterId, qty: take, price: sell.price, tax: fillTax });
   }
 
@@ -501,7 +504,8 @@ function updateOrder(store, orderId, ownerCharacterId, input, rules = DEFAULT_RU
     ? placeSellOrder(draft, request, rules, now) : placeBuyOrder(draft, request, rules, now);
   if (!result.ok) return result;
   if (old.side === 'sell' && check.qty < old.qty) creditShelfItems(draft, ownerCharacterId,
-    [{ itemId: old.itemId, qty: old.qty - check.qty, records: [], reason: 'returned' }], now);
+    [{ itemId: old.itemId, qty: old.qty - check.qty, records: [],
+      condition: old.condition, reason: 'returned' }], now);
   if (old.side === 'buy' && result.bought.length) creditShelfItems(draft, ownerCharacterId, result.bought, now);
   if (result.order) {
     delete draft.orders[result.order.id];
@@ -525,7 +529,8 @@ function cancelOrder(store = {}, orderId = '', ownerCharacterId = '', now = Date
   delete store.orders[order.id];
   const shelf = ensureShelf(store, order.ownerCharacterId);
   if (order.side === 'buy') shelf.silver += order.escrow;
-  else shelf.items.push({ itemId: order.itemId, qty: order.qty, records: order.records, reason: 'cancelled', at: Number(now) });
+  else shelf.items.push({ itemId: order.itemId, qty: order.qty, records: order.records,
+    condition: order.condition, reason: 'cancelled', at: Number(now) });
   recordActivity(store, order.ownerCharacterId, 'cancelled', order, now);
   return { ok: true, order };
 }
@@ -539,7 +544,8 @@ function expireOrders(store = {}, rules = DEFAULT_RULES, now = Date.now()) {
     delete store.orders[order.id];
     const shelf = ensureShelf(store, order.ownerCharacterId);
     if (order.side === 'buy') shelf.silver += order.escrow;
-    else shelf.items.push({ itemId: order.itemId, qty: order.qty, records: order.records, reason: 'expired', at: Number(now) });
+    else shelf.items.push({ itemId: order.itemId, qty: order.qty, records: order.records,
+      condition: order.condition, reason: 'expired', at: Number(now) });
     resolved.push({ ...order, resolution: 'expired' });
     recordActivity(store, order.ownerCharacterId, 'expired', order, now);
   }
@@ -558,6 +564,7 @@ function creditShelfItems(store = {}, characterId = '', rows = [], now = Date.no
       itemId,
       qty,
       records: sanitizeRecords(row?.records),
+      condition: clamp(row?.condition ?? 100, 1, 100),
       reason: String(row?.reason || 'bought').slice(0, 16),
       at: Number(now)
     });
@@ -610,7 +617,7 @@ function commitShelfClaim(store = {}, characterId = '', claimed = {}) {
  * исследованного — его точные свойства. Проекцию передаёт сервер, чтобы модуль
  * рынка не знал про каталог артефактов; без неё остаётся только счётчик.
  */
-function publicOrder(order = {}, now = Date.now(), viewerCharacterId = '', projectArtifact = null) {
+function publicOrder(order = {}, now = Date.now(), viewerCharacterId = '', projectArtifact = null, projectItem = null) {
   const artifactRows = (order.records || []).filter(row => row?.artifact);
   return {
     id: order.id,
@@ -620,6 +627,7 @@ function publicOrder(order = {}, now = Date.now(), viewerCharacterId = '', proje
     qty: order.qty,
     filled: order.filled,
     price: order.price,
+    condition: order.condition,
     total: order.qty * order.price,
     ownerName: order.ownerName || 'Торговец',
     mine: order.ownerCharacterId === cleanId(viewerCharacterId, 96),
@@ -628,7 +636,9 @@ function publicOrder(order = {}, now = Date.now(), viewerCharacterId = '', proje
     artifactCount: artifactRows.length,
     artifacts: typeof projectArtifact === 'function'
       ? artifactRows.map(row => projectArtifact(row.artifact)).filter(Boolean)
-      : []
+      : [],
+    ...(typeof projectItem === 'function'
+      ? { itemDetails: order.side === 'sell' ? projectItem(order) : null } : {})
   };
 }
 
@@ -657,13 +667,16 @@ function marketItems(orders = []) {
 function publicMarket(store = {}, viewerCharacterId = '', rules = DEFAULT_RULES, now = Date.now(), options = {}) {
   const shelf = shelfFor(store, viewerCharacterId);
   const projectArtifact = typeof options?.projectArtifact === 'function' ? options.projectArtifact : null;
+  const projectItem = typeof options?.projectItem === 'function' ? options.projectItem : null;
   const orders = activeOrders(store, now)
-    .map(row => publicOrder(row, now, viewerCharacterId, projectArtifact));
-  const items = marketItems(orders);
+    .map(row => publicOrder(row, now, viewerCharacterId, projectArtifact, projectItem));
+  const items = marketItems(orders).map(row => ({ ...row,
+    ...(projectItem ? { itemDetails: projectItem({ itemId: row.itemId, condition: 100, records: [] }) } : {}) }));
   const listed = new Set(items.map(row => row.itemId));
   for (const row of options.catalog || []) {
     if (!listed.has(row.itemId)) items.push({ itemId: row.itemId, category: row.category,
-      sellQty: 0, sellPrice: 0, buyQty: 0, buyPrice: 0, mine: false });
+      sellQty: 0, sellPrice: 0, buyQty: 0, buyPrice: 0, mine: false,
+      ...(projectItem ? { itemDetails: projectItem({ itemId: row.itemId, condition: 100, records: [] }) } : {}) });
   }
   const counts = new Map();
   for (const row of items) counts.set(row.category, (counts.get(row.category) || 0) + 1);

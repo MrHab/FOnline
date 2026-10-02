@@ -86,7 +86,8 @@ namespace RealmOfAshes.EditorTools
                     new JObject { ["itemId"] = "antibiotics", ["category"] = "aid", ["sellQty"] = 3, ["sellPrice"] = 46 },
                     new JObject { ["itemId"] = "scrap", ["category"] = "materials", ["sellQty"] = 85, ["sellPrice"] = 8 },
                     new JObject { ["itemId"] = "ore", ["category"] = "materials", ["sellQty"] = 20, ["sellPrice"] = 11 },
-                    new JObject { ["itemId"] = "repairKit", ["category"] = "tools", ["sellQty"] = 4, ["sellPrice"] = 75 }),
+                    new JObject { ["itemId"] = "repairKit", ["category"] = "tools", ["sellQty"] = 4, ["sellPrice"] = 75 },
+                    new JObject { ["itemId"] = "pistol", ["category"] = "weapons", ["sellQty"] = 1, ["sellPrice"] = 120 }),
                 ["orders"] = new JArray(
                     new JObject { ["id"] = "lot_1", ["itemId"] = "ammo9", ["category"] = "ammo", ["side"] = "sell", ["qty"] = 40, ["price"] = 12, ["mine"] = false, ["ownerName"] = "Торговец", ["remainingSeconds"] = 86400 },
                     new JObject { ["id"] = "buy_2", ["itemId"] = "ammo9", ["category"] = "ammo", ["side"] = "buy", ["qty"] = 10, ["price"] = 8, ["mine"] = true, ["filled"] = 3, ["remainingSeconds"] = 86400 },
@@ -98,7 +99,13 @@ namespace RealmOfAshes.EditorTools
                     new JObject { ["id"] = "lot_8", ["itemId"] = "antibiotics", ["category"] = "aid", ["side"] = "sell", ["qty"] = 3, ["price"] = 46, ["remainingSeconds"] = 61000 },
                     new JObject { ["id"] = "lot_9", ["itemId"] = "scrap", ["category"] = "materials", ["side"] = "sell", ["qty"] = 85, ["price"] = 8, ["remainingSeconds"] = 63000 },
                     new JObject { ["id"] = "lot_10", ["itemId"] = "ore", ["category"] = "materials", ["side"] = "sell", ["qty"] = 20, ["price"] = 11, ["remainingSeconds"] = 64000 },
-                    new JObject { ["id"] = "lot_11", ["itemId"] = "repairKit", ["category"] = "tools", ["side"] = "sell", ["qty"] = 4, ["price"] = 75, ["remainingSeconds"] = 65000 }),
+                    new JObject { ["id"] = "lot_11", ["itemId"] = "repairKit", ["category"] = "tools", ["side"] = "sell", ["qty"] = 4, ["price"] = 75, ["remainingSeconds"] = 65000 },
+                    new JObject { ["id"] = "lot_12", ["itemId"] = "pistol", ["category"] = "weapons", ["side"] = "sell", ["qty"] = 1,
+                        ["price"] = 120, ["remainingSeconds"] = 65000, ["condition"] = 100,
+                        ["itemDetails"] = new JObject { ["condition"] = 100,
+                            ["weapon"] = new JObject { ["damageMin"] = 19, ["damageMax"] = 28, ["range"] = 12,
+                                ["apCost"] = 3, ["magazine"] = 1, ["ammoType"] = "ammo9" },
+                            ["weaponMods"] = new JObject { ["barrel"] = "barrel_precision" } } }),
                 ["shelf"] = new JObject { ["silver"] = 55, ["items"] = new JArray(), ["sales"] = 1 },
                 ["historyItemId"] = "ammo9", ["history"] = new JArray(24, 168, 672).Select(hours => new JObject {
                     ["hours"] = (int)hours, ["qty"] = 125, ["average"] = 11.4, ["min"] = 8, ["max"] = 14 }).Aggregate(new JArray(), (array, row) => { array.Add(row); return array; }),
@@ -114,13 +121,18 @@ namespace RealmOfAshes.EditorTools
         private static async void RunRuntime()
         {
             try {
-                var modes = new[] { "listing", "catalog", "buy", "sell", "sellorder", "buyorder", "edit", "journal" }
+                JObject itemCatalog = JObject.Parse(File.ReadAllText(Path.GetFullPath(
+                    Path.Combine(Application.dataPath, "../../data/kromka/items.json"))));
+                Require(RoaItemData.ApplyCatalog(itemCatalog, out string catalogError),
+                    "The authored item catalog must load: " + catalogError);
+                var modes = new[] { "listing", "catalog", "inspect", "buy", "sell", "sellorder", "buyorder", "edit", "journal",
+                    "blackmarket", "blackmarketorder", "blackmarketworn" }
                     .Concat(File.Exists(Path.Combine(Output, "verified-state.json")) ? new[] { "verified" } : Array.Empty<string>());
                 foreach (bool mobile in new[] { false, true })
                     foreach (string mode in modes)
                         await Capture(mode, mobile);
                 RoaAuctionSinCaptureProbe.Run();
-                File.WriteAllText(Path.Combine(Output, "result.txt"), "PASS: listing filters, catalogue search, four item actions, quantity, price history, editing and journal at 1440x810 and 844x390"
+                File.WriteAllText(Path.Combine(Output, "result.txt"), "PASS: offer actions, item icons and modification inspection, cascading category/type/rank filters, catalogue search, Black Market bids and asks at 1440x810 and 844x390"
                     + (File.Exists(Path.Combine(Output, "verified-state.json")) ? "; captured live server trade history." : "."));
                 SessionState.SetInt(Key + ".result", 0);
                 Debug.Log("[AUCTION MARKET] PASS: runtime interactions and desktop/mobile captures.");
@@ -140,7 +152,10 @@ namespace RealmOfAshes.EditorTools
             Texture2D image = null;
             var previous = RenderTexture.active;
             try {
-                var self = new JObject { ["inventory"] = new JArray(new JObject { ["id"] = "silver", ["qty"] = 4200 }, new JObject { ["id"] = "ammo9", ["qty"] = 30 }) };
+                var self = new JObject { ["inventory"] = new JArray(new JObject { ["id"] = "silver", ["qty"] = 4200 },
+                    new JObject { ["id"] = "ammo9", ["qty"] = 30 }, new JObject { ["id"] = "ballisticVest", ["qty"] = 1 }) };
+                if (mode == "blackmarketworn")
+                    self["itemConditions"] = new JObject { ["ballisticVest"] = 80 };
                 var socket = host.AddComponent<RoaSocketClient>(); socket.enabled = false;
                 typeof(RoaSocketClient).GetProperty("Session").SetValue(socket, new JoinAck { Self = self, LocationId = "sluiceCity" });
                 var inventory = host.AddComponent<RoaInventory>(); inventory.enabled = false; inventory.Socket = socket;
@@ -150,11 +165,24 @@ namespace RealmOfAshes.EditorTools
                 ((GameObject)Get(screen, "_root")).SetActive(true);
                 Set(screen, "_inventory", inventory);
                 var state = State();
+                bool blackMarket = mode == "blackmarket" || mode == "blackmarketorder" || mode == "blackmarketworn";
+                if (blackMarket) {
+                    state["marketName"] = "Чёрный рынок";
+                    state["blackMarket"] = true;
+                    state["minCondition"] = 10;
+                    state["items"] = new JArray(new JObject { ["itemId"] = "ballisticVest", ["category"] = "armor",
+                        ["sellQty"] = 0, ["buyQty"] = 2, ["buyPrice"] = 60 });
+                    state["orders"] = new JArray(new JObject { ["id"] = "bm_ballisticVest", ["itemId"] = "ballisticVest",
+                        ["category"] = "armor", ["side"] = "buy", ["qty"] = 2, ["price"] = 60,
+                        ["mine"] = false, ["npc"] = true, ["ownerName"] = "Чёрный рынок" });
+                }
                 Set(screen, "_state", state); Set(screen, "_durationHours", 720);
                 Set(screen, "_snapshotAt", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
                 Set(screen, "_tab", mode == "edit" ? "Mine" : mode == "journal" ? "Journal" : "Buy");
-                Require((int)Get(screen, "_availability") == 2, "The market must open with the full item catalog.");
+                Require((int)Get(screen, "_availability") == 3, "The market must open with live offers.");
                 if (mode == "listing") Set(screen, "_availability", 0);
+                if (mode == "catalog") Set(screen, "_availability", 2);
+                if (blackMarket) Set(screen, "_availability", 1);
                 if (mode == "verified") {
                     var verified = JObject.Parse(File.ReadAllText(Path.Combine(Output, "verified-state.json")));
                     Require(verified["itemId"]?.ToString() == "ammo9", "The live capture must be for ammo9.");
@@ -172,6 +200,11 @@ namespace RealmOfAshes.EditorTools
                 if (mode == "sellorder" || mode == "buyorder") {
                     Call(screen, "SelectItem", "ammo9");
                     Call(screen, "ChooseMarketMode", mode == "sellorder" ? 2 : 3);
+                }
+                if (mode == "blackmarket") Call(screen, "SelectOrder", state["orders"][0] as JObject, false);
+                if (mode == "blackmarketorder") {
+                    Call(screen, "SelectItem", "ballisticVest");
+                    Call(screen, "ChooseMarketMode", 2);
                 }
                 var canvas = host.GetComponentInChildren<Canvas>();
                 RoaUiScale.Apply(canvas.GetComponent<CanvasScaler>(), mobile);
@@ -197,13 +230,52 @@ namespace RealmOfAshes.EditorTools
                         "Search must find an item with no active listings.");
                 }
                 if (mode == "listing") {
-                    Require((int)Get(screen, "_pageCount") == 2, "Nine listings must span two pages.");
+                    Require((int)Get(screen, "_pageCount") == 2, "Listings must span two pages.");
                     ((Button)Get(screen, "_nextPage")).onClick.Invoke();
                     Require((int)Get(screen, "_page") == 1, "Next page must change the visible listings.");
                     ((Button)Get(screen, "_previousPage")).onClick.Invoke();
                     await Task.Yield(); await Task.Yield();
                     Require(((RectTransform)Get(screen, "_list")).Cast<Transform>().Count(child => child.name == "Item") == 7,
                         "A market page must display seven individual offers.");
+                    var firstOffer = ((RectTransform)Get(screen, "_list")).Cast<Transform>().First(child => child.name == "Item");
+                    Require(firstOffer.GetComponentsInChildren<Button>().Any(button => button.name == "Act"
+                        && button.GetComponentInChildren<Text>()?.text.Contains("КУПИТЬ 1") == true),
+                        "A live offer must have its direct action in the list.");
+                    Require(firstOffer.GetComponentsInChildren<Image>().Any(icon => icon.name == "ItemIcon" && icon.sprite != null),
+                        "Offer rows must render authored item art.");
+                }
+                if (mode == "inspect") {
+                    ((InputField)Get(screen, "_searchInput")).text = RoaItemData.Name("pistol");
+                    await Task.Yield(); await Task.Yield();
+                    host.GetComponentsInChildren<Button>().First(button => button.name == "CategoryFilter").onClick.Invoke();
+                    host.GetComponentsInChildren<Button>().First(button => button.name == "Option"
+                        && button.GetComponentInChildren<Text>()?.text == "Оружие").onClick.Invoke();
+                    host.GetComponentsInChildren<Button>().First(button => button.name == "TypeFilter").onClick.Invoke();
+                    host.GetComponentsInChildren<Button>().First(button => button.name == "Option"
+                        && button.GetComponentInChildren<Text>()?.text == RoaItemData.Name("ammo9")).onClick.Invoke();
+                    host.GetComponentsInChildren<Button>().First(button => button.name == "TierFilter").onClick.Invoke();
+                    host.GetComponentsInChildren<Button>().First(button => button.name == "Option"
+                        && button.GetComponentInChildren<Text>()?.text == "Ранг 1").onClick.Invoke();
+                    Require((string)Get(screen, "_category") == "weapons"
+                        && (string)Get(screen, "_typeFilter") == RoaItemData.Name("ammo9")
+                        && (int)Get(screen, "_tierFilter") == 1,
+                        "Category, type and rank must form a working filter hierarchy.");
+                    await Task.Yield(); await Task.Yield();
+                    var item = ((RectTransform)Get(screen, "_list")).Cast<Transform>().First(child => child.name == "Item");
+                    item.GetComponentsInChildren<Button>().First(button => button.name == "ItemTile").onClick.Invoke();
+                    await Task.Yield();
+                    var inspector = (RectTransform)Get(screen, "_inspectPanel");
+                    Require(inspector != null && inspector.GetComponentsInChildren<Text>().Any(label => label.text.Contains("Прецизионный ствол")
+                        && label.text.Contains("Урон: 19–28")), "The icon must open this offer's stats and installed modification.");
+                }
+                if (mode == "blackmarketworn") {
+                    Button quote = host.GetComponentsInChildren<Button>().First(button => button.name == "Act");
+                    Require(quote.GetComponentInChildren<Text>()?.text == "УТОЧНИТЬ",
+                        "A worn Black Market item must request a condition-adjusted quote before sale.");
+                    quote.onClick.Invoke();
+                    await Task.Yield();
+                    Require(host.GetComponentsInChildren<Text>().Any(label => label.text.Contains("точная сумма зависит от состояния")),
+                        "The trade form must explain the adjusted payout for worn gear.");
                 }
                 if (mode == "buy" || mode == "verified") {
                     Require(host.GetComponentsInChildren<RectTransform>().Count(rect => rect.name == "TradeHour") == (mode == "verified" ? 1 : 2),
@@ -218,8 +290,14 @@ namespace RealmOfAshes.EditorTools
                 string all = string.Join("\n", host.GetComponentsInChildren<Text>().Select(text => text.text));
                 Require(all.Contains(mode == "buy" || mode == "verified" ? "К оплате: 36" : mode == "edit" ? "СОХРАНИТЬ ИЗМЕНЕНИЯ"
                     : mode == "journal" ? "Продано" : mode == "catalog" ? RoaItemData.Name("medkit")
-                    : mode == "listing" ? "КУПИТЬ С РЫНКА" : mode == "sellorder" ? "ВЫСТАВИТЬ НА ПРОДАЖУ"
-                    : mode == "sell" ? "ПРОДАТЬ" : "ПОСТАВИТЬ ЗАЯВКУ"), "Missing action in " + mode);
+                    : mode == "listing" ? "КУПИТЬ С РЫНКА" : mode == "inspect" ? "Прецизионный ствол"
+                    : mode == "sellorder" ? "ВЫСТАВИТЬ НА ПРОДАЖУ"
+                    : mode == "sell" || mode == "blackmarket" || mode == "blackmarketworn" ? "ПРОДАТЬ"
+                    : mode == "blackmarketorder" ? "ВЫСТАВИТЬ НА ПРОДАЖУ" : "ПОСТАВИТЬ ЗАЯВКУ"), "Missing action in " + mode);
+                if (blackMarket) {
+                    Require(all.Contains("ЗАЯВКИ НА ВЫКУП") && !all.Contains("ПОСТАВИТЬ ЗАЯВКУ"),
+                        "The Black Market must show NPC bids without a player buy action.");
+                }
                 if (mode == "buy" || mode == "verified") Require(all.Contains("К оплате: 36"), "Partial purchase total must be 36.");
                 if (mode == "edit") Require(all.Contains("Вернётся: 56"), "Edit must preview the correct reserve refund.");
                 Camera camera = cameraObject.AddComponent<Camera>(); camera.enabled = false;

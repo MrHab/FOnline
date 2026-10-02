@@ -1,24 +1,22 @@
 'use strict';
 
 /**
- * Чёрный рынок экономики v3 (библия 14.5, KRM-22): единственный скупщик
- * снаряжения игроков и единственный источник снаряжения в добыче NPC.
+ * Чёрный рынок экономики v3 (библия 14.5, KRM-22): аукционный выкуп
+ * снаряжения игроков и источник снаряжения в добыче NPC.
  *
  * - Рынок только покупает и платит из казны. Казну пополняет доля марок,
  *   которые иначе выпали бы с NPC, поэтому новых марок он не создаёт.
- * - Купленное лежит на складе по полосам ценности; убитый NPC с бюджетом
- *   добычи забирает со склада предмет своей полосы (первым пришёл — первым
- *   выпал). Нет предмета — растёт цена скупки этой полосы.
- * - Каждая продажа слегка сбивает цену полосы, со временем цены возвращаются к
- *   норме, а часть дешёвого склада рынок уничтожает («продажный скупщик»).
+ * - Попытка выдать конкретный предмет из добычи создаёт заявку на него, если
+ *   склад пуст. Цена этой заявки растёт от неудовлетворённого спроса.
+ * - Рынок покупает только объём открытых заявок. Купленное возвращается в
+ *   добычу; часть дешёвого склада исчезает.
  *
  * Модуль не знает о сервере: цены предметов и случайность передаются снаружи.
  */
 
-const BLACK_MARKET_VERSION = 1;
+const BLACK_MARKET_VERSION = 2;
 
 const DEFAULT_CONFIG = Object.freeze({
-  service: 'blackMarket',
   hubLocationId: 'coreMarket',
   categories: Object.freeze(['weapons', 'armor']),
   treasuryShare: 0.2,
@@ -70,7 +68,6 @@ function normalizeBlackMarketConfig(input = {}) {
   const minMultiplier = finite(src.minMultiplier, DEFAULT_CONFIG.minMultiplier, 0.05, 1);
   const categories = Array.isArray(src.categories) && src.categories.length ? src.categories : DEFAULT_CONFIG.categories;
   return Object.freeze({
-    service: safeId(src.service || DEFAULT_CONFIG.service, 32),
     hubLocationId: safeId(src.hubLocationId || DEFAULT_CONFIG.hubLocationId),
     categories: Object.freeze(categories.map(value => safeId(value, 32)).filter(Boolean)),
     treasuryShare: finite(src.treasuryShare, DEFAULT_CONFIG.treasuryShare, 0, 1),
@@ -128,11 +125,24 @@ function normalizeBlackMarketState(raw = {}, config = normalizeBlackMarketConfig
       .slice(-config.maxStockPerItem);
     if (clean.length) stock[id] = clean;
   }
+  const orders = {};
+  const ordersSrc = src.orders && typeof src.orders === 'object' ? src.orders : {};
+  for (const [rawId, rawRow] of Object.entries(ordersSrc)) {
+    const id = safeId(rawId);
+    if (!id || !rawRow || typeof rawRow !== 'object') continue;
+    const qty = Math.min(config.maxStockPerItem - (stock[id]?.length || 0),
+      Math.max(0, Math.floor(Number(rawRow.qty) || 0)));
+    if (qty > 0) orders[id] = {
+      qty,
+      multiplier: finite(rawRow.multiplier, 1, 1, config.maxMultiplier)
+    };
+  }
   return {
     version: BLACK_MARKET_VERSION,
     treasury: Math.max(0, Math.floor(Number.isFinite(Number(src.treasury)) ? Number(src.treasury) : config.startingTreasury)),
     bands,
     stock,
+    orders,
     destroyed: Math.max(0, Math.floor(Number(src.destroyed) || 0)),
     dropped: Math.max(0, Math.floor(Number(src.dropped) || 0)),
     lastDecayAt: Math.max(0, Math.floor(Number.isFinite(Number(src.lastDecayAt)) ? Number(src.lastDecayAt) : Number(now) || 0))
@@ -142,13 +152,13 @@ function normalizeBlackMarketState(raw = {}, config = normalizeBlackMarketConfig
 /**
  * Цена скупки одной единицы: база × доля × множитель полосы × состояние.
  * capShare > 0 ограничивает цену целого предмета долей базы — пока в мире
- * есть NPC-торговцы, скупщик не должен платить больше их самой низкой цены.
+ * есть NPC-торговцы, рынок не должен платить больше их самой низкой цены.
  */
-function blackMarketUnitPrice(state, config, basePrice = 0, condition = 100, capShare = 0) {
+function blackMarketUnitPrice(state, config, basePrice = 0, condition = 100, capShare = 0, itemId = '') {
   const base = Math.max(0, Number(basePrice) || 0);
-  if (base <= 0) return 0;
-  const band = config.bands[bandIndex(config, base)];
-  const multiplier = Number(state?.bands?.[band.id]?.multiplier || 1);
+  const order = state?.orders?.[safeId(itemId)];
+  if (base <= 0 || !order || order.qty <= 0) return 0;
+  const multiplier = Number(order.multiplier || 1);
   const conditionFactor = Math.min(1, Math.max(0.1, (Number(condition) || 0) / 100));
   const cap = Number(capShare) > 0 ? base * Number(capShare) : Infinity;
   return Math.max(1, Math.floor(Math.min(base * config.priceShare * multiplier, cap) * conditionFactor));
@@ -161,19 +171,25 @@ function blackMarketUnitPrice(state, config, basePrice = 0, condition = 100, cap
  */
 function quoteBlackMarketSale(state, config, rows = [], priceOf = () => 0, accepts = () => true, capShare = 0) {
   const lines = [];
+  const requested = new Map();
   let total = 0;
   for (const row of Array.isArray(rows) ? rows : []) {
     const id = safeId(row?.id);
     const qty = Math.max(0, Math.floor(Number(row?.qty) || 0));
     if (!id || qty <= 0) continue;
-    if (!accepts(id)) return { ok: false, error: 'Скупщик берёт только оружие и броню.', itemId: id };
+    if (!accepts(id)) return { ok: false, error: 'Чёрный рынок берёт только оружие и броню.', itemId: id };
+    const combined = (requested.get(id) || 0) + qty;
+    if (combined > (state.orders[id]?.qty || 0)) {
+      return { ok: false, error: 'На этот предмет нет заявки нужного объёма.', itemId: id };
+    }
+    requested.set(id, combined);
     const conditions = Array.from({ length: qty }, (_, index) => finite(
       Array.isArray(row.conditions) ? row.conditions[index] ?? row.condition : row.condition, 100, 1, 100
     ));
     if (conditions.some(value => value < config.minCondition)) {
-      return { ok: false, error: `Скупщик не берёт вещи с состоянием ниже ${config.minCondition}%.`, itemId: id };
+      return { ok: false, error: `Чёрный рынок не берёт вещи с состоянием ниже ${config.minCondition}%.`, itemId: id };
     }
-    const units = conditions.map(value => blackMarketUnitPrice(state, config, priceOf(id), value, capShare));
+    const units = conditions.map(value => blackMarketUnitPrice(state, config, priceOf(id), value, capShare, id));
     if (units.some(value => value <= 0)) return { ok: false, error: 'У этого предмета нет цены скупки.', itemId: id };
     const sum = units.reduce((acc, value) => acc + value, 0);
     lines.push({ id, qty, conditions, units, total: sum });
@@ -185,28 +201,32 @@ function quoteBlackMarketSale(state, config, rows = [], priceOf = () => 0, accep
 /** Продажа по готовой смете: казна платит, предметы ложатся на склад. */
 function applyBlackMarketSale(state, config, quote, priceOf = () => 0, now = Date.now()) {
   if (!quote?.ok) return { ok: false, error: quote?.error || 'Сделка не собрана.' };
+  const requested = new Map();
+  for (const line of quote.lines) requested.set(line.id, (requested.get(line.id) || 0) + line.qty);
+  for (const [id, qty] of requested) {
+    if (qty > (state.orders[id]?.qty || 0)) return { ok: false, error: 'Заявка на предмет уже исполнена.' };
+    if ((state.stock[id]?.length || 0) + qty > config.maxStockPerItem) {
+      return { ok: false, error: 'Склад Чёрного рынка для этого предмета заполнен.' };
+    }
+  }
   if (state.treasury < quote.total) {
-    return { ok: false, error: 'У скупщика сейчас не хватает марок. Загляните позже.' };
+    return { ok: false, error: 'В казне Чёрного рынка не хватает марок. Загляните позже.' };
   }
   state.treasury -= quote.total;
-  let destroyed = 0;
   for (const line of quote.lines) {
     const band = config.bands[bandIndex(config, priceOf(line.id))];
     const bandState = state.bands[band.id];
     const rows = state.stock[line.id] || (state.stock[line.id] = []);
+    const order = state.orders[line.id];
     for (const condition of line.conditions) {
       rows.push({ c: condition, t: now });
       bandState.sold += 1;
-      bandState.multiplier = Math.max(config.minMultiplier, bandState.multiplier - config.supplyStep);
+      order.qty -= 1;
+      order.multiplier = Math.max(1, order.multiplier - config.supplyStep);
     }
-    if (rows.length > config.maxStockPerItem) {
-      // Сверх вместимости скупщик оставляет себе лишнее: предметы уходят из мира.
-      destroyed += rows.length - config.maxStockPerItem;
-      rows.splice(0, rows.length - config.maxStockPerItem);
-    }
+    if (order.qty <= 0) delete state.orders[line.id];
   }
-  state.destroyed += destroyed;
-  return { ok: true, paid: quote.total, destroyed };
+  return { ok: true, paid: quote.total, destroyed: 0 };
 }
 
 /** Доля марок убитого NPC уходит в казну. Возвращает, сколько марок осталось в трупе. */
@@ -218,34 +238,38 @@ function fundBlackMarket(state, config, marks = 0) {
 }
 
 /**
- * Предмет для добычи NPC с бюджетом budget. Бюджет выбирает полосу, и из неё
- * берётся самый старый предмет, даже если он дороже самого бюджета: иначе
- * полный склад полосы не расходовался бы, а её цена росла. Пустая полоса
- * поднимает свою цену скупки, и тогда рынок пробует полосу ниже.
+ * Бюджет выбирает ценовую полосу, случайный вид снаряжения в ней выбирается
+ * до проверки склада. Только купленный экземпляр этого вида может выпасть.
+ * Если его нет, рынок создаёт или поднимает заявку именно на этот вид.
  * Возвращает { itemId, condition } или null.
  */
-function takeBlackMarketLoot(state, config, budget = 0, priceOf = () => 0) {
+function takeBlackMarketLoot(state, config, budget = 0, priceOf = () => 0, candidates = [], random = Math.random) {
   const start = bandIndex(config, budget);
-  for (let index = start; index >= 0; index -= 1) {
-    const band = config.bands[index];
-    let bestId = '';
-    let bestAt = Infinity;
-    for (const [id, rows] of Object.entries(state.stock)) {
-      if (!rows.length || bandIndex(config, priceOf(id)) !== index) continue;
-      if (rows[0].t < bestAt) { bestAt = rows[0].t; bestId = id; }
-    }
-    if (bestId) {
-      const row = state.stock[bestId].shift();
-      if (!state.stock[bestId].length) delete state.stock[bestId];
-      state.dropped += 1;
-      return { itemId: bestId, condition: row.c };
-    }
-    if (index === start) {
-      const bandState = state.bands[band.id];
-      bandState.unmet += 1;
-      bandState.multiplier = Math.min(config.maxMultiplier, bandState.multiplier + config.demandStep);
-    }
+  const available = [...new Set(candidates.map(id => safeId(id)))].filter(id => {
+    const value = Number(priceOf(id));
+    return value > 0 && bandIndex(config, value) <= start;
+  }).sort();
+  let eligible = [];
+  for (let index = start; index >= 0 && !eligible.length; index -= 1) {
+    eligible = available.filter(id => bandIndex(config, priceOf(id)) === index);
   }
+  if (!eligible.length) return null;
+  const roll = Math.min(0.999999, Math.max(0, Number(random()) || 0));
+  const id = eligible[Math.floor(roll * eligible.length)];
+  const rows = state.stock[id];
+  if (rows?.length) {
+    const row = rows.shift();
+    if (!rows.length) delete state.stock[id];
+    state.dropped += 1;
+    return { itemId: id, condition: row.c };
+  }
+  const band = config.bands[bandIndex(config, priceOf(id))];
+  state.bands[band.id].unmet += 1;
+  const room = config.maxStockPerItem - (state.stock[id]?.length || 0);
+  if (room <= 0) return null;
+  const order = state.orders[id] || (state.orders[id] = { qty: 0, multiplier: 1 });
+  order.qty = Math.min(room, order.qty + 1);
+  order.multiplier = Math.min(config.maxMultiplier, order.multiplier + config.demandStep);
   return null;
 }
 
@@ -256,13 +280,17 @@ function takeBlackMarketLoot(state, config, budget = 0, priceOf = () => 0) {
 function decayBlackMarket(state, config, priceOf = () => 0, now = Date.now()) {
   const last = Number.isFinite(Number(state.lastDecayAt)) ? Number(state.lastDecayAt) : Number(now);
   const hours = Math.max(0, (Number(now) - last) / 3600000);
-  if (hours <= 0) return { destroyed: 0 };
+  if (hours <= 0) return { destroyed: 0, pricesChanged: false };
   state.lastDecayAt = Number(now);
   const relax = config.relaxPerHour * hours;
+  let pricesChanged = false;
   for (const band of config.bands) {
     const row = state.bands[band.id];
-    if (row.multiplier > 1) row.multiplier = Math.max(1, row.multiplier - relax);
-    else if (row.multiplier < 1) row.multiplier = Math.min(1, row.multiplier + relax);
+    if (row.multiplier > 1) { row.multiplier = Math.max(1, row.multiplier - relax); pricesChanged = true; }
+    else if (row.multiplier < 1) { row.multiplier = Math.min(1, row.multiplier + relax); pricesChanged = true; }
+  }
+  for (const order of Object.values(state.orders)) {
+    if (order.multiplier > 1) { order.multiplier = Math.max(1, order.multiplier - relax); pricesChanged = true; }
   }
   const corruptBands = new Set(config.corruptBands);
   const share = Math.min(1, config.corruptSharePerDay * hours / 24);
@@ -282,7 +310,7 @@ function decayBlackMarket(state, config, priceOf = () => 0, now = Date.now()) {
     if (!rows.length) delete state.stock[id];
   }
   state.destroyed += destroyed;
-  return { destroyed };
+  return { destroyed, pricesChanged };
 }
 
 /**
@@ -300,11 +328,20 @@ function blackMarketFatigueFactor(tracker = {}, config, now = Date.now()) {
   return Math.max(config.fatigue.minFactor, 1 - over * config.fatigue.perKill);
 }
 
-function publicBlackMarketState(state, config) {
+function publicBlackMarketState(state, config, priceOf = () => 0, capShare = 0) {
   return {
     version: BLACK_MARKET_VERSION,
     treasury: state.treasury,
     stockCount: Object.values(state.stock).reduce((sum, rows) => sum + rows.length, 0),
+    orders: Object.fromEntries(Object.entries(state.orders).map(([id, row]) => [id, row.qty])),
+    buyOrders: Object.entries(state.orders)
+      .map(([id, row]) => ({
+        id,
+        qty: row.qty,
+        price: blackMarketUnitPrice(state, config, priceOf(id), 100, capShare, id)
+      }))
+      .filter(row => row.qty > 0 && row.price > 0)
+      .sort((a, b) => a.id.localeCompare(b.id)),
     bands: config.bands.map(band => ({
       id: band.id,
       maxValue: band.maxValue,

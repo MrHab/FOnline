@@ -72,6 +72,7 @@ function sandbox(worldEconomy, mode, options = {}) {
     fundBlackMarket,
     takeBlackMarketLoot,
     blackMarketFatigueFactor,
+    SERVER_BLACK_MARKET_CANDIDATES: options.candidates || ['knife'],
     serverBlackMarketStore: () => market,
     serverBlackMarketItemPrice: id => PRICES[id] || 0,
     serverMarkBlackMarketDirty: () => {},
@@ -168,7 +169,8 @@ const byId = rows => Object.fromEntries(plain(rows).map(row => [row.id, row.qty]
 {
   const { context, room, market } = sandbox(economy, 'pvp', { roll: 0.1 });
   context.serverPrepareNpcCorpseLoot(raider(), room);
-  assert(market.bands.cheap.multiplier > 1, 'an empty market raises the price of the requested band');
+  assert.equal(market.orders.knife.qty, 1, 'an empty market creates a buy order for the requested item');
+  assert(market.orders.knife.multiplier > 1, 'unmet demand raises that item price');
 }
 
 // --- состояние предмета рынка доходит до игрока ------------------------------------

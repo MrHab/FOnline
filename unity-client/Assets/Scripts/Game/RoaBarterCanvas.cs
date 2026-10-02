@@ -230,7 +230,7 @@ namespace RealmOfAshes.Game
             return (int)System.Math.Ceiling(ShelfFloorPrice(baseId) * (1d - MaxBuyDiscount)) - 1;
         }
 
-        /// <summary>Категории, которые торговец не покупает вовсе (оружие и броню берёт только Чёрный рынок).</summary>
+        /// <summary>Категории, которые торговец не покупает вовсе (оружие и броню выкупает Чёрный рынок через аукцион).</summary>
         private static bool TradeRefuses(JObject market, string baseId)
         {
             if (!(market?["refusedCategories"] is JArray refused) || refused.Count == 0) return false;
@@ -241,26 +241,8 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>Персональная цена выкупа, полностью повторяющая серверную формулу.</summary>
-        /// <summary>Скупщик Чёрного рынка: витрина без полки, цены считает сервер.</summary>
-        public static bool IsBlackMarket(JObject market)
-        {
-            return market?["blackMarket"] is JObject;
-        }
-
-        /// <summary>Цена продажи конкретного экземпляра: у оружия скупщика она своя.</summary>
-        private static int TradeSellPriceFor(string itemId, string baseId, JObject market, JObject self)
-        {
-            if (!string.IsNullOrEmpty(itemId) && market?["sellPricesByItem"]?[itemId] is JValue itemPrice)
-                return Mathf.Max(0, itemPrice.Value<int?>() ?? 0);
-            return TradeSellPrice(baseId, market, self);
-        }
-
         private static int TradeSellPrice(string baseId, JObject market, JObject self)
         {
-            // Чёрный рынок сам называет цену каждого предмета: полоса ценности,
-            // спрос и состояние известны только серверу. Нет цены — не берёт.
-            if (market?["sellPrices"] is JObject serverPrices)
-                return Mathf.Max(0, serverPrices[baseId]?.Value<int?>() ?? 0);
             if (TradeRefuses(market, baseId)) return 0;
             // Скупка начинается с 30% базовой цены каталога — целыми числами, как SERVER_TRADE_SELL_SHARE_PCT.
             int catalogPrice = RoaItemData.BasePrice(baseId);
@@ -302,18 +284,14 @@ namespace RealmOfAshes.Game
             int traderCaps = market?["caps"]?.ToObject<int>() ?? 0;
             int money = CountInventory(self, "silver");
 
-            bool blackMarket = IsBlackMarket(market);
-            _title.text = blackMarket
-                ? traderName + " · ТОЛЬКО СКУПКА"
-                : traderName + " · БАРТЕР";
+            _title.text = traderName + " · БАРТЕР";
+            _vendor.Title.text = "ТОВАР ТОРГОВЦА";
             _player.Meta.text = money + " мар.";
             _vendor.Meta.text = traderName + " · " + traderCaps + " мар.";
 
             // Строка состояния: бартер, марки торговца, интерес (buyInterests рынка).
             int barter = TradeSkillPercent(self);
-            string skillText = blackMarket
-                ? "Касса скупщика: " + traderCaps + " мар. · цена зависит от спроса и состояния"
-                : "Бартер " + barter + "% · марки торговца: " + traderCaps;
+            string skillText = "Бартер " + barter + "% · марки торговца: " + traderCaps;
             JArray interests = market?["buyInterests"] as JArray;
             if (interests != null && interests.Count > 0)
             {
@@ -332,7 +310,7 @@ namespace RealmOfAshes.Game
             foreach (KeyValuePair<string, int> entry in Interaction.TradeSellsQueue)
             {
                 string baseId = RoaInteraction.TradeBaseId(entry.Key);
-                int price = TradeSellPriceFor(entry.Key, baseId, market, self);
+                int price = TradeSellPrice(baseId, market, self);
                 sellEntries.Add(new Entry { RuntimeId = entry.Key, BaseId = baseId, Qty = entry.Value, Price = price });
                 sellTotal += price * entry.Value;
                 projectedWeight -= RoaItemData.Weight(baseId) * entry.Value;
@@ -348,8 +326,7 @@ namespace RealmOfAshes.Game
             int net = buyTotal - sellTotal;
             bool hasTrade = sellEntries.Count > 0 || buyEntries.Count > 0;
             bool overweight = projectedWeight > capacity + 0.0001f;
-            // Цена 0 — вещь не берут: скупщик — всё, кроме целого оружия и брони,
-            // торговец — оружие и броню (их покупает только Чёрный рынок).
+            // Цена 0 — вещь не берут: оружие и броню выкупает Чёрный рынок через аукцион.
             string refused = string.Empty;
             foreach (Entry entry in sellEntries)
             {
@@ -360,10 +337,7 @@ namespace RealmOfAshes.Game
             string reason = string.Empty;
             if (Interaction.TradePending) reason = "Сервер проводит обмен.";
             else if (!hasTrade) reason = "Выберите предметы для обмена.";
-            else if (blackMarket && buyEntries.Count > 0) reason = "Скупщик ничего не продаёт.";
-            else if (!string.IsNullOrEmpty(refused)) reason = blackMarket
-                ? "Скупщик не берёт: " + refused + " (только целое оружие и броня)."
-                : "Торговец не берёт: " + refused + ". Оружие и броню покупает только Чёрный рынок.";
+            else if (!string.IsNullOrEmpty(refused)) reason = "Торговец не берёт: " + refused + ". Оружие и броню выкупает Чёрный рынок через аукцион.";
             else if (net > money) reason = "Не хватает марок: нужно " + net + ", у вас " + money + ".";
             else if (net < 0 && Mathf.Abs(net) > traderCaps) reason = "У торговца не хватает марок: нужно " + Mathf.Abs(net) + ", у него " + traderCaps + ".";
             else if (overweight) reason = "Перегруз: " + projectedWeight.ToString("0.0") + "/" + capacity.ToString("0.0") + " кг.";
@@ -404,7 +378,7 @@ namespace RealmOfAshes.Game
                     // Надетое не делит ключ с сумкой: у брони runtime-id равен базовому,
                     // и запасная куртка того же вида иначе пропадала из списка продажи.
                     if (string.IsNullOrEmpty(baseId) || baseId == "fists") continue;
-                    entries.Add(new Entry { RuntimeId = runtimeId, BaseId = baseId, Qty = 1, Price = TradeSellPriceFor(runtimeId, baseId, market, self), OnBody = true });
+                    entries.Add(new Entry { RuntimeId = runtimeId, BaseId = baseId, Qty = 1, Price = TradeSellPrice(baseId, market, self), OnBody = true });
                 }
             }
             JArray inventory = self?["inventory"] as JArray;
@@ -416,7 +390,7 @@ namespace RealmOfAshes.Game
                     string baseId = RoaInteraction.TradeBaseId(runtimeId);
                     int qty = row["qty"]?.ToObject<int>() ?? 0;
                     if (string.IsNullOrEmpty(runtimeId) || qty <= 0 || baseId == "silver" || baseId == "fists" || !seen.Add(runtimeId)) continue;
-                    entries.Add(new Entry { RuntimeId = runtimeId, BaseId = baseId, Qty = qty, Price = TradeSellPriceFor(runtimeId, baseId, market, self) });
+                    entries.Add(new Entry { RuntimeId = runtimeId, BaseId = baseId, Qty = qty, Price = TradeSellPrice(baseId, market, self) });
                 }
             }
             entries.Sort((a, b) =>
@@ -440,12 +414,14 @@ namespace RealmOfAshes.Game
                 Entry captured = e;
                 int capturedFree = free;
                 AddRow(_player, index++, e.BaseId, ItemName(e.BaseId), onBody ? "ЭКИПИРОВАНО" : null,
-                    RoaItemData.Weight(e.BaseId).ToString("0.0") + " кг · " + (e.Price > 0 ? "продажа " + e.Price + " мар." : "не берут"),
+                    RoaItemData.Weight(e.BaseId).ToString("0.0") + " кг · " + (e.Price > 0
+                        ? "продажа " + e.Price + " мар." : "не берут"),
                     onBody ? "на теле" : "x" + free, queued > 0 ? "в обмене " + queued : null,
-                    queued > 0 ? RowQueued : (onBody ? RowEquipped : RowBorder), free <= 0 || onBody,
+                    queued > 0 ? RowQueued : (onBody ? RowEquipped : RowBorder), free <= 0 || onBody || e.Price <= 0,
                     () => Interaction.TradeRequest(captured.RuntimeId, false, capturedFree, captured.Price),
                     (onBody ? "Предмет сейчас на персонаже. Снимите его в ПУТНИКЕ, чтобы продать. " : string.Empty)
-                    + (e.Price > 0 ? "Продажа: " + RoaPlural.Marks(e.Price) + " за 1 шт." : "Этот покупатель такую вещь не берёт."));
+                    + (e.Price > 0 ? "Продажа: " + RoaPlural.Marks(e.Price) + " за 1 шт." :
+                        "Этот покупатель такую вещь не берёт."));
             }
             SetEmpty(_player, index == 0, _player.Category == "all"
                 ? "Нет предметов для продажи."

@@ -54,6 +54,12 @@ const servicePosition = (locationId, service) => {
   sellerState.inventory.ammo9 = 60;
   sellerState.inventory.scrap = 10;
   sellerState.inventory.leather = 1;
+  sellerState.inventory.pistol = 1;
+  sellerState.inventory.ui_pistol_auction_1 = 1;
+  sellerState.itemRuntime.ui_pistol_auction_1 = {
+    baseId: 'pistol', condition: 100, loaded: 0,
+    weaponMods: { barrel: 'barrel_precision' }, createdAt: Date.now()
+  };
   sellerState.player = {
     ...(sellerState.player || {}),
     // Состояния предметов сервер читает из state.player.itemConditions — они
@@ -155,6 +161,9 @@ const servicePosition = (locationId, service) => {
   const wornSale = await market('trade', { action: 'sell', itemId: 'leather', qty: 1, price: 100, requestId: 'worn-sale' }, false);
   assert(/отремонтируйте/.test(wornSale.error));
   assert.equal(qty(wornSale.self, 'leather'), 1, 'Rejected worn equipment stays with its owner.');
+  const mixedGear = await market('trade', { action: 'sell', itemId: 'leather', qty: 2,
+    price: 100, requestId: 'mixed-gear-sale' }, false);
+  assert(/по одному/.test(mixedGear.error), 'An inspected equipment lot contains one exact instance.');
   const listed = await market('trade', { action: 'sell', itemId: 'ammo9', qty: 20, price: 10, durationHours: 720, requestId: 'sell-1' });
   assert.equal(listed.restingQty, 20);
   assert.equal(listed.setupFee, 5, 'сбор 2,5% от 200');
@@ -280,13 +289,26 @@ const servicePosition = (locationId, service) => {
     }, null, 2));
   }
 
-  // --- торгуют только торговцы-люди -----------------------------------------
+  const modifiedAsk = await market('trade', { action: 'sell', itemId: 'pistol',
+    itemRuntimeId: 'ui_pistol_auction_1', qty: 1, price: 1000, durationHours: 24,
+    requestId: 'modified-weapon-ask' });
+  const visibleAsk = modifiedAsk.auction.orders.find(row => row.id === modifiedAsk.orderId);
+  assert.equal(visibleAsk?.itemDetails?.weaponMods?.barrel, 'barrel_precision',
+    'Buyers see the installed modification of the offered instance.');
+  assert(visibleAsk?.itemDetails?.weapon?.damageMin > 18,
+    'The public weapon stats include the modification effect.');
+  assert(!JSON.stringify(visibleAsk).includes('ui_pistol_auction_1'),
+    'Public item inspection never exposes the private runtime id.');
+  await market('trade', { action: 'cancel', orderId: modifiedAsk.orderId,
+    requestId: 'modified-weapon-cleanup' });
+
+  // --- обычные NPC больше не открывают товарные полки -------------------------
   const scrapActors = accounts.target.join.worldState?.enemies || [];
-  const merchant = scrapActors.find(row => row.role === 'merchant' && row.tradeOpen === true);
+  const merchant = scrapActors.find(row => row.role === 'merchant' && row.traderProfile === 'scrap');
   const questMerchant = scrapActors.find(row => row.role === 'merchant'
     && Array.isArray(row.traderQuests) && row.traderQuests.length > 0);
   const auctioneer = scrapActors.find(row => row.service === 'auction');
-  assert(merchant?.tradeOpen === true, 'торговец столицы торгует: ' + JSON.stringify(merchant && { name: merchant.name, tradeOpen: merchant.tradeOpen }));
+  assert(merchant && merchant.tradeOpen === false, 'торговец столицы присутствует, но его полка закрыта');
   assert(questMerchant && questMerchant.canDialogue === true && questMerchant.tradeOpen === false,
     'квестовый торговец ведёт только диалог и не открывает рынок');
   assert(auctioneer && auctioneer.tradeOpen === false, 'аукционер «Покажи товары» не предлагает');
@@ -330,7 +352,7 @@ const servicePosition = (locationId, service) => {
   await send('target', 'baseServiceAction', { service: 'repair', action: 'state' }, false);
   await send('trade', 'baseServiceAction', { service: 'tinker', action: 'state' }, false);
 
-  console.log('Capital services network OK: a book per capital without faction membership, 8% tax and 2.5% fee, the shared book moved onto owner shelves, fills at the resting price, only human traders trade, repairman restores gear for marks, and every service needs its own NPC nearby.');
+  console.log('Capital services network OK: a book per capital without faction membership, 8% tax and 2.5% fee, the shared book moved onto owner shelves, fills at the resting price, NPC shop shelves stay closed, repairman restores gear for marks, and every service needs its own NPC nearby.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   Object.values(accounts).forEach(h.closeSocket);
   await h.stopServer();

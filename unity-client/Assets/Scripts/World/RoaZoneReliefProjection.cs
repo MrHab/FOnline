@@ -6,13 +6,16 @@ namespace RealmOfAshes.World
 {
     /// <summary>
     /// Projects the authored world-map height field into a local zone. The dam road is
-    /// the first sector using it: its 20 km map cell is represented by a 320 m play area.
-    /// The checkpoint apron stays level so authored cover and the bridge still meet.
+    /// the first sector using it: a 20 km cutout at the Tesma crossing becomes a 320 m
+    /// play area. The checkpoint apron stays level around its authored structures.
     /// </summary>
     public sealed class RoaZoneReliefProjection : MonoBehaviour
     {
         public const string DamRoadZone = "z_10_10";
         public const float ZoneMapPoints = 20f;
+        // The playable cutout is centred on the Tesma crossing, slightly west of
+        // the administrative cell centre. This keeps the map river under the bridge.
+        public const float DamRoadMapWest = 195.8f;
         public const float DamRoadCenterX = -82f;
         public const float DamRoadCenterZ = -106f;
         private const float LevelHalfWidth = 52f;
@@ -34,10 +37,9 @@ namespace RealmOfAshes.World
             if (_active == null || _active._relief == null) return 0f;
             if (Mathf.Abs(localX) > _active._width * 0.5f
                 || Mathf.Abs(localZ) > _active._depth * 0.5f) return 0f;
-            float height = HeightAt(_active._relief, localX, localZ, _active._width, _active._depth);
             return RoaDamRoadWaterProjection.IsBridgeDeck(localX, localZ)
-                ? height + RoaDamRoadWaterProjection.CanalDepthAt(localX, localZ)
-                : height;
+                ? RawHeightAt(_active._relief, localX, localZ, _active._width, _active._depth)
+                : HeightAt(_active._relief, localX, localZ, _active._width, _active._depth);
         }
 
         public static bool Supports(string locationId) =>
@@ -45,16 +47,23 @@ namespace RealmOfAshes.World
 
         public static Vector2 MapPoint(float localX, float localZ, float worldWidth, float worldDepth)
         {
-            // One uniform transform preserves the global height field's plan shape.
-            // The world-map icon is approximate; the authored checkpoint centre is
-            // 22 metres north of its exact projected position in this local scene.
+            // One uniform transform preserves the global height field and river shape.
+            // The cutout is centred on the crossing, west of the administrative cell.
             float u = localX / worldWidth + 0.5f;
             float v = localZ / worldDepth + 0.5f;
-            return new Vector2(200f + u * ZoneMapPoints, 220f - v * ZoneMapPoints);
+            return new Vector2(DamRoadMapWest + u * ZoneMapPoints, 220f - v * ZoneMapPoints);
         }
 
         public static float HeightAt(RoaGlobalMapRelief relief, float localX, float localZ,
                                      float worldWidth, float worldDepth)
+        {
+            RoaDamRoadWaterProjection.Prepare(relief, worldWidth, worldDepth);
+            float land = RawHeightAt(relief, localX, localZ, worldWidth, worldDepth);
+            return land - RoaDamRoadWaterProjection.BedDepthAt(localX, localZ);
+        }
+
+        public static float RawHeightAt(RoaGlobalMapRelief relief, float localX, float localZ,
+                                        float worldWidth, float worldDepth)
         {
             if (relief == null || !relief.Ready) return 0f;
             Vector2 point = MapPoint(localX, localZ, worldWidth, worldDepth);
@@ -64,8 +73,7 @@ namespace RealmOfAshes.World
             float t = Mathf.Clamp01(new Vector2(dx, dz).magnitude / BlendWidth);
             float apronBlend = t * t * (3f - 2f * t);
             return (relief.HeightAt(point.x, point.y)
-                    - relief.HeightAt(origin.x, origin.y)) * VerticalGain * apronBlend
-                - RoaDamRoadWaterProjection.CanalDepthAt(localX, localZ);
+                    - relief.HeightAt(origin.x, origin.y)) * VerticalGain * apronBlend;
         }
 
         public static void Project(Renderer ground, float worldWidth, float worldDepth)
@@ -79,6 +87,7 @@ namespace RealmOfAshes.World
             }
             MeshFilter filter = ground.GetComponent<MeshFilter>();
             if (filter == null || ground.GetComponent<RoaZoneReliefProjection>() != null) return;
+            RoaDamRoadWaterProjection.Prepare(relief, worldWidth, worldDepth);
             var projection = ground.gameObject.AddComponent<RoaZoneReliefProjection>();
             projection._relief = relief;
             projection._width = worldWidth;
@@ -93,8 +102,7 @@ namespace RealmOfAshes.World
             RoaDamRoadWaterProjection.Build(ground, relief, worldWidth, worldDepth);
 
             // Static models elsewhere in the zone follow the projected surface.
-            // The checkpoint and bridge lie on the level apron, so their authored
-            // heights and collision boxes exported for the server remain intact.
+            // The checkpoint and bridge keep their authored heights and collision.
             foreach (KromkaPlacedObjectAuthoring placed in ground.transform.root
                          .GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true))
             {
@@ -105,6 +113,14 @@ namespace RealmOfAshes.World
                     ? placed.transform.parent.GetComponentInParent<KromkaPlacedObjectAuthoring>() : null;
                 if (parentPlaced != null) continue;
                 Vector3 position = placed.transform.position;
+                if (!placed.BlocksMovement
+                    && RoaDamRoadWaterProjection.Contains(position.x, position.z)
+                    && (placed.ServerArchetypeId == "dryBush"
+                        || placed.ServerArchetypeId == "deadwood"))
+                {
+                    placed.gameObject.SetActive(false);
+                    continue;
+                }
                 position.y += HeightAt(relief, position.x, position.z, worldWidth, worldDepth);
                 placed.transform.position = position;
             }

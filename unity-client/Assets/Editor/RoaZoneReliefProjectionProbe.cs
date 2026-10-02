@@ -11,14 +11,14 @@ namespace RealmOfAshes.EditorTools
         public static void Run()
         {
             Vector2 site = RoaZoneReliefProjection.MapPoint(-82f, -106f, 320f, 320f);
-            Require(Vector2.Distance(site, new Vector2(205f, 218f)) < 1.5f,
+            Require(Vector2.Distance(site, new Vector2(201f, 217f)) < 1f,
                 "The checkpoint has drifted beyond its world-map marker area.");
             Require(Vector2.Distance(RoaZoneReliefProjection.MapPoint(-160f, 160f, 320f, 320f),
-                new Vector2(200f, 200f)) < 0.001f, "North-west zone edge drifted.");
+                new Vector2(195.8f, 200f)) < 0.001f, "North-west cutout edge drifted.");
             Require(Vector2.Distance(RoaZoneReliefProjection.MapPoint(160f, -160f, 320f, 320f),
-                new Vector2(220f, 220f)) < 0.001f, "South-east zone edge drifted.");
+                new Vector2(215.8f, 220f)) < 0.001f, "South-east cutout edge drifted.");
             Require(Vector2.Distance(RoaZoneReliefProjection.MapPoint(0f, 0f, 320f, 320f),
-                new Vector2(210f, 210f)) < 0.001f, "Zone relief scale is not uniform.");
+                new Vector2(205.8f, 210f)) < 0.001f, "Zone relief scale is not uniform.");
 
             RoaGlobalMapRelief relief = Resources.Load<RoaGlobalMapRelief>(RoaGlobalMapRelief.ResourceKey);
             Require(relief != null && relief.Ready, "The authored global-map height field is unavailable.");
@@ -55,11 +55,21 @@ namespace RealmOfAshes.EditorTools
                 }
                 Require((max - min) * 0.5f > 12f, "Relief remains visually flat.");
                 var water = host.GetComponentInChildren<RoaDamRoadWaterProjection>();
-                Require(water != null && water.transform.Find("OutpostSpillway") != null,
-                    "The outpost spillway water is missing.");
+                Mesh river = water?.transform.Find("TesmaRiver")?.GetComponent<MeshFilter>()?.sharedMesh;
+                Require(river != null && river.bounds.size.z >= 319f,
+                    "The Tesma does not cross the full local sector.");
+                Mesh sourceRiver = Resources.Load<Mesh>("RealmOfAshes/DamRoadRiverSource");
+                Require(sourceRiver != null, "The source river on the global map is unavailable.");
+                AssertBankProjection(river, sourceRiver, relief, -7f, 0);
+                AssertBankProjection(river, sourceRiver, relief, -5.5f, 96 * 2);
+                AssertBankProjection(river, sourceRiver, relief, -5f, river.vertexCount - 2);
                 Require(RoaDamRoadWaterProjection.Contains(-104.755f, -106f),
                     "The outpost bridge does not cross water.");
-                Require(RoaDamRoadWaterProjection.CanalDepthAt(-104.755f, -106f) > 1.6f,
+                Require(RoaDamRoadWaterProjection.Contains(-30f, 80f),
+                    "The global-map river is missing beyond the concrete spillway.");
+                Require(!RoaDamRoadWaterProjection.Contains(-70f, -95.7f),
+                    "The checkpoint NPC area was flooded by the river.");
+                Require(RoaDamRoadWaterProjection.BedDepthAt(-104.755f, -106f) > 1.6f,
                     "The outpost spillway has no recessed bed.");
                 Require(Mathf.Abs(RoaZoneReliefProjection.GroundHeightAt(-104.755f, -106f)) < 0.01f,
                     "The bridge deck is not at the authored walk height.");
@@ -83,12 +93,45 @@ namespace RealmOfAshes.EditorTools
             }
             Require(Mathf.Abs(RoaCoords.ToUnity(120f, 120f).y) < 0.001f,
                 "The old zone's terrain is still active after unload.");
-            Debug.Log("[ROA DAM ROAD RELIEF] PASS: map scale, zone edges, level checkpoint and walk mesh.");
+            Debug.Log("[ROA DAM ROAD RELIEF] PASS: map scale, Tesma banks, level checkpoint and bridge walk mesh.");
         }
 
         private static void Require(bool condition, string message)
         {
             if (!condition) throw new InvalidOperationException(message);
+        }
+
+        private static void AssertBankProjection(Mesh river, Mesh source,
+                                                 RoaGlobalMapRelief relief,
+                                                 float sourceZ, int localIndex)
+        {
+            Vector3[] sourceVertices = source.vertices;
+            int[] triangles = source.triangles;
+            float left = float.PositiveInfinity, right = float.NegativeInfinity;
+            for (int index = 0; index < triangles.Length; index += 3)
+            {
+                for (int side = 0; side < 3; side++)
+                {
+                    Vector3 a = sourceVertices[triangles[index + side]];
+                    Vector3 b = sourceVertices[triangles[index + (side + 1) % 3]];
+                    if ((a.z - sourceZ) * (b.z - sourceZ) > 0f
+                        || Mathf.Abs(a.z - b.z) < 0.000001f) continue;
+                    float x = Mathf.Lerp(a.x, b.x, (sourceZ - a.z) / (b.z - a.z));
+                    if (x < -1f || x > 3f) continue;
+                    left = Mathf.Min(left, x);
+                    right = Mathf.Max(right, x);
+                }
+            }
+            Require(!float.IsInfinity(left), "The source river misses a sector edge.");
+            float mapWest = RoaZoneReliefProjection.DamRoadMapWest;
+            float expectedLeft = Mathf.Max(-160f,
+                ((left / 0.1f + relief.WidthPoints * 0.5f - mapWest) / 20f - 0.5f) * 320f);
+            float expectedRight = Mathf.Min(160f,
+                ((right / 0.1f + relief.WidthPoints * 0.5f - mapWest) / 20f - 0.5f) * 320f);
+            Vector3[] localVertices = river.vertices;
+            Require(Mathf.Abs(localVertices[localIndex].x - expectedLeft) < 0.25f
+                && Mathf.Abs(localVertices[localIndex + 1].x - expectedRight) < 0.25f,
+                "Local river banks do not match the global-map water mesh.");
         }
     }
 }

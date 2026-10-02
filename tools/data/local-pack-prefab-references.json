@@ -41,10 +41,6 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Trailer_01.prefab"
     },
     {
-      "guid": "18512a19d514c1e448cadb4ac410f327",
-      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_StormCanal_Bridge_Pillar_01.prefab"
-    },
-    {
       "guid": "19791b5830f82344187d841faf6ac223",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Crate_03.prefab"
     },
@@ -63,6 +59,10 @@
     {
       "guid": "1c6a0003d08b2404dabb0e9836a67b6b",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Barricade_Metal_01.prefab"
+    },
+    {
+      "guid": "1ca58549e822d3a48a4ce50680c06085",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_StormCanal_Straight_01.prefab"
     },
     {
       "guid": "2129790febcf2f942a8cc4578597095b",

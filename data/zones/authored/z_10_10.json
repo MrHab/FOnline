@@ -2837,7 +2837,7 @@
         "y": 1.0,
         "z": 1.0
       },
-      "collision": "solid",
+      "collision": "none",
       "role": "landmark",
       "tags": [
         "canal",
@@ -2852,69 +2852,7 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "collisionParts": [
-        {
-          "center": {
-            "x": -3.627,
-            "z": -4.265
-          },
-          "size": {
-            "x": 7.5,
-            "z": 2.0
-          }
-        },
-        {
-          "center": {
-            "x": -8.502,
-            "z": -4.138
-          },
-          "size": {
-            "x": 2.25,
-            "z": 1.75
-          }
-        },
-        {
-          "center": {
-            "x": -10.877,
-            "z": -4.012
-          },
-          "size": {
-            "x": 2.5,
-            "z": 1.5
-          }
-        },
-        {
-          "center": {
-            "x": -13.252,
-            "z": -3.886
-          },
-          "size": {
-            "x": 2.25,
-            "z": 1.25
-          }
-        },
-        {
-          "center": {
-            "x": -14.751,
-            "z": -3.76
-          },
-          "size": {
-            "x": 0.75,
-            "z": 1.0
-          }
-        },
-        {
-          "center": {
-            "x": -9.751,
-            "z": -3.137
-          },
-          "size": {
-            "x": 2.25,
-            "z": 0.25
-          }
-        }
-      ]
+      "worldRevision": "kromka-1"
     },
     {
       "id": "roadOutpost_canal_south_west",
@@ -2922,7 +2860,7 @@
       "position": {
         "x": -104.755,
         "y": 0.02,
-        "z": -124.35
+        "z": -114.35
       },
       "rotation": {
         "x": 0.0,
@@ -2934,7 +2872,7 @@
         "y": 1.0,
         "z": 1.0
       },
-      "collision": "solid",
+      "collision": "none",
       "role": "landmark",
       "tags": [
         "canal",
@@ -2949,69 +2887,7 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "collisionParts": [
-        {
-          "center": {
-            "x": -3.624,
-            "z": -4.267
-          },
-          "size": {
-            "x": 7.5,
-            "z": 2.0
-          }
-        },
-        {
-          "center": {
-            "x": -8.499,
-            "z": -4.143
-          },
-          "size": {
-            "x": 2.25,
-            "z": 1.75
-          }
-        },
-        {
-          "center": {
-            "x": -10.874,
-            "z": -4.018
-          },
-          "size": {
-            "x": 2.5,
-            "z": 1.5
-          }
-        },
-        {
-          "center": {
-            "x": -13.249,
-            "z": -3.894
-          },
-          "size": {
-            "x": 2.25,
-            "z": 1.25
-          }
-        },
-        {
-          "center": {
-            "x": -14.749,
-            "z": -3.769
-          },
-          "size": {
-            "x": 0.75,
-            "z": 1.0
-          }
-        },
-        {
-          "center": {
-            "x": -9.749,
-            "z": -3.143
-          },
-          "size": {
-            "x": 2.25,
-            "z": 0.25
-          }
-        }
-      ]
+      "worldRevision": "kromka-1"
     },
     {
       "id": "roadOutpost_cargo_crate",
@@ -6617,101 +6493,6 @@
         "x": 3.557,
         "z": 3.636
       },
-      "vision": {
-        "blocks": false
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "roadOutpost_old_pier_east",
-      "name": "roadOutpost old pier east",
-      "position": {
-        "x": -103.7,
-        "y": 3.21,
-        "z": -133.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 1.571,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "landmark",
-      "tags": [
-        "old-bridge",
-        "site",
-        "site-roadOutpost"
-      ],
-      "footprint": {
-        "x": 1.25,
-        "z": 3.5
-      },
-      "vision": {
-        "blocks": false
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.0,
-            "z": 0.011
-          },
-          "size": {
-            "x": 3.5,
-            "z": 1.25
-          }
-        }
-      ]
-    },
-    {
-      "id": "roadOutpost_old_pier_west",
-      "name": "Бык старого моста «ТРАКТ»",
-      "tags": [
-        "old-bridge",
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
-      "position": {
-        "x": -105.8,
-        "y": 3.21,
-        "z": -133.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 1.571,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "landmark",
-      "footprint": {
-        "x": 1.25,
-        "z": 3.5
-      },
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.0,
-            "z": 0.011
-          },
-          "size": {
-            "x": 3.5,
-            "z": 1.25
-          }
-        }
-      ],
       "vision": {
         "blocks": false
       },
@@ -11306,58 +11087,6 @@
         "blocks": false
       },
       "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s07_sc0_1",
-      "model": "deadTreeA",
-      "prefab": "dead_tree_a",
-      "name": "Сухое дерево",
-      "position": {
-        "x": -129.04,
-        "y": 0.0,
-        "z": -136.07
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 2.762,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.4,
-        "y": 1.4,
-        "z": 1.4
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": -0.008,
-            "z": -0.02
-          },
-          "size": {
-            "x": 0.949,
-            "z": 1.177
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.33,
-        "depth": 1.65
-      },
-      "footprint": {
-        "x": 1.845,
-        "z": 2.023
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "cover",
       "tags": [
         "scatter",
         "zone-kit"

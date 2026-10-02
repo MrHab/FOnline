@@ -71,7 +71,7 @@ function build() {
       ((left / 0.1 + mapWidth * 0.5 - mapWest) / mapSpan - 0.5) * width);
     let projectedRight = Math.min(width * 0.5,
       ((right / 0.1 + mapWidth * 0.5 - mapWest) / mapSpan - 0.5) * width);
-    const pinch = smoothstep(-depth * 0.5, -125, z) * (1 - smoothstep(-72, 0, z));
+    const pinch = smoothstep(-depth * 0.5, -115, z) * (1 - smoothstep(-72, 0, z));
     const erosion = (1 - pinch) * Math.sin(Math.PI * step / segments);
     projectedLeft += erosion * (0.9 * Math.sin(z * 0.19)
       + 0.35 * Math.sin(z * 0.47 + 0.4));

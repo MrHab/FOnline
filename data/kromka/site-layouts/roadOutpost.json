@@ -115,7 +115,7 @@
     },
     {
       "id": "canal_south_east",
-      "prefab": "SM_Env_StormCanal_Straight_02",
+      "prefab": "SM_Env_StormCanal_Straight_01",
       "x": -22.755,
       "z": -3.35,
       "y": 0.02,
@@ -129,9 +129,9 @@
     },
     {
       "id": "canal_south_west",
-      "prefab": "SM_Env_StormCanal_Straight_02",
+      "prefab": "SM_Env_StormCanal_Straight_01",
       "x": -22.755,
-      "z": -18.35,
+      "z": -8.35,
       "y": 0.02,
       "rotY": 90,
       "collision": "auto",
@@ -380,35 +380,6 @@
       "role": "dressing",
       "name": "Провод подрыва",
       "tags": []
-    },
-    {
-      "id": "old_pier_west",
-      "prefab": "SM_Env_StormCanal_Bridge_Pillar_01",
-      "x": -23.8,
-      "z": -27,
-      "y": 3.21,
-      "rotY": 90,
-      "collision": "auto",
-      "vision": "none",
-      "role": "landmark",
-      "name": "Бык старого моста «ТРАКТ»",
-      "tags": [
-        "old-bridge"
-      ]
-    },
-    {
-      "id": "old_pier_east",
-      "prefab": "SM_Env_StormCanal_Bridge_Pillar_01",
-      "x": -21.7,
-      "z": -27,
-      "y": 3.21,
-      "rotY": 90,
-      "collision": "auto",
-      "vision": "none",
-      "role": "landmark",
-      "tags": [
-        "old-bridge"
-      ]
     },
     {
       "id": "hedgehog_1",

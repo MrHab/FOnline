@@ -14,8 +14,9 @@ namespace RealmOfAshes.World
         private const string WaterMaterialKey = "RealmOfAshes/DamRoadRiver";
         private const float MapWorldScale = 0.1f;
         private const float CanalX = -104.755f;
-        private const float CanalMinZ = -125f;
+        private const float CanalMinZ = -115f;
         private const float CanalMaxZ = -72f;
+        private const float WaterGradeBreakZ = -125f;
         private const float CanalWaterHalfWidth = 4.6f;
         private const float BedDepth = 1.65f;
         private const int Segments = 256;
@@ -98,7 +99,12 @@ namespace RealmOfAshes.World
             float canal = Pinch(z, depth);
             float water = WaterHeightAt(z);
             float innerSlope = Mathf.Lerp(3.2f, 0.35f, canal);
-            float bankSlope = Mathf.Lerp(20f, 2.6f, canal);
+            // High ground needs a longer run to reach the water. Keep the bank
+            // below roughly a 30-degree grade instead of making a cliff where
+            // the projected river drops away from the source terrain.
+            float rise = Mathf.Max(0f, land - water);
+            float naturalSlope = Mathf.Max(20f, rise * 3.2f + 6f);
+            float bankSlope = Mathf.Lerp(naturalSlope, 2.6f, canal);
             // The authored ground cube's top sits 0.05 m below its logical Y.
             float lip = water + 0.015f;
             float bed = water - BedDepth;
@@ -110,7 +116,7 @@ namespace RealmOfAshes.World
             // A continuous, dry bank meets the water at its actual surface. At the
             // spillway it also fills the ground right up to the concrete exterior.
             float crest = Mathf.Max(land, water + 0.23f);
-            float crestAt = halfWidth + bankSlope * 0.45f;
+            float crestAt = halfWidth + bankSlope * 0.62f;
             return distance < crestAt
                 ? Mathf.Lerp(lip, crest, Smoothstep(halfWidth, crestAt, distance))
                 : Mathf.Lerp(crest, land,
@@ -213,8 +219,10 @@ namespace RealmOfAshes.World
             // The Tesma flows north through the spillway. A fixed longitudinal
             // grade prevents the water surface from following small hills in the
             // projected land height field or climbing uphill between samples.
-            if (z < CanalMinZ) return -0.15f + (CanalMinZ - z) * 0.007f;
-            if (z <= CanalMaxZ) return -0.15f - (z - CanalMinZ) * 0.0005f;
+            if (z < WaterGradeBreakZ)
+                return -0.15f + (WaterGradeBreakZ - z) * 0.007f;
+            if (z <= CanalMaxZ)
+                return -0.15f - (z - WaterGradeBreakZ) * 0.0005f;
             float downstream = z - CanalMaxZ;
             return downstream < 24f
                 ? -0.184f - 0.0175f * downstream * downstream / 48f
@@ -229,7 +237,7 @@ namespace RealmOfAshes.World
         {
             var vertices = new List<Vector3>((Segments + 1) * 2);
             var uv = new List<Vector2>(vertices.Capacity);
-            var flowUv = new List<Vector2>(vertices.Capacity);
+            var flowUv = new List<Vector3>(vertices.Capacity);
             var triangles = new List<int>(Segments * 6);
             for (int index = 0; index <= Segments; index++)
             {
@@ -240,8 +248,10 @@ namespace RealmOfAshes.World
                 vertices.Add(new Vector3(center + halfWidth, y, z));
                 uv.Add(new Vector2(0f, index * 0.25f));
                 uv.Add(new Vector2(1f, index * 0.25f));
-                flowUv.Add(new Vector2(-halfWidth, z * 0.35f));
-                flowUv.Add(new Vector2(halfWidth, z * 0.35f));
+                // Include the local half-width so the shore effect stays a fixed
+                // distance from the bank even where the river broadens.
+                flowUv.Add(new Vector3(-halfWidth, z * 0.35f, halfWidth));
+                flowUv.Add(new Vector3(halfWidth, z * 0.35f, halfWidth));
                 if (index == Segments) continue;
                 int first = index * 2;
                 triangles.Add(first); triangles.Add(first + 2); triangles.Add(first + 1);

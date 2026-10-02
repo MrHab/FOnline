@@ -266,13 +266,17 @@ namespace RealmOfAshes.World
                     if (distance < 0f || distance > band) continue;
                     float fade = 1f - Mathf.SmoothStep(0f, 1f, distance / band);
                     float variation = Mathf.PerlinNoise(worldX * 0.23f, worldZ * 0.19f);
-                    float stain = fade * Mathf.Lerp(0.22f, 0.34f, variation);
+                    float stain = fade * Mathf.Lerp(0.18f, 0.28f, variation);
+                    float silt = (1f - Mathf.SmoothStep(0f, 1f,
+                        distance / Mathf.Lerp(1.3f, 2.1f, variation)))
+                        * Mathf.Lerp(0.18f, 0.30f, variation);
                     int index = row * _textureSize + column;
                     Color32 baseColor = pixels[index];
                     pixels[index] = new Color32(
-                        (byte)(baseColor.r * (1f - stain)),
-                        (byte)(baseColor.g * (1f - stain * 0.88f)),
-                        (byte)(baseColor.b * (1f - stain * 0.72f)), baseColor.a);
+                        (byte)Mathf.Lerp(baseColor.r * (1f - stain), 139f, silt),
+                        (byte)Mathf.Lerp(baseColor.g * (1f - stain * 0.88f), 132f, silt),
+                        (byte)Mathf.Lerp(baseColor.b * (1f - stain * 0.72f), 111f, silt),
+                        baseColor.a);
                 }
             }
         }

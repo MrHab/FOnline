@@ -15,7 +15,7 @@ const width = 320;
 const mapWest = 195.8;
 const mapSpan = 20;
 const canalX = -104.755;
-const canalHalfWidth = 4.6;
+const canalHalfWidth = 14.6;
 
 function field(text, name) {
   const match = text.match(new RegExp('^\\s*' + name + ': ([^\\r\\n]+)', 'm'));
@@ -85,7 +85,7 @@ function build() {
     schema: 'roa.damRoadRiverProfile.v1',
     locationId: 'z_10_10',
     width, depth, segments,
-    bridge: { x: canalX, z: -106, halfWidth: 8, halfDepth: 3.6 },
+    bridge: { x: canalX, z: -106, halfWidth: 18, halfDepth: 3.6 },
     centers, halfWidths
   }, null, 2) + '\n';
 }

@@ -59,14 +59,14 @@ namespace RealmOfAshes.EditorTools
             try
             {
                 Vector3 site = new Vector3(-82f, 0f, -106f);
-                Capture(camera, Path.Combine(output, "desktop-wide.png"), site, 46f, 1280, 720);
+                Capture(camera, Path.Combine(output, "desktop-wide.png"), site, 68f, 1280, 720);
                 Capture(camera, Path.Combine(output, "desktop-checkpoint.png"),
-                    site + new Vector3(21.5f, 0f, -0.5f), 18f, 1280, 720);
-                Capture(camera, Path.Combine(output, "mobile-landscape.png"), site, 21.5f, 844, 390);
+                    site + new Vector3(31.5f, 0f, -0.5f), 18f, 1280, 720);
+                Capture(camera, Path.Combine(output, "mobile-landscape.png"), site, 46f, 844, 390);
                 Capture(camera, Path.Combine(output, "desktop-bridge.png"),
-                    site + new Vector3(-21f, 0f, 0f), 24f, 1280, 720);
+                    site + new Vector3(-21f, 0f, 0f), 42f, 1280, 720);
                 Capture(camera, Path.Combine(output, "mobile-bridge.png"),
-                    site + new Vector3(-21f, 0f, 0f), 26f, 844, 390);
+                    site + new Vector3(-21f, 0f, 0f), 46f, 844, 390);
                 Capture(camera, Path.Combine(output, "desktop-river.png"),
                     site + new Vector3(-31f, 0f, -28f), 30f, 1280, 720);
                 Capture(camera, Path.Combine(output, "desktop-upstream.png"),

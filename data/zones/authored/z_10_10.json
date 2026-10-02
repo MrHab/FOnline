@@ -129,7 +129,7 @@
       "model": "wastelandSettler",
       "name": "lev_kartsev",
       "position": {
-        "x": -70.0,
+        "x": -60.0,
         "y": 0.1,
         "z": -95.7
       },
@@ -191,7 +191,7 @@
       "model": "wastelandSettler",
       "name": "Сержант Ульяна Дробот",
       "position": {
-        "x": -58.0,
+        "x": -48.0,
         "y": 0.1,
         "z": -109.5
       },
@@ -250,7 +250,7 @@
       "model": "wastelandSettler",
       "name": "Ефрейтор Прохор Сомов «Тихий»",
       "position": {
-        "x": -94.7,
+        "x": -84.7,
         "y": 0.1,
         "z": -100.0
       },
@@ -310,7 +310,7 @@
       "model": "wastelandSettler",
       "name": "Гордей Мытарев, экспедитор Лиги",
       "position": {
-        "x": -63.0,
+        "x": -53.0,
         "y": 0.1,
         "z": -96.5
       },
@@ -369,7 +369,7 @@
       "model": "wastelandSettler",
       "name": "Анисья, беженка",
       "position": {
-        "x": -64.0,
+        "x": -54.0,
         "y": 0.1,
         "z": -111.5
       },
@@ -429,7 +429,7 @@
       "model": "wastelandSettler",
       "name": "Часовой юго-восточного гнезда",
       "position": {
-        "x": -58.45,
+        "x": -48.45,
         "y": 0.1,
         "z": -117.25
       },
@@ -488,7 +488,7 @@
       "model": "wastelandSettler",
       "name": "Часовой моста",
       "position": {
-        "x": -112.0,
+        "x": -122.0,
         "y": 0.1,
         "z": -101.5
       },
@@ -546,7 +546,7 @@
       "id": "roadOutpost_anisya_blanket",
       "name": "roadOutpost anisya blanket",
       "position": {
-        "x": -65.55,
+        "x": -55.55,
         "y": 1.02,
         "z": -111.95
       },
@@ -579,8 +579,13 @@
     {
       "id": "roadOutpost_anisya_crate",
       "name": "Узел Анисьи",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -65.5,
+        "x": -55.5,
         "y": 0.0,
         "z": -111.95
       },
@@ -589,11 +594,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -627,7 +627,7 @@
       "id": "roadOutpost_approach_broken_barrier",
       "name": "roadOutpost approach broken barrier",
       "position": {
-        "x": -36.4,
+        "x": -26.4,
         "y": 0.0,
         "z": -96.8
       },
@@ -693,7 +693,7 @@
       "id": "roadOutpost_approach_road_1",
       "name": "roadOutpost approach road 1",
       "position": {
-        "x": -49.0,
+        "x": -39.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -727,7 +727,7 @@
       "id": "roadOutpost_approach_road_2",
       "name": "roadOutpost approach road 2",
       "position": {
-        "x": -44.0,
+        "x": -34.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -761,7 +761,7 @@
       "id": "roadOutpost_approach_road_3",
       "name": "roadOutpost approach road 3",
       "position": {
-        "x": -39.0,
+        "x": -29.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -795,7 +795,7 @@
       "id": "roadOutpost_approach_road_4",
       "name": "roadOutpost approach road 4",
       "position": {
-        "x": -34.0,
+        "x": -24.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -829,7 +829,7 @@
       "id": "roadOutpost_approach_road_5",
       "name": "roadOutpost approach road 5",
       "position": {
-        "x": -29.0,
+        "x": -19.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -863,7 +863,7 @@
       "id": "roadOutpost_approach_stop_sign",
       "name": "roadOutpost approach stop sign",
       "position": {
-        "x": -50.8,
+        "x": -40.8,
         "y": 0.0,
         "z": -97.4
       },
@@ -915,7 +915,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -84.2,
+        "x": -74.2,
         "y": 1.35,
         "z": -97.8
       },
@@ -945,7 +945,7 @@
       "id": "roadOutpost_armband_post_e",
       "name": "roadOutpost armband post e",
       "position": {
-        "x": -84.2,
+        "x": -74.2,
         "y": 0.0,
         "z": -97.8
       },
@@ -991,7 +991,7 @@
       "id": "roadOutpost_armband_post_w",
       "name": "roadOutpost armband post w",
       "position": {
-        "x": -89.2,
+        "x": -79.2,
         "y": 0.0,
         "z": -97.8
       },
@@ -1037,7 +1037,7 @@
       "id": "roadOutpost_axis_slab_1",
       "name": "roadOutpost axis slab 1",
       "position": {
-        "x": -64.0,
+        "x": -54.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -1071,7 +1071,7 @@
       "id": "roadOutpost_axis_slab_2",
       "name": "roadOutpost axis slab 2",
       "position": {
-        "x": -69.0,
+        "x": -59.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -1105,7 +1105,7 @@
       "id": "roadOutpost_axis_slab_3",
       "name": "roadOutpost axis slab 3",
       "position": {
-        "x": -74.0,
+        "x": -64.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -1139,7 +1139,7 @@
       "id": "roadOutpost_axis_slab_4",
       "name": "roadOutpost axis slab 4",
       "position": {
-        "x": -79.0,
+        "x": -69.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -1173,7 +1173,7 @@
       "id": "roadOutpost_axis_slab_5",
       "name": "roadOutpost axis slab 5",
       "position": {
-        "x": -84.0,
+        "x": -74.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -1207,7 +1207,7 @@
       "id": "roadOutpost_axis_slab_6",
       "name": "roadOutpost axis slab 6",
       "position": {
-        "x": -89.0,
+        "x": -79.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -1241,7 +1241,7 @@
       "id": "roadOutpost_axis_slab_7",
       "name": "roadOutpost axis slab 7",
       "position": {
-        "x": -94.0,
+        "x": -84.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -1275,7 +1275,7 @@
       "id": "roadOutpost_bridge_caution_sign",
       "name": "roadOutpost bridge caution sign",
       "position": {
-        "x": -94.7,
+        "x": -84.7,
         "y": 1.25,
         "z": -110.6
       },
@@ -1308,8 +1308,14 @@
     {
       "id": "roadOutpost_bridge_deck_north_a",
       "name": "Мост-дамба",
+      "tags": [
+        "bridge",
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -99.755,
+        "x": -89.755,
         "y": 0.42,
         "z": -103.005
       },
@@ -1318,12 +1324,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "bridge",
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -1331,6 +1331,41 @@
       },
       "collision": "none",
       "role": "structure",
+      "footprint": {
+        "x": 5.0,
+        "z": 5.351
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_deck_north_b",
+      "name": "roadOutpost bridge deck north b",
+      "position": {
+        "x": -94.755,
+        "y": 0.42,
+        "z": -103.005
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "site",
+        "site-roadOutpost"
+      ],
       "footprint": {
         "x": 5.25,
         "z": 5
@@ -1342,8 +1377,43 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "roadOutpost_bridge_deck_north_b",
-      "name": "roadOutpost bridge deck north b",
+      "id": "roadOutpost_bridge_deck_north_c",
+      "name": "roadOutpost bridge deck north c",
+      "position": {
+        "x": -99.755,
+        "y": 0.42,
+        "z": -103.005
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 5.351
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_deck_north_d",
+      "name": "roadOutpost bridge deck north d",
       "position": {
         "x": -104.755,
         "y": 0.42,
@@ -1367,8 +1437,78 @@
         "site-roadOutpost"
       ],
       "footprint": {
-        "x": 5.25,
-        "z": 5
+        "x": 5.0,
+        "z": 5.351
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_deck_north_e",
+      "name": "roadOutpost bridge deck north e",
+      "position": {
+        "x": -109.755,
+        "y": 0.42,
+        "z": -103.005
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 5.351
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_deck_north_f",
+      "name": "roadOutpost bridge deck north f",
+      "position": {
+        "x": -114.755,
+        "y": 0.42,
+        "z": -103.005
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 5.351
       },
       "vision": {
         "blocks": false
@@ -1380,7 +1520,7 @@
       "id": "roadOutpost_bridge_deck_south_a",
       "name": "roadOutpost bridge deck south a",
       "position": {
-        "x": -109.755,
+        "x": -119.755,
         "y": 0.47,
         "z": -108.995
       },
@@ -1415,7 +1555,7 @@
       "id": "roadOutpost_bridge_deck_south_b",
       "name": "roadOutpost bridge deck south b",
       "position": {
-        "x": -104.755,
+        "x": -114.755,
         "y": 0.47,
         "z": -108.995
       },
@@ -1447,10 +1587,150 @@
       "worldRevision": "kromka-1"
     },
     {
+      "id": "roadOutpost_bridge_deck_south_c",
+      "name": "roadOutpost bridge deck south c",
+      "position": {
+        "x": -109.755,
+        "y": 0.47,
+        "z": -108.995
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 5.351
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_deck_south_d",
+      "name": "roadOutpost bridge deck south d",
+      "position": {
+        "x": -104.755,
+        "y": 0.47,
+        "z": -108.995
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 5.351
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_deck_south_e",
+      "name": "roadOutpost bridge deck south e",
+      "position": {
+        "x": -99.755,
+        "y": 0.47,
+        "z": -108.995
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 5.351
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_deck_south_f",
+      "name": "roadOutpost bridge deck south f",
+      "position": {
+        "x": -94.755,
+        "y": 0.47,
+        "z": -108.995
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 5.351
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
       "id": "roadOutpost_bridge_rail_n1",
       "name": "roadOutpost bridge rail n1",
       "position": {
-        "x": -99.755,
+        "x": -89.755,
         "y": -1.7,
         "z": -102.83
       },
@@ -1498,7 +1778,199 @@
       "id": "roadOutpost_bridge_rail_n2",
       "name": "roadOutpost bridge rail n2",
       "position": {
-        "x": -104.765,
+        "x": -94.765,
+        "y": -1.7,
+        "z": -102.83
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.5,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_rail_n3",
+      "name": "roadOutpost bridge rail n3",
+      "position": {
+        "x": -99.775,
+        "y": -1.7,
+        "z": -102.83
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.5,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_rail_n4",
+      "name": "roadOutpost bridge rail n4",
+      "position": {
+        "x": -104.785,
+        "y": -1.7,
+        "z": -102.83
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.5,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_rail_n5",
+      "name": "roadOutpost bridge rail n5",
+      "position": {
+        "x": -109.795,
+        "y": -1.7,
+        "z": -102.83
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.5,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_rail_n6",
+      "name": "roadOutpost bridge rail n6",
+      "position": {
+        "x": -114.805,
         "y": -1.7,
         "z": -102.83
       },
@@ -1546,7 +2018,7 @@
       "id": "roadOutpost_bridge_rail_s1",
       "name": "roadOutpost bridge rail s1",
       "position": {
-        "x": -99.755,
+        "x": -89.755,
         "y": -1.7,
         "z": -109.17
       },
@@ -1594,7 +2066,199 @@
       "id": "roadOutpost_bridge_rail_s2",
       "name": "roadOutpost bridge rail s2",
       "position": {
-        "x": -104.765,
+        "x": -94.765,
+        "y": -1.7,
+        "z": -109.17
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.5,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_rail_s3",
+      "name": "roadOutpost bridge rail s3",
+      "position": {
+        "x": -99.775,
+        "y": -1.7,
+        "z": -109.17
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.5,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_rail_s4",
+      "name": "roadOutpost bridge rail s4",
+      "position": {
+        "x": -104.785,
+        "y": -1.7,
+        "z": -109.17
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.5,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_rail_s5",
+      "name": "roadOutpost bridge rail s5",
+      "position": {
+        "x": -109.795,
+        "y": -1.7,
+        "z": -109.17
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "bridge",
+        "parapet",
+        "site",
+        "site-roadOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.5,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost_bridge_rail_s6",
+      "name": "roadOutpost bridge rail s6",
+      "position": {
+        "x": -114.805,
         "y": -1.7,
         "z": -109.17
       },
@@ -1641,8 +2305,13 @@
     {
       "id": "roadOutpost_burnt_truck",
       "name": "Выгоревший фургон",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -31.5,
+        "x": -21.5,
         "y": 0.0,
         "z": -115.0
       },
@@ -1651,11 +2320,6 @@
         "y": 1.658,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -1719,7 +2383,7 @@
       "id": "roadOutpost_cable_stake",
       "name": "roadOutpost cable stake",
       "position": {
-        "x": -89.45,
+        "x": -79.45,
         "y": 0.0,
         "z": -94.4
       },
@@ -1765,7 +2429,7 @@
       "id": "roadOutpost_cage_east_1",
       "name": "roadOutpost cage east 1",
       "position": {
-        "x": -62.0,
+        "x": -52.0,
         "y": 0.0,
         "z": -118.215
       },
@@ -1822,7 +2486,7 @@
       "id": "roadOutpost_cage_east_2",
       "name": "roadOutpost cage east 2",
       "position": {
-        "x": -62.0,
+        "x": -52.0,
         "y": 0.0,
         "z": -115.265
       },
@@ -1879,7 +2543,7 @@
       "id": "roadOutpost_cage_hedgehog",
       "name": "roadOutpost cage hedgehog",
       "position": {
-        "x": -63.55,
+        "x": -53.55,
         "y": 0.0,
         "z": -118.65
       },
@@ -1965,7 +2629,7 @@
       "id": "roadOutpost_cage_sandbags",
       "name": "roadOutpost cage sandbags",
       "position": {
-        "x": -62.55,
+        "x": -52.55,
         "y": 0.0,
         "z": -117.0
       },
@@ -2011,7 +2675,7 @@
       "id": "roadOutpost_cage_west_1",
       "name": "roadOutpost cage west 1",
       "position": {
-        "x": -67.9,
+        "x": -57.9,
         "y": 0.0,
         "z": -118.215
       },
@@ -2068,7 +2732,7 @@
       "id": "roadOutpost_cage_west_2",
       "name": "roadOutpost cage west 2",
       "position": {
-        "x": -67.9,
+        "x": -57.9,
         "y": 0.0,
         "z": -115.265
       },
@@ -2125,7 +2789,7 @@
       "id": "roadOutpost_cage_wire",
       "name": "roadOutpost cage wire",
       "position": {
-        "x": -66.83,
+        "x": -56.83,
         "y": 0.0,
         "z": -114.55
       },
@@ -2201,7 +2865,7 @@
       "id": "roadOutpost_canal_cap_far_north_east",
       "name": "roadOutpost canal cap far north east",
       "position": {
-        "x": -104.755,
+        "x": -94.755,
         "y": 0.02,
         "z": -72.93
       },
@@ -2248,7 +2912,7 @@
       "id": "roadOutpost_canal_cap_far_north_west",
       "name": "roadOutpost canal cap far north west",
       "position": {
-        "x": -104.755,
+        "x": -114.755,
         "y": 0.02,
         "z": -72.93
       },
@@ -2295,7 +2959,7 @@
       "id": "roadOutpost_canal_cap_north_east",
       "name": "roadOutpost canal cap north east",
       "position": {
-        "x": -104.755,
+        "x": -94.755,
         "y": 0.02,
         "z": -102.37
       },
@@ -2330,7 +2994,7 @@
       "id": "roadOutpost_canal_cap_north_west",
       "name": "roadOutpost canal cap north west",
       "position": {
-        "x": -104.755,
+        "x": -114.755,
         "y": 0.02,
         "z": -102.37
       },
@@ -2365,7 +3029,7 @@
       "id": "roadOutpost_canal_cap_south_east",
       "name": "roadOutpost canal cap south east",
       "position": {
-        "x": -104.755,
+        "x": -94.755,
         "y": 0.02,
         "z": -109.63
       },
@@ -2400,7 +3064,7 @@
       "id": "roadOutpost_canal_cap_south_west",
       "name": "roadOutpost canal cap south west",
       "position": {
-        "x": -104.755,
+        "x": -114.755,
         "y": 0.02,
         "z": -109.63
       },
@@ -2435,7 +3099,7 @@
       "id": "roadOutpost_canal_far_north_east",
       "name": "roadOutpost canal far north east",
       "position": {
-        "x": -104.755,
+        "x": -94.755,
         "y": 0.02,
         "z": -72.65
       },
@@ -2532,7 +3196,7 @@
       "id": "roadOutpost_canal_far_north_west",
       "name": "roadOutpost canal far north west",
       "position": {
-        "x": -104.755,
+        "x": -114.755,
         "y": 0.02,
         "z": -87.65
       },
@@ -2629,7 +3293,7 @@
       "id": "roadOutpost_canal_north_east",
       "name": "roadOutpost canal north east",
       "position": {
-        "x": -104.755,
+        "x": -94.755,
         "y": 0.02,
         "z": -87.65
       },
@@ -2726,7 +3390,7 @@
       "id": "roadOutpost_canal_north_west",
       "name": "roadOutpost canal north west",
       "position": {
-        "x": -104.755,
+        "x": -114.755,
         "y": 0.02,
         "z": -102.65
       },
@@ -2823,7 +3487,7 @@
       "id": "roadOutpost_canal_south_east",
       "name": "roadOutpost canal south east",
       "position": {
-        "x": -104.755,
+        "x": -94.755,
         "y": 0.02,
         "z": -109.35
       },
@@ -2858,7 +3522,7 @@
       "id": "roadOutpost_canal_south_west",
       "name": "roadOutpost canal south west",
       "position": {
-        "x": -104.755,
+        "x": -114.755,
         "y": 0.02,
         "z": -114.35
       },
@@ -2898,7 +3562,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -66.6,
+        "x": -56.6,
         "y": 0.0,
         "z": -116.9
       },
@@ -2940,7 +3604,7 @@
       "id": "roadOutpost_cargo_crate_open",
       "name": "roadOutpost cargo crate open",
       "position": {
-        "x": -66.6,
+        "x": -56.6,
         "y": 0.0,
         "z": -117.8
       },
@@ -2985,8 +3649,13 @@
     {
       "id": "roadOutpost_charge_cable_bridge",
       "name": "Провод подрыва",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -94.9,
+        "x": -84.9,
         "y": 0.58,
         "z": -103.1
       },
@@ -2995,11 +3664,6 @@
         "y": 4.712,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -3026,7 +3690,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -74.5,
+        "x": -64.5,
         "y": 0.58,
         "z": -94.05
       },
@@ -3061,7 +3725,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -89.45,
+        "x": -79.45,
         "y": 0.58,
         "z": -94.4
       },
@@ -3090,8 +3754,15 @@
     {
       "id": "roadOutpost_confiscated_cage",
       "name": "Клетка: изъято до выяснения",
+      "tags": [
+        "cage",
+        "quest-landmark",
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -66.425,
+        "x": -56.425,
         "y": 0.0,
         "z": -113.79
       },
@@ -3100,13 +3771,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "cage",
-        "quest-landmark",
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -3150,7 +3814,7 @@
       "id": "roadOutpost_convoy_ground_wear",
       "name": "roadOutpost convoy ground wear",
       "position": {
-        "x": -72.9,
+        "x": -62.9,
         "y": 0.01,
         "z": -119.7
       },
@@ -3189,7 +3853,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -76.0,
+        "x": -66.0,
         "y": 0.0,
         "z": -120.95
       },
@@ -3276,7 +3940,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -76.4,
+        "x": -66.4,
         "y": 0.0,
         "z": -115.5
       },
@@ -3384,7 +4048,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -74.5,
+        "x": -64.5,
         "y": 0.0,
         "z": -93.86
       },
@@ -3425,8 +4089,13 @@
     {
       "id": "roadOutpost_discharge_barrel",
       "name": "Разряжать сюда",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -52.4,
+        "x": -42.4,
         "y": 0.0,
         "z": -109.0
       },
@@ -3435,11 +4104,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -3472,8 +4136,13 @@
     {
       "id": "roadOutpost_far_barrier",
       "name": "Дальний шлагбаум",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -112.0,
+        "x": -122.0,
         "y": 0.08,
         "z": -110.6
       },
@@ -3482,11 +4151,6 @@
         "y": 1.571,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -3520,7 +4184,7 @@
       "id": "roadOutpost_fence_east_1",
       "name": "roadOutpost fence east 1",
       "position": {
-        "x": -52.75,
+        "x": -42.75,
         "y": 0.0,
         "z": -108.7
       },
@@ -3567,7 +4231,7 @@
       "id": "roadOutpost_fence_east_2",
       "name": "roadOutpost fence east 2",
       "position": {
-        "x": -52.75,
+        "x": -42.75,
         "y": 0.0,
         "z": -113.18
       },
@@ -3614,7 +4278,7 @@
       "id": "roadOutpost_fence_east_3",
       "name": "roadOutpost fence east 3",
       "position": {
-        "x": -52.75,
+        "x": -42.75,
         "y": 0.0,
         "z": -117.66
       },
@@ -3660,8 +4324,14 @@
     {
       "id": "roadOutpost_fence_east_4",
       "name": "За чертой жалобы не принимаются",
+      "tags": [
+        "perimeter",
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -52.75,
+        "x": -42.75,
         "y": 0.0,
         "z": -93.27
       },
@@ -3670,12 +4340,6 @@
         "y": 1.571,
         "z": 0.0
       },
-      "tags": [
-        "perimeter",
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -3709,7 +4373,7 @@
       "id": "roadOutpost_fence_north_1",
       "name": "roadOutpost fence north 1",
       "position": {
-        "x": -94.885,
+        "x": -84.885,
         "y": 0.0,
         "z": -89.86
       },
@@ -3756,7 +4420,7 @@
       "id": "roadOutpost_fence_north_2",
       "name": "roadOutpost fence north 2",
       "position": {
-        "x": -90.405,
+        "x": -80.405,
         "y": 0.0,
         "z": -89.86
       },
@@ -3803,7 +4467,7 @@
       "id": "roadOutpost_fence_north_3",
       "name": "roadOutpost fence north 3",
       "position": {
-        "x": -85.925,
+        "x": -75.925,
         "y": 0.0,
         "z": -89.86
       },
@@ -3850,7 +4514,7 @@
       "id": "roadOutpost_fence_north_4",
       "name": "roadOutpost fence north 4",
       "position": {
-        "x": -81.445,
+        "x": -71.445,
         "y": 0.0,
         "z": -89.86
       },
@@ -3897,7 +4561,7 @@
       "id": "roadOutpost_fence_north_5",
       "name": "roadOutpost fence north 5",
       "position": {
-        "x": -76.965,
+        "x": -66.965,
         "y": 0.0,
         "z": -89.86
       },
@@ -3944,7 +4608,7 @@
       "id": "roadOutpost_fence_south_2",
       "name": "roadOutpost fence south 2",
       "position": {
-        "x": -94.885,
+        "x": -84.885,
         "y": 0.0,
         "z": -122.14
       },
@@ -3991,7 +4655,7 @@
       "id": "roadOutpost_fence_south_3",
       "name": "roadOutpost fence south 3",
       "position": {
-        "x": -90.405,
+        "x": -80.405,
         "y": 0.0,
         "z": -122.14
       },
@@ -4038,7 +4702,7 @@
       "id": "roadOutpost_fence_south_4",
       "name": "roadOutpost fence south 4",
       "position": {
-        "x": -85.925,
+        "x": -75.925,
         "y": 0.0,
         "z": -122.14
       },
@@ -4085,7 +4749,7 @@
       "id": "roadOutpost_fence_south_5",
       "name": "roadOutpost fence south 5",
       "position": {
-        "x": -81.445,
+        "x": -71.445,
         "y": 0.0,
         "z": -122.14
       },
@@ -4132,7 +4796,7 @@
       "id": "roadOutpost_fence_south_6",
       "name": "roadOutpost fence south 6",
       "position": {
-        "x": -76.965,
+        "x": -66.965,
         "y": 0.0,
         "z": -122.14
       },
@@ -4179,7 +4843,7 @@
       "id": "roadOutpost_fence_south_7",
       "name": "roadOutpost fence south 7",
       "position": {
-        "x": -72.485,
+        "x": -62.485,
         "y": 0.0,
         "z": -122.14
       },
@@ -4226,7 +4890,7 @@
       "id": "roadOutpost_fence_south_8",
       "name": "roadOutpost fence south 8",
       "position": {
-        "x": -61.81,
+        "x": -51.81,
         "y": 0.0,
         "z": -122.14
       },
@@ -4273,7 +4937,7 @@
       "id": "roadOutpost_fence_south_9",
       "name": "roadOutpost fence south 9",
       "position": {
-        "x": -57.33,
+        "x": -47.33,
         "y": 0.0,
         "z": -122.14
       },
@@ -4320,7 +4984,7 @@
       "id": "roadOutpost_gate_military_sign",
       "name": "roadOutpost gate military sign",
       "position": {
-        "x": -53.25,
+        "x": -43.25,
         "y": 2.25,
         "z": -97.25
       },
@@ -4355,7 +5019,7 @@
       "id": "roadOutpost_gate_warning_sign",
       "name": "roadOutpost gate warning sign",
       "position": {
-        "x": -53.25,
+        "x": -43.25,
         "y": 1.4,
         "z": -109.2
       },
@@ -4390,7 +5054,7 @@
       "id": "roadOutpost_hedgehog_1",
       "name": "roadOutpost hedgehog 1",
       "position": {
-        "x": -96.8,
+        "x": -86.8,
         "y": 0.0,
         "z": -110.7
       },
@@ -4477,7 +5141,7 @@
       "id": "roadOutpost_hedgehog_2",
       "name": "roadOutpost hedgehog 2",
       "position": {
-        "x": -92.5,
+        "x": -82.5,
         "y": 0.0,
         "z": -101.3
       },
@@ -4564,7 +5228,7 @@
       "id": "roadOutpost_hedgehog_3",
       "name": "roadOutpost hedgehog 3",
       "position": {
-        "x": -88.0,
+        "x": -78.0,
         "y": 0.0,
         "z": -107.9
       },
@@ -4650,8 +5314,13 @@
     {
       "id": "roadOutpost_hq_aerial",
       "name": "Антенна штаба",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -79.1,
+        "x": -69.1,
         "y": 0.0,
         "z": -92.1
       },
@@ -4660,11 +5329,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -4698,7 +5362,7 @@
       "id": "roadOutpost_hq_gap_stack",
       "name": "roadOutpost hq gap stack",
       "position": {
-        "x": -67.69,
+        "x": -57.69,
         "y": 0.0,
         "z": -91.5
       },
@@ -4764,7 +5428,7 @@
       "id": "roadOutpost_hq_sandbags_east",
       "name": "roadOutpost hq sandbags east",
       "position": {
-        "x": -70.7,
+        "x": -60.7,
         "y": 0.0,
         "z": -94.18
       },
@@ -4820,7 +5484,7 @@
       "id": "roadOutpost_hq_sandbags_west",
       "name": "roadOutpost hq sandbags west",
       "position": {
-        "x": -75.2,
+        "x": -65.2,
         "y": 0.0,
         "z": -94.18
       },
@@ -4875,8 +5539,13 @@
     {
       "id": "roadOutpost_hq_trailer",
       "name": "Штаб заставы",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -74.19,
+        "x": -64.19,
         "y": 0.0,
         "z": -91.985
       },
@@ -4885,11 +5554,6 @@
         "y": 4.712,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -4948,7 +5612,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -70.0,
+        "x": -60.0,
         "y": 0.0,
         "z": -97.2
       },
@@ -4995,7 +5659,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -69.45,
+        "x": -59.45,
         "y": 0.87,
         "z": -97.05
       },
@@ -5025,7 +5689,7 @@
       "id": "roadOutpost_kitchen_bench",
       "name": "roadOutpost kitchen bench",
       "position": {
-        "x": -84.5,
+        "x": -74.5,
         "y": 0.0,
         "z": -115.875
       },
@@ -5080,8 +5744,13 @@
     {
       "id": "roadOutpost_kitchen_crate",
       "name": "Ящик кухни",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -83.33,
+        "x": -73.33,
         "y": 0.0,
         "z": -121.74
       },
@@ -5090,11 +5759,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -5127,8 +5791,13 @@
     {
       "id": "roadOutpost_kitchen_fire",
       "name": "Полевая кухня",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -88.5,
+        "x": -78.5,
         "y": 0.0,
         "z": -115.3
       },
@@ -5137,11 +5806,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -5175,7 +5839,7 @@
       "id": "roadOutpost_kitchen_fire_fx",
       "name": "roadOutpost kitchen fire fx",
       "position": {
-        "x": -88.5,
+        "x": -78.5,
         "y": 0.05,
         "z": -115.3
       },
@@ -5209,7 +5873,7 @@
       "id": "roadOutpost_kitchen_spit",
       "name": "roadOutpost kitchen spit",
       "position": {
-        "x": -88.5,
+        "x": -78.5,
         "y": 0.0,
         "z": -115.3
       },
@@ -5255,7 +5919,7 @@
       "id": "roadOutpost_kitchen_table",
       "name": "roadOutpost kitchen table",
       "position": {
-        "x": -84.5,
+        "x": -74.5,
         "y": 0.0,
         "z": -115.0
       },
@@ -5301,7 +5965,7 @@
       "id": "roadOutpost_kpp_banner_n",
       "name": "roadOutpost kpp banner n",
       "position": {
-        "x": -53.83,
+        "x": -43.83,
         "y": 4.95,
         "z": -97.0
       },
@@ -5336,7 +6000,7 @@
       "id": "roadOutpost_kpp_banner_s",
       "name": "roadOutpost kpp banner s",
       "position": {
-        "x": -53.83,
+        "x": -43.83,
         "y": 4.95,
         "z": -109.2
       },
@@ -5376,7 +6040,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -55.4,
+        "x": -45.4,
         "y": 0.0,
         "z": -103.75
       },
@@ -5417,8 +6081,13 @@
     {
       "id": "roadOutpost_kpp_booth",
       "name": "КПП. Застава 17 — здесь не стреляют",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -57.1,
+        "x": -47.1,
         "y": 0.0,
         "z": -102.25
       },
@@ -5427,11 +6096,6 @@
         "y": 1.571,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -5465,7 +6129,7 @@
       "id": "roadOutpost_kpp_booth_roof_bags_e",
       "name": "roadOutpost kpp booth roof bags e",
       "position": {
-        "x": -55.15,
+        "x": -45.15,
         "y": 2.74,
         "z": -102.25
       },
@@ -5499,7 +6163,7 @@
       "id": "roadOutpost_kpp_booth_roof_bags_w",
       "name": "roadOutpost kpp booth roof bags w",
       "position": {
-        "x": -58.2,
+        "x": -48.2,
         "y": 2.78,
         "z": -102.25
       },
@@ -5533,7 +6197,7 @@
       "id": "roadOutpost_kpp_booth_sandbags",
       "name": "roadOutpost kpp booth sandbags",
       "position": {
-        "x": -60.54,
+        "x": -50.54,
         "y": 0.0,
         "z": -102.25
       },
@@ -5579,7 +6243,7 @@
       "id": "roadOutpost_kpp_gate_post_n",
       "name": "roadOutpost kpp gate post n",
       "position": {
-        "x": -53.3,
+        "x": -43.3,
         "y": 0.0,
         "z": -97.25
       },
@@ -5627,7 +6291,7 @@
       "id": "roadOutpost_kpp_gate_post_s",
       "name": "roadOutpost kpp gate post s",
       "position": {
-        "x": -53.3,
+        "x": -43.3,
         "y": 0.0,
         "z": -109.2
       },
@@ -5674,8 +6338,13 @@
     {
       "id": "roadOutpost_kpp_journal_table",
       "name": "Журнал проводки",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -61.48,
+        "x": -51.48,
         "y": 0.0,
         "z": -102.85
       },
@@ -5684,11 +6353,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -5727,7 +6391,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -54.95,
+        "x": -44.95,
         "y": 0.0,
         "z": -108.9
       },
@@ -5769,7 +6433,7 @@
       "id": "roadOutpost_kpp_slab_inner",
       "name": "roadOutpost kpp slab inner",
       "position": {
-        "x": -59.0,
+        "x": -49.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -5803,7 +6467,7 @@
       "id": "roadOutpost_kpp_slab_outer",
       "name": "roadOutpost kpp slab outer",
       "position": {
-        "x": -54.0,
+        "x": -44.0,
         "y": 0.0,
         "z": -103.5
       },
@@ -5836,8 +6500,13 @@
     {
       "id": "roadOutpost_latrine",
       "name": "Сортир",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -90.0,
+        "x": -80.0,
         "y": 0.0,
         "z": -121.195
       },
@@ -5846,11 +6515,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -5883,8 +6547,13 @@
     {
       "id": "roadOutpost_league_awning",
       "name": "Бордовый тент",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -62.7,
+        "x": -52.7,
         "y": 2.7,
         "z": -94.35
       },
@@ -5893,11 +6562,6 @@
         "y": 3.142,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -5918,8 +6582,14 @@
     {
       "id": "roadOutpost_league_ledger_box",
       "name": "Опломбированный ящик Лиги",
+      "tags": [
+        "quest-landmark",
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -61.4,
+        "x": -51.4,
         "y": 0.0,
         "z": -94.3
       },
@@ -5928,12 +6598,6 @@
         "y": 1.571,
         "z": 0.0
       },
-      "tags": [
-        "quest-landmark",
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -5966,8 +6630,13 @@
     {
       "id": "roadOutpost_league_price_board",
       "name": "Мостовой сбор — по описи груза",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -64.6,
+        "x": -54.6,
         "y": 0.0,
         "z": -96.8
       },
@@ -5976,11 +6645,6 @@
         "y": 3.491,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -6013,8 +6677,13 @@
     {
       "id": "roadOutpost_league_trailer",
       "name": "Трейлер экспедитора Лиги",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -59.975,
+        "x": -49.975,
         "y": 0.0,
         "z": -92.07
       },
@@ -6023,11 +6692,6 @@
         "y": 4.712,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -6070,8 +6734,13 @@
     {
       "id": "roadOutpost_mast_diesel",
       "name": "Бочки солярки",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -57.68,
+        "x": -47.68,
         "y": 0.0,
         "z": -95.94
       },
@@ -6080,11 +6749,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -6137,8 +6801,13 @@
     {
       "id": "roadOutpost_mast_floodlight",
       "name": "Прожектор с генератором",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -58.095,
+        "x": -48.095,
         "y": 0.0,
         "z": -94.61
       },
@@ -6147,11 +6816,6 @@
         "y": 1.571,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -6230,7 +6894,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -55.04,
+        "x": -45.04,
         "y": 8.3,
         "z": -94.955
       },
@@ -6259,8 +6923,13 @@
     {
       "id": "roadOutpost_mast_tally",
       "name": "Счёт ночей",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -55.85,
+        "x": -45.85,
         "y": 0.0,
         "z": -96.31
       },
@@ -6269,11 +6938,6 @@
         "y": 3.142,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -6306,8 +6970,13 @@
     {
       "id": "roadOutpost_mast_tower",
       "name": "Прожекторная мачта",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -55.04,
+        "x": -45.04,
         "y": 0.0,
         "z": -94.955
       },
@@ -6316,11 +6985,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -6354,7 +7018,7 @@
       "id": "roadOutpost_old_bridge_rubble_e",
       "name": "roadOutpost old bridge rubble e",
       "position": {
-        "x": -90.0,
+        "x": -80.0,
         "y": 0.0,
         "z": -135.0
       },
@@ -6421,7 +7085,7 @@
       "id": "roadOutpost_parade_flag",
       "name": "roadOutpost parade flag",
       "position": {
-        "x": -77.5,
+        "x": -67.5,
         "y": 5.7,
         "z": -99.12
       },
@@ -6461,7 +7125,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -77.5,
+        "x": -67.5,
         "y": 0.0,
         "z": -99.0
       },
@@ -6502,8 +7166,14 @@
     {
       "id": "roadOutpost_queue_a_1",
       "name": "Отстойник: места очереди",
+      "tags": [
+        "queue",
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -51.1,
+        "x": -41.1,
         "y": 0.0,
         "z": -110.4
       },
@@ -6512,12 +7182,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "queue",
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -6551,7 +7215,7 @@
       "id": "roadOutpost_queue_a_2",
       "name": "roadOutpost queue a 2",
       "position": {
-        "x": -42.0,
+        "x": -32.0,
         "y": 0.0,
         "z": -110.4
       },
@@ -6598,7 +7262,7 @@
       "id": "roadOutpost_queue_b_1",
       "name": "roadOutpost queue b 1",
       "position": {
-        "x": -51.1,
+        "x": -41.1,
         "y": 0.0,
         "z": -114.1
       },
@@ -6645,7 +7309,7 @@
       "id": "roadOutpost_queue_b_2",
       "name": "roadOutpost queue b 2",
       "position": {
-        "x": -43.6,
+        "x": -33.6,
         "y": 0.0,
         "z": -114.1
       },
@@ -6691,8 +7355,13 @@
     {
       "id": "roadOutpost_queue_barrow",
       "name": "Брошенная тачка с узлами",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -45.7,
+        "x": -35.7,
         "y": 0.0,
         "z": -108.5
       },
@@ -6701,11 +7370,6 @@
         "y": 1.396,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -6739,7 +7403,7 @@
       "id": "roadOutpost_queue_c_1",
       "name": "roadOutpost queue c 1",
       "position": {
-        "x": -49.955,
+        "x": -39.955,
         "y": 0.0,
         "z": -118.35
       },
@@ -6786,7 +7450,7 @@
       "id": "roadOutpost_queue_c_2",
       "name": "roadOutpost queue c 2",
       "position": {
-        "x": -45.7,
+        "x": -35.7,
         "y": 0.0,
         "z": -117.8
       },
@@ -6833,7 +7497,7 @@
       "id": "roadOutpost_queue_tires",
       "name": "roadOutpost queue tires",
       "position": {
-        "x": -47.6,
+        "x": -37.6,
         "y": 0.0,
         "z": -121.2
       },
@@ -6900,7 +7564,7 @@
       "id": "roadOutpost_road_faded_lines",
       "name": "roadOutpost road faded lines",
       "position": {
-        "x": -54.0,
+        "x": -44.0,
         "y": 0.068,
         "z": -103.5
       },
@@ -6933,8 +7597,14 @@
     {
       "id": "roadOutpost_route_post",
       "name": "Столб маршрутных меток Лиги",
+      "tags": [
+        "quest-landmark",
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -49.0,
+        "x": -39.0,
         "y": 0.0,
         "z": -101.5
       },
@@ -6943,12 +7613,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "quest-landmark",
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -6982,7 +7646,7 @@
       "id": "roadOutpost_route_tin_1",
       "name": "roadOutpost route tin 1",
       "position": {
-        "x": -49.0,
+        "x": -39.0,
         "y": 2.1,
         "z": -101.66
       },
@@ -7015,8 +7679,13 @@
     {
       "id": "roadOutpost_se_ammo_box",
       "name": "Патронный короб",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -57.0,
+        "x": -47.0,
         "y": 0.0,
         "z": -116.4
       },
@@ -7025,11 +7694,6 @@
         "y": 1.571,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -7062,8 +7726,13 @@
     {
       "id": "roadOutpost_se_nest_east",
       "name": "Гнездо ЮВ",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -56.98,
+        "x": -46.98,
         "y": 0.0,
         "z": -117.805
       },
@@ -7072,11 +7741,6 @@
         "y": 1.571,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -7120,7 +7784,7 @@
       "id": "roadOutpost_se_nest_south",
       "name": "roadOutpost se nest south",
       "position": {
-        "x": -58.065,
+        "x": -48.065,
         "y": 0.0,
         "z": -118.64
       },
@@ -7165,8 +7829,13 @@
     {
       "id": "roadOutpost_search_board",
       "name": "Доска «Ищу»",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -63.0,
+        "x": -53.0,
         "y": 0.0,
         "z": -109.6
       },
@@ -7175,11 +7844,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -7213,7 +7877,7 @@
       "id": "roadOutpost_search_board_papers",
       "name": "roadOutpost search board papers",
       "position": {
-        "x": -63.0,
+        "x": -53.0,
         "y": 0.85,
         "z": -109.715
       },
@@ -7247,7 +7911,7 @@
       "id": "roadOutpost_slab_stack_1",
       "name": "roadOutpost slab stack 1",
       "position": {
-        "x": -96.0,
+        "x": -86.0,
         "y": 0.0,
         "z": -116.5
       },
@@ -7293,7 +7957,7 @@
       "id": "roadOutpost_somov_nest_north",
       "name": "roadOutpost somov nest north",
       "position": {
-        "x": -94.9,
+        "x": -84.9,
         "y": 0.0,
         "z": -98.26
       },
@@ -7338,8 +8002,13 @@
     {
       "id": "roadOutpost_somov_nest_west",
       "name": "Гнездо Сомова",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -96.15,
+        "x": -86.15,
         "y": 0.0,
         "z": -99.775
       },
@@ -7348,11 +8017,6 @@
         "y": 1.571,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -7395,8 +8059,13 @@
     {
       "id": "roadOutpost_somov_spool",
       "name": "Катушка подрывного провода",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -95.35,
+        "x": -85.35,
         "y": 0.0,
         "z": -101.8
       },
@@ -7405,11 +8074,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -7482,8 +8146,13 @@
     {
       "id": "roadOutpost_storage_container",
       "name": "Склад изъятого",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -64.905,
+        "x": -54.905,
         "y": 0.0,
         "z": -120.915
       },
@@ -7492,11 +8161,6 @@
         "y": 1.571,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -7559,8 +8223,13 @@
     {
       "id": "roadOutpost_tent_1",
       "name": "Палатка 1",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -89.8,
+        "x": -79.8,
         "y": 0.0,
         "z": -92.0
       },
@@ -7569,11 +8238,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -7646,8 +8310,13 @@
     {
       "id": "roadOutpost_tent_2",
       "name": "Палатка 2",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -87.56,
+        "x": -77.56,
         "y": 0.0,
         "z": -92.0
       },
@@ -7656,11 +8325,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -7733,8 +8397,13 @@
     {
       "id": "roadOutpost_tent_3",
       "name": "Палатка 3",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -85.32,
+        "x": -75.32,
         "y": 0.0,
         "z": -92.0
       },
@@ -7743,11 +8412,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -7820,8 +8484,13 @@
     {
       "id": "roadOutpost_tent_4",
       "name": "Палатка 4",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -83.08,
+        "x": -73.08,
         "y": 0.0,
         "z": -92.0
       },
@@ -7830,11 +8499,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -7908,7 +8572,7 @@
       "id": "roadOutpost_water_barrel_1",
       "name": "roadOutpost water barrel 1",
       "position": {
-        "x": -86.0,
+        "x": -76.0,
         "y": 0.0,
         "z": -121.745
       },
@@ -7953,8 +8617,13 @@
     {
       "id": "roadOutpost_water_barrel_2",
       "name": "Питьевая. Норма — 2 л на лицо",
+      "tags": [
+        "site",
+        "site-roadOutpost"
+      ],
+      "site": "roadOutpost",
       "position": {
-        "x": -85.22,
+        "x": -75.22,
         "y": 0.0,
         "z": -121.745
       },
@@ -7963,11 +8632,6 @@
         "y": 0.0,
         "z": 0.0
       },
-      "tags": [
-        "site",
-        "site-roadOutpost"
-      ],
-      "site": "roadOutpost",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -8001,7 +8665,7 @@
       "id": "roadOutpost_water_barrel_3",
       "name": "roadOutpost water barrel 3",
       "position": {
-        "x": -84.44,
+        "x": -74.44,
         "y": 0.0,
         "z": -121.745
       },
@@ -8052,7 +8716,7 @@
       ],
       "site": "roadOutpost",
       "position": {
-        "x": -109.755,
+        "x": -119.755,
         "y": 0.0,
         "z": -103.5
       },
@@ -8069,8 +8733,8 @@
       "collision": "none",
       "role": "dressing",
       "footprint": {
-        "x": 5,
-        "z": 5
+        "x": 5.0,
+        "z": 5.0
       },
       "vision": {
         "blocks": false
@@ -8082,7 +8746,7 @@
       "id": "roadOutpost_yard_ground_wear",
       "name": "roadOutpost yard ground wear",
       "position": {
-        "x": -93.0,
+        "x": -83.0,
         "y": 0.01,
         "z": -94.5
       },
@@ -10557,57 +11221,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "s06_h1",
-      "model": "highwaySign",
-      "prefab": "highway_sign",
-      "name": "Дорожный указатель",
-      "position": {
-        "x": -128.0,
-        "y": 0.0,
-        "z": -98.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 1.572,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.027,
-            "z": -0.036
-          },
-          "size": {
-            "x": 1.494,
-            "z": 0.134
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.49,
-        "depth": 0.13
-      },
-      "footprint": {
-        "x": 0.2,
-        "z": 1.494
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "cover",
-      "tags": [
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "s06_s1",
       "model": "asphaltSlab",
       "prefab": "asphalt_slab",
@@ -10941,42 +11554,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "s06_sc1_2",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": -124.24,
-        "y": 0.0,
-        "z": -108.32
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 1.782,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 0.86,
-        "y": 0.86,
-        "z": 0.86
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.38,
-        "z": 0.39
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "s06_sc1_3",
       "model": "dryBush",
       "prefab": "dry_bush",
@@ -11005,58 +11582,6 @@
         "blocks": false
       },
       "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s07_sc0_2",
-      "model": "deadTreeC",
-      "prefab": "dead_tree_c",
-      "name": "Сухое дерево",
-      "position": {
-        "x": -125.9,
-        "y": 0.0,
-        "z": -124.09
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 2.342,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.85,
-        "y": 1.85,
-        "z": 1.85
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.112,
-            "z": -0.02
-          },
-          "size": {
-            "x": 1.023,
-            "z": 1.177
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.89,
-        "depth": 2.18
-      },
-      "footprint": {
-        "x": 2.881,
-        "z": 2.875
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "cover",
       "tags": [
         "scatter",
         "zone-kit"
@@ -12888,42 +13413,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "s14_sc0_10",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": -106.29,
-        "y": 0.0,
-        "z": -36.16
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 4.555,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.73,
-        "y": 1.73,
-        "z": 1.73
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.76,
-        "z": 0.78
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "s14_sc0_11",
       "model": "dryBush",
       "prefab": "dry_bush",
@@ -12983,42 +13472,6 @@
       "footprint": {
         "x": 0.8,
         "z": 0.82
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s14_sc0_4",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": -105.8,
-        "y": 0.0,
-        "z": -31.64
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.782,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.8,
-        "y": 1.8,
-        "z": 1.8
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.79,
-        "z": 0.81
       },
       "vision": {
         "blocks": false
@@ -13104,78 +13557,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "s15_sc0_0",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": -111.65,
-        "y": 0.0,
-        "z": -78.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.262,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.44,
-        "z": 0.45
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s15_sc0_1",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": -88.41,
-        "y": 0.0,
-        "z": -55.71
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.752,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.12,
-        "y": 1.12,
-        "z": 1.12
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.49,
-        "z": 0.51
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "s15_sc0_2",
       "model": "dryBush",
       "prefab": "dry_bush",
@@ -13204,94 +13585,6 @@
         "blocks": false
       },
       "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s15_sc1_1",
-      "model": "perimeterDebris",
-      "prefab": "perimeter_debris",
-      "name": "Обломки",
-      "position": {
-        "x": -83.34,
-        "y": 0.0,
-        "z": -50.46
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 6.125,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.17,
-        "y": 1.17,
-        "z": 1.17
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 1.08,
-        "z": 1.08
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s17_sc0_1",
-      "model": "tireStack",
-      "prefab": "tire_stack",
-      "name": "Покрышки",
-      "position": {
-        "x": -88.78,
-        "y": 0.0,
-        "z": -135.25
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 4.255,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 0.93,
-        "y": 0.93,
-        "z": 0.93
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.12,
-            "z": -0.128
-          },
-          "size": {
-            "x": 0.935,
-            "z": 0.935
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 0.87,
-        "depth": 0.87
-      },
-      "footprint": {
-        "x": 1.164,
-        "z": 1.164
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "cover",
       "tags": [
         "scatter",
         "zone-kit"
@@ -15439,42 +15732,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "s25_sc0_1",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": -71.1,
-        "y": 0.0,
-        "z": -43.86
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.712,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 0.92,
-        "y": 0.92,
-        "z": 0.92
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.41,
-        "z": 0.41
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "s25_sc0_2",
       "model": "dryBush",
       "prefab": "dry_bush",
@@ -15714,42 +15971,6 @@
       "footprint": {
         "x": 0.46,
         "z": 0.47
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s25_sc1_0",
-      "model": "perimeterDebris",
-      "prefab": "perimeter_debris",
-      "name": "Обломки",
-      "position": {
-        "x": -71.1,
-        "y": 0.0,
-        "z": -42.36
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 4.175,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 0.99,
-        "y": 0.99,
-        "z": 0.99
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.92,
-        "z": 0.91
       },
       "vision": {
         "blocks": false
@@ -16516,42 +16737,6 @@
       "rotation": {
         "x": 0.0,
         "y": 4.225,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.15,
-        "y": 1.15,
-        "z": 1.15
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.51,
-        "z": 0.52
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "s27_sc1_2",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": -42.39,
-        "y": 0.0,
-        "z": -124.44
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 5.345,
         "z": 0.0
       },
       "scale": {
@@ -33560,9 +33745,9 @@
       "id": "post17_ammo_box",
       "name": "Патронный короб караула",
       "tier": "ammo",
-      "tx": 51,
+      "tx": 56,
       "tz": 21,
-      "x": -57,
+      "x": -47,
       "y": 0.1,
       "z": -116.4,
       "rotationY": 1.571,
@@ -33585,9 +33770,9 @@
       "id": "post17_cargo_crate",
       "name": "Артельный ящик в клетке",
       "tier": "wasteland",
-      "tx": 46,
+      "tx": 51,
       "tz": 21,
-      "x": -66.6,
+      "x": -56.6,
       "y": 0.1,
       "z": -116.9,
       "rotationY": 0,
@@ -33619,9 +33804,9 @@
       "id": "post17_kitchen_crate",
       "name": "Ящик полевой кухни",
       "tier": "survival",
-      "tx": 38,
+      "tx": 43,
       "tz": 19,
-      "x": -83.33,
+      "x": -73.33,
       "y": 0.1,
       "z": -121.74,
       "rotationY": 0,
@@ -34304,7 +34489,7 @@
         },
         {
           "id": "place_roadOutpost",
-          "tx": 59,
+          "tx": 64,
           "tz": 27
         },
         {
@@ -34344,7 +34529,7 @@
         },
         {
           "id": "site_roadOutpost_west_0",
-          "tx": 22,
+          "tx": 17,
           "tz": 27
         },
         {
@@ -34527,7 +34712,7 @@
       "targetLocationId": "",
       "radius": 0.5,
       "position": {
-        "x": -70.0,
+        "x": -60.0,
         "y": 0.1,
         "z": -95.7
       },
@@ -34539,7 +34724,7 @@
       "targetLocationId": "",
       "radius": 0.5,
       "position": {
-        "x": -64.0,
+        "x": -54.0,
         "y": 0.1,
         "z": -111.5
       },
@@ -34551,7 +34736,7 @@
       "targetLocationId": "",
       "radius": 0.5,
       "position": {
-        "x": -58.0,
+        "x": -48.0,
         "y": 0.1,
         "z": -109.5
       },
@@ -34563,7 +34748,7 @@
       "targetLocationId": "",
       "radius": 0.5,
       "position": {
-        "x": -63.0,
+        "x": -53.0,
         "y": 0.1,
         "z": -96.5
       },
@@ -34575,7 +34760,7 @@
       "targetLocationId": "",
       "radius": 0.5,
       "position": {
-        "x": -112.0,
+        "x": -122.0,
         "y": 0.1,
         "z": -101.5
       },
@@ -34587,7 +34772,7 @@
       "targetLocationId": "",
       "radius": 0.5,
       "position": {
-        "x": -58.45,
+        "x": -48.45,
         "y": 0.1,
         "z": -117.25
       },
@@ -34599,7 +34784,7 @@
       "targetLocationId": "",
       "radius": 0.5,
       "position": {
-        "x": -94.7,
+        "x": -84.7,
         "y": 0.1,
         "z": -100.0
       },
@@ -34639,7 +34824,7 @@
       "safe": true,
       "x": -82.0,
       "z": -106.0,
-      "halfX": 28.0,
+      "halfX": 38.0,
       "halfZ": 16.0,
       "rotationY": 0.0
     }

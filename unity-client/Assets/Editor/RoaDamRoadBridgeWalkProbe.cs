@@ -30,8 +30,8 @@ namespace RealmOfAshes.EditorTools
                 Physics.SyncTransforms();
                 foreach (float z in new[] { -106f, -107.5f, -104.5f })
                 {
-                    Walk(z, -114f, -93f);
-                    Walk(z, -93f, -114f);
+                    Walk(z, -124f, -83f);
+                    Walk(z, -83f, -124f);
                 }
                 Debug.Log("[ROA DAM ROAD BRIDGE WALK] PASS: capsule crosses all three bridge lanes in both directions.");
             }
@@ -53,7 +53,7 @@ namespace RealmOfAshes.EditorTools
                 body.center = Vector3.zero;
                 RoaPlayerController.ConfigureAuthoritativeCollision(body);
                 float direction = Mathf.Sign(targetX - startX);
-                for (int step = 0; step < 250
+                for (int step = 0; step < 450
                     && (targetX - walker.transform.position.x) * direction > 0f; step++)
                     body.Move(new Vector3(direction * 0.12f, -0.04f, 0f));
                 float reached = walker.transform.position.x;

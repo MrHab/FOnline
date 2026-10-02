@@ -17,7 +17,8 @@ namespace RealmOfAshes.World
         private const float CanalMinZ = -115f;
         private const float CanalMaxZ = -72f;
         private const float WaterGradeBreakZ = -125f;
-        private const float CanalWaterHalfWidth = 4.6f;
+        private const float CanalWaterHalfWidth = 14.6f;
+        private const float BridgeHalfLength = 18f;
         private const float BedDepth = 1.65f;
         private const int Segments = 256;
 
@@ -132,7 +133,7 @@ namespace RealmOfAshes.World
         }
 
         public static bool IsBridgeDeck(float x, float z) =>
-            Mathf.Abs(x - CanalX) <= 8f && Mathf.Abs(z + 106f) <= 3.6f;
+            Mathf.Abs(x - CanalX) <= BridgeHalfLength && Mathf.Abs(z + 106f) <= 3.6f;
 
         public static bool Contains(float x, float z) =>
             _active != null && ProfileAt(z, out float center, out float halfWidth)
@@ -279,7 +280,7 @@ namespace RealmOfAshes.World
             deck.transform.SetParent(transform, false);
             deck.transform.localPosition = new Vector3(CanalX, -0.12f, -106f);
             var collider = deck.AddComponent<BoxCollider>();
-            collider.size = new Vector3(16f, 0.24f, 7.2f);
+            collider.size = new Vector3(BridgeHalfLength * 2f, 0.24f, 7.2f);
         }
 
         private void BuildImpassableChannel()

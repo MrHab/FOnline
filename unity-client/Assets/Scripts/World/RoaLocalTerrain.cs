@@ -215,6 +215,7 @@ namespace RealmOfAshes.World
             if (IsSettlement) PaintSettlementLayers(pixels);
             else PaintAuthoritativeTiles(pixels, stateMap, mapWidth, mapDepth);
             PaintAmbientAge(pixels);
+            if (RoaZoneReliefProjection.Supports(_location?.Id)) PaintRiverBanks(pixels);
             if (_mirrorAlbedoX || _mirrorAlbedoZ)
             {
                 MirrorPixels(pixels, _textureSize, _mirrorAlbedoX, _mirrorAlbedoZ);
@@ -236,6 +237,44 @@ namespace RealmOfAshes.World
             }
             _maskPixels = null;
             return true;
+        }
+
+        private void PaintRiverBanks(Color32[] pixels)
+        {
+            const float band = 6f;
+            for (int row = 0; row < _textureSize; row++)
+            {
+                float worldZ = (row / (_textureSize - 1f) - 0.5f) * _visualDepth;
+                if (!RoaDamRoadWaterProjection.TryBanksAt(worldZ,
+                    out float left, out float right)) continue;
+                PaintBank(left, -1f, worldZ, row);
+                PaintBank(right, 1f, worldZ, row);
+            }
+
+            void PaintBank(float edge, float direction, float worldZ, int row)
+            {
+                float first = edge + Mathf.Min(0f, direction * band);
+                float last = edge + Mathf.Max(0f, direction * band);
+                int start = Mathf.Max(0, Mathf.FloorToInt((first / _visualWidth + 0.5f)
+                    * (_textureSize - 1)));
+                int end = Mathf.Min(_textureSize - 1, Mathf.CeilToInt((last / _visualWidth + 0.5f)
+                    * (_textureSize - 1)));
+                for (int column = start; column <= end; column++)
+                {
+                    float worldX = (column / (_textureSize - 1f) - 0.5f) * _visualWidth;
+                    float distance = (worldX - edge) * direction;
+                    if (distance < 0f || distance > band) continue;
+                    float fade = 1f - Mathf.SmoothStep(0f, 1f, distance / band);
+                    float variation = Mathf.PerlinNoise(worldX * 0.23f, worldZ * 0.19f);
+                    float stain = fade * Mathf.Lerp(0.22f, 0.34f, variation);
+                    int index = row * _textureSize + column;
+                    Color32 baseColor = pixels[index];
+                    pixels[index] = new Color32(
+                        (byte)(baseColor.r * (1f - stain)),
+                        (byte)(baseColor.g * (1f - stain * 0.88f)),
+                        (byte)(baseColor.b * (1f - stain * 0.72f)), baseColor.a);
+                }
+            }
         }
 
         private void UploadSurfaceMask()

@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 const meshPath = path.join(root, 'unity-client/Assets/Resources/RealmOfAshes/DamRoadRiverSource.asset');
 const reliefPath = path.join(root, 'unity-client/Assets/Resources/RealmOfAshes/GlobalMapRelief.asset');
 const outputPath = path.join(root, 'data/kromka/dam-road-river-profile.json');
-const segments = 128;
+const segments = 256;
 const depth = 320;
 const width = 320;
 const mapWest = 195.8;
@@ -67,11 +67,16 @@ function build() {
       }
     }
     if (!Number.isFinite(left) || right - left < 0.01) throw new Error('Tesma misses z=' + z);
-    const projectedLeft = Math.max(-width * 0.5,
+    let projectedLeft = Math.max(-width * 0.5,
       ((left / 0.1 + mapWidth * 0.5 - mapWest) / mapSpan - 0.5) * width);
-    const projectedRight = Math.min(width * 0.5,
+    let projectedRight = Math.min(width * 0.5,
       ((right / 0.1 + mapWidth * 0.5 - mapWest) / mapSpan - 0.5) * width);
-    const pinch = smoothstep(-depth * 0.5, -140, z) * (1 - smoothstep(-72, -24, z));
+    const pinch = smoothstep(-depth * 0.5, -125, z) * (1 - smoothstep(-72, 0, z));
+    const erosion = (1 - pinch) * Math.sin(Math.PI * step / segments);
+    projectedLeft += erosion * (0.9 * Math.sin(z * 0.19)
+      + 0.35 * Math.sin(z * 0.47 + 0.4));
+    projectedRight += erosion * (0.75 * Math.sin(z * 0.16 + 1.3)
+      + 0.28 * Math.sin(z * 0.39 + 2.1));
     centers.push(round((projectedLeft + projectedRight) * 0.5 * (1 - pinch) + canalX * pinch));
     halfWidths.push(round((projectedRight - projectedLeft) * 0.5 * (1 - pinch)
       + canalHalfWidth * pinch));

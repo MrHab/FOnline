@@ -33,7 +33,23 @@
         "x": -21.2,
         "z": -32.1,
         "r": 2.2
+      },
+      {
+        "x": -9,
+        "z": -37,
+        "r": 4.2
       }
+    ]
+  },
+  "clearRiver": {
+    "margin": 2,
+    "archetypes": [
+      "deadTreeA",
+      "deadTreeB",
+      "deadTreeC",
+      "utilityPole",
+      "asphaltSlab",
+      "carWreck"
     ]
   },
   "approach": {
@@ -126,34 +142,6 @@
       ]
     },
     {
-      "id": "canal_tail_east",
-      "prefab": "SM_Env_StormCanal_Straight_02",
-      "x": -22.755,
-      "z": -18.35,
-      "y": 0.02,
-      "rotY": 270,
-      "collision": "auto",
-      "vision": "none",
-      "role": "scenery",
-      "tags": [
-        "canal"
-      ]
-    },
-    {
-      "id": "canal_tail_west",
-      "prefab": "SM_Env_StormCanal_Straight_02",
-      "x": -22.755,
-      "z": -33.35,
-      "y": 0.02,
-      "rotY": 90,
-      "collision": "auto",
-      "vision": "none",
-      "role": "scenery",
-      "tags": [
-        "canal"
-      ]
-    },
-    {
       "id": "canal_cap_north_east",
       "prefab": "SM_Env_StormCanal_Divider_02",
       "x": -22.755,
@@ -228,34 +216,6 @@
       "prefab": "SM_Env_StormCanal_Divider_02",
       "x": -22.755,
       "z": 33.07,
-      "y": 0.02,
-      "rotY": 90,
-      "collision": "auto",
-      "vision": "none",
-      "role": "structure",
-      "tags": [
-        "canal"
-      ]
-    },
-    {
-      "id": "canal_cap_tail_east",
-      "prefab": "SM_Env_StormCanal_Divider_02",
-      "x": -22.755,
-      "z": -33.07,
-      "y": 0.02,
-      "rotY": 270,
-      "collision": "auto",
-      "vision": "none",
-      "role": "structure",
-      "tags": [
-        "canal"
-      ]
-    },
-    {
-      "id": "canal_cap_tail_west",
-      "prefab": "SM_Env_StormCanal_Divider_02",
-      "x": -22.755,
-      "z": -33.07,
       "y": 0.02,
       "rotY": 90,
       "collision": "auto",
@@ -1975,7 +1935,7 @@
     {
       "id": "old_bridge_rubble_w",
       "prefab": "SM_Prop_Rubble_Concrete_06",
-      "x": -29,
+      "x": -39,
       "z": -26.5,
       "y": 0,
       "rotY": 18,
@@ -1989,7 +1949,7 @@
     {
       "id": "old_bridge_rubble_e",
       "prefab": "SM_Prop_Rubble_Concrete_02",
-      "x": -16.5,
+      "x": -8,
       "z": -29,
       "y": 0,
       "rotY": 74,

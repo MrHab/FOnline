@@ -14,11 +14,11 @@ namespace RealmOfAshes.World
         private const string WaterMaterialKey = "RealmOfAshes/DamRoadRiver";
         private const float MapWorldScale = 0.1f;
         private const float CanalX = -104.755f;
-        private const float CanalMinZ = -140f;
+        private const float CanalMinZ = -125f;
         private const float CanalMaxZ = -72f;
         private const float CanalWaterHalfWidth = 4.6f;
         private const float BedDepth = 1.65f;
-        private const int Segments = 128;
+        private const int Segments = 256;
 
         private static float[] _centers;
         private static float[] _halfWidths;
@@ -73,6 +73,11 @@ namespace RealmOfAshes.World
                 localLeft = Mathf.Max(-worldWidth * 0.5f, localLeft);
                 localRight = Mathf.Min(worldWidth * 0.5f, localRight);
                 float pinch = Pinch(z, worldDepth);
+                float erosion = (1f - pinch) * Mathf.Sin(Mathf.PI * step / Segments);
+                localLeft += erosion * (0.9f * Mathf.Sin(z * 0.19f)
+                    + 0.35f * Mathf.Sin(z * 0.47f + 0.4f));
+                localRight += erosion * (0.75f * Mathf.Sin(z * 0.16f + 1.3f)
+                    + 0.28f * Mathf.Sin(z * 0.39f + 2.1f));
                 centers[step] = Mathf.Lerp((localLeft + localRight) * 0.5f, CanalX, pinch);
                 halfWidths[step] = Mathf.Lerp((localRight - localLeft) * 0.5f,
                     CanalWaterHalfWidth, pinch);
@@ -84,12 +89,40 @@ namespace RealmOfAshes.World
             _preparedDepth = worldDepth;
         }
 
+        public static float BedHeightAt(RoaGlobalMapRelief relief, float x, float z,
+                                        float width, float depth)
+        {
+            float land = RoaZoneReliefProjection.RawHeightAt(relief, x, z, width, depth);
+            if (!ProfileAt(z, out float center, out float halfWidth)) return land;
+            float distance = Mathf.Abs(x - center);
+            float canal = Pinch(z, depth);
+            float water = WaterHeightAt(z);
+            float innerSlope = Mathf.Lerp(3.2f, 0.35f, canal);
+            float bankSlope = Mathf.Lerp(20f, 2.6f, canal);
+            // The authored ground cube's top sits 0.05 m below its logical Y.
+            float lip = water + 0.015f;
+            float bed = water - BedDepth;
+            if (distance <= halfWidth - innerSlope) return bed;
+            if (distance < halfWidth)
+                return Mathf.Lerp(bed, lip,
+                    Smoothstep(halfWidth - innerSlope, halfWidth, distance));
+            if (distance >= halfWidth + bankSlope) return land;
+            // A continuous, dry bank meets the water at its actual surface. At the
+            // spillway it also fills the ground right up to the concrete exterior.
+            float crest = Mathf.Max(land, water + 0.23f);
+            float crestAt = halfWidth + bankSlope * 0.45f;
+            return distance < crestAt
+                ? Mathf.Lerp(lip, crest, Smoothstep(halfWidth, crestAt, distance))
+                : Mathf.Lerp(crest, land,
+                    Smoothstep(crestAt, halfWidth + bankSlope, distance));
+        }
+
         public static float BedDepthAt(float x, float z)
         {
-            if (!ProfileAt(z, out float center, out float halfWidth)) return 0f;
-            float taper = Mathf.Lerp(8f, 4.4f, Pinch(z, _preparedDepth));
-            return BedDepth * (1f - Smoothstep(halfWidth, halfWidth + taper,
-                Mathf.Abs(x - center)));
+            if (_preparedRelief == null) return 0f;
+            return RoaZoneReliefProjection.RawHeightAt(_preparedRelief, x, z,
+                _preparedWidth, _preparedDepth)
+                - BedHeightAt(_preparedRelief, x, z, _preparedWidth, _preparedDepth);
         }
 
         public static bool IsBridgeDeck(float x, float z) =>
@@ -99,10 +132,19 @@ namespace RealmOfAshes.World
             _active != null && ProfileAt(z, out float center, out float halfWidth)
             && Mathf.Abs(x - center) <= halfWidth;
 
+        public static bool TryBanksAt(float z, out float left, out float right)
+        {
+            left = right = 0f;
+            if (!ProfileAt(z, out float center, out float halfWidth)) return false;
+            left = center - halfWidth;
+            right = center + halfWidth;
+            return true;
+        }
+
         public static bool InWater(Vector3 world) =>
             Contains(world.x, world.z)
             && !(IsBridgeDeck(world.x, world.z) && world.y >= 0f)
-            && world.y <= _active.WaterHeightAt(world.z) + 0.04f;
+            && world.y <= WaterHeightAt(world.z) + 0.04f;
 
         public static void Build(Renderer ground, RoaGlobalMapRelief relief,
                                  float worldWidth, float worldDepth)
@@ -162,26 +204,32 @@ namespace RealmOfAshes.World
         private static float Pinch(float z, float depth)
         {
             float south = Smoothstep(-depth * 0.5f, CanalMinZ, z);
-            float north = 1f - Smoothstep(CanalMaxZ, CanalMaxZ + 48f, z);
+            float north = 1f - Smoothstep(CanalMaxZ, 0f, z);
             return south * north;
         }
 
-        private float WaterHeightAt(float z)
+        private static float WaterHeightAt(float z)
         {
-            if (!ProfileAt(z, out float center, out _)) return float.NegativeInfinity;
-            float land = RoaZoneReliefProjection.RawHeightAt(_relief, center, z, _width, _depth);
-            // Fill the cut channel nearly to the source bank line. The concrete
-            // spillway stays at the same surface level beneath the dry bridge.
-            return land - 0.18f;
+            // The Tesma flows north through the spillway. A fixed longitudinal
+            // grade prevents the water surface from following small hills in the
+            // projected land height field or climbing uphill between samples.
+            if (z < CanalMinZ) return -0.15f + (CanalMinZ - z) * 0.007f;
+            if (z <= CanalMaxZ) return -0.15f - (z - CanalMinZ) * 0.0005f;
+            float downstream = z - CanalMaxZ;
+            return downstream < 24f
+                ? -0.184f - 0.0175f * downstream * downstream / 48f
+                : -0.184f - 0.0175f * (downstream - 12f);
         }
 
         public static float SurfaceHeightAt(float z) =>
-            _active != null ? _active.WaterHeightAt(z) : float.NegativeInfinity;
+            _active != null && ProfileAt(z, out _, out _)
+                ? WaterHeightAt(z) : float.NegativeInfinity;
 
         private void BuildRiver(Material material)
         {
             var vertices = new List<Vector3>((Segments + 1) * 2);
             var uv = new List<Vector2>(vertices.Capacity);
+            var flowUv = new List<Vector2>(vertices.Capacity);
             var triangles = new List<int>(Segments * 6);
             for (int index = 0; index <= Segments; index++)
             {
@@ -192,6 +240,8 @@ namespace RealmOfAshes.World
                 vertices.Add(new Vector3(center + halfWidth, y, z));
                 uv.Add(new Vector2(0f, index * 0.25f));
                 uv.Add(new Vector2(1f, index * 0.25f));
+                flowUv.Add(new Vector2(-halfWidth, z * 0.35f));
+                flowUv.Add(new Vector2(halfWidth, z * 0.35f));
                 if (index == Segments) continue;
                 int first = index * 2;
                 triangles.Add(first); triangles.Add(first + 2); triangles.Add(first + 1);
@@ -200,6 +250,7 @@ namespace RealmOfAshes.World
             _mesh = new Mesh { name = "TesmaRiverDamRoad" };
             _mesh.SetVertices(vertices);
             _mesh.SetUVs(0, uv);
+            _mesh.SetUVs(1, flowUv);
             _mesh.SetTriangles(triangles, 0);
             _mesh.RecalculateNormals();
             _mesh.RecalculateBounds();

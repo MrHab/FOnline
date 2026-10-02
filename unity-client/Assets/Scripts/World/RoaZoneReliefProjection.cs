@@ -24,7 +24,7 @@ namespace RealmOfAshes.World
         // The map renders 20 points across this cell at 0.1 units per point.
         // Stretching those 2 units to a 320 m zone requires the same factor on Y.
         private const float VerticalGain = 160f;
-        private const int Segments = 128;
+        private const int Segments = 256;
 
         private Mesh _mesh;
         private RoaGlobalMapRelief _relief;
@@ -58,8 +58,8 @@ namespace RealmOfAshes.World
                                      float worldWidth, float worldDepth)
         {
             RoaDamRoadWaterProjection.Prepare(relief, worldWidth, worldDepth);
-            float land = RawHeightAt(relief, localX, localZ, worldWidth, worldDepth);
-            return land - RoaDamRoadWaterProjection.BedDepthAt(localX, localZ);
+            return RoaDamRoadWaterProjection.BedHeightAt(relief, localX, localZ,
+                worldWidth, worldDepth);
         }
 
         public static float RawHeightAt(RoaGlobalMapRelief relief, float localX, float localZ,
@@ -113,10 +113,10 @@ namespace RealmOfAshes.World
                     ? placed.transform.parent.GetComponentInParent<KromkaPlacedObjectAuthoring>() : null;
                 if (parentPlaced != null) continue;
                 Vector3 position = placed.transform.position;
-                if (!placed.BlocksMovement
-                    && RoaDamRoadWaterProjection.Contains(position.x, position.z)
+                if (RoaDamRoadWaterProjection.Contains(position.x, position.z)
                     && (placed.ServerArchetypeId == "dryBush"
-                        || placed.ServerArchetypeId == "deadwood"))
+                        || placed.ServerArchetypeId == "deadwood"
+                        || placed.ServerArchetypeId?.StartsWith("deadTree", StringComparison.Ordinal) == true))
                 {
                     placed.gameObject.SetActive(false);
                     continue;
@@ -137,14 +137,25 @@ namespace RealmOfAshes.World
             {
                 float u = x / (float)Segments;
                 float v = z / (float)Segments;
-                float worldX = (u - 0.5f) * width;
                 float worldZ = (v - 0.5f) * depth;
+                float worldX = (u - 0.5f) * width;
+                // Pin one ground vertex to each exact bank at every river row.
+                // The terrain and water then share a continuous shoreline even
+                // where the regular grid would otherwise cut across the river.
+                if (RoaDamRoadWaterProjection.TryBanksAt(worldZ,
+                    out float leftBank, out float rightBank))
+                {
+                    int leftColumn = Mathf.RoundToInt((leftBank / width + 0.5f) * Segments);
+                    int rightColumn = Mathf.RoundToInt((rightBank / width + 0.5f) * Segments);
+                    if (x == leftColumn) worldX = leftBank;
+                    else if (x == rightColumn) worldX = rightBank;
+                }
                 int index = z * side + x;
                 // The authored ground is a 320 x 0.5 x 320 cube at y = -0.3.
                 // Its top is -0.05, so local 0.5 remains the visual baseline.
-                vertices[index] = new Vector3(u - 0.5f,
+                vertices[index] = new Vector3(worldX / width,
                     0.5f + HeightAt(relief, worldX, worldZ, width, depth) * 2f, v - 0.5f);
-                uv[index] = new Vector2(u, v);
+                uv[index] = new Vector2(worldX / width + 0.5f, v);
             }
             int next = 0;
             for (int z = 0; z < Segments; z++)
@@ -155,6 +166,7 @@ namespace RealmOfAshes.World
                 triangles[next++] = b; triangles[next++] = c; triangles[next++] = d;
             }
             var mesh = new Mesh { name = "DamRoadProjectedRelief" };
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             mesh.vertices = vertices;
             mesh.uv = uv;
             mesh.triangles = triangles;

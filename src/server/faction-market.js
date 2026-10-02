@@ -617,7 +617,7 @@ function commitShelfClaim(store = {}, characterId = '', claimed = {}) {
  * исследованного — его точные свойства. Проекцию передаёт сервер, чтобы модуль
  * рынка не знал про каталог артефактов; без неё остаётся только счётчик.
  */
-function publicOrder(order = {}, now = Date.now(), viewerCharacterId = '', projectArtifact = null) {
+function publicOrder(order = {}, now = Date.now(), viewerCharacterId = '', projectArtifact = null, projectItem = null) {
   const artifactRows = (order.records || []).filter(row => row?.artifact);
   return {
     id: order.id,
@@ -636,7 +636,9 @@ function publicOrder(order = {}, now = Date.now(), viewerCharacterId = '', proje
     artifactCount: artifactRows.length,
     artifacts: typeof projectArtifact === 'function'
       ? artifactRows.map(row => projectArtifact(row.artifact)).filter(Boolean)
-      : []
+      : [],
+    ...(typeof projectItem === 'function'
+      ? { itemDetails: order.side === 'sell' ? projectItem(order) : null } : {})
   };
 }
 
@@ -665,13 +667,16 @@ function marketItems(orders = []) {
 function publicMarket(store = {}, viewerCharacterId = '', rules = DEFAULT_RULES, now = Date.now(), options = {}) {
   const shelf = shelfFor(store, viewerCharacterId);
   const projectArtifact = typeof options?.projectArtifact === 'function' ? options.projectArtifact : null;
+  const projectItem = typeof options?.projectItem === 'function' ? options.projectItem : null;
   const orders = activeOrders(store, now)
-    .map(row => publicOrder(row, now, viewerCharacterId, projectArtifact));
-  const items = marketItems(orders);
+    .map(row => publicOrder(row, now, viewerCharacterId, projectArtifact, projectItem));
+  const items = marketItems(orders).map(row => ({ ...row,
+    ...(projectItem ? { itemDetails: projectItem({ itemId: row.itemId, condition: 100, records: [] }) } : {}) }));
   const listed = new Set(items.map(row => row.itemId));
   for (const row of options.catalog || []) {
     if (!listed.has(row.itemId)) items.push({ itemId: row.itemId, category: row.category,
-      sellQty: 0, sellPrice: 0, buyQty: 0, buyPrice: 0, mine: false });
+      sellQty: 0, sellPrice: 0, buyQty: 0, buyPrice: 0, mine: false,
+      ...(projectItem ? { itemDetails: projectItem({ itemId: row.itemId, condition: 100, records: [] }) } : {}) });
   }
   const counts = new Map();
   for (const row of items) counts.set(row.category, (counts.get(row.category) || 0) + 1);

@@ -11458,12 +11458,35 @@ function serverBlackMarketCapShare() {
   return WORLD_ECONOMY.worldModel.npcTraders ? WORLD_ECONOMY.blackMarket.npcResaleCapShare : 0;
 }
 
+// Public terms for the next unit delivered from an ask. Runtime ids and loaded
+// ammunition stay private; the buyer sees the actual modifications and stats.
+function serverAuctionItemDetails(order = {}) {
+  const itemId = serverBaseItemId(order.itemId);
+  const record = order.records?.[0] || {};
+  const weapon = SERVER_WEAPONS[itemId];
+  const mods = weapon?.ammoType
+    ? sanitizeServerWeaponModifications(record.weaponMods || {}, weapon) : {};
+  const effective = weapon?.ammoType ? serverApplyWeaponModificationEffects(weapon, mods) : weapon;
+  const armor = SERVER_ARMOR_ITEMS[itemId];
+  return {
+    condition: Number(record.condition ?? order.condition ?? 100),
+    weaponMods: mods,
+    weapon: effective ? {
+      damageMin: Number(effective.dmg?.[0] || 0), damageMax: Number(effective.dmg?.[1] || 0),
+      range: Number(effective.range || 0), apCost: Number(effective.apCost || 0),
+      magazine: Number(effective.magSize || 0), ammoType: effective.ammoType || ''
+    } : null,
+    armor: armor ? { protection: { ...armor.protection }, thresholds: { ...armor.thresholds } } : null
+  };
+}
+
 function serverBlackMarketAuctionState(store, player, rules, now, itemId = '') {
   const config = WORLD_ECONOMY.blackMarket;
   const view = publicMarket(store, player.characterId, rules, now, {
     marketId: config.hubLocationId,
     marketName: 'Чёрный рынок',
-    itemId
+    itemId,
+    projectItem: serverAuctionItemDetails
   });
   view.blackMarket = true;
   view.treasury = serverBlackMarketStore().treasury;
@@ -11471,14 +11494,17 @@ function serverBlackMarketAuctionState(store, player, rules, now, itemId = '') {
   // Other sellers' asks are private: this market only buys from players.
   view.orders = view.orders.filter(row => row.mine).concat(blackMarketBids(
     serverBlackMarketStore(), config, serverBlackMarketItemPrice, serverBlackMarketCapShare())
-    .map(row => ({ ...row, category: KROMKA_ITEM_INDEXES.categories[row.itemId] || 'misc' })));
+    .map(row => ({ ...row, category: KROMKA_ITEM_INDEXES.categories[row.itemId] || 'misc',
+      itemDetails: serverAuctionItemDetails({ itemId: row.itemId }) })));
   view.mineCount = view.orders.filter(row => row.mine).length;
-  view.items = marketItems(view.orders);
+  view.items = marketItems(view.orders).map(row => ({ ...row,
+    itemDetails: serverAuctionItemDetails({ itemId: row.itemId }) }));
   const listed = new Set(view.items.map(row => row.itemId));
   for (const id of SERVER_BLACK_MARKET_CANDIDATES) {
     if (!listed.has(id)) view.items.push({ itemId: id,
       category: KROMKA_ITEM_INDEXES.categories[id] || 'misc',
-      sellQty: 0, sellPrice: 0, buyQty: 0, buyPrice: 0, mine: false });
+      sellQty: 0, sellPrice: 0, buyQty: 0, buyPrice: 0, mine: false,
+      itemDetails: serverAuctionItemDetails({ itemId: id }) });
   }
   const counts = new Map();
   for (const row of view.items) counts.set(row.category, (counts.get(row.category) || 0) + 1);
@@ -30559,7 +30585,8 @@ io.on('connection', (socket) => {
         .map(item => ({ itemId: item.id, category: KROMKA_ITEM_INDEXES.categories[item.id] || 'misc' })),
       // Состояние артефакта видно до покупки; скрытые свойства сырого
       // экземпляра публичная проекция по-прежнему не отдаёт.
-      projectArtifact: record => publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG)
+      projectArtifact: record => publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG),
+      projectItem: serverAuctionItemDetails
     });
     if (action === 'state') {
       if (typeof ack === 'function') ack({ ok: true, auction: auctionState() });
@@ -30600,6 +30627,8 @@ io.on('connection', (socket) => {
       if (!itemId || !SERVER_ITEM_IDS.has(itemId) || itemId === 'fists') return fail('Неизвестный предмет.');
       if (blackMarketAuction && (!serverBlackMarketAccepts(itemId) || qty !== 1))
         return fail('На Чёрном рынке выставляют по одному предмету оружия или брони.');
+      if (!serverMarketItemIsFungible(itemId) && qty !== 1)
+        return fail('Снаряжение и артефакты выставляют по одному экземпляру.');
       if (serverSinTradedOnlyInExchange(itemId)) return fail('Синь продаётся в обменнике сини у аукционера.');
       if (serverItemProtectedFromPvpDrop(itemId)) return fail('Этот предмет нельзя выставить.');
       if (qty <= 0 || serverInventoryQty(p.inventory, itemId) < qty) return fail('В рюкзаке нет такого количества.');
@@ -30610,11 +30639,9 @@ io.on('connection', (socket) => {
       if (!validation.ok) return fail(validation.error || 'Предмет недоступен.');
       const records = serverCaptureWeaponRuntimeRecords(p, row, validation);
       const condition = Number(records[0]?.condition ?? serverPlayerItemCondition(p, itemId) ?? 100);
-      if (blackMarketAuction && condition < WORLD_ECONOMY.blackMarket.minCondition)
-        return fail(`Чёрный рынок принимает предметы от ${WORLD_ECONOMY.blackMarket.minCondition}% состояния.`);
-      if (!blackMarketAuction && (records.some(record => Number(record.condition ?? 100) < 100)
+      if (records.some(record => Number(record.condition ?? 100) < 100)
         || (KROMKA_ITEM_INDEXES.byId[itemId]?.conditionMode === 'shared'
-          && serverPlayerItemCondition(p, itemId) < 100))) return fail('Перед продажей на рынке полностью отремонтируйте предмет.');
+          && serverPlayerItemCondition(p, itemId) < 100)) return fail('Перед продажей на рынке полностью отремонтируйте предмет.');
       serverInventoryRemove(p, itemId, qty);
       serverFinalizeWeaponRuntimeRemoval(p, row, validation);
       const placed = marketPlaceSellOrder(store, {

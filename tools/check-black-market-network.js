@@ -125,14 +125,21 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     'A retried sale cannot buy twice.');
     console.log('PASS instant auction sale');
 
-    const weaponAsk = await h.socketAck(accounts.trade.socket, 'auctionAction', {
+    const wornAsk = await h.socketAck(accounts.trade.socket, 'auctionAction', {
       action: 'sell', itemId: 'laserPistol', itemRuntimeId: 'ui_laserPistol_trade_3',
       qty: 1, price: 1, durationHours: 24
     });
-    assert(weaponAsk.ok && weaponAsk.soldQty === 1, 'A worn weapon ask can be matched by the NPC bid.');
-    assert(!weaponAsk.auction.orders.some(row => row.id === 'bm_laserPistol'));
-    assert(weaponAsk.auction.shelf.items.some(row => row.itemId === 'energyCell' && row.qty === 4),
-      'Loaded ammunition from an automatically bought weapon waits on the seller shelf.');
+    assert(!wornAsk.ok && /отремонтируйте/.test(wornAsk.error),
+      'A worn weapon cannot be placed as a Black Market ask.');
+    assert.equal(qty(wornAsk.self, 'laserPistol'), 1, 'The rejected weapon stays in the bag.');
+    const wornInstantSale = await h.socketAck(accounts.trade.socket, 'auctionAction', {
+      action: 'sellNow', orderId: pistolBid.id, qty: 1, expectedPrice: pistolBid.price,
+      itemRuntimeId: 'ui_laserPistol_trade_3'
+    });
+    assert(wornInstantSale.ok, 'The existing instant-sale rule still accepts a worn weapon.');
+    assert(!wornInstantSale.auction.orders.some(row => row.id === 'bm_laserPistol'));
+    assert.equal(qty(wornInstantSale.self, 'energyCell'), cellsBefore + 9,
+      'Loaded ammunition from the second weapon returns to the bag.');
 
     const waiting = await h.socketAck(accounts.trade.socket, 'auctionAction', {
       action: 'sell', itemId: 'leather', qty: 1, price: 100, durationHours: 24
@@ -140,6 +147,8 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     assert(waiting.ok && waiting.restingQty === 1, 'An ask without demand waits in the book.');
     assert.equal(qty(waiting.self, 'leather'), 0, 'The waiting ask holds the item in escrow.');
     assert(waiting.auction.orders.some(row => row.id === waiting.orderId && row.mine), 'The player sees their ask.');
+    assert(waiting.auction.orders.find(row => row.id === waiting.orderId)?.itemDetails?.armor?.protection,
+      'The listed armor exposes its actual protection values.');
 
     // --- доступ и подъём -----------------------------------------------------------------
     await h.connectAndJoin(accounts.untargeted);

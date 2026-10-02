@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Kromka_GlobalWater_Clean_MEP
-  m_Shader: {fileID: 4800000, guid: a0cd61955c2c62748838b234ba8dfc70, type: 3}
+  m_Name: DamRoadRiver
+  m_Shader: {fileID: 4800000, guid: 6c05e2f0269c4b6ea457dbcb58d98f0b, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -30,18 +30,14 @@ Material:
     m_Ints: []
     m_Floats:
     - _FlowSpeed: 0.016
-    - _LocalRiverFlow: 1
     - _FresnelPower: 4.2
     - _MineralVeil: 0.44
     - _NormalScale: 0.66
     - _NormalTiling: 0.48
-    - _Opacity: 0.9
-    - _ShoreBothSides: 1
     - _Smoothness: 0.85
-    - _ToxicPulse: 0
     m_Colors:
-    - _DeepColor: {r: 0.015, g: 0.12, b: 0.16, a: 0.92}
-    - _FoamColor: {r: 0.55, g: 0.7, b: 0.65, a: 1}
-    - _ShallowColor: {r: 0.08, g: 0.43, b: 0.47, a: 0.88}
+    - _DeepColor: {r: 0.025, g: 0.17, b: 0.19, a: 1}
+    - _FoamColor: {r: 0.46, g: 0.58, b: 0.54, a: 1}
+    - _ShallowColor: {r: 0.12, g: 0.39, b: 0.41, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

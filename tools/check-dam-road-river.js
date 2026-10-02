@@ -12,6 +12,13 @@ const zone = require('../data/zones/authored/z_10_10.json');
 const rows = Array.from({ length: 160 }, () => Array(160).fill(0));
 const waterCount = river.paintWaterTiles(rows, 2, 3);
 assert(waterCount > 2000, 'the Tesma must fill the sector, not only the spillway');
+for (const object of zone.objects) {
+  if (!object.position) continue;
+  const bank = river.banksAt(object.position.z);
+  if (!bank || Math.abs(object.position.x - bank.center) >= bank.halfWidth) continue;
+  assert(object.tags?.includes('canal') || object.tags?.includes('bridge'),
+    `${object.id} is standing in the river outside the bridge or spillway`);
+}
 for (const key of ['spawn', 'entryFromWorld', 'entryFromEast', 'entryFromNorth',
   'entryFromSouth', 'entryFromWest']) {
   const point = zoneWalk.world(zone[key]);

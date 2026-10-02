@@ -113,10 +113,8 @@ namespace RealmOfAshes.World
                     ? placed.transform.parent.GetComponentInParent<KromkaPlacedObjectAuthoring>() : null;
                 if (parentPlaced != null) continue;
                 Vector3 position = placed.transform.position;
-                if (RoaDamRoadWaterProjection.Contains(position.x, position.z)
-                    && (placed.ServerArchetypeId == "dryBush"
-                        || placed.ServerArchetypeId == "deadwood"
-                        || placed.ServerArchetypeId?.StartsWith("deadTree", StringComparison.Ordinal) == true))
+                if (placed.Role != "terrain"
+                    && RoaDamRoadWaterProjection.Contains(position.x, position.z))
                 {
                     placed.gameObject.SetActive(false);
                     continue;

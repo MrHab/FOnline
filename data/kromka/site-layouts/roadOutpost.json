@@ -42,15 +42,7 @@
     ]
   },
   "clearRiver": {
-    "margin": 2,
-    "archetypes": [
-      "deadTreeA",
-      "deadTreeB",
-      "deadTreeC",
-      "utilityPole",
-      "asphaltSlab",
-      "carWreck"
-    ]
+    "margin": 2
   },
   "approach": {
     "x": 40,
@@ -1488,20 +1480,6 @@
       "tags": []
     },
     {
-      "id": "fence_south_1",
-      "prefab": "SM_Prop_Wall_Quarantine_Base_02",
-      "x": -17.365,
-      "z": -16.14,
-      "y": 0,
-      "rotY": 0,
-      "collision": "auto",
-      "vision": "auto",
-      "role": "structure",
-      "tags": [
-        "perimeter"
-      ]
-    },
-    {
       "id": "fence_south_2",
       "prefab": "SM_Prop_Wall_Quarantine_Base_02",
       "x": -12.885,
@@ -1902,20 +1880,6 @@
       "vision": "none",
       "role": "dressing",
       "tags": []
-    },
-    {
-      "id": "old_bridge_rubble_w",
-      "prefab": "SM_Prop_Rubble_Concrete_06",
-      "x": -39,
-      "z": -26.5,
-      "y": 0,
-      "rotY": 18,
-      "collision": "auto",
-      "vision": "none",
-      "role": "scenery",
-      "tags": [
-        "old-bridge"
-      ]
     },
     {
       "id": "old_bridge_rubble_e",

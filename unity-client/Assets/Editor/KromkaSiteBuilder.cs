@@ -143,13 +143,11 @@ namespace Kromka.EditorTools
                 if (relief == null || !relief.Ready)
                     throw new InvalidOperationException("Рельеф Тесьмы не найден для расчистки русла.");
                 RoaDamRoadWaterProjection.Prepare(relief, 320f, 320f);
-                var archetypes = new HashSet<string>((riverClear["archetypes"] as JArray
-                    ?? new JArray()).Select(value => value.ToString()), StringComparer.Ordinal);
                 float margin = Num(riverClear["margin"], 0f);
                 foreach (KromkaPlacedObjectAuthoring marker in location
                     .GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true))
                 {
-                    if (marker == null || !archetypes.Contains(marker.ServerArchetypeId)) continue;
+                    if (marker == null || marker.Role == "terrain") continue;
                     Vector3 at = marker.transform.position;
                     if (!RoaDamRoadWaterProjection.TryBanksAt(at.z, out float left, out float right)
                         || at.x < left - margin || at.x > right + margin) continue;

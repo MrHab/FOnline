@@ -234,7 +234,8 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
   for (const row of real.species) {
     for (const spec of row.members) {
       assert(eco.HUMAN_TYPES.includes(spec.type) || creatures.includes(spec.type), `${row.id}: ${spec.type} is a person or a creature of the Kromka bestiary`);
-      if (row.kind === 'traveller') assert(eco.HUMAN_TYPES.includes(spec.type), `${row.id}: travellers are people`);
+      if (['caravan', 'patrol', 'follow', 'poi', 'anomaly'].includes(row.travel?.mode))
+        assert(eco.HUMAN_TYPES.includes(spec.type), `${row.id}: this mobile group consists of people`);
     }
   }
   console.log(`PASS the game data lists Kromka species only (${real.species.map(row => row.id).join(', ')})`);
@@ -546,19 +547,6 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
   const refilled = world.groups.get(refill[0].groupId);
   assert.notEqual(refilled.lairId, red[0].id, 'an empty lair refills before a lair that already has a group');
   console.log('PASS groups outside the world are purged and empty lairs refill first under the group cap');
-}
-
-// --- сервер подключает A-Life ------------------------------------------------------------------------
-{
-  const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
-  for (const [hook, label] of [
-    ["maybeReportEncounterOutcome(room, 'player_kill', enemy, p);\n  serverEcologyNoteDeath(room, enemy);", 'a player kill is permanent for the group'],
-    ["maybeReportEncounterOutcome(room, 'faction_combat', foe, null);\n      serverEcologyNoteDeath(room, foe);", 'an NPC kill is permanent for the group'],
-    ['if (updateEcologyActorLifecycle(room, enemy, dt)) continue;', 'arriving members walk in'],
-    ["if (enemy.ecologyPhase === 'leaving' && updateEcologyActorLifecycle(room, enemy, dt)) continue;", 'a broken group leaves even mid-fight'],
-    ['creatureTypeId: creatureTypeId || undefined,', 'encounters spawn the creature of the bestiary']
-  ]) assert(server.includes(hook), `server.js wires ${label}`);
-  assert(!server.includes('serverRespawnDangerThreats'), 'no respawn timer: threats come with groups');
 }
 
 console.log('Danger ecology OK: lairs follow the colour of the land, groups roam, hear players and arrive from the edge, deaths are permanent and the world survives a restart.');

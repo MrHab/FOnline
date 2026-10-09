@@ -103,16 +103,15 @@ namespace RealmOfAshes.Game
         /// <summary>Загрузить сцену (один раз) и показать карту. mobile — упрощённая детализация.</summary>
         public IEnumerator Open(bool mobile)
         {
-            if (IsOpen || IsLoading) yield break;
-            _mobile = mobile;
-            FailReason = string.Empty;
-            if (_root == null)
-            {
-                IsLoading = true;
-                yield return LoadScene();
-                IsLoading = false;
-                if (_root == null) yield break;
-            }
+            if (IsOpen) yield break;
+            if (!Ready) yield return Prepare(mobile);
+            OpenPrepared();
+        }
+
+        public bool OpenPrepared()
+        {
+            if (IsOpen) return true;
+            if (!Ready || IsLoading) return false;
             SetSceneActive(true);
             EnsureCamera();
             // Главная камера остаётся включённой (на неё смотрят подписи и туман войны), но
@@ -133,6 +132,22 @@ namespace RealmOfAshes.Game
             RenderSettings.ambientLight = new Color(0.5f, 0.49f, 0.45f, 1f);
             IsOpen = true;
             ApplyCamera();
+            return true;
+        }
+
+        public IEnumerator Prepare(bool mobile)
+        {
+            while (IsLoading) yield return null;
+            if (Ready) yield break;
+            _mobile = mobile;
+            FailReason = string.Empty;
+            IsLoading = true;
+            try
+            {
+                yield return LoadScene();
+                if (Ready) { EnsureCamera(); SetSceneActive(false); }
+            }
+            finally { IsLoading = false; }
         }
 
         public void Close()
@@ -147,18 +162,7 @@ namespace RealmOfAshes.Game
             RenderSettings.ambientMode = _savedAmbientMode;
             RenderSettings.ambientLight = _savedAmbient;
             if (_root == null) return;
-            // На телефоне память дороже мгновенного повторного открытия.
-            if (_mobile)
-            {
-                ReleaseOverlays();
-                SceneManager.UnloadSceneAsync(_scene);
-                _root = null;
-                _playerMarker = _selectionMarker = null;
-            }
-            else
-            {
-                SetSceneActive(false);
-            }
+            SetSceneActive(false);
         }
 
         private void SetSceneActive(bool active)
@@ -181,6 +185,7 @@ namespace RealmOfAshes.Game
             Isolate(scene);
             if (mobile) ReduceDetail();
             _playerMarker = Marker("WorldMapPlayer", PlayerColor, 0.22f);
+            _playerMarker.gameObject.SetActive(false);
             _selectionMarker = Marker("WorldMapSelection", SelectionColor, 0.16f);
             _selectionMarker.gameObject.SetActive(false);
             EnsureCamera();
@@ -870,6 +875,8 @@ namespace RealmOfAshes.Game
 
         private void OnDestroy()
         {
+            Close();
+            if (Application.isPlaying && _scene.IsValid() && _scene.isLoaded) SceneManager.UnloadSceneAsync(_scene);
             ReleaseOverlays();
             if (_overlayMaterial != null) Destroy(_overlayMaterial);
             if (_markerMaterial != null) Destroy(_markerMaterial);

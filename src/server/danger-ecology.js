@@ -39,6 +39,8 @@ const STEPS = Object.freeze({
 const DEFAULT_CONFIG = Object.freeze({
   tickSeconds: 5,
   maxGroups: 800,
+  stationaryLairs: false,
+  clearedLairRespawnMinutes: 5,
   pullRadiusCells: 3,
   woundHealPerMinute: 0.02,
   lairs: Object.freeze({
@@ -144,7 +146,7 @@ function normalizeSpecies(row = {}, roam = DEFAULT_CONFIG.roam) {
     kind,
     // Мирная фауна (фонарники) никого не трогает и в стычку не тянется; путники
     // (караваны, патрули) на игрока не нападают.
-    hostile: kind !== 'fauna' && kind !== 'traveller' && row.hostile !== false,
+    hostile: kind !== 'fauna' && (kind !== 'traveller' ? row.hostile !== false : row.hostile === true),
     faction: safeId(row.faction, 48),
     members: Object.freeze(members),
     habitat,
@@ -164,10 +166,11 @@ function normalizeSpecies(row = {}, roam = DEFAULT_CONFIG.roam) {
     travel: kind === 'traveller' ? Object.freeze({
       // follow — путник идёт за отрядом мира симуляции (патруль фракции): куда и
       // когда, решает сервер, заводить таких сам мир не будет.
-      mode: ['patrol', 'follow'].includes(travel.mode) ? travel.mode : 'caravan',
+      mode: ['patrol', 'follow', 'poi', 'road', 'anomaly'].includes(travel.mode) ? travel.mode : 'caravan',
       // Караванов — столько на весь мир, патрулей — столько у каждого города.
       count: Math.floor(finite(travel.count, 4, 0, 64)),
       restMinutes: range(travel.restMinutes, [20, 60], 0, 1440),
+      artifactSearchSeconds: finite(travel.artifactSearchSeconds, 60, 1, 3600),
       respawnMinutes: finite(travel.respawnMinutes, 30, 1, 10080),
       patrolRadius: Math.floor(finite(travel.patrolRadius, 2, 1, 6)),
       patrolStops: Math.floor(finite(travel.patrolStops, 3, 1, 12))
@@ -201,6 +204,8 @@ function normalizeEcologyConfig(input = {}) {
   return Object.freeze({
     tickSeconds: finite(src.tickSeconds, DEFAULT_CONFIG.tickSeconds, 1, 120),
     maxGroups: Math.floor(finite(src.maxGroups, DEFAULT_CONFIG.maxGroups, 0, 5000)),
+    stationaryLairs: src.stationaryLairs === true,
+    clearedLairRespawnMinutes: finite(src.clearedLairRespawnMinutes, DEFAULT_CONFIG.clearedLairRespawnMinutes, 1, 1440),
     pullRadiusCells: Math.floor(finite(src.pullRadiusCells, DEFAULT_CONFIG.pullRadiusCells, 0, 8)),
     woundHealPerMinute: finite(src.woundHealPerMinute, DEFAULT_CONFIG.woundHealPerMinute, 0, 1),
     lairs: Object.freeze({
@@ -273,7 +278,19 @@ function normalizeEcologyState(input = {}, config = normalizeEcologyConfig()) {
       mode: LIVING_MODES.includes(row.mode) ? row.mode : 'pvp',
       region: safeId(row.region, 48),
       slot: Math.max(0, Math.floor(Number(row.slot) || 0)),
-      refillAt: Math.max(0, Number(row.refillAt) || 0)
+      kind: row.kind === 'huntingGround' ? 'huntingGround' : 'lair',
+      tx: row.tx != null && Number.isFinite(Number(row.tx)) ? Number(row.tx) : null,
+      tz: row.tz != null && Number.isFinite(Number(row.tz)) ? Number(row.tz) : null,
+      x: row.x != null && Number.isFinite(Number(row.x)) ? Number(row.x) : null,
+      z: row.z != null && Number.isFinite(Number(row.z)) ? Number(row.z) : null,
+      radius: Math.max(3, Number(row.radius) || 12),
+      refillAt: Math.max(0, Number(row.refillAt) || 0),
+      destroyedAt: Math.max(0, Number(row.destroyedAt) || 0),
+      lootClaimed: row.lootClaimed === true,
+      loot: (Array.isArray(row.loot) ? row.loot : []).slice(0, 16).map(item => ({
+        id: safeId(item.id), qty: Math.max(0, Math.floor(finite(item.qty, 0, 0, 9999)))
+      })).filter(item => item.id && item.qty > 0),
+      claimRoomId: ''
     });
   }
   for (const row of Array.isArray(src.groups) ? src.groups : []) {
@@ -301,7 +318,11 @@ function normalizeEcologyState(input = {}, config = normalizeEcologyConfig()) {
       online: '',
       size0: Math.max(members.length, Math.floor(finite(row.size0, members.length, 1, 100))),
       bornAt: Math.max(0, Number(row.bornAt) || 0),
-      clashReadyAt: Math.max(0, Number(row.clashReadyAt) || 0)
+      clashReadyAt: Math.max(0, Number(row.clashReadyAt) || 0),
+      grenadeGroupReadyAt: Math.max(0, Number(row.grenadeGroupReadyAt) || 0),
+      grenadeMemberReadyAt: Object.fromEntries(Object.entries(row.grenadeMemberReadyAt || {})
+        .map(([memberId, readyAt]) => [safeId(memberId, 24), Math.max(0, Number(readyAt) || 0)])
+        .filter(([memberId, readyAt]) => members.some(member => member.id === memberId) && readyAt > 0))
     };
     if (species.kind === 'traveller') {
       const route = (Array.isArray(row.route) ? row.route : [])
@@ -363,6 +384,9 @@ function serializeEcologyState(state) {
       size0: group.size0,
       bornAt: group.bornAt,
       ...(group.clashReadyAt ? { clashReadyAt: group.clashReadyAt } : {}),
+      ...(group.grenadeGroupReadyAt ? { grenadeGroupReadyAt: group.grenadeGroupReadyAt } : {}),
+      ...(Object.keys(group.grenadeMemberReadyAt || {}).length
+        ? { grenadeMemberReadyAt: { ...group.grenadeMemberReadyAt } } : {}),
       ...(group.home !== undefined ? {
         home: group.home,
         dest: group.dest || '',
@@ -423,12 +447,20 @@ function buildLairs(config, candidates = [], mapRevision = '', options = {}) {
     // Сперва виды тира клетки; если таких в этой среде нет, логово не пропадает —
     // встаёт вид среды, а силу ему даёт тир зоны при появлении.
     const roll = hash01(`${mapRevision}:species:${cell.id ? id : key}`);
-    const species = pickSpecies(config, mode, safeId(cell.region, 48), roll, row => speciesAllowed(row, cell))
+    const species = (cell.speciesId ? config.speciesById[safeId(cell.speciesId)] : null)
+      || pickSpecies(config, mode, safeId(cell.region, 48), roll, row => speciesAllowed(row, cell))
       || pickSpecies(config, mode, safeId(cell.region, 48), roll);
     if (!species) continue;
     lairs.push({
       id, speciesId: species.id, sx: cell.sx, sy: cell.sy, mode, region: safeId(cell.region, 48),
-      slot: Math.max(0, Math.floor(Number(cell.slot) || 0)), refillAt: 0
+      slot: Math.max(0, Math.floor(Number(cell.slot) || 0)), refillAt: 0,
+      kind: cell.kind === 'huntingGround' ? 'huntingGround' : 'lair',
+      tx: cell.tx != null && Number.isFinite(Number(cell.tx)) ? Number(cell.tx) : null,
+      tz: cell.tz != null && Number.isFinite(Number(cell.tz)) ? Number(cell.tz) : null,
+      x: cell.x != null && Number.isFinite(Number(cell.x)) ? Number(cell.x) : null,
+      z: cell.z != null && Number.isFinite(Number(cell.z)) ? Number(cell.z) : null,
+      radius: Math.max(3, Number(cell.radius) || 12),
+      destroyedAt: 0, lootClaimed: false, loot: [], claimRoomId: ''
     });
   }
   return lairs;
@@ -452,8 +484,17 @@ function purgeGroups(state, keep) {
 }
 
 /** Заменить логова (новая ревизия карты): группы старых логов остаются бродягами. */
-function resetLairs(state, lairs = [], mapRevision = '') {
-  state.lairs = new Map(lairs.map(lair => [lair.id, { ...lair }]));
+function resetLairs(state, lairs = [], mapRevision = '', options = {}) {
+  const oldLairs = state.lairs;
+  state.lairs = new Map(lairs.map(lair => {
+    const old = oldLairs.get(lair.id);
+    const retainSpecies = old && typeof options.retainSpecies === 'function' && options.retainSpecies(old, lair) === true;
+    return [lair.id, old && (old.speciesId === lair.speciesId || retainSpecies)
+      ? { ...lair, speciesId: retainSpecies ? old.speciesId : lair.speciesId,
+        refillAt: old.refillAt, destroyedAt: old.destroyedAt || 0,
+        lootClaimed: !!old.lootClaimed, loot: old.loot || [], claimRoomId: '' }
+      : { ...lair }];
+  }));
   state.mapRevision = String(mapRevision || '');
   for (const group of state.groups.values()) if (!state.lairs.has(group.lairId)) group.lairId = '';
   state.dirty = true;
@@ -690,6 +731,11 @@ function travellerTurnBack(group, now = Date.now()) {
  */
 function travellerPlan(state, config, group, species, ctx, now, random) {
   const cities = typeof ctx.cities === 'function' ? ctx.cities() : [];
+  const stopsForMode = species.travel.mode === 'poi' ? ctx.pointsOfInterest
+    : species.travel.mode === 'road' ? ctx.roadStops
+      : species.travel.mode === 'anomaly' ? ctx.anomalyStops
+        : species.travel.mode === 'caravan' ? ctx.tradeStops : null;
+  const extraStops = typeof stopsForMode === 'function' ? stopsForMode() : [];
   const route = typeof ctx.route === 'function' ? ctx.route
     : typeof ctx.neighbors === 'function'
       ? (from, to, rnd) => planRoute(from, to, ctx.neighbors, rnd, { through: ctx.through })
@@ -718,7 +764,8 @@ function travellerPlan(state, config, group, species, ctx, now, random) {
       group.dest = home.id;
     }
   } else if (route) {
-    const options = cities.filter(city => city.sx !== here.sx || city.sy !== here.sy);
+    const options = (species.travel.mode === 'caravan' ? [...cities, ...extraStops] : extraStops)
+      .filter(stop => stop.sx !== here.sx || stop.sy !== here.sy);
     const dest = options.length ? options[Math.floor(random() * options.length)] : null;
     const segment = dest ? route(here, dest, random) : null;
     if (Array.isArray(segment) && segment.length >= 2) {
@@ -856,17 +903,21 @@ function spawnTraveller(state, config, species, city, now, random = Math.random,
  */
 function dispatchTravellers(state, config, ctx, now, random, events) {
   const cities = typeof ctx.cities === 'function' ? ctx.cities() : [];
-  if (!cities.length) return;
+  if (!cities.length && !config.species.some(species => ['poi', 'road', 'anomaly'].includes(species.travel?.mode))) return;
   if (!state.travellerNextAt) state.travellerNextAt = {};
   for (const species of config.species) {
     if (species.kind !== 'traveller' || !species.travel.count) continue;
+    const starts = species.travel.mode === 'poi' ? (ctx.pointsOfInterest?.() || [])
+      : species.travel.mode === 'road' ? (ctx.roadStops?.() || [])
+        : species.travel.mode === 'anomaly' ? (ctx.anomalyStops?.() || []) : cities;
+    if (!starts.length) continue;
     const alive = [...state.groups.values()].filter(group => group.speciesId === species.id);
     const slots = species.travel.mode === 'patrol'
       ? cities.map(city => ({ key: `${species.id}:${city.id}`, have: alive.filter(group => group.home === city.id).length, city }))
       : [{ key: species.id, have: alive.length, city: null }];
     const respawnMs = species.travel.respawnMinutes * 60000;
     const spawnOne = slot => {
-      const city = slot.city || cities[Math.floor(random() * cities.length)];
+      const city = slot.city || starts[Math.floor(random() * starts.length)];
       const group = spawnTraveller(state, config, species, city, now, random, ctx.createMember);
       if (group) events.push({ type: 'spawn', groupId: group.id, sx: group.sx, sy: group.sy });
       return group;
@@ -906,7 +957,7 @@ function groupSpecies(config, group) {
 /** Враждебны ли виды: ctx.hostile(a, b) или разные фракции. Фауна в стычки не тянется. */
 function speciesHostile(ctx, a, b) {
   if (!a || !b || a.kind === 'fauna' || b.kind === 'fauna') return false;
-  if (a.kind === 'traveller' && b.kind === 'traveller') return false;
+  if (a.kind === 'traveller' && b.kind === 'traveller' && !a.hostile && !b.hostile) return false;
   if (typeof ctx.hostile === 'function') return ctx.hostile(a, b) === true;
   return a.faction !== b.faction;
 }
@@ -1023,7 +1074,8 @@ function resolveClashes(state, config, ctx, now, random, minutes, events) {
   for (const key of [...state.cellIndex.keys()]) {
     const ids = state.cellIndex.get(key);
     if (!ids || ids.size < 2) continue;
-    const here = [...ids].map(id => state.groups.get(id)).filter(group => group && !group.online);
+    const here = [...ids].map(id => state.groups.get(id)).filter(group => group && !group.online
+      && !(config.stationaryLairs && group.lairId));
     if (here.length < 2 || occupied(here[0].sx, here[0].sy)) continue;
     for (let i = 0; i < here.length; i += 1) {
       for (let j = i + 1; j < here.length; j += 1) {
@@ -1082,10 +1134,15 @@ function tickEcology(state, config, ctx = {}, now = Date.now(), random = Math.ra
   for (const lair of refillOrder) {
     if (state.groups.size >= config.maxGroups) break;
     const capacity = config.lairs.capacity[lair.mode] || 0;
-    if ((counts.get(lair.id) || 0) >= capacity || now < lair.refillAt || occupied(lair.sx, lair.sy)) continue;
+    if ((counts.get(lair.id) || 0) >= capacity || now < lair.refillAt
+      || (!config.stationaryLairs && occupied(lair.sx, lair.sy))) continue;
     const group = spawnGroup(state, config, lair, now, random, ctx.createMember);
     lair.refillAt = now + (config.lairs.refillMinutes[lair.mode] || 60) * 60000;
     if (group) {
+      lair.destroyedAt = 0;
+      lair.lootClaimed = false;
+      lair.loot = [];
+      lair.claimRoomId = '';
       counts.set(lair.id, (counts.get(lair.id) || 0) + 1);
       events.push({ type: 'spawn', groupId: group.id, sx: group.sx, sy: group.sy });
     }
@@ -1095,6 +1152,15 @@ function tickEcology(state, config, ctx = {}, now = Date.now(), random = Math.ra
     if (group.online) continue;
     const species = config.speciesById[group.speciesId];
     if (!species) continue;
+    // Охрана логова живёт только в своём секторе. Локальное патрулирование
+    // происходит в наблюдаемой сцене, а не шагом между секторами мира.
+    if (config.stationaryLairs && group.lairId) {
+      const lair = state.lairs.get(group.lairId);
+      if (lair && (group.sx !== lair.sx || group.sy !== lair.sy)) moveGroup(state, group, lair.sx, lair.sy);
+      group.state = 'rest';
+      group.target = null;
+      continue;
+    }
     // Раненые без игроков понемногу поправляются.
     if (minutes > 0 && config.woundHealPerMinute > 0) {
       for (const member of group.members) {
@@ -1254,7 +1320,7 @@ function setGroupOffline(state, group, hpByMember = new Map(), now = Date.now(),
 }
 
 /** Гибель особи: насовсем. Группа без особей исчезает; большие потери — бегство. */
-function memberKilled(state, config, groupId = '', memberId = '') {
+function memberKilled(state, config, groupId = '', memberId = '', now = Date.now()) {
   const group = state.groups.get(String(groupId || ''));
   if (!group) return { ok: false };
   const index = group.members.findIndex(member => member.id === memberId);
@@ -1264,11 +1330,20 @@ function memberKilled(state, config, groupId = '', memberId = '') {
   if (!group.members.length) {
     indexRemove(state, group);
     state.groups.delete(group.id);
+    if (config.stationaryLairs && group.lairId) {
+      const lair = state.lairs.get(group.lairId);
+      if (lair) {
+        lair.destroyedAt = lair.kind === 'huntingGround' ? 0 : now;
+        lair.refillAt = now + config.clearedLairRespawnMinutes * 60000;
+        // Hunting grounds have no searchable den: only the creatures drop loot.
+        lair.lootClaimed = lair.kind === 'huntingGround';
+      }
+    }
     return { ok: true, destroyed: true, group };
   }
   const species = config.speciesById[group.speciesId];
   const lost = 1 - group.members.length / Math.max(1, group.size0);
-  const fleeing = !!species && lost >= species.fleeAt && group.state !== 'flee';
+  const fleeing = !config.stationaryLairs && !!species && lost >= species.fleeAt && group.state !== 'flee';
   if (fleeing) {
     group.state = 'flee';
     group.target = null;

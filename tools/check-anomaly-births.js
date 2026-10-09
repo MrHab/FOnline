@@ -18,6 +18,7 @@ const births = require('../src/server/anomaly-artifact-births');
 const { createShiftCycle } = require('../src/server/shift-cycle');
 const { mergeBirthArtifacts, pickupArtifact, reconcileArtifactSpawns } = require('../src/server/artifact-spawns');
 const { baseTierOfType } = require('../src/server/artifact-instances');
+const { createKromkaStateStore } = require('../src/server/kromka-state-store');
 
 const close = (a, b, message) => assert(Math.abs(Number(a) - Number(b)) < 1e-9, message || `${a} != ${b}`);
 const rules = births.birthRules(catalog);
@@ -104,10 +105,78 @@ assert.equal(noRefresh.refreshed.length, 0, 'The same emission refreshes only on
 // --- сохранение ---------------------------------------------------------------------
 const restored = births.normalizeBirthStore(JSON.parse(JSON.stringify(store)));
 assert.deepEqual(restored, store, 'The birth store survives a JSON round trip unchanged.');
-assert.deepEqual(births.normalizeBirthStore({ locations: { '!!!': { artifacts: { x: { id: '' } } }, broken: null } }), { version: 1, locations: {} });
+assert.deepEqual(births.normalizeBirthStore({ locations: { '!!!': { artifacts: { x: { id: '' } } }, broken: null } }), { version: 2, locations: {}, npcClaims: {} });
 assert.deepEqual(births.normalizeBirthStore({ locations: { zone: { artifacts: { f: { id: 'x', fieldId: 'f', typeId: 'spring' } } } } }).locations.zone.artifacts, {},
   'A birth row without an item id is dropped instead of crashing.');
 assert.equal(births.publicBirthSummary(store, 'zone').liveCount, 8);
+
+// Two NPCs race for one persistent spawn. Only the first gets a claim, and a
+// JSON round trip (server restart) retains both the missing birth and owner.
+const npcStore = births.normalizeBirthStore({});
+const npcField = [{ id: 'npc-field', type: 'dew', x: 7, z: 9, radius: 3 }];
+const npcBirth = births.tickLocationBirths(npcStore, 'npc-zone', npcField, catalog, t0,
+  { random: always }).births[0];
+assert(npcBirth, 'The scenario starts with a born artifact.');
+const firstNpc = births.claimBirthForNpc(npcStore, 'npc-zone', npcBirth.id,
+  { groupId: 'g1', memberId: 'm1' }, t0 + 3000);
+assert(firstNpc && firstNpc.id === npcBirth.id && firstNpc.groupId === 'g1');
+assert.equal(births.claimBirthForNpc(npcStore, 'npc-zone', npcBirth.id,
+  { groupId: 'g2', memberId: 'm1' }, t0 + 3001), null, 'A second NPC cannot claim the same spawn.');
+assert.equal(births.claimBirthForNpc(npcStore, 'npc-zone', npcBirth.id,
+  { groupId: 'g1', memberId: 'm1' }, t0 + 3002), null, 'Retries do not duplicate ownership.');
+assert.equal(births.liveBirths(npcStore, 'npc-zone').length, 0);
+const npcRestart = births.normalizeBirthStore(JSON.parse(JSON.stringify(npcStore)));
+assert.deepEqual(births.npcClaimForMember(npcRestart, 'g1', 'm1'), firstNpc);
+assert.equal(births.claimBirthForNpc(npcRestart, 'npc-zone', npcBirth.id,
+  { groupId: 'g2', memberId: 'm1' }, t0 + 4000), null, 'Restart cannot revive the consumed spawn ID.');
+const nextBirth = births.tickLocationBirths(npcRestart, 'npc-zone', npcField, catalog, t0 + 60000,
+  { random: always }).births[0];
+assert(nextBirth && nextBirth.id !== npcBirth.id, 'The freed field can create a new unique spawn.');
+assert.equal(births.claimBirthForNpc(npcRestart, 'npc-zone', nextBirth.id,
+  { groupId: 'g1', memberId: 'm1' }, t0 + 61000), null, 'One stalker cannot hold two active claims.');
+assert(births.claimBirthForNpc(npcRestart, 'npc-zone', nextBirth.id,
+  { groupId: 'g2', memberId: 'm1' }, t0 + 61001));
+assert(births.consumeNpcClaim(npcRestart, 'g1', 'm1', t0 + 62000));
+assert.equal(births.npcClaimForMember(npcRestart, 'g1', 'm1'), null);
+assert.equal(npcRestart.npcClaims[npcBirth.id], undefined,
+  'Consumed ownership no longer accumulates in the birth store.');
+assert.equal(Object.keys(births.normalizeBirthStore({ npcClaims: {
+  legacy: { ...firstNpc, id: 'legacy', consumedAt: t0 + 62000 }
+} }).npcClaims).length, 0, 'Legacy consumed claims are compacted on load.');
+assert.equal(births.liveBirths(npcRestart, 'npc-zone').length, 0,
+  'NPC death does not put a collected artifact back into the field.');
+
+// The real state store journals savesDb. Simulate a crash after its journal
+// write but before the save write: recovery must replay owner and removal as
+// one snapshot, so a restart cannot give the same spawn to another NPC.
+const fakeFiles = new Map();
+let failSaveOnce = true;
+const fakeFs = {
+  existsSync: file => fakeFiles.has(file),
+  readFileSync: file => fakeFiles.get(file),
+  unlinkSync: file => fakeFiles.delete(file)
+};
+const fakeWrite = (file, value) => {
+  if (file === 'saves' && failSaveOnce) { failSaveOnce = false; throw new Error('simulated save interruption'); }
+  fakeFiles.set(file, JSON.stringify(value));
+};
+const stateStore = () => createKromkaStateStore({
+  fs: fakeFs, writeJsonAtomic: fakeWrite,
+  journalFile: 'journal', usersFile: 'users', savesFile: 'saves'
+});
+const interrupted = stateStore();
+const claimSnapshot = { anomalyBirths: npcStore, claimedArtifactIds: [npcBirth.id] };
+assert.throws(() => interrupted.commit({ saves: claimSnapshot }, 'npc-artifact'), /simulated save interruption/);
+assert(fakeFiles.has('journal') && !fakeFiles.has('saves'));
+const restartedStateStore = stateStore();
+assert(restartedStateStore.recover(), 'An interrupted transaction is replayed at restart.');
+const durable = JSON.parse(fakeFiles.get('saves'));
+const durableBirths = births.normalizeBirthStore(durable.anomalyBirths);
+assert.equal(births.findBirth(durableBirths, 'npc-zone', npcBirth.id), null);
+assert.equal(births.claimBirthForNpc(durableBirths, 'npc-zone', npcBirth.id,
+  { groupId: 'g3', memberId: 'm1' }, t0 + 90000), null);
+assert.equal(births.npcClaimForMember(durableBirths, 'g1', 'm1').id, npcBirth.id);
+assert(durable.claimedArtifactIds.includes(npcBirth.id));
 
 // --- слияние с комнатой и подбор ----------------------------------------------------
 const room = { id: 'room', locationId: 'zone', kromkaArtifactState: { shiftId: 'shift_8', artifacts: [

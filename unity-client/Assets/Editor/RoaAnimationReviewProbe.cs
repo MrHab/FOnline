@@ -149,6 +149,14 @@ namespace RealmOfAshes.EditorTools
                 new State { Name = "pickup", Action = view => view.PlayAction("pickup", 1.35f), Seconds = 1.35f },
                 new State { Name = "consume", Action = view => view.PlayAction("consume", 1.2f), Seconds = 1.2f },
                 new State { Name = "harvest", Action = view => view.PlayAction("harvest", 1.5f, 1.3f), Seconds = 1.5f },
+                new State { Name = "npc_search", Action = view => view.SetActivityPresentation("search", 0f), Seconds = 1.2f },
+                new State { Name = "npc_gather", Action = view => view.SetActivityPresentation("gather", 0f), Seconds = 1.2f },
+                new State { Name = "npc_eat", Action = view => view.SetActivityPresentation("eat", 0f), Seconds = 1.2f },
+                new State { Name = "npc_rest", Action = view => view.SetActivityPresentation("rest", 0f), Seconds = 1.2f },
+                new State { Name = "npc_loot", Action = view => view.SetActivityPresentation("loot", 0f), Seconds = 1.2f },
+                new State { Name = "npc_heal", Action = view => view.SetActivityPresentation("heal", 0f), Seconds = 1.2f },
+                new State { Name = "npc_cover", Action = view => view.SetActivityPresentation("cover", 0f), Seconds = 1.2f },
+                new State { Name = "npc_grenade", Action = view => view.SetActivityPresentation("grenade", 0f), Seconds = 0.9f },
                 new State { Name = "rifle_idle", Weapon = "assaultRifle", Aim = true },
                 new State { Name = "rifle_walk", Weapon = "assaultRifle", Aim = true, Velocity = new Vector3(0f, 0f, 1.6f) },
                 new State { Name = "rifle_run", Weapon = "assaultRifle", Velocity = new Vector3(0f, 0f, 4.4f) },
@@ -203,6 +211,8 @@ namespace RealmOfAshes.EditorTools
             for (int s = 0; s < states.Count; s++)
             {
                 State state = states[s];
+                foreach (Rig rig in new[] { oldRig, newRig })
+                    rig.View.SetActivityPresentation(string.Empty, 0f);
                 if (state.Weapon != weapon)
                 {
                     foreach (Rig rig in new[] { oldRig, newRig })
@@ -437,6 +447,8 @@ namespace RealmOfAshes.EditorTools
                 .Append("\"old\": ").Append(Measure(oldRig, "foot_l", "foot_r", "ball_l", "ball_r", "hand_l", "hand_r"))
                 .Append(", \"new\": ").Append(Measure(newRig, "ankle_l", "ankle_r", "ball_l", "ball_r", "hand_l", "hand_r", "src_hand_l", "src_hand_r", "weapon_support",
                     "head", "spine_03", "elbow_l", "elbow_r", "hips"))
+                .Append(", \"npcActivity\": \"").Append(newRig.View.ActivityPresentation)
+                .Append("\", \"npcActivityWeight\": ").Append(F(newRig.View.ActivityPresentationWeight))
                 .Append(", \"skin\": ").Append(SkinState(newRig)).Append("},\n");
         }
 

@@ -117,18 +117,21 @@ function leaveTerritoryFaction(membership = {}, catalog = {}, now = Date.now()) 
 
 /**
  * Правило доступа к локации территории. Локация без `territoryId` открыта.
- * `factionAccess: 'territory'` — любой член доступной фракции; конкретный id —
- * только члены этой фракции (базы).
+ * `factionAccess: 'territory'` — любой член доступной фракции. Старые базы и
+ * Рынок Ядра закрыты после переноса входа непосредственно в общую сцену.
  */
 function territoryLocationAccess(loc = {}, membership = {}, catalog = {}) {
   const territoryId = safeId(loc?.territoryId);
   if (!territoryId) return { allowed: true, territoryId: '', requiredFactionId: '', access: 'open' };
+  if (loc.territoryRole === 'base' || loc.territoryRole === 'marketHub') {
+    return { allowed: false, territoryId, requiredFactionId: '', access: 'retired', error: 'Эта часть Сердцевины закрыта. Войдите через портал в её зоне мира.' };
+  }
   const current = sanitizeTerritoryMembership(membership, catalog);
   const required = safeId(loc?.factionAccess || 'territory');
   if (required === 'territory' || required === '') {
     return current.factionId
       ? { allowed: true, territoryId, requiredFactionId: '', access: 'faction', factionId: current.factionId }
-      : { allowed: false, territoryId, requiredFactionId: '', access: 'faction', error: 'Вход в Сердцевину открыт только членам фракции. Вступите у регистратора на базе или в столице фракции.' };
+      : { allowed: false, territoryId, requiredFactionId: '', access: 'faction', error: 'Вход в Сердцевину открыт только членам фракции. Вступите у регистратора в городе фракции.' };
   }
   if (current.factionId === required) {
     return { allowed: true, territoryId, requiredFactionId: required, access: 'ownFaction', factionId: current.factionId };
@@ -150,7 +153,7 @@ function publicTerritoryMembership(membership = {}, catalog = {}, now = Date.now
     version: TERRITORY_MEMBERSHIP_VERSION,
     territoryId: safeId(catalog?.id || 'core'),
     factionId: current.factionId,
-    baseLocationId: row ? safeId(row.baseLocationId, 64) : '',
+    capitalLocationId: row ? safeId(row.capitalLocationId, 64) : '',
     joinedAt: current.joinedAt,
     changeAllowedAt: current.changeAllowedAt,
     changeLocked: current.changeAllowedAt > now,

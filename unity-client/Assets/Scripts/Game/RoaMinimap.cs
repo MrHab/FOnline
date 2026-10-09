@@ -22,7 +22,10 @@ namespace RealmOfAshes.Game
             Resource,
             Objective,
             Threat,
-            Extraction
+            Extraction,
+            Lair,
+            HuntingGround,
+            Outpost
         }
 
         public struct Marker
@@ -46,6 +49,7 @@ namespace RealmOfAshes.Game
         public RoaGroundItems GroundItems;
         public RoaInteraction Interaction;
         public RoaWorldActivityCanvas WorldActivity;
+        public RoaWorldEventsPresentation WorldEvents;
 
         [Range(140f, 280f)] public float Size = 190f;
         [Min(0.05f)] public float RefreshSeconds = 0.12f;
@@ -295,6 +299,7 @@ namespace RealmOfAshes.Game
             GroundItems?.CollectMinimapMarkers(_markers);
             Interaction?.CollectMinimapMarkers(_markers);
             WorldActivity?.CollectMinimapMarkers(_markers);
+            WorldEvents?.CollectMinimapMarkers(_markers);
         }
 
         private void BuildStaticTexture(LocationDefinition location)

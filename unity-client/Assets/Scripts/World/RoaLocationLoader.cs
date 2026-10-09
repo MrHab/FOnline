@@ -270,6 +270,7 @@ namespace RealmOfAshes.World
                     if (unityScene != null)
                     {
                         _unityLocationRoot = unityScene.gameObject;
+                        RoaCoreZoneSceneFilter.HideRetired(unityScene);
                         unityScene.RebuildIndex();
                         CurrentGroundRenderer = unityScene.GroundRenderer;
                         AdoptAuthoredEnvironment(_unityLocationScene);

@@ -65,6 +65,87 @@
   "worldZones": [],
   "objects": [
     {
+      "id": "city_artifact_outfitter",
+      "model": "traderNpc",
+      "name": "Снабженец артефактного снаряжения",
+      "position": {
+        "x": 15,
+        "y": 0,
+        "z": 47
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "merchant",
+        "trader",
+        "city-authored",
+        "city-market"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "merchant",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "scenePlaced": false,
+        "traderProfile": "artifactOutfitter",
+        "tradeProfile": "artifactOutfitter",
+        "dialogueProfile": "scrap"
+      }
+    },
+    {
+      "id": "faction_registrar",
+      "model": "wastelandSettler",
+      "name": "Регистратор фракции",
+      "position": {
+        "x": 21,
+        "y": 0,
+        "z": 47
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-registrar",
+        "registrar",
+        "city-authored"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "scenePlaced": false,
+        "service": "registrar",
+        "territoryFactionId": "contour"
+      }
+    },
+    {
       "id": "auctioneer",
       "model": "wastelandSettler",
       "name": "Аукционер",

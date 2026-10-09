@@ -19,7 +19,26 @@ const {
 } = require('../src/server/territory-outposts');
 
 const root = path.resolve(__dirname, '..');
-const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/territory.json'), 'utf8'));
+const liveCatalog = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/territory.json'), 'utf8'));
+assert.deepStrictEqual(liveCatalog.outposts, [], 'the shared Core scene has no internal outposts');
+// Legacy simulator is tested with an isolated fixture. These three flags are
+// no longer present in the live Core catalog, but old snapshots normalize
+// safely and the pure capture model remains covered for migration.
+const catalog = {
+  ...liveCatalog,
+  outpostRules: {
+    ownerChangeLockMs: 1200000, captureHoldMs: 180000, captureDecayRate: 0.5,
+    contestPausesProgress: true, captureTickMs: 1000,
+    garrison: { modelKey: 'caravanGuard', visual: 'raider', species: 'guard',
+      equipmentProfile: 'guard', statProfile: 'guard', postRadius: 3.2,
+      columnSpacing: 1.4, guards: 4, quartermaster: 1, speedMps: 2.2, arrivalRadius: 4 }
+  },
+  outposts: [
+    { id: 'outpostPump', displayName: 'Pump', position: { x: -84, z: 36 }, captureRadius: 10, initialOwner: '' },
+    { id: 'outpostRelay', displayName: 'Relay', position: { x: 84, z: 36 }, captureRadius: 10, initialOwner: '' },
+    { id: 'outpostDepot', displayName: 'Depot', position: { x: 0, z: -84 }, captureRadius: 10, initialOwner: '' }
+  ]
+};
 const rules = outpostRules(catalog);
 const LOCK = rules.ownerChangeLockMs;
 const HOLD = rules.captureHoldMs;
@@ -200,31 +219,10 @@ assert.strictEqual(depot.eventStatus, 'open', 'an untouched neutral outpost stay
   assert.equal(restored.outposts[outpostId].retiring[0].factionId, 'free_artels');
 }
 
-// --- состав отряда и радиусы приходят из авторских данных -----------------------
-assert.equal(rules.garrison.modelKey, 'caravanGuard', 'Squad model comes from the territory catalog.');
-assert(rules.garrison.equipmentProfile && rules.garrison.statProfile, 'Squad profiles are authored, not hardcoded.');
-assert(rules.garrison.postRadius > 0 && rules.garrison.columnSpacing > 0, 'Defensive posts and column spacing are configurable.');
-const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-for (const needle of [
-  'const squad = rules?.garrison || outpostRules(KROMKA_TERRITORY_CATALOG).garrison;',
-  'visual: squad.visual,',
-  'equipmentProfile: squad.equipmentProfile,',
-  'Number(rules.garrison.postRadius || 0)',
-  'const spacing = Number(rules.garrison.columnSpacing || 1.4);'
-]) assert(serverSource.includes(needle), `server.js must build the squad from authored rules: ${needle}`);
-assert(!serverSource.includes("modelKey: 'caravanGuard',"), 'The squad model must not stay hardcoded in server.js.');
-assert(serverSource.includes('const squadOf = actor =>'), 'The room sync must tell the garrison from a retiring column.');
+// Авторские параметры модели считываются из фикстуры, а в живом каталоге
+// внутренних аванпостов нет.
+assert.equal(rules.garrison.modelKey, 'caravanGuard');
+assert(rules.garrison.postRadius > 0 && rules.garrison.columnSpacing > 0);
+assert.equal(publicTerritoryState(normalizeTerritoryStore(null, liveCatalog, t0), liveCatalog, t0).outposts.length, 0);
 
-// Игрок должен понимать разницу между базой и аванпостом словами, а не
-// догадываться по процентам захвата.
-{
-  const presentation = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaWorldEventsPresentation.cs'), 'utf8');
-  for (const token of [
-    'public static string OutpostVersusBaseLabel()',
-    'захватывается присутствием',
-    'База фракции не захватывается',
-    'Append(OutpostVersusBaseLabel())'
-  ]) assert(presentation.includes(token), `The outpost panel must explain the difference from a base: ${token}`);
-}
-
-console.log('Territory outposts OK: 20-minute lock boundary, single opening, contest/decay rules, one garrison per owner change, restart safety and public snapshot.');
+console.log('Legacy territory outpost simulator OK: capture timing, garrisons, restart and no live Core outposts.');

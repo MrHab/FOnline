@@ -204,14 +204,57 @@ async function checkPlace(zone, def, row) {
   const portal = worldOf(def, row);
   const at = await place(zone.id, portal);
   if (!at || distance(at, portal) > Number(row.radius || 3.2) + 1) { fail(where, 'the place portal stands in a blocked spot'); return; }
-  const into = await change(row.to);
-  // В Сердцевину пускает только контракт с фракцией: портал на месте и просит его.
-  if (!into?.ok && into?.contractRequired === true) { stats.gated += 1; return; }
+  let into = await change(row.to);
+  if (row.to === 'coreZone') {
+    if (into?.ok || into?.contractRequired !== false) {
+      fail(where, `a neutral visitor must be refused without gate signing: ${JSON.stringify(into).slice(0, 240)}`);
+      return;
+    }
+    stats.gated += 1;
+    const cityId = 'secondHaven';
+    const city = await definition(cityId);
+    const registrar = (city.objects || []).find(object => object.entity?.service === 'registrar'
+      && object.entity?.territoryFactionId === 'seconds');
+    if (!registrar?.position) { fail(cityId, 'the city registrar is missing'); return; }
+    const atRegistrar = await place(cityId, registrar.position);
+    if (!atRegistrar || distance(atRegistrar, registrar.position) > 6) {
+      fail(cityId, 'the city registrar cannot be approached'); return;
+    }
+    const offer = await h.socketAck(walker.socket, 'territoryFactionAction', { action: 'offer' }, 12000);
+    if (!offer?.ok || offer.contract?.registrarFactionId !== 'seconds') {
+      fail(cityId, `the registrar did not offer local membership: ${offer?.error || ''}`); return;
+    }
+    const joined = await h.socketAck(walker.socket, 'territoryFactionAction',
+      { action: 'join', factionId: 'seconds', requestId: 'zone-transition-city-contract' }, 12000);
+    if (!joined?.ok || joined.membership?.factionId !== 'seconds') {
+      fail(cityId, `joining through the registrar failed: ${joined?.error || ''}`); return;
+    }
+    const backAtPortal = await place(zone.id, portal);
+    if (!backAtPortal || distance(backAtPortal, portal) > Number(row.radius || 3.2) + 1) {
+      fail(where, 'the member cannot approach the Core portal'); return;
+    }
+    into = await change(row.to);
+  } else if (!into?.ok && into?.contractRequired === true) {
+    stats.gated += 1;
+    return;
+  }
   stats.places += 1;
   if (!into?.ok || into.locationId !== row.to) { fail(where, `portal refused: ${into?.error || ''}`); return; }
   const placeDef = await definition(row.to);
   if (!(await canStepInward(placeDef, { x: Number(into.x), z: Number(into.z) }))) fail(where, 'stuck on arrival in the place');
-  const left = await leavePlaceByEdge(row.to, zone.id);
+  let left;
+  if (row.to === 'coreZone') {
+    const exit = (placeDef.transitions || []).find(transition => transition.to === zone.id
+      && transition.type === 'location');
+    if (!exit) { fail(`${row.to} → ${zone.id}`, 'the authored on-foot exit is missing'); return; }
+    const exitPortal = worldOf(placeDef, exit);
+    const atExit = await place(row.to, exitPortal);
+    if (!atExit || distance(atExit, exitPortal) > Number(exit.radius || 3.2) + 1) {
+      fail(`${row.to} → ${zone.id}`, 'the authored exit is blocked'); return;
+    }
+    const out = await change(zone.id);
+    left = out?.ok ? { out, entryKey: exit.entryKey } : { error: `exit refused: ${out?.error || ''}` };
+  } else left = await leavePlaceByEdge(row.to, zone.id);
   if (left.error) { fail(`${row.to} → ${zone.id}`, left.error); return; }
   const outAt = { x: Number(left.out.x), z: Number(left.out.z) };
   const entry = def[left.entryKey] ? worldOf(def, def[left.entryKey]) : null;

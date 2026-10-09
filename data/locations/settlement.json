@@ -65,6 +65,46 @@
   "worldZones": [],
   "objects": [
     {
+      "id": "black_market_broker",
+      "model": "traderNpc",
+      "name": "Скупщик Чёрного рынка",
+      "position": {
+        "x": -31,
+        "y": 0,
+        "z": 29
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-blackMarket",
+        "trader",
+        "black-market",
+        "city-authored"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "merchant",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "scenePlaced": false,
+        "service": "blackMarket",
+        "dialogueProfile": "blackMarket"
+      }
+    },
+    {
       "id": "irena_versta_belova",
       "model": "traderNpc",
       "name": "Ирена «Верста» Белова",

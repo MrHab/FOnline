@@ -212,6 +212,8 @@
   "sites": {
     "roadOutpost": {
       "safe": true
-    }
+    },
+    "relayOutpost": {},
+    "scrapOutpost": {}
   }
 }

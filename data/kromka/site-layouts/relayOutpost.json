@@ -1,0 +1,1697 @@
+{
+  "schema": "roa.siteLayout.v1",
+  "sourceLocation": "relayOutpost",
+  "site": {
+    "id": "relayOutpost",
+    "zone": "z_13_10",
+    "name": "Периметр К-3",
+    "kind": "outpost",
+    "safe": false,
+    "center": {
+      "x": 0,
+      "z": 122
+    },
+    "size": {
+      "x": 60,
+      "z": 56
+    },
+    "rotationY": 0
+  },
+  "clear": {
+    "margin": 4
+  },
+  "approach": {
+    "x": 0,
+    "z": -34
+  },
+  "objects": [
+    {
+      "id": "sealed_control",
+      "prefab": "SM_Bld_Industrial_Small_01",
+      "x": -16,
+      "z": 18,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Закрытый пост контроля периметра"
+    },
+    {
+      "id": "decontamination_west",
+      "prefab": "SM_Bld_Quarantine_Tent_01",
+      "x": -7,
+      "z": -10,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Обработка входящих образцов"
+    },
+    {
+      "id": "decontamination_east",
+      "prefab": "SM_Bld_Quarantine_Tent_02",
+      "x": 7,
+      "z": -10,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Чистый выход после обработки"
+    },
+    {
+      "id": "instrument_house",
+      "prefab": "SM_Bld_Quarantine_DomeTent_01",
+      "x": 15,
+      "z": 17,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Измерительная аппаратная"
+    },
+    {
+      "id": "power",
+      "prefab": "SM_Prop_PowerBoxes_01",
+      "x": -19.82,
+      "z": 18,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Распределитель аварийного питания"
+    },
+    {
+      "id": "reserve_generator",
+      "prefab": "SM_Prop_Generator_01",
+      "x": -21,
+      "z": 13,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Аварийный генератор"
+    },
+    {
+      "id": "screen_-10",
+      "prefab": "SM_Prop_Barricade_Metal_01",
+      "x": -10,
+      "z": -20,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Барьер линии досмотра"
+    },
+    {
+      "id": "screen_10",
+      "prefab": "SM_Prop_Barricade_Metal_01",
+      "x": 10,
+      "z": -20,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Барьер линии досмотра"
+    },
+    {
+      "id": "sample_control_bench",
+      "prefab": "SM_Prop_Workbench_01",
+      "x": -18,
+      "z": -13,
+      "y": 0,
+      "rotY": 180,
+      "centered": true,
+      "role": "structure",
+      "name": "Рабочее место мастера"
+    },
+    {
+      "id": "sample_control_tool",
+      "prefab": "SM_Prop_ToolBox_01",
+      "x": -16.2,
+      "z": -13,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Инструмент участка"
+    },
+    {
+      "id": "solid_wall_west_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -25,
+      "z": -17,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_west_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -25,
+      "z": -10,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_west_2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -25,
+      "z": -3,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_west_3",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -25,
+      "z": 4,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_west_4",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -25,
+      "z": 11,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_west_5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -25,
+      "z": 18,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_east_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 25,
+      "z": -17,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_east_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 25,
+      "z": -10,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_east_2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 25,
+      "z": -3,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_east_3",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 25,
+      "z": 4,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_east_4",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 25,
+      "z": 11,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_east_5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 25,
+      "z": 18,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_north_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -19,
+      "z": 24.5,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_north_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -5,
+      "z": 24.5,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_north_2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 9,
+      "z": 24.5,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "solid_wall_north_3",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 18,
+      "z": 24.5,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "inner_cover_0",
+      "prefab": "SM_Prop_Sandbag_Wall_02",
+      "x": -17,
+      "z": -17,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "inner_cover_1",
+      "prefab": "SM_Prop_Sandbag_Wall_02",
+      "x": 17,
+      "z": -17,
+      "y": 0,
+      "rotY": 180,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "inner_cover_2",
+      "prefab": "SM_Prop_Sandbag_Wall_02",
+      "x": -8,
+      "z": 8,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "inner_cover_3",
+      "prefab": "SM_Prop_Sandbag_Wall_02",
+      "x": 8,
+      "z": 8,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "entry_lookout",
+      "prefab": "Assets/Art/Kromka/SiteInfrastructure/Kromka_GuardLookout.prefab",
+      "x": 23,
+      "z": -18,
+      "y": 0,
+      "rotY": -25,
+      "centered": true,
+      "role": "structure",
+      "name": "Укрепление аванпоста"
+    },
+    {
+      "id": "approach_stone_0_west",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": -1.25,
+      "z": -34,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_0_east",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 1.25,
+      "z": -34,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_1_west",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": -1.25,
+      "z": -31.5,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_1_east",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 1.25,
+      "z": -31.5,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_2_west",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": -1.25,
+      "z": -29,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_2_east",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 1.25,
+      "z": -29,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_3_west",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": -1.25,
+      "z": -26.5,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_3_east",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 1.25,
+      "z": -26.5,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_4_west",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": -1.25,
+      "z": -24,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_4_east",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 1.25,
+      "z": -24,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_5_west",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": -1.25,
+      "z": -21.5,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_5_east",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 1.25,
+      "z": -21.5,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_6_west",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": -1.25,
+      "z": -19,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_6_east",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 1.25,
+      "z": -19,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_7_west",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": -1.25,
+      "z": -16.5,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_7_east",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 1.25,
+      "z": -16.5,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_8_west",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": -1.25,
+      "z": -14,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "approach_stone_8_east",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 1.25,
+      "z": -14,
+      "y": -0.24,
+      "rotY": 0,
+      "centered": true,
+      "role": "floor",
+      "name": "Подход и укрепление аванпоста",
+      "collision": "none"
+    },
+    {
+      "id": "gate_column_west",
+      "prefab": "SM_Prop_Wall_Quarantine_Column_Short_01",
+      "x": -9,
+      "z": -25,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Подход и укрепление аванпоста"
+    },
+    {
+      "id": "gate_floodlight_west",
+      "prefab": "SM_Prop_Floodlights_01",
+      "x": -11,
+      "z": -22,
+      "y": 0,
+      "rotY": 180,
+      "centered": true,
+      "role": "structure",
+      "name": "Подход и укрепление аванпоста"
+    },
+    {
+      "id": "gate_column_east",
+      "prefab": "SM_Prop_Wall_Quarantine_Column_Short_01",
+      "x": 9,
+      "z": -25,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Подход и укрепление аванпоста"
+    },
+    {
+      "id": "gate_floodlight_east",
+      "prefab": "SM_Prop_Floodlights_01",
+      "x": 11,
+      "z": -22,
+      "y": 0,
+      "rotY": 180,
+      "centered": true,
+      "role": "structure",
+      "name": "Подход и укрепление аванпоста"
+    },
+    {
+      "id": "entry_lookout_opposite",
+      "prefab": "Assets/Art/Kromka/SiteInfrastructure/Kromka_GuardLookout.prefab",
+      "x": -23,
+      "z": -18,
+      "y": 0,
+      "rotY": 25,
+      "centered": true,
+      "role": "structure",
+      "name": "Подход и укрепление аванпоста"
+    },
+    {
+      "id": "supply_west",
+      "prefab": "SM_Prop_SupplyPile_01",
+      "x": -16,
+      "z": -5,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Подход и укрепление аванпоста"
+    },
+    {
+      "id": "supply_east",
+      "prefab": "SM_Prop_Crate_Large_02",
+      "x": 17,
+      "z": -2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Подход и укрепление аванпоста"
+    },
+    {
+      "id": "perimeter_0",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -26.03,
+      "z": -26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_1",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -22.09,
+      "z": -26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_2",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -18.15,
+      "z": -26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_3",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -14.21,
+      "z": -26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_4",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -10.27,
+      "z": -26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_5",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 9.43,
+      "z": -26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_6",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 13.37,
+      "z": -26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_7",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 17.31,
+      "z": -26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_8",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 21.25,
+      "z": -26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_9",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 25.19,
+      "z": -26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_10",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -26.03,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_11",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -22.09,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_12",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -18.15,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_13",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -14.21,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_14",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -10.27,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_15",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -6.33,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_16",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -2.39,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_17",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 1.55,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_18",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 5.49,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_19",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 9.43,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_20",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 13.37,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_21",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 17.31,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_22",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 21.25,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_23",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 25.19,
+      "z": 26,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Ограда эксплуатационного двора"
+    },
+    {
+      "id": "perimeter_24",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": -24.03,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_25",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": -20.09,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_26",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": -16.15,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_27",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": -12.21,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_28",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": -8.27,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_29",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": -4.33,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_30",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": -0.39,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_31",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": 3.55,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_32",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": 7.49,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_33",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": 11.43,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_34",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": 15.37,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_35",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": 19.31,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_36",
+      "prefab": "SM_Prop_Fence_01",
+      "x": -28,
+      "z": 23.25,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_37",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": -24.03,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_38",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": -20.09,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_39",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": -16.15,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_40",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": -12.21,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_41",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": -8.27,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_42",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": -4.33,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_43",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": -0.39,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_44",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": 3.55,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_45",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": 7.49,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_46",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": 11.43,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_47",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": 15.37,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_48",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": 19.31,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "perimeter_49",
+      "prefab": "SM_Prop_Fence_01",
+      "x": 28,
+      "z": 23.25,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Боковая ограда двора"
+    },
+    {
+      "id": "measurement_antenna",
+      "prefab": "SM_Prop_Trailer_Aerial_03",
+      "x": 0,
+      "z": 19,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "landmark",
+      "name": "Измерительный блок периметра",
+      "stableId": "relay_outpost_antenna",
+      "sourceObjectId": "relay_outpost_antenna",
+      "tags": [
+        "outpost",
+        "relay",
+        "interactive",
+        "quest-object"
+      ],
+      "serverMetadata": {
+        "model": "relayAntenna",
+        "name": "Малая антенна",
+        "tags": [
+          "outpost",
+          "relay",
+          "interactive",
+          "quest-object"
+        ],
+        "interactive": {
+          "kind": "questObject",
+          "questObjective": "recover_measurement_block",
+          "interactionLabel": "Снять измерительный блок"
+        },
+        "role": "scenery",
+        "worldRevision": "kromka-1"
+      },
+      "collision": "none",
+      "vision": "block"
+    },
+    {
+      "id": "container_visual_0",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -17,
+      "z": 12,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "cover",
+      "name": "Ящик с боекомплектом"
+    },
+    {
+      "id": "container_visual_1",
+      "prefab": "SM_Prop_Crate_Large_01",
+      "x": 12,
+      "z": -10,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "cover",
+      "name": "Аптечный короб периметра"
+    },
+    {
+      "id": "decontamination_gallery",
+      "prefab": "Assets/Art/Kromka/SiteInfrastructure/Kromka_DecontaminationGallery.prefab",
+      "x": 0,
+      "z": -10,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Шлюз: осмотр, обработка, чистый выход",
+      "tags": [
+        "decontamination",
+        "inspection"
+      ]
+    },
+    {
+      "id": "clean_partition_-1_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": -3.755,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_-1_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": -6.265,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_-1_2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": -8.774999999999999,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_-1_3",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": -11.285,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_-1_4",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": -13.794999999999998,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_-1_5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": -16.305,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_-1_6",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": -18.814999999999998,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_-1_7",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": -21.325,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_-1_8",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": -23.834999999999997,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_-1_9",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": -26.344999999999995,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "entry_guide_-1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -2.45,
+      "z": -23.5,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Закрытый вход в осмотр"
+    },
+    {
+      "id": "clean_partition_1_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": 3.755,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_1_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": 6.265,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_1_2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": 8.774999999999999,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_1_3",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": 11.285,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_1_4",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": 13.794999999999998,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_1_5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": 16.305,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_1_6",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": 18.814999999999998,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_1_7",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": 21.325,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_1_8",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": 23.834999999999997,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "clean_partition_1_9",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x1_01",
+      "x": 26.344999999999995,
+      "z": 2,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Герметичная граница чистой стороны"
+    },
+    {
+      "id": "entry_guide_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 2.45,
+      "z": -23.5,
+      "y": 0,
+      "rotY": 90,
+      "centered": true,
+      "role": "structure",
+      "name": "Закрытый вход в осмотр"
+    },
+    {
+      "id": "wash_supply",
+      "prefab": "SM_Prop_Barrel_Water_01",
+      "x": -1.4,
+      "z": -6,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Подача промывочной жидкости"
+    },
+    {
+      "id": "wash_valve",
+      "prefab": "SM_Prop_Pipe_Valve_01",
+      "x": -1.8,
+      "z": -3,
+      "y": 0,
+      "rotY": 0,
+      "centered": true,
+      "role": "structure",
+      "name": "Узел дозирования промывки"
+    },
+    {
+      "id": "decontamination_roof",
+      "prefab": "Assets/Art/Kromka/SiteInfrastructure/Kromka_DecontaminationRoof.prefab",
+      "x": 0,
+      "z": -10,
+      "y": 0,
+      "rotY": 0,
+      "centered": false,
+      "role": "roof",
+      "name": "Съёмная крыша шлюза",
+      "collision": "none",
+      "tags": [
+        "roof-cutaway",
+        "decontamination"
+      ]
+    }
+  ],
+  "npcs": [],
+  "containers": [
+    {
+      "id": "perimeter_ammo_box",
+      "name": "Ящик с боекомплектом",
+      "tier": "ammo",
+      "tx": 20,
+      "tz": 12,
+      "x": -17,
+      "y": 0.1,
+      "z": 12,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "ammo9",
+          "qty": 12
+        },
+        {
+          "id": "ammo556",
+          "qty": 4
+        },
+        {
+          "id": "ammoParts",
+          "qty": 4
+        }
+      ],
+      "visual": "container_visual_0",
+      "rotY": 0
+    },
+    {
+      "id": "perimeter_med_box",
+      "name": "Аптечный короб периметра",
+      "tier": "medical",
+      "tx": 17,
+      "tz": 24,
+      "x": 12,
+      "y": 0.1,
+      "z": -10,
+      "rotationY": 0,
+      "locked": false,
+      "loot": [
+        {
+          "id": "medicine",
+          "qty": 2
+        },
+        {
+          "id": "stim",
+          "qty": 1
+        }
+      ],
+      "visual": "container_visual_1",
+      "rotY": 0
+    }
+  ],
+  "viewpoints": [
+    {
+      "label": "wide",
+      "x": 0,
+      "z": 0,
+      "distance": 60
+    },
+    {
+      "label": "inspection",
+      "x": 0,
+      "z": -18,
+      "distance": 24
+    },
+    {
+      "label": "clean-side",
+      "x": 0,
+      "z": 10,
+      "distance": 32
+    }
+  ],
+  "notes": "Контур: герметичный периметр К-3 перед Искажениями. Южный досмотр, две палатки обработки по сторонам прохода, северный контрольный узел, измерительная антенна с сохранённой целью задания.",
+  "cables": [
+    {
+      "id": "control_supply",
+      "points": [
+        {
+          "x": -19.82,
+          "y": 0.1,
+          "z": 18
+        },
+        {
+          "x": -21,
+          "y": 0.1,
+          "z": 18
+        },
+        {
+          "x": -21,
+          "y": 0.1,
+          "z": 13
+        }
+      ]
+    },
+    {
+      "id": "measurement_feed",
+      "points": [
+        {
+          "x": -19.82,
+          "y": 0.1,
+          "z": 18
+        },
+        {
+          "x": -19.82,
+          "y": 0.1,
+          "z": 22
+        },
+        {
+          "x": 0,
+          "y": 0.1,
+          "z": 22
+        },
+        {
+          "x": 0,
+          "y": 0.1,
+          "z": 19
+        },
+        {
+          "x": 0,
+          "y": 1.2,
+          "z": 19
+        }
+      ]
+    }
+  ]
+}

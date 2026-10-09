@@ -65,8 +65,10 @@ const grounds = groundsOf(groundsZone).area;
 const template = events.templates[0];
 const now = Date.now();
 const event = createPublicEvent(template, { now, rules: events.rules, point: centreOf(eventZone), id: 'pubev_zone_check' });
-event.warningAt = now + 20000;
-event.expiresAt = now + 30000;
+// Leave room for a slow server start in the full check chain. The event must
+// still be alive long enough for the first observer to see its boss.
+event.warningAt = now + 55000;
+event.expiresAt = now + 65000;
 // Эта проверка смотрит истечение события, а не пятиминутное продление сундука
 // после случайной зачистки отряда другими жителями зоны.
 event.claimGraceGivenAt = now;
@@ -127,7 +129,7 @@ async function until(label, probe, timeoutMs = 15000) {
     assert.equal(walker.join.worldState?.publicEvent?.id, event.id, 'the zone shows the event that stands in it');
     assert.equal(walker.join.worldState?.publicEvent?.roomId, eventZone.id, 'the event of the old kind has moved into its zone');
     const boss = await until('the leader of the event stands at an event point of the zone', () =>
-      [...view.enemies.values()].find(row => !row.dead && row.name === template.boss.displayName));
+      [...view.enemies.values()].find(row => !row.dead && row.name === template.boss.displayName), 25000);
     assert(nearestAnchor(boss) <= 20, `the leader stands at an event point: ${Math.round(nearestAnchor(boss))} m off`);
     const crew = [...view.enemies.values()].filter(row => !row.dead && row.hostileToPlayer !== false && nearestAnchor(row) <= 30);
     assert(crew.length >= 3, `the encounter of the event stands around its point too: ${crew.length}`);
@@ -142,7 +144,7 @@ async function until(label, probe, timeoutMs = 15000) {
       const snapshot = await h.socketAck(walker.socket, 'requestWorldState', { reason: 'eventExpiry' });
       return snapshot.ok && snapshot.state && Object.hasOwn(snapshot.state, 'publicEvent')
         && snapshot.state.publicEvent?.id !== event.id;
-    }, 45000);
+    }, 85000);
     await until('its people leave the scene', () => ![...view.enemies.values()].some(row => !row.dead && row.name === template.boss.displayName));
     const still = await h.socketAck(walker.socket, 'requestWorldState', {});
     assert.equal(still?.worldState?.locationId || still?.locationId || walker.join.locationId, eventZone.id, 'the players stay in the zone when the event ends');

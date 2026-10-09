@@ -44,6 +44,7 @@
         { "id": "oil", "price": 10, "qty": 5 },
         { "id": "stim", "price": 13, "qty": 6 },
         { "id": "medkit", "price": 24, "qty": 3 },
+        { "id": "antibiotics", "price": 28, "qty": 3 },
         { "id": "ammo9", "price": 3, "qty": 90 },
         { "id": "ammo556", "price": 5, "qty": 60 },
         { "id": "shotgunShell", "price": 6, "qty": 24 },
@@ -141,6 +142,21 @@
         { "id": "pickaxe", "price": 20, "qty": 2 },
         { "id": "axe", "price": 18, "qty": 2 },
         { "id": "handPump", "price": 26, "qty": 1 }
+      ]
+    },
+    "artifactOutfitter": {
+      "name": "Снабженец артефактного снаряжения",
+      "dialogueProfile": "scrap",
+      "caps": 900,
+      "restockHours": 12,
+      "quests": [],
+      "buyInterests": ["materials", "tools", "artifacts"],
+      "stock": [
+        { "id": "stabilizerCatalyst", "price": 60, "qty": 6 },
+        { "id": "artifactBelt2", "price": 150, "qty": 2 },
+        { "id": "artifactBelt3", "price": 340, "qty": 1 },
+        { "id": "artifactDetectorMk1", "price": 95, "qty": 2 },
+        { "id": "artifactDetectorMk2", "price": 235, "qty": 1 }
       ]
     },
     "coreBaseUprava": {

@@ -57,6 +57,11 @@ namespace RealmOfAshes.Game
             _impactUntil = Time.time + 0.22f;
         }
 
+        public void SetEmergenceOffset(float metres)
+        {
+            if (_silhouette != null) _silhouette.localPosition = new Vector3(0f, metres, 0f);
+        }
+
         private void Update()
         {
             if (_silhouette == null) return;

@@ -1,13 +1,15 @@
 {
   "schema": "kromka.dangerEcology.v1",
-  "note": "A-Life (библия 18.1): постоянные группы монстров Кромки и налётчиков живут на сетке зон мира — клетка экологии = зона 20 км, шаг группы — переход в соседнюю зону через открытые ворота. Логова — места логов, которые конструктор ставит в зоне (по цвету: синяя pve 1, жёлтая pvp 1, красная pvpFullDrop 2, чёрная pvpBlack 3); пополняются медленно и только без игроков в зоне. Время — реальное: минуты и секунды. type особи — creatureTypeId бестиария (data/mutants.json) или raider.",
+  "note": "A-Life (библия 18.1): охрана постоянного логова остаётся в своей зоне и патрулирует небольшой радиус от авторского якоря. Каждое логово держит одну группу; после гибели всей охраны восстановление начинается через пять минут даже при игроках в зоне. Охотничьи угодья имеют отдельные постоянные области из open-world-alife.json и дают только добычу с особей. Караваны, мародёры, бродячие стаи, дозоры и нейтральные искатели идут между зонами по авторским дорогам или POI независимо от игроков. Время — реальные минуты и секунды; type особи — creatureTypeId бестиария (data/mutants.json) или человек.",
   "tickSeconds": 5,
   "maxGroups": 800,
+  "stationaryLairs": true,
+  "clearedLairRespawnMinutes": 5,
   "pullRadiusCells": 3,
   "woundHealPerMinute": 0.02,
   "lairs": {
-    "capacity": { "pve": 1, "pvp": 2, "pvpFullDrop": 2, "pvpBlack": 3 },
-    "refillMinutes": { "pve": 120, "pvp": 90, "pvpFullDrop": 75, "pvpBlack": 45 }
+    "capacity": { "pve": 1, "pvp": 1, "pvpFullDrop": 1, "pvpBlack": 1 },
+    "refillMinutes": { "pve": 5, "pvp": 5, "pvpFullDrop": 5, "pvpBlack": 5 }
   },
   "roam": {
     "restMinutes": [4, 12],
@@ -134,7 +136,7 @@
       "kind": "traveller",
       "faction": "tract_league",
       "members": [
-        { "type": "caravaneer", "role": "guard", "name": "Караванщик", "min": 1, "max": 1, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots", "backpack": "backpack" } },
+        { "type": "caravaneer", "role": "merchant", "name": "Караванщик", "min": 1, "max": 1, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots", "backpack": "backpack" } },
         { "type": "caravan_guard", "role": "guard", "name": "Охранник каравана", "min": 2, "max": 3, "equipment": { "weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots" } },
         { "type": "porter", "role": "civilian", "name": "Носильщик", "min": 1, "max": 2, "equipment": { "armor": "leather", "boots": "boots", "backpack": "backpack" } }
       ],
@@ -171,6 +173,49 @@
       "fleeAt": 0.6,
       "stepSeconds": [240, 420],
       "travel": { "mode": "follow", "count": 0, "restMinutes": [5, 10] }
+    },
+    {
+      "id": "marauder_rovers",
+      "name": "Мародёры",
+      "kind": "traveller",
+      "faction": "raiders",
+      "hostile": true,
+      "members": [
+        { "type": "raider", "role": "raider", "name": "Мародёр", "min": 2, "max": 3, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots" } },
+        { "type": "raider", "role": "raider", "name": "Сборщик чужого", "min": 1, "max": 2, "equipment": { "weapon": "shotgun", "armor": "leather", "boots": "boots" } }
+      ],
+      "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
+      "aggression": 0.9,
+      "fleeAt": 0.4,
+      "stepSeconds": [180, 300],
+      "travel": { "mode": "poi", "count": 5, "restMinutes": [4, 10], "respawnMinutes": 30 }
+    },
+    {
+      "id": "wandering_gari",
+      "name": "Бродячая стая гари",
+      "kind": "traveller",
+      "faction": "gari",
+      "hostile": true,
+      "members": [{ "type": "gari", "name": "Бродячая гарь", "min": 3, "max": 5 }],
+      "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
+      "aggression": 1,
+      "fleeAt": 0.8,
+      "stepSeconds": [180, 320],
+      "travel": { "mode": "road", "count": 4, "restMinutes": [2, 7], "respawnMinutes": 25 }
+    },
+    {
+      "id": "neutral_stalkers",
+      "name": "Искатели артефактов",
+      "kind": "traveller",
+      "faction": "neutral",
+      "members": [
+        { "type": "patrol_guard", "role": "scavenger", "name": "Сталкер", "min": 2, "max": 3, "equipment": { "weapon": "rifle", "armor": "leather", "boots": "boots" } }
+      ],
+      "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
+      "aggression": 0,
+      "fleeAt": 0.5,
+      "stepSeconds": [240, 420],
+      "travel": { "mode": "anomaly", "count": 2, "restMinutes": [10, 20], "respawnMinutes": 45, "artifactSearchSeconds": 60 }
     }
   ]
 }

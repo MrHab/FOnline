@@ -5881,7 +5881,8 @@
      "name": "Сторожевая артель",
      "u": 0.65,
      "v": 0.25,
-     "road": true
+     "road": true,
+     "site": true
     }
    ],
    "authored": false
@@ -6219,7 +6220,8 @@
      "name": "Периметр К-3",
      "u": 0.5,
      "v": 0.08,
-     "road": true
+     "road": true,
+     "site": true
     }
    ],
    "authored": false

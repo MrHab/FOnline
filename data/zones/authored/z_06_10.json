@@ -60,10 +60,6 @@
     "tx": 9,
     "tz": 98
   },
-  "entryFromPlace_scrapOutpost": {
-    "tx": 102,
-    "tz": 115
-  },
   "transitions": [
     {
       "id": "gate_east",
@@ -122,19 +118,22 @@
       "halfWidthTiles": 3,
       "targetMode": "pvp",
       "road": true
-    },
-    {
-      "id": "place_scrapOutpost",
-      "type": "location",
-      "label": "Сторожевая артель",
-      "to": "scrapOutpost",
-      "entryKey": "entryFromWorld",
-      "tx": 103,
-      "tz": 119,
-      "radius": 3.2
     }
   ],
   "worldZones": [],
+  "sites": [
+    {
+      "id": "scrapOutpost",
+      "name": "Сторожевая артель",
+      "kind": "outpost",
+      "safe": false,
+      "x": 56.0,
+      "z": 48.0,
+      "halfX": 32.0,
+      "halfZ": 28.0,
+      "rotationY": 0.0
+    }
+  ],
   "objects": [
     {
       "id": "s00_k1",
@@ -28855,6 +28854,6351 @@
       ],
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_0_east",
+      "name": "scrapOutpost approach stone 0 east",
+      "position": {
+        "x": 57.25,
+        "y": -0.24,
+        "z": 14.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_0_west",
+      "name": "scrapOutpost approach stone 0 west",
+      "position": {
+        "x": 54.75,
+        "y": -0.24,
+        "z": 14.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_1_east",
+      "name": "scrapOutpost approach stone 1 east",
+      "position": {
+        "x": 57.25,
+        "y": -0.24,
+        "z": 16.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_1_west",
+      "name": "scrapOutpost approach stone 1 west",
+      "position": {
+        "x": 54.75,
+        "y": -0.24,
+        "z": 16.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_2_east",
+      "name": "scrapOutpost approach stone 2 east",
+      "position": {
+        "x": 57.25,
+        "y": -0.24,
+        "z": 19.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_2_west",
+      "name": "scrapOutpost approach stone 2 west",
+      "position": {
+        "x": 54.75,
+        "y": -0.24,
+        "z": 19.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_3_east",
+      "name": "scrapOutpost approach stone 3 east",
+      "position": {
+        "x": 57.25,
+        "y": -0.24,
+        "z": 21.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_3_west",
+      "name": "scrapOutpost approach stone 3 west",
+      "position": {
+        "x": 54.75,
+        "y": -0.24,
+        "z": 21.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_4_east",
+      "name": "scrapOutpost approach stone 4 east",
+      "position": {
+        "x": 57.25,
+        "y": -0.24,
+        "z": 24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_4_west",
+      "name": "scrapOutpost approach stone 4 west",
+      "position": {
+        "x": 54.75,
+        "y": -0.24,
+        "z": 24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_5_east",
+      "name": "scrapOutpost approach stone 5 east",
+      "position": {
+        "x": 57.25,
+        "y": -0.24,
+        "z": 26.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_5_west",
+      "name": "scrapOutpost approach stone 5 west",
+      "position": {
+        "x": 54.75,
+        "y": -0.24,
+        "z": 26.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_6_east",
+      "name": "scrapOutpost approach stone 6 east",
+      "position": {
+        "x": 57.25,
+        "y": -0.24,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_6_west",
+      "name": "scrapOutpost approach stone 6 west",
+      "position": {
+        "x": 54.75,
+        "y": -0.24,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_7_east",
+      "name": "scrapOutpost approach stone 7 east",
+      "position": {
+        "x": 57.25,
+        "y": -0.24,
+        "z": 31.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_7_west",
+      "name": "scrapOutpost approach stone 7 west",
+      "position": {
+        "x": 54.75,
+        "y": -0.24,
+        "z": 31.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_8_east",
+      "name": "scrapOutpost approach stone 8 east",
+      "position": {
+        "x": 57.25,
+        "y": -0.24,
+        "z": 34.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_approach_stone_8_west",
+      "name": "scrapOutpost approach stone 8 west",
+      "position": {
+        "x": 54.75,
+        "y": -0.24,
+        "z": 34.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_artel_repair",
+      "name": "Ремонтный двор сторожевой артели",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 44.0,
+        "y": 0.0,
+        "z": 58.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 19.75,
+        "z": 11.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -1.346,
+            "z": 0.419
+          },
+          "size": {
+            "x": 19.75,
+            "z": 9.75
+          }
+        },
+        {
+          "center": {
+            "x": -1.221,
+            "z": 5.419
+          },
+          "size": {
+            "x": 19.5,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": -1.096,
+            "z": 5.669
+          },
+          "size": {
+            "x": 19.25,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": -0.971,
+            "z": 5.919
+          },
+          "size": {
+            "x": 19.0,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": -0.846,
+            "z": 6.169
+          },
+          "size": {
+            "x": 18.75,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": -0.721,
+            "z": 6.419
+          },
+          "size": {
+            "x": 18.5,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 44,
+        "y": 0,
+        "z": 58
+      }
+    },
+    {
+      "id": "scrapOutpost_cargo_inspection",
+      "name": "Учёт и досмотр грузовой ветви",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 76.0,
+        "y": 0.0,
+        "z": 55.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.5,
+        "z": 6.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -0.002,
+            "z": -2.996
+          },
+          "size": {
+            "x": 2.5,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": -1.127,
+            "z": 0.129
+          },
+          "size": {
+            "x": 0.25,
+            "z": 6.0
+          }
+        },
+        {
+          "center": {
+            "x": 1.123,
+            "z": 0.129
+          },
+          "size": {
+            "x": 0.25,
+            "z": 6.0
+          }
+        },
+        {
+          "center": {
+            "x": -0.002,
+            "z": 3.004
+          },
+          "size": {
+            "x": 2.0,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 76,
+        "y": 0,
+        "z": 55
+      }
+    },
+    {
+      "id": "scrapOutpost_checkpoint_-11",
+      "name": "Прикрытие въезда",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 45.0,
+        "y": 0.0,
+        "z": 27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 5.25,
+        "z": 3.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.125,
+            "z": -0.633
+          },
+          "size": {
+            "x": 0.5,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 2.125,
+            "z": -0.508
+          },
+          "size": {
+            "x": 0.5,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": -2.5,
+            "z": -0.633
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -1.75,
+            "z": -0.133
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.25
+          }
+        },
+        {
+          "center": {
+            "x": 1.75,
+            "z": -0.133
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.25
+          }
+        },
+        {
+          "center": {
+            "x": 2.5,
+            "z": -0.508
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.5,
+            "z": 0.117
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.25
+          }
+        },
+        {
+          "center": {
+            "x": -1.5,
+            "z": 0.242
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": 1.25,
+            "z": 0.367
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.25
+          }
+        },
+        {
+          "center": {
+            "x": 1.0,
+            "z": 0.492
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": -1.25,
+            "z": 0.492
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.5
+          }
+        },
+        {
+          "center": {
+            "x": 0.75,
+            "z": 0.617
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.5,
+            "z": 0.742
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.5
+          }
+        },
+        {
+          "center": {
+            "x": -2.0,
+            "z": 0.492
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -0.75,
+            "z": 0.742
+          },
+          "size": {
+            "x": 0.75,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.25,
+            "z": 0.867
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -0.125,
+            "z": 0.992
+          },
+          "size": {
+            "x": 0.5,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": 0.617
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": -0.625,
+            "z": 1.367
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": 27
+      }
+    },
+    {
+      "id": "scrapOutpost_checkpoint_11",
+      "name": "Прикрытие въезда",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 67.0,
+        "y": 0.0,
+        "z": 27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 5.25,
+        "z": 3.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.125,
+            "z": -0.633
+          },
+          "size": {
+            "x": 0.5,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 2.125,
+            "z": -0.508
+          },
+          "size": {
+            "x": 0.5,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": -2.5,
+            "z": -0.633
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -1.75,
+            "z": -0.133
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.25
+          }
+        },
+        {
+          "center": {
+            "x": 1.75,
+            "z": -0.133
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.25
+          }
+        },
+        {
+          "center": {
+            "x": 2.5,
+            "z": -0.508
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.5,
+            "z": 0.117
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.25
+          }
+        },
+        {
+          "center": {
+            "x": -1.5,
+            "z": 0.242
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": 1.25,
+            "z": 0.367
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.25
+          }
+        },
+        {
+          "center": {
+            "x": 1.0,
+            "z": 0.492
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": -1.25,
+            "z": 0.492
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.5
+          }
+        },
+        {
+          "center": {
+            "x": 0.75,
+            "z": 0.617
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.5,
+            "z": 0.742
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.5
+          }
+        },
+        {
+          "center": {
+            "x": -2.0,
+            "z": 0.492
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -0.75,
+            "z": 0.742
+          },
+          "size": {
+            "x": 0.75,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.25,
+            "z": 0.867
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -0.125,
+            "z": 0.992
+          },
+          "size": {
+            "x": 0.5,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": 0.617
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": -0.625,
+            "z": 1.367
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 67,
+        "y": 0,
+        "z": 27
+      }
+    },
+    {
+      "id": "scrapOutpost_container_visual_0",
+      "name": "Ящик сторожевой артели",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 75.0,
+        "y": 0.0,
+        "z": 50.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.5
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -0.006,
+            "z": 0.003
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.5
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 75,
+        "y": 0,
+        "z": 50
+      }
+    },
+    {
+      "id": "scrapOutpost_container_visual_1",
+      "name": "Схрон за бочками",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 74.0,
+        "y": 0.0,
+        "z": 31.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.5
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -0.006,
+            "z": 0.003
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.5
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 74,
+        "y": 0,
+        "z": 31
+      }
+    },
+    {
+      "id": "scrapOutpost_entry_lookout",
+      "name": "scrapOutpost entry lookout",
+      "position": {
+        "x": 32.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.436,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.648,
+        "z": 5.648
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -1.751,
+            "z": -1.749
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": 1.749,
+            "z": -1.751
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -1.001,
+            "z": -1.625
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 0.999,
+            "z": -1.625
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -1.374,
+            "z": 1.625
+          },
+          "size": {
+            "x": 1.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.376,
+            "z": 1.625
+          },
+          "size": {
+            "x": 1.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -1.749,
+            "z": 2.001
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 1.751,
+            "z": 1.999
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_entry_lookout_opposite",
+      "name": "scrapOutpost entry lookout opposite",
+      "position": {
+        "x": 80.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.847,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.648,
+        "z": 5.648
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -1.75,
+            "z": -1.75
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": 1.75,
+            "z": -1.75
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -1.0,
+            "z": -1.625
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.0,
+            "z": -1.625
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -1.375,
+            "z": 1.625
+          },
+          "size": {
+            "x": 1.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.375,
+            "z": 1.625
+          },
+          "size": {
+            "x": 1.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -1.75,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 1.75,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_gate_column_east",
+      "name": "scrapOutpost gate column east",
+      "position": {
+        "x": 65.0,
+        "y": 0.0,
+        "z": 23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 1.25,
+        "z": 1.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.014,
+            "z": 0.019
+          },
+          "size": {
+            "x": 1.25,
+            "z": 1.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_gate_column_west",
+      "name": "scrapOutpost gate column west",
+      "position": {
+        "x": 47.0,
+        "y": 0.0,
+        "z": 23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 1.25,
+        "z": 1.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.014,
+            "z": 0.019
+          },
+          "size": {
+            "x": 1.25,
+            "z": 1.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_gate_floodlight_east",
+      "name": "scrapOutpost gate floodlight east",
+      "position": {
+        "x": 67.0,
+        "y": 0.0,
+        "z": 26.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 1.75,
+        "z": 3.75
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.011,
+            "z": -0.383
+          },
+          "size": {
+            "x": 1.25,
+            "z": 3.0
+          }
+        },
+        {
+          "center": {
+            "x": -0.739,
+            "z": -0.633
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.761,
+            "z": -0.758
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.01,
+            "z": 1.367
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -0.115,
+            "z": 1.742
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_gate_floodlight_west",
+      "name": "scrapOutpost gate floodlight west",
+      "position": {
+        "x": 45.0,
+        "y": 0.0,
+        "z": 26.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 1.75,
+        "z": 3.75
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.011,
+            "z": -0.383
+          },
+          "size": {
+            "x": 1.25,
+            "z": 3.0
+          }
+        },
+        {
+          "center": {
+            "x": -0.739,
+            "z": -0.633
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.761,
+            "z": -0.758
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.01,
+            "z": 1.367
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -0.115,
+            "z": 1.742
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_guard_lookout",
+      "name": "Сторожевая площадка грузовой ветви",
+      "tags": [
+        "watch",
+        "railway",
+        "artel",
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 80.0,
+        "y": 0.0,
+        "z": 68.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -1.75,
+            "z": -1.75
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": 1.75,
+            "z": -1.75
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -1.0,
+            "z": -1.625
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.0,
+            "z": -1.625
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -1.375,
+            "z": 1.625
+          },
+          "size": {
+            "x": 1.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.375,
+            "z": 1.625
+          },
+          "size": {
+            "x": 1.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -1.75,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 1.75,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 80,
+        "y": 0,
+        "z": 68
+      }
+    },
+    {
+      "id": "scrapOutpost_inner_cover_0",
+      "name": "scrapOutpost inner cover 0",
+      "position": {
+        "x": 51.0,
+        "y": 0.0,
+        "z": 38.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 2.25,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.016,
+            "z": -0.134
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -0.109,
+            "z": 0.366
+          },
+          "size": {
+            "x": 2.0,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_inner_cover_1",
+      "name": "scrapOutpost inner cover 1",
+      "position": {
+        "x": 63.0,
+        "y": 0.0,
+        "z": 56.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 2.25,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.016,
+            "z": -0.134
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -0.109,
+            "z": 0.366
+          },
+          "size": {
+            "x": 2.0,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_inner_cover_2",
+      "name": "scrapOutpost inner cover 2",
+      "position": {
+        "x": 54.0,
+        "y": 0.0,
+        "z": 63.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 2.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.016,
+            "z": -0.134
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -0.109,
+            "z": 0.366
+          },
+          "size": {
+            "x": 2.0,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_inner_cover_3",
+      "name": "scrapOutpost inner cover 3",
+      "position": {
+        "x": 66.0,
+        "y": 0.0,
+        "z": 40.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 2.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.016,
+            "z": -0.134
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -0.109,
+            "z": 0.366
+          },
+          "size": {
+            "x": 2.0,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_patrol_cover_0",
+      "name": "Позиция на грузовую ветвь",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 32.0,
+        "y": 0.0,
+        "z": 71.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.0,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -0.031,
+            "z": 0.005
+          },
+          "size": {
+            "x": 4.0,
+            "z": 1.0
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 32,
+        "y": 0,
+        "z": 71
+      }
+    },
+    {
+      "id": "scrapOutpost_patrol_cover_1",
+      "name": "Позиция на грузовую ветвь",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 44.0,
+        "y": 0.0,
+        "z": 71.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.0,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -0.031,
+            "z": 0.005
+          },
+          "size": {
+            "x": 4.0,
+            "z": 1.0
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 44,
+        "y": 0,
+        "z": 71
+      }
+    },
+    {
+      "id": "scrapOutpost_patrol_cover_2",
+      "name": "Позиция на грузовую ветвь",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 56.0,
+        "y": 0.0,
+        "z": 71.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.0,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -0.031,
+            "z": 0.005
+          },
+          "size": {
+            "x": 4.0,
+            "z": 1.0
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 56,
+        "y": 0,
+        "z": 71
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_0",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 27.97,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 27.97,
+        "y": 0,
+        "z": 22
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_1",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 31.91,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 31.91,
+        "y": 0,
+        "z": 22
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_10",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 83.13,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 83.13,
+        "y": 0,
+        "z": 22
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_11",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 27.97,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 27.97,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_12",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 31.91,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 31.91,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_13",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 35.85,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 35.85,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_14",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 39.79,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 39.79,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_15",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 43.73,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 43.73,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_16",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 47.67,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 47.67,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_17",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 51.61,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 51.61,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_18",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 55.55,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 55.55,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_19",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 59.49,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 59.49,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_2",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 35.85,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 35.85,
+        "y": 0,
+        "z": 22
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_20",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 63.43,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 63.43,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_21",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 67.37,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 67.37,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_22",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 71.31,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 71.31,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_23",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 75.25,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 75.25,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_24",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 79.19,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 79.19,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_25",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 83.13,
+        "y": 0.0,
+        "z": 74.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 83.13,
+        "y": 0,
+        "z": 74
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_26",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 23.97
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 23.97
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_27",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 27.91
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 27.91
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_28",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 31.85
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 31.85
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_29",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 35.79
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 35.79
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_3",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 39.79,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 39.79,
+        "y": 0,
+        "z": 22
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_30",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 39.73
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 39.73
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_31",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 43.67
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 43.67
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_32",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 47.61
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 47.61
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_33",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 51.55
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 51.55
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_34",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 55.49
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 55.49
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_35",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 59.43
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 59.43
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_36",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 63.37
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 63.37
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_37",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 67.31
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 67.31
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_38",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 71.25
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 71.25
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_39",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 23.97
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 23.97
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_4",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 43.73,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 43.73,
+        "y": 0,
+        "z": 22
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_40",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 27.91
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 27.91
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_41",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 31.85
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 31.85
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_42",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 35.79
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 35.79
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_43",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 39.73
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 39.73
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_44",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 43.67
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 43.67
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_45",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 47.61
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 47.61
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_46",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 51.55
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 51.55
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_47",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 55.49
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 55.49
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_48",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 59.43
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 59.43
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_49",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 63.37
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 63.37
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_5",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 47.67,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 47.67,
+        "y": 0,
+        "z": 22
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_50",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 67.31
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 67.31
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_51",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 71.25
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 71.25
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_6",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 67.37,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 67.37,
+        "y": 0,
+        "z": 22
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_7",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 71.31,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 71.31,
+        "y": 0,
+        "z": 22
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_8",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 75.25,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 75.25,
+        "y": 0,
+        "z": 22
+      }
+    },
+    {
+      "id": "scrapOutpost_perimeter_9",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 79.19,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 79.19,
+        "y": 0,
+        "z": 22
+      }
+    },
+    {
+      "id": "scrapOutpost_rail_signal_0",
+      "name": "Сигнал защищаемого участка грузовой ветви",
+      "tags": [
+        "railway",
+        "signal",
+        "artel",
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 76.76
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.02
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": 0,
+        "z": 76.76
+      }
+    },
+    {
+      "id": "scrapOutpost_rail_signal_1",
+      "name": "Сигнал защищаемого участка грузовой ветви",
+      "tags": [
+        "railway",
+        "signal",
+        "artel",
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 86.0,
+        "y": 0.0,
+        "z": 91.16
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.02
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 86,
+        "y": 0,
+        "z": 91.16
+      }
+    },
+    {
+      "id": "scrapOutpost_repair_bench",
+      "name": "Рабочее место мастера",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 43.0,
+        "y": 0.0,
+        "z": 44.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.25,
+        "z": 1.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.002
+          },
+          "size": {
+            "x": 2.25,
+            "z": 1.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 43,
+        "y": 0,
+        "z": 44
+      }
+    },
+    {
+      "id": "scrapOutpost_repair_tool",
+      "name": "Инструмент участка",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 44.8,
+        "y": 0.0,
+        "z": 44.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.75,
+        "z": 0.5
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": -0.011
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        }
+      ],
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 44.8,
+        "y": 0,
+        "z": 44
+      }
+    },
+    {
+      "id": "scrapOutpost_rest_shelter",
+      "name": "Отдых дежурной смены",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 74.0,
+        "y": 0.0,
+        "z": 35.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 5.0,
+        "z": 3.5
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -0.749,
+            "z": -1.63
+          },
+          "size": {
+            "x": 3.5,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": -2.374,
+            "z": 0.37
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 0.751,
+            "z": 0.37
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 1.251,
+            "z": 0.745
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.626,
+            "z": 0.995
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.876,
+            "z": 1.37
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": 2.376,
+            "z": 1.37
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": 2.126,
+            "z": 1.495
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.5
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 74,
+        "y": 0,
+        "z": 35
+      }
+    },
+    {
+      "id": "scrapOutpost_solid_wall_east_0",
+      "name": "scrapOutpost solid wall east 0",
+      "position": {
+        "x": 83.0,
+        "y": 0.0,
+        "z": 31.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_east_1",
+      "name": "scrapOutpost solid wall east 1",
+      "position": {
+        "x": 83.0,
+        "y": 0.0,
+        "z": 38.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_east_2",
+      "name": "scrapOutpost solid wall east 2",
+      "position": {
+        "x": 83.0,
+        "y": 0.0,
+        "z": 45.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_east_3",
+      "name": "scrapOutpost solid wall east 3",
+      "position": {
+        "x": 83.0,
+        "y": 0.0,
+        "z": 52.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_east_4",
+      "name": "scrapOutpost solid wall east 4",
+      "position": {
+        "x": 83.0,
+        "y": 0.0,
+        "z": 59.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_east_5",
+      "name": "scrapOutpost solid wall east 5",
+      "position": {
+        "x": 83.0,
+        "y": 0.0,
+        "z": 66.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_north_0",
+      "name": "scrapOutpost solid wall north 0",
+      "position": {
+        "x": 37.0,
+        "y": 0.0,
+        "z": 72.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_north_1",
+      "name": "scrapOutpost solid wall north 1",
+      "position": {
+        "x": 51.0,
+        "y": 0.0,
+        "z": 72.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_north_2",
+      "name": "scrapOutpost solid wall north 2",
+      "position": {
+        "x": 65.0,
+        "y": 0.0,
+        "z": 72.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_north_3",
+      "name": "scrapOutpost solid wall north 3",
+      "position": {
+        "x": 74.0,
+        "y": 0.0,
+        "z": 72.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_west_0",
+      "name": "scrapOutpost solid wall west 0",
+      "position": {
+        "x": 29.0,
+        "y": 0.0,
+        "z": 31.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_west_1",
+      "name": "scrapOutpost solid wall west 1",
+      "position": {
+        "x": 29.0,
+        "y": 0.0,
+        "z": 38.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_west_2",
+      "name": "scrapOutpost solid wall west 2",
+      "position": {
+        "x": 29.0,
+        "y": 0.0,
+        "z": 45.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_west_3",
+      "name": "scrapOutpost solid wall west 3",
+      "position": {
+        "x": 29.0,
+        "y": 0.0,
+        "z": 52.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_west_4",
+      "name": "scrapOutpost solid wall west 4",
+      "position": {
+        "x": 29.0,
+        "y": 0.0,
+        "z": 59.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_solid_wall_west_5",
+      "name": "scrapOutpost solid wall west 5",
+      "position": {
+        "x": 29.0,
+        "y": 0.0,
+        "z": 66.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_spare_tyres",
+      "name": "Запас для ремонта караванов",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "site": "scrapOutpost",
+      "position": {
+        "x": 35.0,
+        "y": 0.0,
+        "z": 43.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.0,
+        "z": 1.5
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -0.044,
+            "z": -0.126
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -0.794,
+            "z": -0.126
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.706,
+            "z": -0.001
+          },
+          "size": {
+            "x": 0.5,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": -0.669,
+            "z": 0.374
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 0.206,
+            "z": 0.624
+          },
+          "size": {
+            "x": 1.0,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 35,
+        "y": 0,
+        "z": 43
+      }
+    },
+    {
+      "id": "scrapOutpost_supply_centre",
+      "name": "scrapOutpost supply centre",
+      "position": {
+        "x": 55.0,
+        "y": 0.0,
+        "z": 44.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 1.5,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.004,
+            "z": -0.007
+          },
+          "size": {
+            "x": 1.5,
+            "z": 1.0
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapOutpost_supply_north",
+      "name": "scrapOutpost supply north",
+      "position": {
+        "x": 65.0,
+        "y": 0.0,
+        "z": 62.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-scrapOutpost"
+      ],
+      "footprint": {
+        "x": 3.5,
+        "z": 2.5
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.027,
+            "z": -0.383
+          },
+          "size": {
+            "x": 3.5,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.527,
+            "z": 0.742
+          },
+          "size": {
+            "x": 2.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 0.402,
+            "z": 1.117
+          },
+          "size": {
+            "x": 1.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "containers": [
@@ -28950,6 +35294,77 @@
           "qty": 5
         }
       ]
+    },
+    {
+      "id": "guard_artel_crate",
+      "name": "Ящик сторожевой артели",
+      "tier": "wasteland",
+      "tx": 117,
+      "tz": 105,
+      "x": 75,
+      "y": 11.33309,
+      "z": 50,
+      "rotationY": 0,
+      "locked": false,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 4
+        },
+        {
+          "id": "ammoParts",
+          "qty": 5
+        },
+        {
+          "id": "food",
+          "qty": 1
+        }
+      ],
+      "sceneVisual": true,
+      "visualObjectId": "scrapOutpost_container_visual_0",
+      "site": "scrapOutpost",
+      "surfaceSourcePoint": {
+        "x": 75,
+        "z": 50
+      }
+    },
+    {
+      "id": "guard_artel_barrels",
+      "name": "Схрон за бочками",
+      "tier": "basic",
+      "tx": 117,
+      "tz": 95,
+      "x": 74,
+      "y": 11.33309,
+      "z": 31,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "easy",
+      "loot": [
+        {
+          "id": "silver",
+          "qty": 16
+        },
+        {
+          "id": "scrap",
+          "qty": 4
+        },
+        {
+          "id": "oil",
+          "qty": 1
+        },
+        {
+          "id": "ammoParts",
+          "qty": 2
+        }
+      ],
+      "sceneVisual": true,
+      "visualObjectId": "scrapOutpost_container_visual_1",
+      "site": "scrapOutpost",
+      "surfaceSourcePoint": {
+        "x": 74,
+        "z": 31
+      }
     }
   ],
   "anomalyFields": [

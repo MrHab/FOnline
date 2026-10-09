@@ -65,8 +65,15 @@ const {
   territoryLocationAccess,
   territoryMembershipActive
 } = require('./src/server/territory-membership');
+const { migrateRetiredCoreLocation } = require('./src/server/core-migration');
+const { siteActorVisualAction } = require('./src/server/alife-visual-action');
 const {
-  territoryContractBaseLocationId,
+  WINDUP_MS: NPC_GRENADE_WINDUP_MS,
+  GROUP_COOLDOWN_MS: NPC_GRENADE_GROUP_COOLDOWN_MS,
+  RADIUS: NPC_GRENADE_RADIUS,
+  canPrimeNpcGrenade, primeNpcGrenade, finishNpcGrenade
+} = require('./src/server/npc-grenade');
+const {
   territoryContractOffer,
   territoryFactionShares
 } = require('./src/server/territory-contract');
@@ -191,11 +198,15 @@ const {
 } = require('./src/server/artifact-instances');
 const {
   claimBirth: claimArtifactBirth,
+  claimBirthForNpc: claimArtifactBirthForNpc,
+  consumeNpcClaim: consumeNpcArtifactClaim,
+  findBirth: findArtifactBirth,
   birthChance: artifactBirthChance,
   currentEmissionId: artifactEmissionId,
   lastEmissionEndAt: artifactEmissionEndAt,
   liveBirths: liveArtifactBirths,
   normalizeBirthStore: normalizeArtifactBirthStore,
+  npcClaimForMember: npcArtifactClaimForMember,
   tickLocationBirths: tickArtifactBirths
 } = require('./src/server/anomaly-artifact-births');
 const { createShiftCycle } = require('./src/server/shift-cycle');
@@ -301,6 +312,8 @@ const {
   pickChannel: pickZoneChannel
 } = require('./src/server/zone-channels');
 // Проверки поднимают сервер с крошечным пределом канала и быстрым сном зон.
+// One shared zone room can host the target 100 players with one authoritative
+// ecology actor set. Explicit caps still allow load testing smaller channels.
 const ZONE_CHANNEL_CAP = Math.max(1, Math.floor(Number(process.env.KROMKA_ZONE_CHANNEL_CAP) || ZONE_CHANNEL_SOFT_CAP));
 const ZONE_SLEEP_MS = Math.max(1000, Number(process.env.KROMKA_ZONE_SLEEP_MS) || ZONE_SLEEP_AFTER_MS);
 const {
@@ -334,6 +347,21 @@ const {
   HUMAN_TYPES: ECOLOGY_HUMAN_TYPE_LIST
 } = require('./src/server/danger-ecology');
 const {
+  normalizeCatalog: normalizeOpenWorldAlifeCatalog,
+  normalizeState: normalizeOpenWorldAlifeState,
+  serializeState: serializeOpenWorldAlifeState,
+  setBossAlive: alifeSetOutpostBossAlive,
+  tickOutpost: alifeTickOutpost,
+  within: alifeWithinOutpost,
+  scaleDefenderHealth: alifeScaleDefenderHealth,
+  publicOutpost: alifePublicOutpost,
+  publicCaptureTask: alifePublicCaptureTask
+} = require('./src/server/open-world-alife');
+const {
+  stageAwards: stageAlifeCaptureAwards,
+  pendingAwards: pendingAlifeCaptureAwards
+} = require('./src/server/alife-capture-awards');
+const {
   normalizeAccountStore,
   accountFor: sinAccountFor,
   premiumActive: sinPremiumActive,
@@ -345,6 +373,7 @@ const {
   spendFocus: spendSinFocus,
   publicAccount: publicSinAccount
 } = require('./src/server/account-sin');
+const { migrateAccountMarks } = require('./src/server/account-marks-migration');
 const {
   ENCODING_HEAD_BYTES: UNITY_ENCODING_HEAD_BYTES,
   unityDeliveryHeaders
@@ -878,6 +907,9 @@ const WORLD_ECONOMY = loadWorldEconomy(process.env.KROMKA_ECONOMY_FILE || path.j
 const FAST_TRAVEL_RULES = normalizeFastTravelRules(readJson(process.env.KROMKA_ECONOMY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'economy.json'), {}).fastTravel);
 const DANGER_ECOLOGY = normalizeEcologyConfig(readJson(
   process.env.KROMKA_DANGER_ECOLOGY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'danger-ecology.json'), {}));
+const OPEN_WORLD_ALIFE = normalizeOpenWorldAlifeCatalog(readJson(
+  process.env.KROMKA_OPEN_WORLD_ALIFE_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'open-world-alife.json'), {}));
+const OPEN_WORLD_ALIFE_STATE_FILE = path.join(DATA_DIR, 'open-world-alife-state.json');
 const DANGER_ECOLOGY_STATE_FILE = path.join(DATA_DIR, 'danger-ecology.json');
 // Городская живность: мирные зверьки в стенах городов, шкура с их туш.
 // KROMKA_CITY_CRITTERS_FILE подменяет её в сетевых проверках.
@@ -1139,8 +1171,8 @@ function locationDefinitionPointFromObject(row = {}, fallback = { tx: 19, tz: 19
 }
 
 const LOCATION_PVP_MODES = ZONE_MODE_SET;
-// Столицы фракций и постоянные базы Сердцевины: обе группы мирные, дают доступ
-// к личному фракционному хранилищу и никогда не захватываются.
+// Фракционные города дают доступ к личному хранилищу. Старые базы Сердцевины
+// остаются в таблице только для чтения сохранённых персонажей при миграции.
 const SERVER_FACTION_CAPITAL_LOCATIONS = {
   sluiceCity: 'uprava',
   scrapTown: 'free_artels',
@@ -2056,7 +2088,14 @@ app.use(express.urlencoded({ extended: false, limit: JSON_LIMIT }));
 // Клиент игры — только Unity WebGL (public/unity/, собирается при деплое:
 // Кромка → Build WebGL). Пока сборки нет (dev-окружение, CI), корень отдаёт
 // нейтральную страницу ожидания.
-const UNITY_INDEX_FILE = path.join(__dirname, 'public', 'unity', 'index.html');
+const UNITY_PUBLIC_BUILD_DIR = path.join(__dirname, 'public', 'unity');
+// A review build is opt-in and served only by an isolated local server.
+const UNITY_REVIEW_BUILD_DIR = process.env.ROA_UNITY_REVIEW_BUILD_DIR || '';
+if (UNITY_REVIEW_BUILD_DIR && !path.isAbsolute(UNITY_REVIEW_BUILD_DIR)) {
+  throw new Error('ROA_UNITY_REVIEW_BUILD_DIR must be an absolute path');
+}
+const UNITY_BUILD_DIR = UNITY_REVIEW_BUILD_DIR ? path.resolve(UNITY_REVIEW_BUILD_DIR) : UNITY_PUBLIC_BUILD_DIR;
+const UNITY_INDEX_FILE = path.join(UNITY_BUILD_DIR, 'index.html');
 const UNITY_UNAVAILABLE_FILE = path.join(__dirname, 'public', 'unity-unavailable.html');
 app.get('/', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
@@ -2099,6 +2138,28 @@ function serverUnityBuildEncodingHead(filePath = '', stat = null) {
   if (unityBuildEncodingHeads.size > 256) unityBuildEncodingHeads.clear();
   unityBuildEncodingHeads.set(key, head);
   return head;
+}
+
+// Do not fall back to a different public/unity build when a staged asset is
+// missing. Unity reuses names across review builds, so disable browser cache.
+if (UNITY_REVIEW_BUILD_DIR) {
+  app.use('/unity', express.static(UNITY_BUILD_DIR, {
+    etag: true,
+    lastModified: true,
+    fallthrough: false,
+    setHeaders(res, filePath, stat) {
+      const requestPath = `${res.req?.baseUrl || ''}${res.req?.path || ''}`;
+      const delivery = unityDeliveryHeaders(
+        requestPath,
+        requestPath.endsWith('.unityweb') ? serverUnityBuildEncodingHead(filePath, stat) : null,
+        res.req?.headers || {}
+      );
+      if (delivery.contentType) res.setHeader('Content-Type', delivery.contentType);
+      if (delivery.vary) res.setHeader('Vary', 'Accept-Encoding');
+      if (delivery.encoding) res.setHeader('Content-Encoding', delivery.encoding);
+      res.setHeader('Cache-Control', 'no-store');
+    }
+  }));
 }
 
 // Статика: сборка Unity в public/unity/, модели и радио.
@@ -2164,14 +2225,16 @@ function serverPublicZoneGrounds(zoneLocationId = '') {
   const hotspot = ZONE_RUNTIME.isZone(zoneLocationId) ? ZONE_GROUNDS.hotspots[zoneLocationId] : null;
   return {
     ...(ground ? { grounds: { id: ground.id, name: ground.name, families: [...ground.families] } } : {}),
-    ...(hotspot ? { hotspot: { family: hotspot.family, tier: hotspot.tier, name: hotspot.name } } : {})
+    ...(hotspot ? { hotspot: { family: hotspot.family, tier: hotspot.tier, name: hotspot.name } } : {}),
+    alifeSites: serverAlifeWorldMapSites(zoneLocationId)
   };
 }
 
 app.get('/api/world-map', (_, res) => {
-  if (!worldMapResponse || worldMapResponse.revision !== ZONE_RUNTIME.graph.worldRevision) {
+  const alifeMapRevision = `${ZONE_RUNTIME.graph.worldRevision}:${serverOpenWorldAlifeState().revision}`;
+  if (!worldMapResponse || worldMapResponse.revision !== alifeMapRevision) {
     const body = Buffer.from(JSON.stringify({ ok: true, map: ZONE_RUNTIME.worldMap(serverLocationPublicName, serverLocationTier, serverPublicZoneGrounds) }), 'utf8');
-    worldMapResponse = { revision: ZONE_RUNTIME.graph.worldRevision, body, gzip: gzipJsonBuffer(body) };
+    worldMapResponse = { revision: alifeMapRevision, body, gzip: gzipJsonBuffer(body) };
   }
   sendJsonBuffer(res, worldMapResponse.body, worldMapResponse.gzip);
 });
@@ -2344,6 +2407,28 @@ function serverEcologyCities() {
   return zones.cities;
 }
 
+function serverEcologyRouteStops(kind = 'poi') {
+  const cache = serverEcologyZones();
+  if (!cache.routeStops) {
+    const living = zone => !zone.city && ECOLOGY_LIVING_MODES.includes(zone.mode);
+    const placeStop = zone => (zone.places || [])
+      .filter(place => place.locationId && place.kind !== 'lair')
+      .map(place => ({ id: place.locationId, sx: zone.col, sy: zone.row }));
+    cache.routeStops = {
+      poi: ZONE_RUNTIME.graph.zones.filter(living).flatMap(placeStop),
+      road: ZONE_RUNTIME.graph.zones.filter(zone => living(zone)
+        && ((zone.roads || []).length || (zone.places || []).some(place => place.road)))
+        .map(zone => ({ id: zone.id, sx: zone.col, sy: zone.row })),
+      anomaly: OPEN_WORLD_ALIFE.anomalyRoutes.map(id => cache.byId.get(id))
+        .filter(zone => zone && living(zone)).map(zone => ({ id: zone.id, sx: zone.col, sy: zone.row })),
+      trade: ZONE_RUNTIME.graph.zones.filter(living).flatMap(zone => placeStop(zone)
+        .filter(stop => ['outpost', 'settlement', 'village'].includes((zone.places || [])
+          .find(place => place.locationId === stop.id)?.kind)))
+    };
+  }
+  return cache.routeStops[kind] || [];
+}
+
 /** Соседние зоны за открытыми воротами, города тоже: путник входит в них. */
 function serverEcologyNeighbors(sx, sy) {
   const zone = serverEcologyZoneAt(sx, sy);
@@ -2425,11 +2510,24 @@ function serverEcologyCandidates() {
     if (zone.city || !ECOLOGY_LIVING_MODES.includes(zone.mode)) continue;
     const count = normalizeZoneRecipe(zoneRecipe(ZONE_RUNTIME.graph, zone.id)).budget.lairs;
     for (let slot = 0; slot < count; slot += 1) {
+      const id = `lair_${zone.id}_${slot}`;
+      const anchor = OPEN_WORLD_ALIFE.lairAnchorsById[id] || null;
+      if (OPEN_WORLD_ALIFE.lairAnchors.length && (!anchor || anchor.locationId !== zone.id))
+        throw new Error(`open-world A-Life: missing authored lair anchor ${id}`);
       rows.push({
-        id: `lair_${zone.id}_${slot}`, slot, sx: zone.col, sy: zone.row, mode: zone.mode, region: zone.region || '',
+        id, slot, sx: zone.col, sy: zone.row, mode: zone.mode, region: zone.region || '',
+        ...(anchor ? { tx: anchor.tx, tz: anchor.tz, x: anchor.x, z: anchor.z } : {}),
         tier: clamp(Math.round(Number(zone.difficulty || 1)), 1, kromkaTiers.TIER_COUNT)
       });
     }
+  }
+  for (const site of OPEN_WORLD_ALIFE.huntingGrounds) {
+    const zone = serverEcologyZones().byId.get(site.locationId);
+    if (!zone || zone.city || !ECOLOGY_LIVING_MODES.includes(zone.mode)) continue;
+    rows.push({ id: site.id, kind: 'huntingGround', speciesId: site.speciesId,
+      sx: zone.col, sy: zone.row, mode: zone.mode, region: zone.region || '',
+      tier: clamp(Math.round(Number(zone.difficulty || 1)), 1, kromkaTiers.TIER_COUNT),
+      tx: site.tx, tz: site.tz, x: site.x, z: site.z, radius: site.radius });
   }
   return rows;
 }
@@ -2438,6 +2536,8 @@ function serverEcologyCandidates() {
 function serverEcologyRevision() {
   const source = JSON.stringify([
     DANGER_ECOLOGY.lairs,
+    OPEN_WORLD_ALIFE.lairAnchors,
+    OPEN_WORLD_ALIFE.huntingGrounds,
     DANGER_ECOLOGY.species.filter(row => row.kind !== 'traveller').map(row => [row.id, row.habitat, row.regions]),
     KROMKA_TIER_CONFIG.enemies.species,
     KROMKA_TIER_CONFIG.hideDrops.species,
@@ -2456,7 +2556,7 @@ function serverEcologyState() {
     // Группы прежних логов остаются бродягами, пока не погибнут.
     ecologyResetLairs(state, ecologyBuildLairs(DANGER_ECOLOGY, serverEcologyCandidates(), revision, {
       speciesAllowed: serverEcologySpeciesWeight
-    }), revision);
+    }), revision, { retainSpecies: old => !!DANGER_ECOLOGY.speciesById[old.speciesId] });
   }
   // Призраки: группы вне сетки зон (прежняя мелкая сетка мира) и бродяги без
   // логова в зоне чужого тира. Живому миру они только занимают предел групп.
@@ -2489,6 +2589,456 @@ function serverSaveEcology(force = false, now = Date.now()) {
 // Люди A-Life — налётчики и путники: у всех облик и оружие человека.
 const ECOLOGY_HUMAN_TYPES = new Set(ECOLOGY_HUMAN_TYPE_LIST);
 
+
+let openWorldAlifeState = null;
+let openWorldAlifeSavedAt = 0;
+let alifePublicRevision = Date.now();
+const alifeSnapshotCache = new Map();
+
+function serverOpenWorldAlifeState() {
+  if (!openWorldAlifeState) openWorldAlifeState = normalizeOpenWorldAlifeState(
+    savesDb.openWorldAlife || readJson(OPEN_WORLD_ALIFE_STATE_FILE, {}), OPEN_WORLD_ALIFE);
+  return openWorldAlifeState;
+}
+
+function serverSaveOpenWorldAlife(force = false, now = Date.now()) {
+  const state = openWorldAlifeState;
+  if (!state || (!state.dirty && !force) || (!force && now - openWorldAlifeSavedAt < 30000)) return false;
+  const previous = savesDb.openWorldAlife;
+  try {
+    // A captured owner and its XP awards share one journaled saves snapshot.
+    // A crash can therefore recover both or neither, without phantom or lost XP.
+    savesDb.openWorldAlife = serializeOpenWorldAlifeState(state);
+    persistSaves();
+    state.dirty = false;
+    openWorldAlifeSavedAt = now;
+    return true;
+  } catch (error) {
+    try {
+      if (KROMKA_STATE_STORE.metrics().pendingRecovery && KROMKA_STATE_STORE.recover()) {
+        state.dirty = false;
+        openWorldAlifeSavedAt = now;
+        return true;
+      }
+    } catch (recoveryError) { console.error('Open-world A-Life journal recovery failed:', recoveryError); }
+    if (previous === undefined) delete savesDb.openWorldAlife;
+    else savesDb.openWorldAlife = previous;
+    console.error('Open-world A-Life state was not saved:', error);
+    return false;
+  }
+}
+
+function serverAlifeCaptureAwardLedger() {
+  if (!savesDb.alifeCaptureAwards || typeof savesDb.alifeCaptureAwards !== 'object')
+    savesDb.alifeCaptureAwards = {};
+  return savesDb.alifeCaptureAwards;
+}
+
+function serverAlifeMigrateLegacyPendingXp(state) {
+  const entries = Object.entries(state?.pendingXp || {}).filter(([characterId, xp]) => characterId && Number(xp) > 0);
+  if (!entries.length) return true;
+  const ledger = serverAlifeCaptureAwardLedger();
+  const inserted = [];
+  const oldPending = { ...state.pendingXp };
+  const oldDirty = state.dirty;
+  for (const [characterId, xp] of entries) {
+    const key = `legacy:${characterId}`;
+    if (ledger[key]) continue;
+    ledger[key] = { id: key, siteId: 'legacy', generation: 0, characterId,
+      xp: Math.max(1, Math.floor(Number(xp))), appliedAt: 0 };
+    inserted.push(key);
+  }
+  state.pendingXp = {};
+  state.dirty = true;
+  if (!serverSaveOpenWorldAlife(true)) {
+    for (const key of inserted) delete ledger[key];
+    state.pendingXp = oldPending;
+    state.dirty = oldDirty;
+    return false;
+  }
+  return true;
+}
+
+function serverAlifeApplyCaptureAwards(player) {
+  const characterId = String(player?.characterId || '');
+  const userId = String(player?.userId || '');
+  if (!characterId || !userId) return 0;
+  const ledger = serverAlifeCaptureAwardLedger();
+  const awards = pendingAlifeCaptureAwards(ledger, characterId);
+  if (!awards.length) return 0;
+  const row = ensureUserCharacterStore(userId)[characterId];
+  if (!row?.state) return 0;
+  const trial = { ...player,
+    progressionLedger: structuredClone(player.progressionLedger || {}),
+    skillRanks: { ...(player.skillRanks || {}) },
+    talentRanks: { ...(player.talentRanks || {}) },
+    traits: [...(player.traits || [])], taggedSkills: [...(player.taggedSkills || [])] };
+  const amount = awards.reduce((sum, award) => sum + Math.floor(Number(award.xp || 0)), 0);
+  serverGrantXp(trial, amount);
+  const previous = { state: row.state, summary: row.summary, updatedAt: row.updatedAt };
+  const now = Date.now();
+  row.state = mergeAuthoritativeCharacterState(row.state, row.state, trial, characterId);
+  row.summary = summarizeState(row.state, characterId);
+  row.updatedAt = now;
+  for (const award of awards) award.appliedAt = now;
+  let persisted = false;
+  try { persistSaves(); persisted = true; } catch (error) {
+    try {
+      persisted = KROMKA_STATE_STORE.metrics().pendingRecovery && KROMKA_STATE_STORE.recover();
+    } catch (recoveryError) { console.error('Open-world A-Life XP journal recovery failed:', recoveryError); }
+    if (!persisted) {
+    row.state = previous.state;
+    row.summary = previous.summary;
+    row.updatedAt = previous.updatedAt;
+    for (const award of awards) award.appliedAt = 0;
+    console.error('Open-world A-Life capture XP persist failed:', error);
+    return 0;
+    }
+  }
+  for (const key of ['xp', 'level', 'xpNeeded', 'skillPoints', 'perkPoints', 'maxHp', 'hp',
+    'maxAp', 'ap', 'traits', 'taggedSkills', 'talentRanks', 'progressionLedger', 'skillRanks'])
+    player[key] = trial[key];
+  if (socketIsLive(player.id) && player.roomId) emitAuthoritativePlayerState(player, { reason: 'alifeOutpostCapture' });
+  return awards.length;
+}
+
+
+function serverAlifeCacheId(lairId) {
+  return `ctr_alife_${String(lairId || '').replace(/[^a-zA-Z0-9_-]/g, '')}`.slice(0, 96);
+}
+
+function serverAlifeRemoveLairCache(lairId) {
+  const id = serverAlifeCacheId(lairId);
+  for (const room of rooms.values()) if (room.containers instanceof Map && room.containers.delete(id)) {
+    room.worldStateDirty = true;
+    emitWorldContainersSnapshot(room, true);
+  }
+}
+
+function serverAlifeSyncLairCaches(room, now = Date.now()) {
+  const cell = serverEcologyRoomCell(room);
+  if (!cell || !serverEcologyActive() || serverLiveSocketCount(room) <= 0) return;
+  const state = serverEcologyState();
+  const loc = roomLocation(room);
+  for (const lair of state.lairs.values()) {
+    if (lair.sx !== cell.sx || lair.sy !== cell.sy || lair.kind === 'huntingGround'
+      || !lair.destroyedAt || now >= lair.refillAt || lair.lootClaimed || !lair.loot?.length) continue;
+    const claimedRoom = rooms.get(lair.claimRoomId);
+    if (claimedRoom && serverLiveSocketCount(claimedRoom) > 0 && claimedRoom.id !== room.id) continue;
+    lair.claimRoomId = room.id;
+    const id = serverAlifeCacheId(lair.id);
+    for (const other of rooms.values()) if (other !== room && other.containers instanceof Map) other.containers.delete(id);
+    if (!(room.containers instanceof Map)) room.containers = new Map();
+    if (room.containers.has(id)) continue;
+    const anchor = Number.isFinite(lair.tx) && Number.isFinite(lair.tz)
+      ? { tx: lair.tx, tz: lair.tz } : loc.zone?.lairs?.[lair.slot] || null;
+    if (!anchor) continue;
+    const dims = roomTileDims(room);
+    const safe = findRoomSafeSpawnTile(room, Number(anchor.tx), Number(anchor.tz), {
+      maxRadius: 3, radius: 0.6, minEnemyDistance: 0.5, minPlayerDistance: 0
+    }) || anchor;
+    const point = tileToWorld(Number(safe.tx), Number(safe.tz), dims);
+    room.containers.set(id, {
+      id, defId: 'alife_lair_cache', name: 'Разорённое логово', tier: 'basic',
+      alifeLairId: lair.id, tx: safe.tx, tz: safe.tz, x: point.x, z: point.z,
+      locked: false, terminalLocked: false, loot: lair.loot.map(row => ({ ...row })), createdAt: lair.destroyedAt
+    });
+    room.worldStateDirty = true;
+    emitWorldContainersSnapshot(room, true);
+  }
+}
+
+function serverAlifeRecordLairLoot(room, container) {
+  if (!container?.alifeLairId || !dangerEcologyState) return;
+  const lair = dangerEcologyState.lairs.get(container.alifeLairId);
+  if (!lair || lair.claimRoomId !== room.id) return;
+  lair.loot = (container.loot || []).map(row => ({ id: row.id, qty: row.qty }));
+  lair.lootClaimed = lair.loot.length === 0;
+  dangerEcologyState.dirty = true;
+  serverSaveEcology(true);
+}
+
+function serverAlifePublicSnapshot(room, now = Date.now()) {
+  if (!room) return null;
+  const locationId = room.locationId;
+  const cached = alifeSnapshotCache.get(locationId);
+  if (cached?.version === alifePublicRevision) return cached.value;
+  const ecology = serverEcologyActive() ? serverEcologyState() : null;
+  const loc = roomLocation(room);
+  const zone = serverEcologyZones().byId.get(locationId);
+  const anchors = Array.isArray(loc?.zone?.lairs) ? loc.zone.lairs : [];
+  const sites = [];
+  if (zone && ecology) for (const lair of ecology.lairs.values()) {
+    if (lair.sx !== zone.col || lair.sy !== zone.row) continue;
+    const authored = lair.kind === 'huntingGround' ? lair : anchors[lair.slot % Math.max(1, anchors.length)];
+    const point = Number.isFinite(lair.x) && Number.isFinite(lair.z)
+      ? { x: lair.x, z: lair.z }
+      : Number.isFinite(lair.tx) && Number.isFinite(lair.tz)
+        ? tileToWorld(lair.tx, lair.tz, roomTileDims(room)) : authored;
+    if (!point || !Number.isFinite(Number(point.x)) || !Number.isFinite(Number(point.z))) continue;
+    const active = [...ecology.groups.values()].some(group => group.lairId === lair.id);
+    sites.push({ id: lair.id, kind: lair.kind || 'lair', locationId,
+      x: Number(point.x), z: Number(point.z), radius: lair.radius || 12,
+      active: lair.kind === 'huntingGround' || active,
+      respawnAt: !active && lair.kind !== 'huntingGround' ? lair.refillAt : 0,
+      version: alifePublicRevision });
+  }
+  const state = serverOpenWorldAlifeState();
+  for (const def of OPEN_WORLD_ALIFE.outposts) if (def.locationId === locationId) {
+    sites.push(alifePublicOutpost(def, state.outposts.get(def.id)));
+  }
+  const captureTasks = OPEN_WORLD_ALIFE.outposts.filter(def => def.locationId === locationId)
+    .map(def => alifePublicCaptureTask(def, state.outposts.get(def.id)));
+  const value = { version: alifePublicRevision, locationId, serverNow: now, sites, captureTasks };
+  alifeSnapshotCache.set(locationId, { version: alifePublicRevision, value });
+  return value;
+}
+
+function serverAlifeEmitLocation(locationId, reason = 'siteChanged') {
+  alifePublicRevision += 1;
+  alifeSnapshotCache.clear();
+  for (const room of rooms.values()) {
+    if (room.locationId !== locationId || serverLiveSocketCount(room) <= 0) continue;
+    room.worldStateDirty = true;
+    io.to(room.id).emit('alife:update', serverAlifePublicSnapshot(room));
+  }
+  // The world-map cache carries owner and capture percent, not individual NPCs.
+  worldMapResponse = null;
+}
+
+function serverPlayerInsideAlifeOutpost(player) {
+  if (!player) return false;
+  return OPEN_WORLD_ALIFE.outposts.some(def => def.locationId === player.locationId
+    && alifeWithinOutpost(def, player));
+}
+
+function serverAlifeWorldMapSites(zoneId) {
+  const zone = serverEcologyZones().byId.get(zoneId);
+  if (!zone) return [];
+  const sites = [];
+  for (const def of OPEN_WORLD_ALIFE.huntingGrounds) if (def.locationId === zoneId) {
+    sites.push({ id: def.id, kind: 'huntingGround', u: Math.max(0, Math.min(1, (def.x + 160) / 320)),
+      v: Math.max(0, Math.min(1, (def.z + 160) / 320)), active: true });
+  }
+  const runtime = serverOpenWorldAlifeState();
+  for (const def of OPEN_WORLD_ALIFE.outposts) {
+    const place = (zone.places || []).find(row => row.locationId === def.siteLocationId);
+    if (!place) continue;
+    const current = alifePublicOutpost(def, runtime.outposts.get(def.id));
+    sites.push({ id: def.id, kind: 'outpost', u: Number(place.u), v: Number(place.v),
+      active: true, ownerFaction: current.ownerFaction, capturePercent: current.capturePercent });
+  }
+  return sites;
+}
+
+function serverAlifeEnsureOutpostActors(room, def, runtime) {
+  if (!room || serverLiveSocketCount(room) <= 0) return;
+  const actors = [...room.enemies.values()].filter(enemy => enemy?.alifeOutpostId === def.id);
+  let changed = false;
+  for (const actor of actors) if (actor.alifeOutpostGeneration !== runtime.garrisonGeneration) {
+    changed = roomEnemyDelete(room, actor.id) || changed;
+  }
+  const current = [...room.enemies.values()].filter(enemy => enemy?.alifeOutpostId === def.id);
+  const create = (index, boss) => {
+    const angle = index * Math.PI * 2 / def.garrisonSize;
+    const x = def.x + (boss ? 0 : Math.cos(angle) * 7);
+    const z = def.z + (boss ? 0 : Math.sin(angle) * 7);
+    const dims = roomTileDims(room);
+    const tx = Math.round((x + Number(dims.w || 1)) / 2);
+    const tz = Math.round((z + Number(dims.h || 1)) / 2);
+    const actor = spawnServerEnemy(room, {
+      typeIndex: 0, name: boss ? 'Командир аванпоста' : 'Защитник аванпоста',
+      faction: runtime.ownerFaction, territoryFactionId: runtime.ownerFaction,
+      role: boss ? 'boss' : 'guard', hostileToPlayer: false,
+      tx, tz, force: true, requirePreferredSpawn: true, maxSpawnSearchRadius: 6,
+      minEnemyDistance: 2.5, minPlayerDistance: 1.5
+    });
+    if (!actor) return null;
+    changed = true;
+    actor.alifeOutpostId = def.id;
+    actor.alifeOutpostGeneration = runtime.garrisonGeneration;
+    actor.alifeOutpostBoss = boss;
+    actor.ecologySiteId = def.id;
+    actor.ecologyVisualAction = 'guard';
+    actor.alifeBaseMaxHp = Math.max(1, Number(actor.maxHp || 1)) * (boss ? 3 : 1);
+    actor.maxHp = actor.alifeBaseMaxHp;
+    actor.hp = actor.maxHp;
+    actor.homeX = actor.x;
+    actor.homeZ = actor.z;
+    return actor;
+  };
+  if (runtime.bossAlive && !current.some(actor => actor.alifeOutpostBoss)) create(0, true);
+  for (let index = current.filter(actor => !actor.alifeOutpostBoss).length;
+    index < def.garrisonSize; index += 1) create(index, false);
+  if (changed) {
+    refreshRoomWorldState(room);
+    emitEnemySnapshot(room, true);
+  }
+}
+
+function serverAlifeSyncPatrolActors(room, def, parties) {
+  if (!room) return [];
+  const onsite = (parties || []).filter(party => party?.kind === 'patrol' && party.state === 'onsite'
+    && String(party.onsiteSiteId || party.destinationSiteId || '') === def.siteLocationId
+    && Number(party.members || 0) > 0);
+  const activeIds = new Set();
+  let changed = false;
+  for (const party of onsite) {
+    const partyId = worldTransferId(party.id || '');
+    const zone = typeof WASTELAND_SIM.worldZoneById === 'function'
+      ? WASTELAND_SIM.worldZoneById(party.onsiteZoneId || '') : null;
+    if (!partyId || !zone || zone.status !== 'active' || !zone.details?.onsiteParty) continue;
+    activeIds.add(partyId);
+    // The existing world-party encounter owns these actors and their losses.
+    // Materialize once per actor roster. Reapplying the encounter every tick
+    // resets work targets and causes redundant full snapshots to 100 viewers.
+    const expectedActorIds = (Array.isArray(zone.details.actors) ? zone.details.actors : [])
+      .filter(actor => !(zone.details.hostileOnsiteRaid && actor?.side === 'defender'))
+      .map(actor => String(actor?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64))
+      .filter(Boolean);
+    const loadedActorIds = new Set([...room.enemies.values()]
+      .filter(actor => actor && String(actor.worldZoneId || '') === String(zone.id || ''))
+      .map(actor => String(actor.worldBattleActorId || '')));
+    if (expectedActorIds.some(id => !loadedActorIds.has(id))) setupWorldZoneBattleRoom(room, zone);
+    for (const actor of [...room.enemies.values()]) {
+      if (!actor || actor.dead || String(actor.worldZoneId || '') !== String(zone.id || '')) continue;
+      if (zone.details.hostileOnsiteRaid && actor.worldBattleSide === 'defender'
+        && worldTransferId(actor.onsitePartyId || '') !== partyId && !actor.alifeOutpostId) {
+        // The permanent A-Life boss and garrison replace legacy site guards.
+        roomEnemyDelete(room, actor.id);
+        changed = true;
+        continue;
+      }
+      if (worldTransferId(actor.onsitePartyId || '') !== partyId) continue;
+      const firstSitePlacement = actor.alifePatrolOutpostId !== def.id;
+      actor.alifePatrolOutpostId = def.id;
+      actor.ecologySiteId = def.id;
+      actor.stationary = false;
+      const angle = ecologyHash01(`${partyId}:${actor.worldBattleActorId || actor.id}`) * Math.PI * 2;
+      const radius = Math.min(9, def.radius * 0.45)
+        + (ecologyHash01(`${partyId}:${actor.worldBattleActorId || actor.id}:radius`) > 0.5 ? 1 : 0);
+      const workX = def.x + Math.cos(angle) * radius;
+      const workZ = def.z + Math.sin(angle) * radius;
+      if (firstSitePlacement) {
+        // The persistent party is already onsite. When a viewer loads the
+        // sector, represent its members at distinct points near the post,
+        // rather than replaying a whole-sector walk from a distant gate.
+        const dims = roomTileDims(room);
+        const spawnX = def.x + Math.cos(angle) * Math.min(def.radius * 0.7, 14);
+        const spawnZ = def.z + Math.sin(angle) * Math.min(def.radius * 0.7, 14);
+        const preferred = worldToTile(spawnX, spawnZ, dims);
+        const safe = findRoomSafeSpawnTile(room, preferred.tx, preferred.tz, {
+          maxRadius: 7, radius: 0.55, minEnemyDistance: 1.8, minPlayerDistance: 1.2
+        });
+        if (safe) {
+          const point = tileToWorld(safe.tx, safe.tz, dims);
+          actor.x = point.x;
+          actor.z = point.z;
+          actor.vx = 0;
+          actor.vz = 0;
+          actor.onsitePhase = 'working';
+          changed = true;
+        }
+      }
+      if (actor.onsiteWorkX !== workX || actor.onsiteWorkZ !== workZ) {
+        actor.onsiteWorkX = workX;
+        actor.onsiteWorkZ = workZ;
+        actor.homeX = workX;
+        actor.homeZ = workZ;
+        changed = true;
+      }
+      actor.onsiteStationaryAtWork = false;
+    }
+  }
+  for (const actor of room.enemies.values()) if (actor?.alifePatrolOutpostId === def.id
+    && !activeIds.has(worldTransferId(actor.onsitePartyId || ''))) {
+    actor.alifePatrolOutpostId = '';
+    if (actor.ecologySiteId === def.id) actor.ecologySiteId = '';
+    changed = true;
+  }
+  if (changed) emitEnemySnapshot(room, true);
+  return [...room.enemies.values()].filter(actor => actor && !actor.dead && actor.alifePatrolOutpostId === def.id);
+}
+
+function serverTickOpenWorldAlife(now = Date.now()) {
+  const state = serverOpenWorldAlifeState();
+  if (!serverAlifeMigrateLegacyPendingXp(state)) return;
+  const storm = KROMKA_RADIATION_STORM.at(now);
+  const simParties = Object.values(WASTELAND_SIM.state()?.parties || {});
+  for (const def of OPEN_WORLD_ALIFE.outposts) {
+    const runtime = state.outposts.get(def.id);
+    const room = [...rooms.values()].find(row => row.locationId === def.locationId && serverLiveSocketCount(row) > 0) || null;
+    if (room) serverAlifeEnsureOutpostActors(room, def, runtime);
+    const livePatrolActors = room ? serverAlifeSyncPatrolActors(room, def, simParties) : [];
+    const actors = room ? [...room.enemies.values()].filter(enemy => enemy?.alifeOutpostId === def.id
+      && enemy.alifeOutpostGeneration === runtime.garrisonGeneration) : [];
+    if (runtime.bossAlive && actors.some(actor => actor.alifeOutpostBoss && actor.dead)) {
+      alifeSetOutpostBossAlive(state, def, false);
+      serverAlifeEmitLocation(def.locationId, 'bossDefeated');
+    }
+    const playersHere = room ? livePlayersInRoom(room).filter(player => !player.dead).map(player => ({
+      id: player.characterId || player.id, faction: serverPlayerTerritoryFactionId(player),
+      x: player.x, z: player.z, alive: true
+    })) : [];
+    const attackers = playersHere.filter(player => player.faction && player.faction !== runtime.ownerFaction
+      && alifeWithinOutpost(def, player)).length;
+    for (const actor of actors) if (!actor.dead) {
+      // The permanent outpost defenders scale with the number of attacking
+      // players standing inside its boundary. The pure rule keeps the current
+      // HP unchanged when the maximum grows; increasing the attacking party
+      // cannot heal a damaged boss, and leaving cannot raise a defender above
+      // the newly reduced maximum.
+      alifeScaleDefenderHealth(actor, attackers);
+    }
+    const point = storm?.phase === 'active' ? serverStormPointForLocation(def.locationId) : null;
+    const stormInside = !!point && sampleRadiationStorm(storm, point.x, point.y, now).inside;
+    // Patrols travel in the persistent world simulation even when no player
+    // has loaded this scene. Their on-site members can conduct an abstract
+    // siege offscreen; the live room still owns detailed NPC combat.
+    const patrols = room ? livePatrolActors.map(actor => ({ faction: serverCombatFactionGroup(actor.faction), x: actor.x, z: actor.z }))
+      : simParties.filter(party => party?.kind === 'patrol' && party.state === 'onsite'
+      && String(party.onsiteSiteId || party.destinationSiteId || '') === def.siteLocationId
+      && Number(party.members || 0) > 0).flatMap(party => {
+      const faction = serverCombatFactionGroup(party.faction || '');
+      return Array.from({ length: Math.min(12, Math.floor(Number(party.members || 0))) }, () =>
+        ({ faction, x: def.x, z: def.z }));
+    });
+    const before = runtime.version;
+    const beforeRevision = state.revision;
+    const beforeDirty = state.dirty;
+    const beforeRuntime = { ...runtime, captureMs: { ...runtime.captureMs },
+      contributionMs: { ...runtime.contributionMs } };
+    const events = alifeTickOutpost(state, def, now, { players: playersHere,
+      guards: actors.filter(actor => !actor.dead).map(actor => ({ faction: actor.faction, x: actor.x, z: actor.z })),
+      patrols, offscreen: !room, stormInside });
+    for (const event of events) if (event.type === 'captured') {
+      const ledger = serverAlifeCaptureAwardLedger();
+      const inserted = stageAlifeCaptureAwards(ledger, def.id, runtime.garrisonGeneration,
+        event.contributions, def.captureXp);
+      state.dirty = true;
+      if (!serverSaveOpenWorldAlife(true, now)) {
+        for (const key of inserted) delete ledger[key];
+        Object.assign(runtime, beforeRuntime);
+        state.revision = beforeRevision;
+        state.dirty = beforeDirty;
+        continue;
+      }
+      for (const characterId of Object.keys(event.contributions)) {
+        const player = [...players.values()].find(row => row.characterId === characterId && socketIsLive(row.id));
+        if (player) serverAlifeApplyCaptureAwards(player);
+      }
+    }
+    if (runtime.version !== before) serverAlifeEmitLocation(def.locationId, 'outpostTick');
+    if (events.some(event => event.type === 'stormRaiderTakeover')) serverSaveOpenWorldAlife(true, now);
+  }
+  if (!serverTickOpenWorldAlife.lastAwardRetryAt || now - serverTickOpenWorldAlife.lastAwardRetryAt >= 5000) {
+    serverTickOpenWorldAlife.lastAwardRetryAt = now;
+    for (const player of players.values()) if (pendingAlifeCaptureAwards(savesDb.alifeCaptureAwards, player.characterId).length)
+      serverAlifeApplyCaptureAwards(player);
+  }
+  serverSaveOpenWorldAlife(false, now);
+}
+
 function serverEcologyEnemyType(type = '') {
   if (ECOLOGY_HUMAN_TYPES.has(type)) return SERVER_ENEMY_TYPES[0] || null;
   const index = serverEnemyTypeIndexByCreatureId(type);
@@ -2508,18 +3058,25 @@ function serverEcologySpawnOptions(species, member, group = null) {
   for (const [slot, itemId] of Object.entries(spec.equipment || {})) {
     if (SERVER_ITEM_IDS.has(itemId)) equipment[slot] = itemId;
   }
-  // Путники — люди Лиги тракта: на игрока не нападают, не торгуют и не
-  // заговаривают, носят ровно своё снаряжение и дерутся с налётчиками и тварями.
-  if (species.kind === 'traveller') {
+  // Путники носят своё снаряжение. Караванщик торгует из отдельного каталога;
+  // ассортимент не становится добычей после нападения.
+  if (species.kind === 'traveller' && human) {
     const role = spec.role || 'guard';
+    const caravanMerchant = species.travel?.mode === 'caravan' && role === 'merchant';
+    const trade = caravanMerchant ? serverTraderProfileById('caravan') : null;
     const traveller = {
       typeIndex: 0,
       name: member.name || spec.name || undefined,
       // Патруль фракции носит фракцию своего отряда, путники Лиги — свою.
       faction: group?.faction || species.faction || 'tract_league',
       role,
-      hostileToPlayer: false,
-      canDialogue: false,
+      hostileToPlayer: species.hostile,
+      canDialogue: caravanMerchant,
+      traderProfile: caravanMerchant ? 'caravan' : undefined,
+      traderStock: trade?.stock,
+      traderBuyInterests: trade?.buyInterests,
+      caps: trade?.caps,
+      personalTrade: false,
       authoredEquipment: Object.keys(equipment).length ? equipment : undefined
     };
     const look = serverEncounterActorVisualModel(traveller);
@@ -2574,6 +3131,8 @@ function serverEcologyZoneAnchor(loc, group, state) {
   const lairs = Array.isArray(zone.lairs) ? zone.lairs : [];
   const areas = Array.isArray(zone.spawnAreas) ? zone.spawnAreas : [];
   const lair = state.lairs.get(group.lairId);
+  if (lair && lair.sx === zone.col && lair.sy === zone.row
+    && Number.isFinite(lair.tx) && Number.isFinite(lair.tz)) return { tx: lair.tx, tz: lair.tz };
   if (lair && lair.sx === zone.col && lair.sy === zone.row && lairs.length) return lairs[lair.slot % lairs.length];
   const pool = areas.length ? areas : lairs;
   return pool.length ? pool[Math.floor(ecologyHash01(`${group.id}:anchor`) * pool.length)] : null;
@@ -2598,26 +3157,50 @@ function serverEcologyMaterialize(room, group, options = {}) {
   const travelling = species.kind === 'traveller' ? ecologyTravellerNextDirection(group) : '';
   const onTheRoad = !entry && travelling ? serverEcologyTravellerPoint(loc, dims, group, species) : null;
   const placed = entry || onTheRoad || serverEcologyZoneAnchor(loc, group, state);
-  const anchor = placed && Number.isFinite(Number(placed.tx))
-    ? { tx: Number(placed.tx), tz: Number(placed.tz) }
-    : { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  if (!placed || placed.tx == null || placed.tz == null
+    || !Number.isFinite(Number(placed.tx)) || !Number.isFinite(Number(placed.tz))) return 0;
+  const anchor = { tx: Number(placed.tx), tz: Number(placed.tz) };
   const hub = loc.spawn && Number.isFinite(Number(loc.spawn.tx)) ? tileToWorld(Number(loc.spawn.tx), Number(loc.spawn.tz), dims) : null;
-  const center = hub || serverEcologyRoomCenter(room);
+  const center = hub || tileToWorld(anchor.tx, anchor.tz, dims);
+  const guardingLair = DANGER_ECOLOGY.stationaryLairs && !!group.lairId;
   let spawned = 0;
-  for (const member of group.members) {
+  for (const [memberIndex, member] of group.members.entries()) {
+    // Каждому охраннику выделена своя точка вокруг логова. Повторный вход
+    // использует те же места; поиск коллизий остаётся на сервере.
+    const angle = ecologyHash01(`${group.lairId || group.id}:${member.id}:angle`) * Math.PI * 2;
+    const radius = 2 + memberIndex % 3;
+    const memberTx = Math.round(anchor.tx + Math.cos(angle) * radius);
+    const memberTz = Math.round(anchor.tz + Math.sin(angle) * radius);
     const enemy = spawnServerEnemy(room, {
       ...serverEcologySpawnOptions(species, member, group),
-      tx: anchor.tx,
-      tz: anchor.tz,
+      tx: memberTx,
+      tz: memberTz,
       force: true,
-      maxSpawnSearchRadius: 6,
-      minPlayerDistance: entry ? 5 : 12
+      maxSpawnSearchRadius: guardingLair ? 8 : 6,
+      minEnemyDistance: guardingLair ? 3 : 1.25,
+      minPlayerDistance: guardingLair ? 2.5 : (entry ? 5 : 12),
+      requirePreferredSpawn: true
     });
     if (!enemy) continue;
     const ratio = Math.max(0.05, Math.min(1, Number(member.hp || 0) / Math.max(1, Number(member.maxHp || 1))));
     enemy.hp = Math.max(1, Math.round(Number(enemy.maxHp || member.maxHp || 1) * ratio));
     enemy.ecologyGroupId = group.id;
     enemy.ecologyMemberId = member.id;
+    enemy.npcGrenadeCooldownUntil = Math.max(0, Number(group.grenadeMemberReadyAt?.[member.id] || 0));
+    const npcArtifact = npcArtifactClaimForMember(serverArtifactBirthStore(), group.id, member.id);
+    enemy.ecologyArtifactClaimId = npcArtifact && !pendingNpcArtifactClaims.has(npcArtifact.id) ? npcArtifact.id : '';
+    enemy.ecologySiteId = group.lairId || '';
+    enemy.ecologySiteKind = state.lairs.get(group.lairId)?.kind || '';
+    if (species.travel?.mode === 'caravan' && enemy.role === 'merchant') {
+      enemy.ecologyCaravanMerchant = true;
+      enemy.ecologyCaravanRewardTier = serverRoomTier(room);
+    }
+    if (guardingLair) {
+      enemy.ecologyVisualAction = 'emerge';
+      enemy.ecologyVisualActionStartedAt = Date.now();
+      enemy.homeX = enemy.x;
+      enemy.homeZ = enemy.z;
+    }
     const placePortal = !travelling && entry && group.dest ? serverEcologyPlacePortal(loc, group.dest) : null;
     if (travelling) {
       serverEcologyStartTransit(room, enemy, travelling);
@@ -2680,6 +3263,7 @@ function serverEcologyMaterializeCell(room) {
   for (const group of ecologyGroupsAt(state, cell.sx, cell.sy)) {
     if (serverEcologyMaterialize(room, group) > 0) count += 1;
   }
+  serverAlifeSyncLairCaches(room);
   serverEcologyShowAftermath(room, cell, state);
   return count;
 }
@@ -2800,12 +3384,28 @@ function serverEcologyNoteDeath(room, enemy) {
   if (!enemy?.ecologyGroupId || enemy.ecologyDeathNoted || !dangerEcologyState) return;
   enemy.ecologyDeathNoted = true;
   const groupId = enemy.ecologyGroupId;
-  const result = ecologyMemberKilled(dangerEcologyState, DANGER_ECOLOGY, groupId, enemy.ecologyMemberId);
+  const now = Date.now();
+  const result = ecologyMemberKilled(dangerEcologyState, DANGER_ECOLOGY, groupId, enemy.ecologyMemberId, now);
   if (!result.ok) return;
+  if (consumeNpcArtifactClaim(serverArtifactBirthStore(), groupId, enemy.ecologyMemberId, now)) {
+    try { persistSaves(); } catch (error) { console.error('NPC artifact death persist failed:', error); }
+  }
   const elsewhere = serverEcologyRoomsHolding(groupId, room);
   for (const other of elsewhere) serverEcologyDespawn(other, groupId, result.destroyed ? '' : enemy.ecologyMemberId);
   if (result.destroyed) {
     if (room?.ecologyGroupIds instanceof Set) room.ecologyGroupIds.delete(groupId);
+    if (result.group.lairId) {
+      const lair = dangerEcologyState.lairs.get(result.group.lairId);
+      if (lair && lair.kind !== 'huntingGround') {
+        const tier = room ? serverRoomTier(room) : 1;
+        lair.loot = (OPEN_WORLD_ALIFE.lairRewards[tier] || OPEN_WORLD_ALIFE.lairRewards[1] || [])
+          .filter(row => SERVER_ITEM_IDS.has(row.id)).map(row => ({ ...row }));
+        lair.lootClaimed = lair.loot.length === 0;
+        if (room) serverAlifeSyncLairCaches(room);
+      }
+      const zone = serverEcologyZoneAt(result.group.sx, result.group.sy);
+      if (zone) serverAlifeEmitLocation(zone.id, 'siteCleared');
+    }
     return;
   }
   if (result.fleeing) {
@@ -2931,6 +3531,7 @@ function serverEcologyStartLeaving(room, group, direction) {
     enemy.ecologyPhaseSince = now;
     enemy.ecologyProgressAt = now;
     enemy.ecologyBestDistance = Infinity;
+    enemy.ecologyWatchedLeavingMs = 0;
     enemy.ecologyTargetX = exit.x;
     enemy.ecologyTargetZ = exit.z;
     enemy.ecologyExitDirection = direction;
@@ -3003,6 +3604,16 @@ function serverEcologyOccupiedRooms(sx, sy) {
  */
 function updateEcologyActorLifecycle(room = null, enemy = null, dt = 0) {
   if (!room || !enemy?.ecologyGroupId || enemy.dead) return false;
+  if (enemy.ecologyVisualAction === 'emerge') {
+    const age = Date.now() - Number(enemy.ecologyVisualActionStartedAt || 0);
+    if (age < 1500 && !enemy.targetId && !enemy.factionTargetId) {
+      enemy.aiState = 'idle';
+      enemy.vx = 0;
+      enemy.vz = 0;
+      return true;
+    }
+    enemy.ecologyVisualAction = 'guard';
+  }
   const phase = String(enemy.ecologyPhase || '');
   if (!phase) return false;
   const tx = Number(enemy.ecologyTargetX);
@@ -3035,6 +3646,13 @@ function updateEcologyActorLifecycle(room = null, enemy = null, dt = 0) {
   if (phase === 'leaving') {
     enemy.aiState = 'return';
     enemy.targetId = '';
+    // A throttled room can wait much longer than its clamped movement dt.
+    // Being cornered requires the same duration of actual watched AI motion,
+    // rather than wall time spent waiting for another room's dispatch budget.
+    const watched = serverEcologyActorWatched(room, enemy);
+    enemy.ecologyWatchedLeavingMs = watched
+      ? Number(enemy.ecologyWatchedLeavingMs || 0) + Math.max(0, Number(dt) || 0) * 1000
+      : 0;
     const distance = moveEnemyTowards(room, enemy, tx, tz, Math.max(1.35, Number(enemy.speed || 1.8)), dt, { separationWeight: 0.3 });
     if (distance < Number(enemy.ecologyBestDistance ?? Infinity) - 1) {
       enemy.ecologyBestDistance = distance;
@@ -3051,7 +3669,7 @@ function updateEcologyActorLifecycle(room = null, enemy = null, dt = 0) {
     }
     // Застряла посреди зоны или игрок от неё не отстаёт: бегство кончилось,
     // особь остаётся и дерётся.
-    if (stalled || (now - Number(enemy.ecologyPhaseSince) > ECOLOGY_LEAVE_CORNERED_MS && serverEcologyActorWatched(room, enemy))) {
+    if (stalled || enemy.ecologyWatchedLeavingMs > ECOLOGY_LEAVE_CORNERED_MS) {
       enemy.ecologyPhase = '';
       enemy.ecologyPhaseSince = 0;
       enemy.aiState = 'idle';
@@ -3062,6 +3680,93 @@ function updateEcologyActorLifecycle(room = null, enemy = null, dt = 0) {
     return true;
   }
   return false;
+}
+
+function serverNpcArtifactCombatAbility(enemy, now = Date.now()) {
+  if (!enemy || enemy.dead || !enemy.ecologyArtifactClaimId) return false;
+  const claim = serverArtifactBirthStore().npcClaims?.[enemy.ecologyArtifactClaimId];
+  if (!claim || claim.consumedAt || pendingNpcArtifactClaims.has(claim.id)) return false;
+  if (enemy.ecologyVisualAction === 'ability') {
+    if (now - Number(enemy.ecologyVisualActionStartedAt || 0) < 1100) {
+      enemy.vx = 0;
+      enemy.vz = 0;
+      return true;
+    }
+    enemy.ecologyVisualAction = '';
+  }
+  if (Number(enemy.hp || 0) >= Number(enemy.maxHp || 1) * 0.7
+    || !(enemy.targetId || enemy.factionTargetId)
+    || now < Number(enemy.ecologyArtifactCooldownUntil || 0)) return false;
+  const type = KROMKA_ARTIFACT_INDEXES.byId?.[claim.typeId];
+  if (!type || type.itemId !== claim.itemId) return false;
+  if (type.family === 'bio') {
+    const healing = Math.max(4, Math.round(Number(enemy.maxHp || 1) * 0.14));
+    enemy.hp = Math.min(enemy.maxHp, Number(enemy.hp || 0) + healing);
+  } else {
+    // Defensive surge is read by serverNpcArmorProfile for every damage path.
+    enemy.ecologyArtifactGuardUntil = now + 8000;
+  }
+  enemy.ecologyArtifactCooldownUntil = now + 30000;
+  enemy.ecologyVisualAction = 'ability';
+  enemy.ecologyVisualActionStartedAt = now;
+  enemy.vx = 0;
+  enemy.vz = 0;
+  return true;
+}
+
+function serverUpdateStalkerArtifactSearch(room, enemy, dt, now = Date.now()) {
+  if (!room || !enemy || enemy.dead || !enemy.ecologyGroupId || enemy.ecologyArtifactClaimId
+    || enemy.ecologyPhase || enemy.targetId || enemy.factionTargetId) return false;
+  const group = dangerEcologyState?.groups.get(enemy.ecologyGroupId);
+  if (group?.speciesId !== 'neutral_stalkers' || group.state !== 'rest'
+    || !OPEN_WORLD_ALIFE.anomalyRoutes.includes(room.locationId)) return false;
+  const births = liveArtifactBirths(serverArtifactBirthStore(), room.locationId);
+  const reserved = new Set([...room.enemies.values()].filter(actor => actor !== enemy && !actor.dead
+    && actor.ecologyArtifactSearchId).map(actor => actor.ecologyArtifactSearchId));
+  let birth = births.find(row => row.id === enemy.ecologyArtifactSearchId) || null;
+  if (!birth) {
+    birth = births.filter(row => !reserved.has(row.id) && !KROMKA_CLAIMED_ARTIFACT_IDS.has(row.id))
+      .sort((a, b) => Math.hypot(a.x - enemy.x, a.z - enemy.z) - Math.hypot(b.x - enemy.x, b.z - enemy.z))[0] || null;
+    if (!birth) {
+      enemy.ecologyArtifactSearchId = '';
+      if (['search', 'gather'].includes(enemy.ecologyVisualAction)) enemy.ecologyVisualAction = '';
+      return false;
+    }
+    enemy.ecologyArtifactSearchId = birth.id;
+    enemy.ecologyArtifactSearchStartedAt = now;
+    enemy.ecologyArtifactGatherStartedAt = 0;
+    enemy.ecologyVisualAction = 'search';
+    enemy.ecologyVisualActionStartedAt = now;
+  }
+  enemy.aiState = 'idle';
+  if (now - Number(enemy.ecologyArtifactSearchStartedAt || 0) < 1000) {
+    enemy.vx = 0;
+    enemy.vz = 0;
+    return true;
+  }
+  const distance = Math.hypot(birth.x - enemy.x, birth.z - enemy.z);
+  if (distance > 2.2) {
+    enemy.ecologyVisualAction = 'patrol';
+    moveEnemyTowards(room, enemy, birth.x, birth.z, Math.max(1, Number(enemy.speed || 1.8) * 0.65), dt,
+      { separationWeight: 0.35 });
+    enemy.homeX = enemy.x;
+    enemy.homeZ = enemy.z;
+    return true;
+  }
+  if (!enemy.ecologyArtifactGatherStartedAt) {
+    enemy.ecologyArtifactGatherStartedAt = now;
+    enemy.ecologyVisualAction = 'gather';
+    enemy.ecologyVisualActionStartedAt = now;
+  }
+  enemy.vx = 0;
+  enemy.vz = 0;
+  if (now - enemy.ecologyArtifactGatherStartedAt < 1800) return true;
+  const claim = serverNpcClaimBornArtifact(room.locationId, birth.id, group.id, enemy.ecologyMemberId, now);
+  if (claim) enemy.ecologyArtifactClaimId = claim.id;
+  enemy.ecologyArtifactSearchId = '';
+  enemy.ecologyArtifactGatherStartedAt = 0;
+  enemy.ecologyVisualAction = '';
+  return true;
 }
 
 const ECOLOGY_FIGHT_STATES = new Set(['chase', 'attack', 'reload', 'pressure', 'factionCombat', 'stagger']);
@@ -3146,7 +3851,8 @@ function serverLocationPublicName(locationId = '') {
  * в занятые зоны — в каждый их канал с игроками.
  */
 function serverTickEcology(now = Date.now()) {
-  if (!serverEcologyActive()) return 0;
+  if (!serverEcologyActive()) { serverTickOpenWorldAlife(now); return 0; }
+  serverCommitNpcArtifactClaims();
   const state = serverEcologyState();
   const occupied = new Map();
   for (const room of rooms.values()) {
@@ -3168,6 +3874,10 @@ function serverTickEcology(now = Date.now()) {
     occupiedCells: [...occupied.values()].map(row => row.cell),
     createMember: serverEcologyMemberStats,
     cities: serverEcologyCities,
+    pointsOfInterest: () => serverEcologyRouteStops('poi'),
+    roadStops: () => serverEcologyRouteStops('road'),
+    anomalyStops: () => serverEcologyRouteStops('anomaly'),
+    tradeStops: () => serverEcologyRouteStops('trade'),
     neighbors: serverEcologyNeighbors,
     through: serverEcologyPassable,
     hostile: serverEcologySpeciesHostile
@@ -3176,14 +3886,51 @@ function serverTickEcology(now = Date.now()) {
   const events = tickEcology(state, DANGER_ECOLOGY, ctx, now);
   let arrivals = 0;
   for (const event of events) {
+    if (event.type === 'clash') {
+      let consumed = false;
+      for (const dead of event.casualties || []) {
+        if (consumeNpcArtifactClaim(serverArtifactBirthStore(), dead.groupId, dead.memberId, now)) consumed = true;
+      }
+      if (consumed) {
+        try { persistSaves(); } catch (error) { console.error('NPC artifact clash persist failed:', error); }
+      }
+    }
+    if (event.type === 'spawn') {
+      const group = state.groups.get(event.groupId);
+      if (group?.lairId) {
+        serverAlifeRemoveLairCache(group.lairId);
+        const zone = serverEcologyZoneAt(event.sx, event.sy);
+        if (zone) serverAlifeEmitLocation(zone.id, 'siteRespawned');
+      }
+    }
     if (event.type !== 'arrive') continue;
     const group = state.groups.get(event.groupId);
     for (const room of occupied.get(ecologyCellKey(event.sx, event.sy))?.rooms || []) {
       if (group && serverEcologyMaterialize(room, group, { direction: event.direction }) > 0) arrivals += 1;
     }
   }
+  // Empty anomaly zones still have an economy. A resting stalker searches for
+  // one minute, then atomically takes one live born artifact. Loaded rooms use
+  // the detailed walking and gathering path instead.
+  const stalkerSearchMs = Math.max(1000, Number(DANGER_ECOLOGY.speciesById.neutral_stalkers?.travel?.artifactSearchSeconds || 60) * 1000);
+  for (const group of state.groups.values()) {
+    if (group.speciesId !== 'neutral_stalkers' || group.online || group.state !== 'rest') {
+      if (group.speciesId === 'neutral_stalkers') group.artifactSearchReadyAt = 0;
+      continue;
+    }
+    const zone = serverEcologyZoneAt(group.sx, group.sy);
+    if (!zone || !OPEN_WORLD_ALIFE.anomalyRoutes.includes(zone.id) || occupied.has(ecologyCellKey(group.sx, group.sy))) continue;
+    if (!group.artifactSearchReadyAt) { group.artifactSearchReadyAt = now + stalkerSearchMs; continue; }
+    if (now < group.artifactSearchReadyAt) continue;
+    group.artifactSearchReadyAt = now + stalkerSearchMs;
+    const member = group.members.find(row => !npcArtifactClaimForMember(serverArtifactBirthStore(), group.id, row.id));
+    if (!member) continue;
+    const birth = liveArtifactBirths(serverArtifactBirthStore(), zone.id)[0];
+    if (birth) serverNpcClaimBornArtifact(zone.id, birth.id, group.id, member.id, now);
+  }
   // Группы в занятой зоне, которых ещё нет в канале (перезапуск, новый канал), — в него.
   for (const row of occupied.values()) for (const room of row.rooms) serverEcologyMaterializeCell(room);
+  serverTickOpenWorldAlife(now);
   serverSaveEcology(false, now);
   return arrivals;
 }
@@ -4965,7 +5712,8 @@ const WEATHER_REFRESH_MS = 5000;
 const KROMKA_CLAIMED_ARTIFACT_IDS = claimedArtifactIdsFromSaves(savesDb);
 const ANOMALY_SYSTEM = createAnomalySystem({
   catalog: KROMKA_ANOMALY_CATALOG,
-  locations: KROMKA_LOCATION_CATALOG
+  locations: KROMKA_LOCATION_CATALOG,
+  fieldsForLocation: serverLocationAnomalyFields
 });
 
 function publicKromkaFactionCatalog() {
@@ -5693,6 +6441,14 @@ function serverFactionsHostile(a = null, b = null) {
   const left = serverCombatFactionGroup(typeof a === 'string' ? a : a?.faction);
   const right = serverCombatFactionGroup(typeof b === 'string' ? b : b?.faction);
   if (!left || !right || left === right) return false;
+  // A patrol contesting a permanent open-world outpost must engage its
+  // garrison even when the global diplomatic relation is only strained.
+  const guardSiteA = typeof a === 'object' && a ? String(a.alifeOutpostId || '') : '';
+  const guardSiteB = typeof b === 'object' && b ? String(b.alifeOutpostId || '') : '';
+  const patrolSiteA = typeof a === 'object' && a ? String(a.alifePatrolOutpostId || '') : '';
+  const patrolSiteB = typeof b === 'object' && b ? String(b.alifePatrolOutpostId || '') : '';
+  if ((guardSiteA && guardSiteA === patrolSiteB) || (guardSiteB && guardSiteB === patrolSiteA))
+    return left !== 'neutral' && right !== 'neutral';
   if (left === 'neutral' || right === 'neutral') return false;
   if (SERVER_FACTION_ALLIES.has(`${left}|${right}`)) return false;
   if (left === 'raiders' || right === 'raiders') return true;
@@ -5731,6 +6487,12 @@ function serverActorHostileToPlayer(actor = null, player = null) {
   if (locationIsFactionCapital(player.locationId || player.currentLocationId || '')) return false;
   // На безопасном островке места никто не враждебен стоящему внутри.
   if (serverPlayerSafeSite(player)) return false;
+  // Нейтральные могут укрыться в аванпосте; гарнизон применяет постоянное
+  // фракционное членство вместо временного контракта.
+  if (actor.alifeOutpostId) {
+    const membership = serverPlayerTerritoryFactionId(player);
+    return !!membership && membership !== String(actor.territoryFactionId || '');
+  }
   // Гарнизон и охрана Сердцевины: враждебны игрокам других фракций территории
   // и дружественны своим независимо от канонических отношений сторон.
   const actorTerritoryFaction = String(actor.territoryFactionId || '');
@@ -5780,7 +6542,7 @@ function serverPlayerCanDamageNpc(player, enemy, room) {
   if (!enemy || enemy.dead || !roomAllowsNpcCombat(room) || enemy.service === 'stationMaster'
     || serverNpcIsKromkaOnboardingProtected(enemy)
     || !serverActorHostileToPlayer(enemy, player)) return false;
-  if (serverCombatFactionsAllied(
+  if (!enemy.alifeOutpostId && serverCombatFactionsAllied(
     serverWorldFactionKey(player.worldFactionId || player.factionId || ''), enemy.faction
   )) return false;
   const attachment = serverWorldPartyAttachmentForPlayer(player);
@@ -5802,18 +6564,6 @@ function serverPlayerTerritoryFactionId(player = {}) {
 
 function serverRoomTerritoryId(room = null) {
   return String(roomLocation(room)?.territoryId || '').slice(0, 32);
-}
-
-function serverTerritoryPlatformZoneAt(room = null, x = 0, z = 0) {
-  const loc = roomLocation(room);
-  if (!loc?.territoryId || !Array.isArray(loc.worldZones)) return null;
-  const dims = locationTileDims(loc);
-  for (const zone of loc.worldZones) {
-    if (String(zone?.type || '') !== 'factionPlatform') continue;
-    const center = tileToWorld(Number(zone.tx || 0), Number(zone.tz || 0), dims);
-    if (Math.hypot(Number(x || 0) - center.x, Number(z || 0) - center.z) <= Number(zone.radius || 0)) return zone;
-  }
-  return null;
 }
 
 // Площадки мест, перенесённых в сектор (zone-sites.js): аванпост, точка добычи, кланбаза.
@@ -5874,19 +6624,13 @@ function serverTerritoryPlayerInCombat(player = {}, now = Date.now(), graceMs = 
     || now - Number(player?.serverCombat?.lastAttackAt || 0) < graceMs;
 }
 
-// Правила PvP Сердцевины: своя фракция не наносит урон своим, с платформы
-// нельзя атаковать, а игрок на платформе своей фракции защищён после паузы
-// без боя (бой нельзя прервать мгновенно, забежав на платформу).
+// Правило PvP общей Сердцевины: игроки одной фракции не наносят урон друг другу.
 function serverTerritoryPvpBlock(attacker = {}, target = {}, room = null, now = Date.now()) {
+  void now;
   if (!serverRoomTerritoryId(room)) return '';
   const attackerFaction = serverPlayerTerritoryFactionId(attacker);
   const targetFaction = serverPlayerTerritoryFactionId(target);
-  if (attackerFaction && attackerFaction === targetFaction) return 'sameFaction';
-  if (serverTerritoryPlatformZoneAt(room, attacker.x, attacker.z)) return 'attackerOnPlatform';
-  const targetPlatform = serverTerritoryPlatformZoneAt(room, target.x, target.z);
-  if (targetPlatform && String(targetPlatform.factionId || '') === targetFaction
-    && !serverTerritoryPlayerInCombat(target, now)) return 'targetProtected';
-  return '';
+  return attackerFaction && attackerFaction === targetFaction ? 'sameFaction' : '';
 }
 
 function serverZoneRulesExtra(loc = null) {
@@ -5924,10 +6668,8 @@ function publicTerritoryCatalog() {
     zoneLocationId: String(catalog.zoneLocationId || 'coreZone'),
     factions: (Array.isArray(catalog.factions) ? catalog.factions : []).map(row => ({
       id: String(row.id || ''),
-      baseLocationId: String(row.baseLocationId || ''),
-      baseDisplayName: String(row.baseDisplayName || ''),
-      capitalLocationId: String(row.capitalLocationId || ''),
-      platformEntryKey: String(row.platform?.entryKey || '')
+      displayName: String(serverTerritoryFactionNames()[String(row.id || '')] || row.id || ''),
+      capitalLocationId: String(row.capitalLocationId || '')
     })),
     rules: {
       factionChangeCooldownMs: Number(catalog.rules?.factionChangeCooldownMs || 0),
@@ -5937,11 +6679,9 @@ function publicTerritoryCatalog() {
   };
 }
 
-// --- Контракт наёмника на входе в Сердцевину -------------------------------
-// Узел Сердцевины на глобальной карте работает как ворота территории: игрок
-// или группа приходит туда, подписывает контракт с фракцией и попадает на её
-// базу. Метки самих баз на карте скрыты, отдельными точками входа они больше
-// не являются.
+// --- Вход в Сердцевину из её сектора мира ----------------------------------
+// Вступление во фракцию происходит у регистратора города. Портал проверяет
+// членство и ведёт прямо в общую PvP-локацию.
 
 const TERRITORY_FACTION_SHARES_TTL_MS = 15000;
 let territoryFactionSharesCache = { at: 0, value: null };
@@ -5989,7 +6729,7 @@ function serverTerritoryFactionShares(now = Date.now()) {
 }
 
 function serverTerritoryContractOffer(player = null, now = Date.now()) {
-  return territoryContractOffer({
+  const offer = territoryContractOffer({
     catalog: KROMKA_TERRITORY_CATALOG,
     factionNames: serverTerritoryFactionNames(),
     membership: player?.territoryFaction,
@@ -5997,70 +6737,31 @@ function serverTerritoryContractOffer(player = null, now = Date.now()) {
     reputation: sanitizeServerWorldFactionReputation(player?.worldFactionReputation || {}),
     now
   });
+  const room = player?.roomId ? rooms.get(player.roomId) : null;
+  const cityFaction = locationCapitalFaction(roomLocation(room));
+  const registrar = player ? serverNearbyServiceActor(player, 'registrar') : null;
+  const localFaction = registrar && String(registrar.territoryFactionId || '') === cityFaction
+    ? cityFaction : '';
+  offer.factions = offer.factions.map(row => row.factionId === localFaction ? row : {
+    ...row, canSign: false, reason: 'Вступайте у регистратора города этой фракции.'
+  });
+  offer.canSign = offer.factions.some(row => row.canSign);
+  offer.registrarFactionId = localFaction;
+  return offer;
 }
 
-/**
- * Куда сервер заводит прибывшего к воротам территории. Без подписанного
- * контракта возвращает предложение выбрать фракцию.
- */
+/** Куда сервер заводит прибывшего к пешему входу Сердцевины. */
 function serverTerritoryGateArrival(leader = null, members = [], now = Date.now()) {
-  const party = (Array.isArray(members) && members.length ? members : [leader]).filter(Boolean);
-  const pending = party.filter(member => !territoryMembershipActive(member.territoryFaction));
-  if (pending.length > 0) {
-    const offer = serverTerritoryContractOffer(leader, now);
-    offer.partyPending = pending.length;
-    offer.partyPendingNames = pending.map(member => String(member.name || 'Игрок')).slice(0, 8);
-    // Лидер с контрактом набирает спутников в свою фракцию, без контракта —
-    // подписывает за всю группу выбранную фракцию.
-    offer.canSign = offer.canSign || (territoryMembershipActive(leader?.territoryFaction) && pending.length > 0);
-    return {
-      ok: false,
-      error: pending.some(member => member === leader)
-        ? 'Контракт с фракцией не подписан: выберите фракцию на входе в Сердцевину.'
-        : `Без контракта в Сердцевину не пускают: ${pending.map(member => member.name || 'Игрок').join(', ')}.`,
-      contract: offer
-    };
+  // Портал доступен с территории мира только персонажу, уже вступившему в
+  // одну из фракций в её городе. Прибытие ведёт прямо в общую PvP-сцену.
+  // Проверка каждого спутника происходит при его собственном переходе;
+  // групповая подпись договора у входа удалена.
+  void members;
+  void now;
+  if (!territoryMembershipActive(leader?.territoryFaction)) {
+    return { ok: false, error: 'Вступите во фракцию в её городе, прежде чем войти в Сердцевину.' };
   }
-  const baseLocationId = normalizeLocationId(
-    territoryContractBaseLocationId(leader?.territoryFaction, KROMKA_TERRITORY_CATALOG)
-  );
-  if (!LOCATIONS[baseLocationId]) {
-    return { ok: false, error: 'База фракции недоступна.', contract: serverTerritoryContractOffer(leader, now) };
-  }
-  return { ok: true, locationId: baseLocationId };
-}
-
-/** Портал в Сердцевину в её зоне мира — ворота территории. */
-function serverTerritoryGatePortal() {
-  const coreId = serverTerritoryZoneLocationId();
-  const zoneId = ZONE_RUNTIME.parentZoneOf(coreId);
-  const loc = zoneId ? ensureZoneLocation(zoneId) : null;
-  const portal = (loc?.transitions || []).find(row => normalizeLocationId(row?.to || '') === coreId);
-  return portal ? { zoneId, point: tileToWorld(Number(portal.tx), Number(portal.tz), locationTileDims(loc)) } : null;
-}
-
-/**
- * Контракт подписывают только у ворот: игрок в зоне Сердцевины у её портала.
- * Это исключает вступление из любой точки мира и оставляет регистратора базы
- * для смены и выхода.
- */
-function serverPlayerAtTerritoryGate(player = null) {
-  if (!player?.roomId || player.dead) return false;
-  const gate = serverTerritoryGatePortal();
-  if (!gate || normalizeLocationId(player.locationId || '') !== gate.zoneId) return false;
-  return Math.hypot(Number(player.x || 0) - gate.point.x, Number(player.z || 0) - gate.point.z) <= 10;
-}
-
-/**
- * Спутники, подписывающие контракт вместе с лидером: товарищи по отряду рядом
- * с ним у ворот. Свою фракцию они не меняют: вступают только те, кто ещё не
- * подписал контракт.
- */
-function serverTerritoryGateCompanions(leader = null) {
-  if (!leader) return [];
-  return serverWorldPartyMatesOnline(leader)
-    .filter(member => member.roomId === leader.roomId && !territoryMembershipActive(member.territoryFaction)
-      && Math.hypot(Number(member.x || 0) - Number(leader.x || 0), Number(member.z || 0) - Number(leader.z || 0)) <= ZONE_GATE_FOLLOW_METRES);
+  return { ok: true, locationId: serverTerritoryZoneLocationId() };
 }
 
 // Щит прибытия: 4 с после входа в зону через ворота игрока не задеть, пока он
@@ -7947,10 +8648,11 @@ function serverNpcArmorProfile(enemy = {}, damageType = 'ballistic') {
   const resistance = creature?.resistances && typeof creature.resistances === 'object'
     ? Number(creature.resistances[resistanceKey] || 0)
     : 0;
+  const artifactGuard = Number(enemy.ecologyArtifactGuardUntil || 0) > Date.now() ? 0.15 : 0;
   return {
     type,
     protection: clamp(protection, 0, 0.7),
-    resistance: clamp(resistance, -0.5, 0.85),
+    resistance: clamp(resistance + artifactGuard, -0.5, 0.85),
     threshold: Math.max(0, threshold)
   };
 }
@@ -11653,6 +12355,18 @@ function serverApplyNpcCorpseEconomy(rows = [], room = null, random = Math.rando
 
 function serverPrepareNpcCorpseLoot(enemy = {}, room = null, options = {}) {
   if (!enemy) return [];
+  if (enemy.dead && enemy.ecologyCaravanMerchant === true) {
+    if (!enemy.corpseEconomyApplied) {
+      // Robbery uses its own tier table. Merchandise and buyback stock never
+      // become corpse loot, regardless of trades made before the attack.
+      const tier = Math.max(1, Math.min(5, Math.floor(Number(enemy.ecologyCaravanRewardTier || 1))));
+      enemy.loot = (OPEN_WORLD_ALIFE.caravanRobberyRewards[tier] || [])
+        .filter(row => SERVER_ITEM_IDS.has(row.id)).map(row => ({ ...row }));
+      enemy.inventory = enemy.loot.map(row => ({ ...row }));
+      enemy.corpseEconomyApplied = true;
+    }
+    return enemy.loot || [];
+  }
   if (serverNpcIsNaturalCreature(enemy, enemy)) {
     normalizeServerNaturalCreatureState(enemy);
     const naturalLoot = stripServerCreatureInventoryRows(enemy.inventory?.length ? enemy.inventory : (enemy.loot || []));
@@ -13724,6 +14438,7 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
   }
   // Край места ведёт в зону мира, где это место стоит; край комнаты точки
   // мира — в зону точки, к её порталу.
+  if (current.id === serverTerritoryZoneLocationId()) return null;
   const parent = serverWorldPointRoomExit(rooms.get(String(p.roomId || ''))) || ZONE_RUNTIME.parentZoneView(current.id);
   if (parent && parent.id === target && serverPlayerAtPlaceEdge(p)) {
     return { id: 'zone_edge', type: 'zoneEdge', to: parent.id, entryKey: parent.entryKey, ...(parent.entryTile ? { entryTile: parent.entryTile } : {}) };
@@ -13871,6 +14586,8 @@ function isRoomSpawnSafeTile(room, tx, tz, opts = {}) {
   if (!isRoomWalkableTile(room, tx, tz)) return false;
   const pos = tileToWorld(tx, tz, roomTileDims(room));
   if (!isRoomWalkableWorld(room, pos.x, pos.z, Number(opts.radius ?? 0.42))) return false;
+  if (opts.requireShortExit && !roomHasShortWalkableExit(room, pos.x, pos.z, Number(opts.radius ?? 0.42))) return false;
+  if (opts.acceptPosition && !opts.acceptPosition(pos)) return false;
   if (roomTileHasResource(room, tx, tz, Number(opts.resourceClearance ?? 0))) return false;
   if (roomTileHasContainer(room, tx, tz, Number(opts.containerClearance ?? 0))) return false;
   if (roomTileHasEnemyNear(room, tx, tz, Number(opts.minEnemyDistance ?? 0), opts.ignoreEnemyId || '')) return false;
@@ -13901,7 +14618,10 @@ function findRoomSafeSpawnTile(room, preferredTx, preferredTz, opts = {}) {
 
 function findRoomSafeSpawnWorld(room, x, z, opts = {}) {
   const tile = worldToTile(Number(x || 0), Number(z || 0), roomTileDims(room));
-  const safe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, opts);
+  const safe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, {
+    ...opts,
+    requireShortExit: opts.requireShortExit === true
+  });
   return safe ? tileToWorld(safe.tx, safe.tz, roomTileDims(room)) : null;
 }
 
@@ -17177,6 +17897,7 @@ function serverNpcHasDialogue(actor = null) {
  */
 function serverNpcTradeOpen(actor = null, locationId = '') {
   if (!actor || serverNpcIsNaturalCreature(actor, actor) || serverNpcHasQuestDialogue(actor)) return false;
+  if (actor.ecologyCaravanMerchant === true && !actor.dead) return true;
   if (serverIsBlackMarketActor(actor)) return true;
   if (!WORLD_ECONOMY.worldModel.npcTraders) return false;
   if (WORLD_ECONOMY.worldModel.wildTraders) return true;
@@ -20429,6 +21150,7 @@ function publicEnemy(e, viewer = null) {
     && Number(e.npcSpeechUntil || 0) > now
     && String(e.npcSpeechText || '').trim();
   const speechText = speechActive ? String(e.npcSpeechText || '').trim().slice(0, 96) : '';
+  const siteVisual = e.ecologySiteId ? siteActorVisualAction(e, now, aiState, movingState) : null;
   const modelKey = serverEnemyModelKeyForIdentity(e, e.visual || e.species || '');
   if (e.modelKey !== modelKey) e.modelKey = modelKey;
   return transformKromkaPublicValue({
@@ -20470,6 +21192,9 @@ function publicEnemy(e, viewer = null) {
     role: e.role || e.encounterRole || '',
     encounterRole: e.encounterRole || '',
     wastelandSiteId: String(e.wastelandSiteId || '').slice(0, 64),
+    siteId: String(e.ecologySiteId || '').slice(0, 64),
+    visualActionStartedAt: siteVisual
+      ? siteVisual.startedAt : Math.max(0, Number(e.ecologyVisualActionStartedAt || 0)),
     wastelandOwnerFaction: String(e.wastelandOwnerFaction || '').slice(0, 32),
     wastelandOwnerLabel: String(e.wastelandOwnerLabel || '').slice(0, 80),
     profile: String(e.profile || '').slice(0, 64),
@@ -20498,7 +21223,9 @@ function publicEnemy(e, viewer = null) {
     activityType: naturalCreature ? '' : String(e.npcActivityType || '').slice(0, 32),
     goalActivity: naturalCreature ? '' : String(e.npcActivityType || '').slice(0, 32),
     activityPhase: naturalCreature ? '' : String(e.npcActivityPhase || '').slice(0, 24),
-    visualAction: naturalCreature ? '' : String(e.npcActivityVisualAction || '').slice(0, 32),
+    visualAction: String(siteVisual
+      ? siteVisual.action
+      : (e.ecologyVisualAction || (naturalCreature ? '' : e.npcActivityVisualAction) || '')).slice(0, 32),
     activityFacing: naturalCreature || e.npcActivityFacing == null || !Number.isFinite(Number(e.npcActivityFacing))
       ? null
       : Number(Number(e.npcActivityFacing).toFixed(4)),
@@ -21381,7 +22108,7 @@ function serverCurrentShiftState(now = Date.now(), player = null) {
     earlyWarning,
     clanEventDetectionPct: clamp(Number(clanBenefits.eventDetectionPct || 0), 0, 1),
     sheltered: !!player && (safeShelters.has(locationId) || roomLocation(rooms.get(player.roomId))?.safe === true
-      || !!serverPlayerSafeSite(player)),
+      || !!serverPlayerSafeSite(player) || serverPlayerInsideAlifeOutpost(player)),
     storm: publicRadiationStorm(storm, stormHere.frame, stormHere.here)
   };
 }
@@ -21400,6 +22127,55 @@ function serverArtifactBirthStore() {
     savesDb.anomalyBirths = normalizeArtifactBirthStore(null);
   }
   return savesDb.anomalyBirths;
+}
+
+// A failed journal commit may already have written the transaction record.
+// Keep the claim unavailable for NPC abilities until a successful retry, while
+// its birth remains reserved in memory so neither a second NPC nor a player
+// can take the same spawn ID.
+const pendingNpcArtifactClaims = new Set();
+
+function serverCommitNpcArtifactClaims() {
+  if (!pendingNpcArtifactClaims.size) return true;
+  try {
+    persistSaves();
+  } catch (error) {
+    console.error('NPC artifact claim persist failed:', error);
+    return false;
+  }
+  const committed = new Set(pendingNpcArtifactClaims);
+  pendingNpcArtifactClaims.clear();
+  const touchedLocations = new Set([...committed].map(id =>
+    serverArtifactBirthStore().npcClaims?.[id]?.locationId).filter(Boolean));
+  for (const room of rooms.values()) {
+    let changed = false;
+    for (const actor of room.enemies?.values() || []) {
+      if (!actor?.ecologyGroupId || actor.dead) continue;
+      const claim = npcArtifactClaimForMember(serverArtifactBirthStore(), actor.ecologyGroupId, actor.ecologyMemberId);
+      if (!claim || !committed.has(claim.id)) continue;
+      actor.ecologyArtifactClaimId = claim.id;
+      changed = true;
+    }
+    if (changed) emitEnemySnapshot(room, true);
+    if (touchedLocations.has(String(room.locationId || ''))) {
+      serverEnsureRoomArtifacts(room, Date.now());
+      room.worldStateDirty = true;
+      for (const occupant of livePlayersInRoom(room)) emitServerArtifactState(occupant, 'npcCollected');
+    }
+  }
+  return true;
+}
+
+function serverNpcClaimBornArtifact(locationId, artifactId, groupId, memberId, now = Date.now()) {
+  if (!artifactId || pendingNpcArtifactClaims.size) return null;
+  const store = serverArtifactBirthStore();
+  if (KROMKA_CLAIMED_ARTIFACT_IDS.has(String(artifactId))) return null;
+  const claim = claimArtifactBirthForNpc(store, locationId, artifactId, { groupId, memberId }, now);
+  if (!claim) return null;
+  KROMKA_CLAIMED_ARTIFACT_IDS.add(claim.id);
+  savesDb.claimedArtifactIds = [...KROMKA_CLAIMED_ARTIFACT_IDS];
+  pendingNpcArtifactClaims.add(claim.id);
+  return serverCommitNpcArtifactClaims() ? claim : null;
 }
 
 let serverArtifactBirthPersistTimer = null;
@@ -22209,28 +22985,14 @@ function serverLoadAccountMarks(player = null) {
   if (!serverAccountMarksActive() || !player?.userId || !player?.characterId) return false;
   const account = serverSinAccountFor(player);
   if (!account) return false;
-  const legacy = serverInventoryQty(player.inventory || [], 'silver');
-  const before = account.marks || 0;
-  const marks = Math.min(WORLD_ECONOMY.accountSin.maxMarks, before + legacy);
-  account.marks = marks;
-  player.inventory = serverInventorySetRows(player.inventory || [], 'silver', marks);
-  player.marksOnAccount = true;
-  if (legacy <= 0) return true;
-  // Перенос старых марок уходит на диск одной записью с персонажем.
-  let saved = false;
-  try {
-    saved = persistActivePlayerState(player) === true;
-  } catch (error) {
-    console.error('Account marks migration was not saved:', player.id, error);
-  }
-  if (saved) return true;
-  // Запись не прошла: счёт не тронут, персонаж до выхода играет со своими
-  // марками, перенос повторится при следующем входе. Оставить марки «на
-  // счёте» нельзя — первое же сохранение записало бы на счёт одни старые.
-  account.marks = before;
-  player.inventory = serverInventorySetRows(player.inventory || [], 'silver', legacy);
-  player.marksOnAccount = false;
-  return false;
+  return migrateAccountMarks(player, account, {
+    maxMarks: WORLD_ECONOMY.accountSin.maxMarks,
+    inventoryQty: serverInventoryQty,
+    inventorySetRows: serverInventorySetRows,
+    // Перенос старых марок уходит на диск одной записью с персонажем.
+    persist: persistActivePlayerState,
+    onError: error => console.error('Account marks migration was not saved:', player.id, error)
+  });
 }
 
 function serverPremiumMultiplier(player = null, key = '') {
@@ -24564,6 +25326,7 @@ function publicWorldState(room, includeMap = true) {
     shift: serverCurrentShiftState(Date.now()),
     weather: serverRoomWeather(room, Date.now()),
     anomalies: ANOMALY_SYSTEM.snapshot(room.id, room.locationId),
+    alife: serverAlifePublicSnapshot(room),
     map: includeMap ? room.map.map(row => row.slice()) : undefined,
     resources: [...room.resources.values()].map(publicResource),
     enemies: [...room.enemies.values()].map(publicEnemy),
@@ -26352,7 +27115,9 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
     zone = null;
   }
   if (!zone || zone.status !== 'active') return false;
-  const actors = Array.isArray(zone?.details?.actors) ? zone.details.actors : [];
+  const alifeOutpost = OPEN_WORLD_ALIFE.outposts.find(def => def.locationId === room.locationId);
+  const actors = (Array.isArray(zone?.details?.actors) ? zone.details.actors : [])
+    .filter(actor => !(alifeOutpost && zone?.details?.hostileOnsiteRaid && actor?.side === 'defender'));
   const isBattle = !!zone?.details?.simBattle;
   const isPartyEncounter = !!zone?.details?.partyEncounter;
   const isOnsiteParty = !!zone?.details?.onsiteParty;
@@ -27326,6 +28091,65 @@ function completeDepartedOnsiteParties(room = null) {
   return changed;
 }
 
+function resolveServerNpcGrenade(room, enemy, roomPlayers, now) {
+  const resolved = finishNpcGrenade(enemy, now, roomPlayers,
+    (target, impact) => serverActorHostileToPlayer(enemy, target)
+      && serverLineOfFireClearFrom(room, impact.x, impact.z, target, { shooterCrouching: false }),
+    (target, raw, impact) => {
+      serverApplyDerivedVitals(target);
+      const mitigation = serverMitigateDamage(raw, target, 'explosive');
+      const secondChance = serverTrySecondChance(target, mitigation.damage, now);
+      if (!secondChance) target.hp = Math.max(0, serverCurrentHp(target) - mitigation.damage);
+      const newInjuries = serverApplyInjuriesFromHit(target, mitigation.damage,
+        'explosive', `${enemy.name || 'Налётчик'}: граната`);
+      target.lastServerDamageAt = now;
+      serverVehicleHitDismount(target, mitigation.damage, now);
+      serverApplyArtifactImpact(target, room, impact, 'explosive', 1.2, now);
+      const downed = !secondChance && Number(target.hp || 0) <= 0
+        && serverTryDownWorldActivityPlayer(target, room, now);
+      const packet = {
+        locationId: room.locationId, enemyId: enemy.id, enemyName: enemy.name,
+        creatureTypeId: String(enemy.creatureTypeId || ''), attackId: 'npc_grenade',
+        raw, damage: mitigation.damage, damageType: 'explosive',
+        injurySource: `${enemy.name || 'Налётчик'}: граната`,
+        absorbed: mitigation.absorbed, secondChance, downed,
+        injuries: sanitizeInjuries(target.injuries || {}), newInjuries,
+        hp: Math.round(target.hp), maxHp: Math.round(target.maxHp),
+        x: Number(enemy.x.toFixed(2)), z: Number(enemy.z.toFixed(2)),
+        impactX: Number(impact.x.toFixed(2)), impactZ: Number(impact.z.toFixed(2)),
+        weapon: 'npc_grenade', ranged: true, t: now
+      };
+      io.to(target.id).emit('enemyAttack', packet);
+      io.to(room.id).emit('playerDamaged', {
+        ...packet, playerId: target.id, characterId: target.characterId || '',
+        sourceX: packet.impactX, sourceZ: packet.impactZ, killed: !secondChance && target.hp <= 0
+      });
+      if (target.hp <= 0 && !target.dead) {
+        target.dead = true;
+        target.diedAt = now;
+        const deathLoc = roomLocation(room);
+        const droppedItems = serverDropPvpLootForMode(room, target, null, deathLoc, now);
+        serverRespawnPlayer(target, room, {
+          enemyId: enemy.id, enemyName: enemy.name,
+          pvpMode: locationPvpMode(deathLoc),
+          fullDrop: locationHasFullInventoryDrop(deathLoc),
+          totalDrop: locationDropsEverything(deathLoc), droppedItems
+        });
+      }
+      return mitigation.damage;
+    });
+  if (resolved.state === 'detonated') {
+    enemy.attackTimer = Math.max(0.7, Number(enemy.attackTimer || 0));
+    io.to(room.id).emit('enemyGrenadeDetonate', {
+      locationId: room.locationId, enemyId: enemy.id,
+      x: resolved.impact.x, z: resolved.impact.z,
+      radius: NPC_GRENADE_RADIUS, hits: resolved.hits.length, t: now
+    });
+    emitEnemySnapshot(room, true);
+  }
+  return resolved;
+}
+
 function updateServerEnemies(room, dt, opts = {}) {
   if (caravanCinematicHeld(room)) {
     for (const enemy of room.enemies.values()) { enemy.vx = 0; enemy.vz = 0; }
@@ -27382,12 +28206,25 @@ function updateServerEnemies(room, dt, opts = {}) {
       continue;
     }
     if (npcHitStaggerActive(enemy, now)) {
+      if (enemy.npcGrenade) {
+        enemy.npcGrenade = null;
+        enemy.ecologyVisualAction = '';
+        emitEnemySnapshot(room, true);
+      }
       enemy.aiState = 'stagger';
       enemy.vx = 0;
       enemy.vz = 0;
       continue;
     }
+    if (enemy.npcGrenade) {
+      const grenade = resolveServerNpcGrenade(room, enemy, roomPlayers, now);
+      enemy.aiState = grenade.state === 'windup' ? 'grenade' : 'chase';
+      enemy.vx = 0;
+      enemy.vz = 0;
+      if (grenade.state === 'windup' || grenade.state === 'detonated') continue;
+    }
     ensureEnemyHome(enemy);
+    if (serverNpcArtifactCombatAbility(enemy, now)) continue;
     // Городской зверёк не дерётся и не живёт по расписанию: пасётся у своего
     // места и удирает от удара.
     if (enemy.cityCritter === true) {
@@ -27490,6 +28327,7 @@ function updateServerEnemies(room, dt, opts = {}) {
     if (updateServerNpcCorpseLooting(room, enemy, dt, now)) continue;
     if (updateOnsitePartyActorLifecycle(room, enemy, dt)) continue;
     if (updateEcologyActorLifecycle(room, enemy, dt)) continue;
+    if (serverUpdateStalkerArtifactSearch(room, enemy, dt, now)) continue;
     if (updateNpcDailySchedule(room, enemy, dt, loc, now)) continue;
     if (updateWastelandSiteWorkerLabor(room, enemy, dt, loc)) continue;
     if (updateTerritoryGarrisonActor(room, enemy, dt, now)) continue;
@@ -27569,6 +28407,35 @@ function updateServerEnemies(room, dt, opts = {}) {
       if (visibleTarget && updateEnemyCombatRetreat(room, enemy, visibleTarget, dt, now)) continue;
       const weapon = serverNpcPrepareCombatWeapon(enemy, target);
       const ranged = !!weapon?.ammoType;
+      if (visibleTarget && ranged && weapon.damageType !== 'explosive'
+        && serverNpcLineOfFireClear(room, enemy, visibleTarget)) {
+        const groupId = String(enemy.ecologyGroupId || '');
+        const ecologyGroup = groupId ? dangerEcologyState?.groups.get(groupId) : null;
+        const allyFaction = serverCombatFactionGroup(enemy.faction || '');
+        const allies = groupId ? [...room.enemies.values()].filter(actor => actor && !actor.dead
+          && serverCombatFactionGroup(actor.faction || '') === allyFaction) : [];
+        if (ecologyGroup && !ecologyGroup.lairId
+          && canPrimeNpcGrenade(enemy, visibleTarget, roomPlayers, allies, now,
+          Number(ecologyGroup?.grenadeGroupReadyAt || 0),
+          player => serverActorHostileToPlayer(enemy, player))) {
+          const grenade = primeNpcGrenade(enemy, visibleTarget, now);
+          if (ecologyGroup) {
+            ecologyGroup.grenadeGroupReadyAt = now + NPC_GRENADE_GROUP_COOLDOWN_MS;
+            ecologyGroup.grenadeMemberReadyAt ||= {};
+            ecologyGroup.grenadeMemberReadyAt[enemy.ecologyMemberId] = enemy.npcGrenadeCooldownUntil;
+            dangerEcologyState.dirty = true;
+            serverSaveEcology(true, now);
+          }
+          setEnemyLookAt(enemy, visibleTarget);
+          io.to(room.id).emit('enemyGrenadeTelegraph', {
+            locationId: room.locationId, enemyId: enemy.id, enemyName: enemy.name,
+            x: grenade.x, z: grenade.z, radius: NPC_GRENADE_RADIUS,
+            fuseMs: NPC_GRENADE_WINDUP_MS, t: now
+          });
+          emitEnemySnapshot(room, true);
+          continue;
+        }
+      }
       const meleeGoal = visibleTarget && !ranged ? enemyMeleeGoalNearTarget(room, enemy, target) : null;
       const chaseX = visibleTarget ? Number(meleeGoal?.x ?? target.x) : Number(enemy.lastKnownX ?? target.x);
       const chaseZ = visibleTarget ? Number(meleeGoal?.z ?? target.z) : Number(enemy.lastKnownZ ?? target.z);
@@ -29550,6 +30417,7 @@ function serverPointInsideClosedLocationBounds(x, z, bounds = null) {
 // портал в проёме ворот, в зоне — у края, обращённого к городу.
 const ZONE_EDGE_ARRIVAL_INSET_TILES = 4;
 const CITY_GATE_PORTAL_RADIUS = 5;
+const ZONE_OPPOSITE_SIDE = Object.freeze({ north: 'south', south: 'north', east: 'west', west: 'east' });
 
 /** Как проходят ворота зоны: 'edge' — полосой края, 'portal' — порталом (в город). */
 function serverZoneGateCrossing(row = {}) {
@@ -29865,6 +30733,7 @@ io.on('connection', (socket) => {
     migrateSavedStateToKromka(savedState, KROMKA_SAVE_MIGRATION, GLOBAL_MAP);
     // Глобальной карты нет: сохранённый «на карте» или в сцене её клетки встаёт в зону своей точки.
     migrateSaveStateToZones(savedState, ZONE_RUNTIME.graph);
+    migrateRetiredCoreLocation(savedState);
     const savedProfile = savedState.characterProfile || {};
     const savedPlayer = savedState.player || {};
     const savedDownedState = restoreDownedState(savedPlayer);
@@ -30146,6 +31015,8 @@ io.on('connection', (socket) => {
     serverLoadAccountMarks(p);
     serverConvertSinCassettes(p);
     players.set(socket.id, p);
+    const alifeRewards = serverOpenWorldAlifeState();
+    if (serverAlifeMigrateLegacyPendingXp(alifeRewards)) serverAlifeApplyCaptureAwards(p);
     if (pveJoinRoomId) serverPveRoomEntered(room, p, Date.now());
     if (resumableSiege) {
       room.siegeEventId = resumableSiege.id;
@@ -30935,6 +31806,8 @@ io.on('connection', (socket) => {
     if (!room) return fail('Локация уже недоступна.');
     serverEnsureRoomArtifacts(room, Date.now());
     const candidate = room.kromkaArtifactState?.artifacts?.find(row => row.id === String(data.artifactId || ''));
+    if (candidate?.birth && !findArtifactBirth(serverArtifactBirthStore(), room.locationId, candidate.id))
+      return fail('Артефакт уже исчез из пятна.');
     if (candidate && !candidate.pickedUp) {
       const carryCheck = serverLimitItemsByCarry(p, data, [{ id: candidate.itemId, qty: 1 }], { apply: false });
       if (!carryCheck.items.some(row => row.id === candidate.itemId && row.qty >= 1))
@@ -32248,9 +33121,7 @@ io.on('connection', (socket) => {
     fail('Постоянного вступления больше нет. Возьмите временный контракт у нужной стороны.');
   });
 
-  // Принадлежность к фракции для Сердцевины: вступление в столице фракции или у
-  // регистратора её базы, выход и смена с настраиваемым кулдауном. Репутация и
-  // временные контракты не затрагиваются.
+  // Принадлежность к фракции для Сердцевины оформляют у регистратора столицы.
   socket.on('territoryFactionAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => {
@@ -32271,12 +33142,18 @@ io.on('connection', (socket) => {
       });
       return;
     }
-    // Предложение контракта: доли фракций среди персонажей и причина отказа по
-    // каждой. Клиент показывает его окном у ворот Сердцевины.
+    // Предложение фракций доступно только в городах; у входа в Сердцевину
+    // контракт не подписывают. Клиент может открыть этот список у регистратора.
     if (action === 'offer') {
+      const room = p.roomId ? rooms.get(p.roomId) : null;
+      const cityFaction = locationCapitalFaction(roomLocation(room));
+      const registrar = serverNearbyServiceActor(p, 'registrar');
+      if (!cityFaction || String(registrar?.territoryFactionId || '') !== cityFaction) {
+        return fail('Обратитесь к регистратору во фракционном городе.');
+      }
       if (typeof ack === 'function') ack({
         ok: true,
-        atGate: serverPlayerAtTerritoryGate(p),
+        atGate: false,
         contract: serverTerritoryContractOffer(p, now),
         membership: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now),
         catalog: publicTerritoryCatalog()
@@ -32284,12 +33161,10 @@ io.on('connection', (socket) => {
       return;
     }
     if (action !== 'join' && action !== 'leave') return fail('Неизвестное действие с фракцией.');
-    // Первый контракт подписывают у ворот Сердцевины прямо с глобальной карты;
-    // смена фракции и выход по-прежнему оформляются у регистратора базы или в
-    // столице фракции.
-    const atGate = action === 'join' && serverPlayerAtTerritoryGate(p);
-    if (!atGate && (p.onGlobalMap || !p.roomId)) {
-      return fail('Контракт подписывают у ворот Сердцевины, на базе или в столице фракции.');
+    // Вступление, выход и смену оформляют в городе фракции. Портал в
+    // Сердцевину не является регистратором и не принимает подписи группы.
+    if (p.onGlobalMap || !p.roomId) {
+      return fail('Вступление во фракцию оформляют у регистратора её города.');
     }
     const transaction = beginCriticalAction(p, 'territoryFactionAction', data, ['action', 'factionId']);
     if (!transaction.ok) return fail(transaction.error);
@@ -32297,66 +33172,34 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
       return;
     }
-    const room = atGate ? null : rooms.get(p.roomId);
-    const loc = atGate ? {} : roomLocation(room);
-    const registrar = atGate ? null : serverNearbyServiceActor(p, 'registrar');
-    const capitalFaction = atGate ? '' : locationCapitalFaction(loc);
+    const room = rooms.get(p.roomId);
+    const loc = roomLocation(room);
+    const registrar = serverNearbyServiceActor(p, 'registrar');
+    const capitalFaction = locationCapitalFaction(loc);
     const factionId = action === 'join'
       ? String(data.factionId || registrar?.territoryFactionId || capitalFaction || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32)
       : '';
-    const currentFactionId = String(p.territoryFaction?.factionId || '');
-    if (action === 'join' && atGate) {
-      if (currentFactionId && currentFactionId !== factionId) {
-        return fail('Сменить фракцию можно только у регистратора на её базе.');
-      }
-    } else if (action === 'join') {
-      const registrarFaction = String(registrar?.territoryFactionId || '');
-      const atOwnCapital = !!capitalFaction && capitalFaction === factionId && !String(loc.territoryId || '');
-      const atRegistrar = !!registrar && (!registrarFaction || registrarFaction === factionId);
-      if (!atOwnCapital && !atRegistrar) {
-        return fail('Вступить можно в столице этой фракции или у её регистратора на базе.');
-      }
-    } else if (!registrar && !capitalFaction) {
-      return fail('Выйти из фракции можно у регистратора или в столице фракции.');
+    // Регистратор принадлежит городу фракции; удалённые вызовы отвергаются.
+    if (!capitalFaction || String(loc.territoryId || '')
+      || String(registrar?.territoryFactionId || '') !== capitalFaction) {
+      return fail('Подойдите к регистратору фракционного города.');
     }
-    // Контракт у ворот подписывает лидер: спутники без контракта вступают в ту
-    // же фракцию, уже состоящие в ней сохраняют свою принадлежность.
-    const companions = atGate ? serverTerritoryGateCompanions(p) : [];
+    if (action === 'join' && capitalFaction !== factionId) {
+      return fail('Вступить можно только во фракцию этого города.');
+    }
+    const companions = [];
     const reputation = Number(sanitizeServerWorldFactionReputation(p.worldFactionReputation || {})[factionId] || 0);
-    let result;
-    if (action === 'join' && atGate && currentFactionId === factionId && factionId) {
-      if (!companions.length) return fail('Вы уже состоите в этой фракции.');
-      result = {
-        ok: true,
-        membership: sanitizeTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG),
-        previousFactionId: currentFactionId
-      };
-    } else {
-      result = action === 'join'
-        ? joinTerritoryFaction(p.territoryFaction, factionId, KROMKA_TERRITORY_CATALOG, now, { reputation })
-        : leaveTerritoryFaction(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now);
-    }
+    const result = action === 'join'
+      ? joinTerritoryFaction(p.territoryFaction, factionId, KROMKA_TERRITORY_CATALOG, now, { reputation })
+      : leaveTerritoryFaction(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now);
     if (!result.ok) return fail(result.error);
     p.territoryFaction = result.membership;
     const joinedCompanions = [];
-    if (action === 'join' && atGate) {
-      for (const member of companions) {
-        const memberReputation = Number(
-          sanitizeServerWorldFactionReputation(member.worldFactionReputation || {})[factionId] || 0
-        );
-        const memberResult = joinTerritoryFaction(
-          member.territoryFaction, factionId, KROMKA_TERRITORY_CATALOG, now, { reputation: memberReputation }
-        );
-        if (!memberResult.ok) continue;
-        member.territoryFaction = memberResult.membership;
-        joinedCompanions.push(member);
-      }
-    }
     invalidateTerritoryFactionSharesCache();
     const payload = {
       ok: true,
       action,
-      atGate,
+      atGate: false,
       factionId: result.membership.factionId,
       previousFactionId: String(result.previousFactionId || ''),
       companions: joinedCompanions.map(member => String(member.name || 'Игрок')),
@@ -34508,6 +35351,7 @@ io.on('connection', (socket) => {
     const finalCarry = serverLimitItemsByCarry(p, data, finalTaken).carry;
     const blackMarketHeld = container.blackMarketLoot ? serverOwnedItemQty(p, container.blackMarketLoot.itemId) : 0;
     finalTaken.forEach(row => serverInventoryAdd(p, row.id, row.qty));
+    serverAlifeRecordLairLoot(room, container);
     serverTakeTutorialSupplies(p, container, finalTaken);
     serverNoteBossRewardTaken(room, container);
     let removed = false;
@@ -34554,14 +35398,13 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Неизвестная локация.' });
       return;
     }
-    // Портал в Сердцевину в её зоне мира — ворота территории: с подписанным
-    // контрактом сервер заводит игрока на базу его фракции (в саму Сердцевину —
-    // только метро базы), без контракта возвращает предложение фракций.
+    // Пеший портал в зоне мира ведёт напрямую в общую Сердцевину. Членство
+    // проверяется сервером; вступление у портала невозможно.
     let territoryGateEntry = false;
     if (serverIsTerritoryGateLocation(locationId) && ZONE_RUNTIME.isZone(p.locationId) && serverNearbyTransitionTo(p, locationId)) {
       const gate = serverTerritoryGateArrival(p, [p], Date.now());
       if (!gate.ok) {
-        if (typeof ack === 'function') ack({ ok: false, error: gate.error, contractRequired: true, contract: gate.contract || null });
+        if (typeof ack === 'function') ack({ ok: false, error: gate.error, contractRequired: false });
         return;
       }
       locationId = gate.locationId;
@@ -34580,16 +35423,15 @@ io.on('connection', (socket) => {
       : serverNearbyTransitionTo(p, locationId);
     const ticketedRuntimeLocation = !!transitionTicket && !!(baseLoc.randomTemplate || baseLoc.encounterOnly);
     if (!sameLocation) {
-      // Сердцевина, базы и лаборатории: членство проверяется на каждом входе,
-      // платформа принимает только свою фракцию, а уехать на базу из боя нельзя.
+      // Сердцевина и лаборатории проверяют членство на каждом входе.
       const territoryAccess = territoryLocationAccess(baseLoc, p.territoryFaction, KROMKA_TERRITORY_CATALOG);
       if (!territoryAccess.allowed) {
         if (typeof ack === 'function') ack({ ok: false, error: territoryAccess.error || 'Вход закрыт.', zoneRules: zoneRules(locationPvpMode(baseLoc), serverZoneRulesExtra(baseLoc)) });
         return;
       }
-      // В Сердцевину из пустоши не входят: только метро своей базы.
+      // Портал в родительской зоне — единственный пеший вход в Сердцевину.
       if (baseLoc.noGlobalMapEntry === true && !territoryGateEntry && !ZONE_RUNTIME.isSector(locationId) && ZONE_RUNTIME.isZone(p.locationId)) {
-        if (typeof ack === 'function') ack({ ok: false, error: 'В Сердцевину входят только через платформу метро на базе своей фракции.' });
+        if (typeof ack === 'function') ack({ ok: false, error: 'Подойдите к входу в Сердцевину в её зоне мира.' });
         return;
       }
       const platformFaction = String(localTransition?.factionAccess || '');
@@ -34733,9 +35575,24 @@ io.on('connection', (socket) => {
     const edgeArrival = !transitionTicket && localTransition?.crossing === 'edge'
       ? serverZoneEdgeArrival(LOCATIONS[locationId], localTransition.direction, localTransition.crossedAt)
       : null;
-    const spawn = edgeArrival || (entryTile
+    let spawn = edgeArrival || (entryTile
       ? tileToWorld(entryTile.tx, entryTile.tz + 2, locationTileDims(LOCATIONS[locationId]))
       : playerSpawnWorld(locationId, entryKey));
+    // A city entry marker can lie inside the return portal radius. Put the
+    // arrival just inside the same authored gate so it cannot bounce back.
+    let returnPortal = null;
+    if (!edgeArrival && localTransition?.type === 'zoneGate' && serverZoneGateCrossing(localTransition) === 'portal'
+      && ZONE_RUNTIME.cityOf(locationId)) {
+      const returnSide = ZONE_OPPOSITE_SIDE[localTransition.direction];
+      const portal = serverCityGatePortal(LOCATIONS[locationId], returnSide);
+      const at = tileToWorld(portal.tx, portal.tz, locationTileDims(LOCATIONS[locationId]));
+      returnPortal = { ...at, radius: portal.radius };
+      if (Math.hypot(spawn.x - at.x, spawn.z - at.z) <= portal.radius + 2) {
+        const inward = Math.hypot(at.x, at.z) || 1;
+        spawn = { x: at.x - at.x / inward * (portal.radius + 6),
+          z: at.z - at.z / inward * (portal.radius + 6) };
+      }
+    }
     p.x = spawn.x;
     p.z = spawn.z;
     if (zoneCrossing && ZONE_RUNTIME.isZone(locationId)) p.zoneArrivalShieldUntil = Date.now() + ZONE_ARRIVAL_SHIELD_MS;
@@ -34764,13 +35621,23 @@ io.on('connection', (socket) => {
       }
     }
     {
-      const safePos = findRoomSafeSpawnWorld(room, p.x, p.z, {
+      const spawnOptions = {
         maxRadius: 10,
         radius: 0.48,
         minEnemyDistance: 1.35,
         minPlayerDistance: 1.15,
-        ignorePlayerId: p.id
-      });
+        ignorePlayerId: p.id,
+        ...((returnPortal || edgeArrival) ? { acceptPosition: point =>
+          (!returnPortal || Math.hypot(point.x - returnPortal.x, point.z - returnPortal.z) > returnPortal.radius + 1.5)
+          && (!edgeArrival || !serverPlayerAtZoneEdge({ roomId: room.id, x: point.x, z: point.z },
+            roomLocation(room), ZONE_OPPOSITE_SIDE[localTransition.direction])) } : {})
+      };
+      let safePos = findRoomSafeSpawnWorld(room, p.x, p.z, spawnOptions);
+      if (!safePos && edgeArrival) {
+        const fallback = playerSpawnWorld(locationId, entryKey);
+        safePos = findRoomSafeSpawnWorld(room, fallback.x, fallback.z,
+          { ...spawnOptions, maxRadius: 8 });
+      }
       if (safePos) {
         p.x = safePos.x;
         p.z = safePos.z;
@@ -35227,6 +36094,21 @@ setInterval(() => {
   // может повторно добавить модель умершего игрока после события playerLeft.
   let activeRoomAiBudget = 1;
   let emptyRoomAiBudget = 1;
+  // Spend the single active-room budget on the oldest due room. A slow AI pass
+  // can make the first Map entry due again before the next tick; fixed Map order
+  // would then starve later live channels and expire their lifecycle clocks.
+  let selectedActiveAiRoom = null;
+  let oldestActiveAiTickAt = Infinity;
+  const activeAiSelectionNow = Date.now();
+  for (const candidate of rooms.values()) {
+    if (![...candidate.sockets].some(socketIsLive)) continue;
+    const previousTickAt = Number(candidate.lastActiveEnemyAiTickAt || 0);
+    if (previousTickAt > 0 && activeAiSelectionNow - previousTickAt < ACTIVE_ROOM_AI_TICK_MS) continue;
+    if (previousTickAt < oldestActiveAiTickAt) {
+      oldestActiveAiTickAt = previousTickAt;
+      selectedActiveAiRoom = candidate;
+    }
+  }
   for (const room of rooms.values()) {
     const beforeCleanupSize = room.sockets.size;
     for (const sid of [...room.sockets]) if (!socketIsLive(sid)) room.sockets.delete(sid);
@@ -35238,7 +36120,7 @@ setInterval(() => {
       room.lastEmptyAiTickAt = roomNow;
       const previousActiveAiTickAt = Number(room.lastActiveEnemyAiTickAt || roomNow - ACTIVE_ROOM_AI_TICK_MS);
       const activeAiElapsedMs = Math.max(0, roomNow - previousActiveAiTickAt);
-      if (activeRoomAiBudget > 0 && activeAiElapsedMs >= ACTIVE_ROOM_AI_TICK_MS) {
+      if (room === selectedActiveAiRoom && activeRoomAiBudget > 0 && activeAiElapsedMs >= ACTIVE_ROOM_AI_TICK_MS) {
         activeRoomAiBudget -= 1;
         room.lastActiveEnemyAiTickAt = roomNow;
         const enemyDt = Math.min(ACTIVE_ROOM_AI_MAX_DT, Math.max(DT, activeAiElapsedMs / 1000));
@@ -35318,7 +36200,7 @@ function getLanUrls(port) {
 // с ним, иначе мастерские пропадали до первой новой стройки.
 for (const city of ZONE_RUNTIME.cities()) serverRebuildCity(city.locationId);
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, UNITY_REVIEW_BUILD_DIR ? '127.0.0.1' : '0.0.0.0', () => {
   const address = server.address();
   const boundPort = address && typeof address === 'object'
     ? Number(address.port || PORT)

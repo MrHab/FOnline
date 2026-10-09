@@ -61,8 +61,8 @@
     "tz": 64
   },
   "entryFromPlace_coreZone": {
-    "tx": 90,
-    "tz": 80
+    "tx": 95,
+    "tz": 77
   },
   "transitions": [
     {

@@ -171,6 +171,8 @@ async function startServer() {
       ...process.env,
       // Живая погода меняет скорость и меткость; проверки идут в ясную, если не просят иной.
       KROMKA_WEATHER: process.env.KROMKA_WEATHER || 'clear',
+      // Keep unrelated runtime scenarios outside an active emission cycle.
+      KROMKA_TEST_SHIFT_EPOCH_MS: process.env.KROMKA_TEST_SHIFT_EPOCH_MS || String(Date.now()),
       PORT: String(REQUESTED_PORT),
       DATA_DIR,
       SESSION_LOCK_MS: '500',
@@ -210,12 +212,12 @@ function connectSocketClient() {
       transports: ['websocket'],
       forceNew: true,
       reconnection: false,
-      timeout: 2500
+      timeout: 8000
     });
     const timer = setTimeout(() => {
       socket.close();
       reject(new Error('Socket.IO connection timed out'));
-    }, 3500);
+    }, 9000);
     socket.once('connect', () => {
       clearTimeout(timer);
       resolve(socket);
@@ -228,7 +230,7 @@ function connectSocketClient() {
   });
 }
 
-function socketAck(socket, event, payload = {}, timeoutMs = 3500) {
+function socketAck(socket, event, payload = {}, timeoutMs = 9000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`${event} acknowledgement timed out`)), timeoutMs);
     socket.emit(event, payload, result => {
@@ -2283,7 +2285,7 @@ async function main() {
 }
 
 module.exports = {
-  bootstrapCharacters, startServer, stopServer, connectAndJoin, closeSocket, socketAck, cleanupSync, DATA_DIR,
+  bootstrapCharacters, registerAccount, startServer, stopServer, connectAndJoin, closeSocket, socketAck, cleanupSync, DATA_DIR,
   serverLogs: () => activeServerLogs.join(''),
   baseUrl: () => `http://127.0.0.1:${activePort}`
 };

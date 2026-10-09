@@ -182,6 +182,8 @@ namespace RealmOfAshes.Game
             if (Socket == null) return;
             Socket.OnEnemyAttack += HandleEnemyAttack;
             Socket.OnEnemyAttackMiss += HandleEnemyAttackMiss;
+            Socket.OnEnemyGrenadeTelegraph += HandleEnemyGrenadeTelegraph;
+            Socket.OnEnemyGrenadeDetonate += HandleEnemyGrenadeDetonate;
             Socket.OnPlayerDamaged += HandlePlayerDamaged;
             Socket.OnPlayerStatusEffect += HandlePlayerStatusEffect;
             Socket.OnEnemyKilled += HandleEnemyKilled;
@@ -198,6 +200,8 @@ namespace RealmOfAshes.Game
             if (Socket == null) return;
             Socket.OnEnemyAttack -= HandleEnemyAttack;
             Socket.OnEnemyAttackMiss -= HandleEnemyAttackMiss;
+            Socket.OnEnemyGrenadeTelegraph -= HandleEnemyGrenadeTelegraph;
+            Socket.OnEnemyGrenadeDetonate -= HandleEnemyGrenadeDetonate;
             Socket.OnPlayerDamaged -= HandlePlayerDamaged;
             Socket.OnPlayerStatusEffect -= HandlePlayerStatusEffect;
             Socket.OnEnemyKilled -= HandleEnemyKilled;
@@ -237,9 +241,11 @@ namespace RealmOfAshes.Game
             string name = payload["enemyName"]?.ToString() ?? "Противник";
             string type = payload["damageType"]?.ToString() ?? "ballistic";
             bool critical = payload["critical"]?.ToObject<bool>() == true;
-            bool hasSource = payload["x"] != null && payload["z"] != null;
+            bool impactSource = payload["impactX"] != null && payload["impactZ"] != null;
+            bool hasSource = impactSource || (payload["x"] != null && payload["z"] != null);
             Vector3 source = hasSource
-                ? RoaCoords.ToUnity(payload["x"].ToObject<float>(), payload["z"].ToObject<float>())
+                ? RoaCoords.ToUnity((impactSource ? payload["impactX"] : payload["x"]).ToObject<float>(),
+                    (impactSource ? payload["impactZ"] : payload["z"]).ToObject<float>())
                 : Vector3.zero;
             if (hasSource) Player.View?.PlayHit(source, damage, critical);
             else Player.View?.PlayHit();
@@ -251,6 +257,26 @@ namespace RealmOfAshes.Game
                 + (absorbed > 0 ? ", броня " + absorbed : string.Empty));
             if (payload["secondChance"]?.ToObject<bool>() == true)
                 AddLog("Второй шанс: смертельный удар оставил 1 HP.");
+        }
+
+        private void HandleEnemyGrenadeTelegraph(JObject payload)
+        {
+            if (payload == null || Player == null || payload["x"] == null || payload["z"] == null) return;
+            Vector3 impact = RoaCoords.ToUnity(payload["x"].ToObject<float>(), payload["z"].ToObject<float>());
+            if (Vector3.Distance(Player.transform.position, impact) > 14f) return;
+            Float("ГРАНАТА!", impact + Vector3.up * 0.45f, new Color(1f, 0.58f, 0.18f));
+            if (Vector3.Distance(Player.transform.position, impact)
+                <= Mathf.Max(2f, payload["radius"]?.ToObject<float>() ?? 2.8f) + 3f)
+                AddLog((payload["enemyName"]?.ToString() ?? "Налётчик") + " бросает гранату — уходите из зоны взрыва!");
+        }
+
+        private void HandleEnemyGrenadeDetonate(JObject payload)
+        {
+            if (payload == null || Player == null || payload["x"] == null || payload["z"] == null) return;
+            Vector3 impact = RoaCoords.ToUnity(payload["x"].ToObject<float>(), payload["z"].ToObject<float>());
+            if (Vector3.Distance(Player.transform.position, impact) > 24f) return;
+            float radius = Mathf.Max(0.5f, payload["radius"]?.ToObject<float>() ?? 2.8f);
+            Fx?.PlayExplosion(impact, radius);
         }
 
         private void HandlePlayerDamaged(JObject payload)

@@ -1,12 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
-// Сетевая проверка Чёрного рынка (экономика v3, библия 14.5) на реальном
-// сервере с изолированным DATA_DIR: член фракции входит на Рынок Ядра,
-// скупщик показывает витрину без полки и цены сервера, покупает целое оружие,
-// отказывает в продаже и в чужих категориях, склад и казна переживают
-// перезапуск; наёмника без контракта на рынок не пускают, а подъём ведёт в
-// центральную сцену к точке у спуска.
+// Сетевая проверка скупщика Чёрного рынка в Ключах на реальном сервере
+// с изолированным DATA_DIR: витрина, серверные цены и отказы, сохранение
+// склада и казны, доступ нейтрального игрока, миграция старого Рынка Ядра.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -14,7 +11,7 @@ const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
 const accounts = {};
 
-const HUB_ID = 'coreMarket';
+const HUB_ID = 'settlement';
 const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).reduce((sum, row) => sum + row.qty, 0);
 
 (async () => {
@@ -33,19 +30,23 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   // Продавец стоит у прилавка: запасной заряженный лазерный пистолет в сумке,
   // аптечки и ноль марок.
   const seller = stateFor('trade');
-  placeInHub(seller, 0, 5);
+  placeInHub(seller, -31, 28);
   seller.territoryFaction = membership('uprava');
   seller.inventory.silver = 0;
   seller.inventory.medkit = 2;
 
-  // Второй член фракции — у лестницы наверх.
+  // Старое сохранение в удалённом Рынке Ядра переносится к наружному входу.
   const climber = stateFor('harvest');
-  placeInHub(climber, 0, -32);
+  climber.currentLocationId = 'coreMarket';
+  climber.serverLocationContext = { locationId: 'coreMarket' };
   climber.territoryFaction = membership('contour');
+  climber.inventory.medkit = 7;
+  climber.player.xp = 511;
+  climber.quests = { coreExpedition: { stage: 'labApproach', completed: false } };
 
-  // Наёмник без контракта, чьё сохранение указывает на рынок.
+  // Нейтральный игрок имеет доступ к скупщику в мирных Ключах.
   const stranger = stateFor('untargeted');
-  placeInHub(stranger, 0, 5);
+  placeInHub(stranger, -31, 28);
   stranger.territoryFaction = { version: 1, factionId: '', joinedAt: 0, changeAllowedAt: 0, history: [] };
 
   delete saves.blackMarket;
@@ -56,7 +57,7 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     // --- вход и витрина ------------------------------------------------------------------
     await h.connectAndJoin(accounts.trade);
     const join = accounts.trade.join;
-    assert.equal(join.locationId, HUB_ID, 'A faction member reconnects into the market hub.');
+    assert.equal(join.locationId, HUB_ID, 'A faction member reconnects into Keys.');
     const broker = (join.worldState?.enemies || []).find(row => row.hostileToPlayer === false && row.service === 'blackMarket');
     assert(broker?.id, 'The broker stands in the hub: ' + JSON.stringify((join.worldState?.enemies || []).map(row => [row.id, row.service])));
 
@@ -106,21 +107,25 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     assert.equal(Number(after.market.caps), treasuryBefore - pistolPrice, 'The price leaves the treasury.');
     console.log('PASS black market sale (' + pistolPrice + ' marks)');
 
-    // --- доступ и подъём -----------------------------------------------------------------
+    // --- доступ и миграция ---------------------------------------------------------------
     await h.connectAndJoin(accounts.untargeted);
-    assert.notEqual(accounts.untargeted.join.locationId, HUB_ID, 'A mercenary without a contract is not let into the hub.');
+    assert.equal(accounts.untargeted.join.locationId, HUB_ID, 'A neutral visitor can reach the Keys broker.');
+    const neutralBroker = (accounts.untargeted.join.worldState?.enemies || []).find(row => row.service === 'blackMarket');
+    assert(neutralBroker?.id, 'The broker is shared with neutral visitors.');
+    const neutralView = await h.socketAck(accounts.untargeted.socket, 'syncNpcTradeState', { enemyId: neutralBroker.id });
+    assert.equal(neutralView.ok, true, 'The neutral visitor can open the broker window.');
 
     await h.connectAndJoin(accounts.harvest);
-    assert.equal(accounts.harvest.join.locationId, HUB_ID);
-    const up = await h.socketAck(accounts.harvest.socket, 'changeLocation', { locationId: 'coreZone' });
-    assert(up.ok, 'The stairs lead up into the core: ' + JSON.stringify(up.error || up).slice(0, 300));
-    const zone = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'locations', 'coreZone.json')));
-    const landing = zone.entryFromMarket;
-    assert(Math.hypot(Number(up.x) - landing.x, Number(up.z) - landing.z) < 1.5,
-      'The climber lands by the market stairs: ' + JSON.stringify({ x: up.x, z: up.z, landing }));
-    const back = await h.socketAck(accounts.harvest.socket, 'changeLocation', { locationId: HUB_ID });
-    assert(back.ok && back.locationId === HUB_ID, 'The stairs lead back down: ' + JSON.stringify(back.error || back).slice(0, 300));
-    console.log('PASS hub access and stairs');
+    assert.equal(accounts.harvest.join.locationId, 'z_09_07', 'A saved character in coreMarket migrates to the exterior portal.');
+    assert.equal(qty(accounts.harvest.join.self, 'medkit'), 7, 'Legacy Core inventory survives the real join migration.');
+    assert.equal(accounts.harvest.join.self.xp, 511, 'Legacy Core experience survives the real join migration.');
+    assert.equal(accounts.harvest.join.self.territoryFaction.factionId, 'contour', 'Legacy faction membership survives migration.');
+    const migratedSave = JSON.parse(fs.readFileSync(savesPath));
+    const migratedState = migratedSave.characters[users.users[accounts.harvest.login].id][accounts.harvest.characterId].state;
+    assert.deepEqual(migratedState.quests, climber.quests, 'Legacy quest progress remains in the saved character.');
+    const closed = await h.socketAck(accounts.harvest.socket, 'changeLocation', { locationId: 'coreMarket' });
+    assert.equal(closed.ok, false, 'The retired market is not reachable again.');
+    console.log('PASS neutral broker access and legacy market migration');
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();
@@ -144,7 +149,7 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     await h.stopServer();
     h.cleanupSync();
   }
-  console.log('Black market network OK: members reach the hub, the broker buys whole weapons at server prices and refuses the rest, the stairs connect the hub with the core, and stock and treasury survive a restart.');
+  console.log('Black market network OK: Keys broker buys whole weapons, refuses other goods, serves neutral players, preserves stock and treasury, and migrates the old hub.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

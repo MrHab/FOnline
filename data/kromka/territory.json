@@ -3,7 +3,7 @@
   "version": 1,
   "id": "core",
   "displayName": "Сердцевина",
-  "description": "Единая фракционная территория в центре Кромки: одна большая сцена с аванпостами, входами лабораторий и аномальными полями. Вход только через платформу метро своей фракции.",
+  "description": "Общий PvP-данж: пеший вход из зоны мира, аномальные поля, лаборатории и Объект Ноль.",
   "zoneLocationId": "coreZone",
   "macroRegion": "middle_vein",
   "mapPoint": {
@@ -19,142 +19,31 @@
   "rules": {
     "factionChangeCooldownMs": 259200000,
     "combatExitGraceMs": 10000,
-    "joinRequiresReputation": 0,
-    "platformProtectionRadius": 14
+    "joinRequiresReputation": 0
   },
   "factions": [
     {
       "id": "uprava",
-      "baseLocationId": "coreBaseUprava",
-      "baseDisplayName": "Узел Управы",
-      "capitalLocationId": "sluiceCity",
-      "mapPoint": {
-        "x": 190,
-        "z": 182
-      },
-      "platform": {
-        "id": "platform_uprava",
-        "displayName": "Платформа Управы",
-        "x": 0,
-        "z": 138,
-        "entryKey": "entryFromUprava"
-      },
-      "guardName": "Караульный Управы",
-      "traderProfile": "coreBaseUprava"
+      "capitalLocationId": "sluiceCity"
     },
     {
       "id": "free_artels",
-      "baseLocationId": "coreBaseArtels",
-      "baseDisplayName": "Артельный узел",
-      "capitalLocationId": "scrapTown",
-      "mapPoint": {
-        "x": 158,
-        "z": 150
-      },
-      "platform": {
-        "id": "platform_artels",
-        "displayName": "Платформа Артелей",
-        "x": -138,
-        "z": 0,
-        "entryKey": "entryFromArtels"
-      },
-      "guardName": "Артельный дозорный",
-      "traderProfile": "coreBaseArtels"
+      "capitalLocationId": "scrapTown"
     },
     {
       "id": "contour",
-      "baseLocationId": "coreBaseContour",
-      "baseDisplayName": "Узел Контура",
-      "capitalLocationId": "relayStation",
-      "mapPoint": {
-        "x": 222,
-        "z": 150
-      },
-      "platform": {
-        "id": "platform_contour",
-        "displayName": "Платформа Контура",
-        "x": 138,
-        "z": 0,
-        "entryKey": "entryFromContour"
-      },
-      "guardName": "Охрана Контура",
-      "traderProfile": "coreBaseContour"
+      "capitalLocationId": "relayStation"
     },
     {
       "id": "tract_league",
-      "baseLocationId": "coreBaseLeague",
-      "baseDisplayName": "Узел Лиги",
-      "capitalLocationId": "caravanCamp",
-      "mapPoint": {
-        "x": 210,
-        "z": 127
-      },
-      "platform": {
-        "id": "platform_league",
-        "displayName": "Платформа Лиги",
-        "x": 0,
-        "z": -138,
-        "entryKey": "entryFromLeague"
-      },
-      "guardName": "Конвойный Лиги",
-      "traderProfile": "coreBaseLeague"
-    }
-  ],
-  "outpostRules": {
-    "ownerChangeLockMs": 1200000,
-    "captureHoldMs": 180000,
-    "captureDecayRate": 0.5,
-    "contestPausesProgress": true,
-    "captureTickMs": 1000,
-    "garrison": {
-      "modelKey": "caravanGuard",
-      "visual": "raider",
-      "species": "guard",
-      "equipmentProfile": "guard",
-      "statProfile": "guard",
-      "postRadius": 3.2,
-      "columnSpacing": 1.4,
-      "guards": 4,
-      "quartermaster": 1,
-      "speedMps": 2.2,
-      "arrivalRadius": 4
-    }
-  },
-  "outposts": [
-    {
-      "id": "outpostPump",
-      "displayName": "Насосная «Ключ-9»",
-      "position": {
-        "x": -84,
-        "z": 36
-      },
-      "captureRadius": 10,
-      "initialOwner": "",
-      "landmark": "waterTank"
+      "capitalLocationId": "caravanCamp"
     },
     {
-      "id": "outpostRelay",
-      "displayName": "Ретранслятор «Ось»",
-      "position": {
-        "x": 84,
-        "z": 36
-      },
-      "captureRadius": 10,
-      "initialOwner": "",
-      "landmark": "relayAntenna"
-    },
-    {
-      "id": "outpostDepot",
-      "displayName": "Склад «Полоса»",
-      "position": {
-        "x": 0,
-        "z": -84
-      },
-      "captureRadius": 10,
-      "initialOwner": "",
-      "landmark": "storageLeanTo"
+      "id": "seconds",
+      "capitalLocationId": "secondHaven"
     }
   ],
+  "outposts": [],
   "labs": [
     {
       "id": "coreLabSprout",
@@ -373,16 +262,6 @@
       }
     }
   ],
-  "marketHub": {
-    "id": "coreMarket",
-    "displayName": "Рынок Ядра",
-    "description": "Нейтральный подземный рынок под Объектом Ноль. Скупщик берёт любое оружие и броню; стрелять здесь нельзя, но дорога сюда идёт через всю Сердцевину.",
-    "door": {
-      "x": 0,
-      "z": 10
-    },
-    "entryKey": "entryFromMarket"
-  },
   "centralLab": {
     "id": "coreLabCenter",
     "displayName": "Объект Ноль",
@@ -462,5 +341,6 @@
       "startAngle": 0,
       "fieldRadius": 4
     }
-  ]
+  ],
+  "worldEntranceZoneId": "z_09_07"
 }

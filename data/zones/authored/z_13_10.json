@@ -60,10 +60,6 @@
     "tx": 9,
     "tz": 61
   },
-  "entryFromPlace_relayOutpost": {
-    "tx": 80,
-    "tz": 131
-  },
   "transitions": [
     {
       "id": "gate_east",
@@ -120,19 +116,22 @@
       "radius": 5,
       "halfWidthTiles": 3,
       "targetMode": "pvpFullDrop"
-    },
-    {
-      "id": "place_relayOutpost",
-      "type": "location",
-      "label": "Периметр К-3",
-      "to": "relayOutpost",
-      "entryKey": "entryFromWorld",
-      "tx": 80,
-      "tz": 135,
-      "radius": 3.2
     }
   ],
   "worldZones": [],
+  "sites": [
+    {
+      "id": "relayOutpost",
+      "name": "Периметр К-3",
+      "kind": "outpost",
+      "safe": false,
+      "x": 0.0,
+      "z": 122.0,
+      "halfX": 30.0,
+      "halfZ": 28.0,
+      "rotationY": 0.0
+    }
+  ],
   "objects": [
     {
       "id": "s00_k1",
@@ -30578,6 +30577,7183 @@
       ],
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_0_east",
+      "name": "relayOutpost approach stone 0 east",
+      "position": {
+        "x": 1.25,
+        "y": -0.24,
+        "z": 88.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_0_west",
+      "name": "relayOutpost approach stone 0 west",
+      "position": {
+        "x": -1.25,
+        "y": -0.24,
+        "z": 88.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_1_east",
+      "name": "relayOutpost approach stone 1 east",
+      "position": {
+        "x": 1.25,
+        "y": -0.24,
+        "z": 90.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_1_west",
+      "name": "relayOutpost approach stone 1 west",
+      "position": {
+        "x": -1.25,
+        "y": -0.24,
+        "z": 90.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_2_east",
+      "name": "relayOutpost approach stone 2 east",
+      "position": {
+        "x": 1.25,
+        "y": -0.24,
+        "z": 93.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_2_west",
+      "name": "relayOutpost approach stone 2 west",
+      "position": {
+        "x": -1.25,
+        "y": -0.24,
+        "z": 93.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_3_east",
+      "name": "relayOutpost approach stone 3 east",
+      "position": {
+        "x": 1.25,
+        "y": -0.24,
+        "z": 95.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_3_west",
+      "name": "relayOutpost approach stone 3 west",
+      "position": {
+        "x": -1.25,
+        "y": -0.24,
+        "z": 95.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_4_east",
+      "name": "relayOutpost approach stone 4 east",
+      "position": {
+        "x": 1.25,
+        "y": -0.24,
+        "z": 98.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_4_west",
+      "name": "relayOutpost approach stone 4 west",
+      "position": {
+        "x": -1.25,
+        "y": -0.24,
+        "z": 98.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_5_east",
+      "name": "relayOutpost approach stone 5 east",
+      "position": {
+        "x": 1.25,
+        "y": -0.24,
+        "z": 100.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_5_west",
+      "name": "relayOutpost approach stone 5 west",
+      "position": {
+        "x": -1.25,
+        "y": -0.24,
+        "z": 100.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_6_east",
+      "name": "relayOutpost approach stone 6 east",
+      "position": {
+        "x": 1.25,
+        "y": -0.24,
+        "z": 103.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_6_west",
+      "name": "relayOutpost approach stone 6 west",
+      "position": {
+        "x": -1.25,
+        "y": -0.24,
+        "z": 103.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_7_east",
+      "name": "relayOutpost approach stone 7 east",
+      "position": {
+        "x": 1.25,
+        "y": -0.24,
+        "z": 105.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_7_west",
+      "name": "relayOutpost approach stone 7 west",
+      "position": {
+        "x": -1.25,
+        "y": -0.24,
+        "z": 105.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_8_east",
+      "name": "relayOutpost approach stone 8 east",
+      "position": {
+        "x": 1.25,
+        "y": -0.24,
+        "z": 108.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_approach_stone_8_west",
+      "name": "relayOutpost approach stone 8 west",
+      "position": {
+        "x": -1.25,
+        "y": -0.24,
+        "z": 108.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "floor",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.0,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_cable_channel",
+      "name": "relayOutpost cable channel",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 122.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "site",
+        "site-relayOutpost",
+        "cable",
+        "industrial"
+      ],
+      "footprint": {
+        "x": 21.12,
+        "z": 9.06
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 0,
+        "y": 0,
+        "z": 122
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_-1_0",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -3.755,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -3.755,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_-1_1",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -6.265,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -6.265,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_-1_2",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -8.775,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -8.775,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_-1_3",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -11.285,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -11.285,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_-1_4",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -13.795,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -13.795,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_-1_5",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -16.305,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -16.305,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_-1_6",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -18.815,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -18.815,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_-1_7",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -21.325,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -21.325,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_-1_8",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -23.835,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -23.835,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_-1_9",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -26.345,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -26.345,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_1_0",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 3.755,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 3.755,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_1_1",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 6.265,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 6.265,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_1_2",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 8.775,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 8.775,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_1_3",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 11.285,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 11.285,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_1_4",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 13.795,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 13.795,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_1_5",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 16.305,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 16.305,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_1_6",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 18.815,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 18.815,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_1_7",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 21.325,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21.325,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_1_8",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 23.835,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 23.835,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_clean_partition_1_9",
+      "name": "Герметичная граница чистой стороны",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 26.345,
+        "y": 0.0,
+        "z": 124.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.75,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26.345,
+        "y": 0,
+        "z": 124
+      }
+    },
+    {
+      "id": "relayOutpost_container_visual_0",
+      "name": "Ящик с боекомплектом",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -17.0,
+        "y": 0.0,
+        "z": 134.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -17,
+        "y": 0,
+        "z": 134
+      }
+    },
+    {
+      "id": "relayOutpost_container_visual_1",
+      "name": "Аптечный короб периметра",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": 112.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.5
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -0.006,
+            "z": 0.003
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.5
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 12,
+        "y": 0,
+        "z": 112
+      }
+    },
+    {
+      "id": "relayOutpost_decontamination_east",
+      "name": "Чистый выход после обработки",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 7.0,
+        "y": 0.0,
+        "z": 112.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 5.25,
+        "z": 7.75
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -0.007,
+            "z": -3.736
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": -2.382,
+            "z": 0.139
+          },
+          "size": {
+            "x": 0.5,
+            "z": 7.5
+          }
+        },
+        {
+          "center": {
+            "x": 2.368,
+            "z": 0.139
+          },
+          "size": {
+            "x": 0.5,
+            "z": 7.5
+          }
+        },
+        {
+          "center": {
+            "x": -0.007,
+            "z": 3.764
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 7,
+        "y": 0,
+        "z": 112
+      }
+    },
+    {
+      "id": "relayOutpost_decontamination_gallery",
+      "name": "Шлюз: осмотр, обработка, чистый выход",
+      "tags": [
+        "decontamination",
+        "inspection",
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 112.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 5.0,
+        "z": 22.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.25,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.5,
+            "z": 22.0
+          }
+        },
+        {
+          "center": {
+            "x": 2.25,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.5,
+            "z": 22.0
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 0,
+        "y": 0,
+        "z": 112
+      }
+    },
+    {
+      "id": "relayOutpost_decontamination_roof",
+      "name": "Съёмная крыша шлюза",
+      "tags": [
+        "roof-cutaway",
+        "decontamination",
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 112.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "roof",
+      "footprint": {
+        "x": 4.85,
+        "z": 21.94
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 0,
+        "y": 0,
+        "z": 112
+      }
+    },
+    {
+      "id": "relayOutpost_decontamination_west",
+      "name": "Обработка входящих образцов",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -7.0,
+        "y": 0.0,
+        "z": 112.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 5.25,
+        "z": 7.75
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -1.75,
+            "z": -3.625
+          },
+          "size": {
+            "x": 1.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.75,
+            "z": -3.625
+          },
+          "size": {
+            "x": 1.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -2.25,
+            "z": 0.25
+          },
+          "size": {
+            "x": 0.75,
+            "z": 7.25
+          }
+        },
+        {
+          "center": {
+            "x": 2.25,
+            "z": 0.25
+          },
+          "size": {
+            "x": 0.75,
+            "z": 7.25
+          }
+        },
+        {
+          "center": {
+            "x": -1.375,
+            "z": 3.625
+          },
+          "size": {
+            "x": 1.0,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.375,
+            "z": 3.625
+          },
+          "size": {
+            "x": 1.0,
+            "z": 0.5
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -7,
+        "y": 0,
+        "z": 112
+      }
+    },
+    {
+      "id": "relayOutpost_entry_guide_-1",
+      "name": "Закрытый вход в осмотр",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -2.45,
+        "y": 0.0,
+        "z": 98.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -2.45,
+        "y": 0,
+        "z": 98.5
+      }
+    },
+    {
+      "id": "relayOutpost_entry_guide_1",
+      "name": "Закрытый вход в осмотр",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 2.45,
+        "y": 0.0,
+        "z": 98.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 2.45,
+        "y": 0,
+        "z": 98.5
+      }
+    },
+    {
+      "id": "relayOutpost_entry_lookout",
+      "name": "relayOutpost entry lookout",
+      "position": {
+        "x": 23.0,
+        "y": 0.0,
+        "z": 104.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.847,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.648,
+        "z": 5.648
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -1.75,
+            "z": -1.75
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": 1.75,
+            "z": -1.75
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -1.0,
+            "z": -1.625
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.0,
+            "z": -1.625
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -1.375,
+            "z": 1.625
+          },
+          "size": {
+            "x": 1.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.375,
+            "z": 1.625
+          },
+          "size": {
+            "x": 1.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -1.75,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 1.75,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_entry_lookout_opposite",
+      "name": "relayOutpost entry lookout opposite",
+      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": 104.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.436,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.648,
+        "z": 5.648
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": -1.751,
+            "z": -1.749
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": 1.749,
+            "z": -1.751
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -1.001,
+            "z": -1.625
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 0.999,
+            "z": -1.625
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -1.374,
+            "z": 1.625
+          },
+          "size": {
+            "x": 1.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 1.376,
+            "z": 1.625
+          },
+          "size": {
+            "x": 1.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -1.749,
+            "z": 2.001
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 1.751,
+            "z": 1.999
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_gate_column_east",
+      "name": "relayOutpost gate column east",
+      "position": {
+        "x": 9.0,
+        "y": 0.0,
+        "z": 97.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 1.25,
+        "z": 1.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.014,
+            "z": 0.019
+          },
+          "size": {
+            "x": 1.25,
+            "z": 1.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_gate_column_west",
+      "name": "relayOutpost gate column west",
+      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": 97.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 1.25,
+        "z": 1.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.014,
+            "z": 0.019
+          },
+          "size": {
+            "x": 1.25,
+            "z": 1.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_gate_floodlight_east",
+      "name": "relayOutpost gate floodlight east",
+      "position": {
+        "x": 11.0,
+        "y": 0.0,
+        "z": 100.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 1.75,
+        "z": 3.75
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.011,
+            "z": -0.383
+          },
+          "size": {
+            "x": 1.25,
+            "z": 3.0
+          }
+        },
+        {
+          "center": {
+            "x": -0.739,
+            "z": -0.633
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.761,
+            "z": -0.758
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.01,
+            "z": 1.367
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -0.115,
+            "z": 1.742
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_gate_floodlight_west",
+      "name": "relayOutpost gate floodlight west",
+      "position": {
+        "x": -11.0,
+        "y": 0.0,
+        "z": 100.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 1.75,
+        "z": 3.75
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.011,
+            "z": -0.383
+          },
+          "size": {
+            "x": 1.25,
+            "z": 3.0
+          }
+        },
+        {
+          "center": {
+            "x": -0.739,
+            "z": -0.633
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.761,
+            "z": -0.758
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.01,
+            "z": 1.367
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -0.115,
+            "z": 1.742
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_inner_cover_0",
+      "name": "relayOutpost inner cover 0",
+      "position": {
+        "x": -17.0,
+        "y": 0.0,
+        "z": 105.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 2.25,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.016,
+            "z": -0.134
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -0.109,
+            "z": 0.366
+          },
+          "size": {
+            "x": 2.0,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_inner_cover_1",
+      "name": "relayOutpost inner cover 1",
+      "position": {
+        "x": 17.0,
+        "y": 0.0,
+        "z": 105.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 2.25,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.016,
+            "z": -0.134
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -0.109,
+            "z": 0.366
+          },
+          "size": {
+            "x": 2.0,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_inner_cover_2",
+      "name": "relayOutpost inner cover 2",
+      "position": {
+        "x": -8.0,
+        "y": 0.0,
+        "z": 130.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 2.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.016,
+            "z": -0.134
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -0.109,
+            "z": 0.366
+          },
+          "size": {
+            "x": 2.0,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_inner_cover_3",
+      "name": "relayOutpost inner cover 3",
+      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": 130.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 2.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.016,
+            "z": -0.134
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -0.109,
+            "z": 0.366
+          },
+          "size": {
+            "x": 2.0,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_instrument_house",
+      "name": "Измерительная аппаратная",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 15.0,
+        "y": 0.0,
+        "z": 139.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 6.25,
+        "z": 6.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": -2.75
+          },
+          "size": {
+            "x": 1.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -1.25,
+            "z": -2.5
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": 1.25,
+            "z": -2.5
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -1.75,
+            "z": -2.125
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": 1.75,
+            "z": -2.125
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": -2.0,
+            "z": -1.75
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -0.5,
+            "z": -2.25
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 0.5,
+            "z": -2.25
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": -1.75
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -2.25,
+            "z": -1.125
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": -1.375,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 1.375,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 2.25,
+            "z": -1.125
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": -2.5,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.25,
+            "z": 3.75
+          }
+        },
+        {
+          "center": {
+            "x": 2.5,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.25,
+            "z": 3.75
+          }
+        },
+        {
+          "center": {
+            "x": -2.75,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.25,
+            "z": 3.25
+          }
+        },
+        {
+          "center": {
+            "x": 2.75,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.25,
+            "z": 3.25
+          }
+        },
+        {
+          "center": {
+            "x": -3.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 3.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": -2.25,
+            "z": 1.125
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": 2.25,
+            "z": 1.125
+          },
+          "size": {
+            "x": 0.25,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": -2.0,
+            "z": 1.75
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": 1.75
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.25
+          }
+        },
+        {
+          "center": {
+            "x": -1.75,
+            "z": 2.125
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": 1.75,
+            "z": 2.125
+          },
+          "size": {
+            "x": 0.25,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": -1.375,
+            "z": 2.375
+          },
+          "size": {
+            "x": 0.5,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": 1.375,
+            "z": 2.375
+          },
+          "size": {
+            "x": 0.5,
+            "z": 1.0
+          }
+        },
+        {
+          "center": {
+            "x": -0.625,
+            "z": 2.5
+          },
+          "size": {
+            "x": 1.0,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.625,
+            "z": 2.5
+          },
+          "size": {
+            "x": 1.0,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 2.75
+          },
+          "size": {
+            "x": 0.25,
+            "z": 0.75
+          }
+        },
+        {
+          "center": {
+            "x": -0.5,
+            "z": 3.0
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        },
+        {
+          "center": {
+            "x": 0.5,
+            "z": 3.0
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 15,
+        "y": 0,
+        "z": 139
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_0",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -26.03,
+        "y": 0.0,
+        "z": 96.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -26.03,
+        "y": 0,
+        "z": 96
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_1",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -22.09,
+        "y": 0.0,
+        "z": 96.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -22.09,
+        "y": 0,
+        "z": 96
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_10",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -26.03,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -26.03,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_11",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -22.09,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -22.09,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_12",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -18.15,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -18.15,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_13",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -14.21,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -14.21,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_14",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -10.27,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -10.27,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_15",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -6.33,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -6.33,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_16",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -2.39,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -2.39,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_17",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 1.55,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1.55,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_18",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 5.49,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 5.49,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_19",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 9.43,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 9.43,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_2",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -18.15,
+        "y": 0.0,
+        "z": 96.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -18.15,
+        "y": 0,
+        "z": 96
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_20",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 13.37,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 13.37,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_21",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 17.31,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 17.31,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_22",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 21.25,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21.25,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_23",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 25.19,
+        "y": 0.0,
+        "z": 148.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 25.19,
+        "y": 0,
+        "z": 148
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_24",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 97.97
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 97.97
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_25",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 101.91
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 101.91
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_26",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 105.85
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 105.85
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_27",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 109.79
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 109.79
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_28",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 113.73
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 113.73
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_29",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 117.67
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 117.67
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_3",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -14.21,
+        "y": 0.0,
+        "z": 96.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -14.21,
+        "y": 0,
+        "z": 96
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_30",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 121.61
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 121.61
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_31",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 125.55
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 125.55
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_32",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 129.49
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 129.49
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_33",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 133.43
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 133.43
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_34",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 137.37
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 137.37
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_35",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 141.31
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 141.31
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_36",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -28.0,
+        "y": 0.0,
+        "z": 145.25
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -28,
+        "y": 0,
+        "z": 145.25
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_37",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 97.97
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 97.97
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_38",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 101.91
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 101.91
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_39",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 105.85
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 105.85
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_4",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -10.27,
+        "y": 0.0,
+        "z": 96.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -10.27,
+        "y": 0,
+        "z": 96
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_40",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 109.79
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 109.79
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_41",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 113.73
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 113.73
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_42",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 117.67
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 117.67
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_43",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 121.61
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 121.61
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_44",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 125.55
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 125.55
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_45",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 129.49
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 129.49
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_46",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 133.43
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 133.43
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_47",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 137.37
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 137.37
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_48",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 141.31
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 141.31
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_49",
+      "name": "Боковая ограда двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 28.0,
+        "y": 0.0,
+        "z": 145.25
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 4.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 28,
+        "y": 0,
+        "z": 145.25
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_5",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 9.43,
+        "y": 0.0,
+        "z": 96.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 9.43,
+        "y": 0,
+        "z": 96
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_6",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 13.37,
+        "y": 0.0,
+        "z": 96.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 13.37,
+        "y": 0,
+        "z": 96
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_7",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 17.31,
+        "y": 0.0,
+        "z": 96.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 17.31,
+        "y": 0,
+        "z": 96
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_8",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 21.25,
+        "y": 0.0,
+        "z": 96.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21.25,
+        "y": 0,
+        "z": 96
+      }
+    },
+    {
+      "id": "relayOutpost_perimeter_9",
+      "name": "Ограда эксплуатационного двора",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 25.19,
+        "y": 0.0,
+        "z": 96.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 4.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 25.19,
+        "y": 0,
+        "z": 96
+      }
+    },
+    {
+      "id": "relayOutpost_power",
+      "name": "Распределитель аварийного питания",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -19.82,
+        "y": 0.0,
+        "z": 140.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.25,
+        "z": 1.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.004,
+            "z": -0.008
+          },
+          "size": {
+            "x": 1.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -19.82,
+        "y": 0,
+        "z": 140
+      }
+    },
+    {
+      "id": "relayOutpost_reserve_generator",
+      "name": "Аварийный генератор",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -21.0,
+        "y": 0.0,
+        "z": 135.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.75,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": -0.02
+          },
+          "size": {
+            "x": 0.75,
+            "z": 1.0
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -21,
+        "y": 0,
+        "z": 135
+      }
+    },
+    {
+      "id": "relayOutpost_sample_control_bench",
+      "name": "Рабочее место мастера",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": 109.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.25,
+        "z": 1.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.002
+          },
+          "size": {
+            "x": 2.25,
+            "z": 1.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -18,
+        "y": 0,
+        "z": 109
+      }
+    },
+    {
+      "id": "relayOutpost_sample_control_tool",
+      "name": "Инструмент участка",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -16.2,
+        "y": 0.0,
+        "z": 109.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.75,
+        "z": 0.5
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": -0.011
+          },
+          "size": {
+            "x": 0.75,
+            "z": 0.5
+          }
+        }
+      ],
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -16.2,
+        "y": 0,
+        "z": 109
+      }
+    },
+    {
+      "id": "relayOutpost_screen_-10",
+      "name": "Барьер линии досмотра",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 102.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": -0.003
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -10,
+        "y": 0,
+        "z": 102
+      }
+    },
+    {
+      "id": "relayOutpost_screen_10",
+      "name": "Барьер линии досмотра",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 102.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 2.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": -0.003
+          },
+          "size": {
+            "x": 2.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 10,
+        "y": 0,
+        "z": 102
+      }
+    },
+    {
+      "id": "relayOutpost_sealed_control",
+      "name": "Закрытый пост контроля периметра",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -16.0,
+        "y": 0.0,
+        "z": 140.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "structure",
+      "footprint": {
+        "x": 7.298,
+        "z": 4.23
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -16,
+        "y": 0,
+        "z": 140
+      }
+    },
+    {
+      "id": "relayOutpost_solid_wall_east_0",
+      "name": "relayOutpost solid wall east 0",
+      "position": {
+        "x": 25.0,
+        "y": 0.0,
+        "z": 105.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_east_1",
+      "name": "relayOutpost solid wall east 1",
+      "position": {
+        "x": 25.0,
+        "y": 0.0,
+        "z": 112.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_east_2",
+      "name": "relayOutpost solid wall east 2",
+      "position": {
+        "x": 25.0,
+        "y": 0.0,
+        "z": 119.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_east_3",
+      "name": "relayOutpost solid wall east 3",
+      "position": {
+        "x": 25.0,
+        "y": 0.0,
+        "z": 126.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_east_4",
+      "name": "relayOutpost solid wall east 4",
+      "position": {
+        "x": 25.0,
+        "y": 0.0,
+        "z": 133.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_east_5",
+      "name": "relayOutpost solid wall east 5",
+      "position": {
+        "x": 25.0,
+        "y": 0.0,
+        "z": 140.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_north_0",
+      "name": "relayOutpost solid wall north 0",
+      "position": {
+        "x": -19.0,
+        "y": 0.0,
+        "z": 146.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_north_1",
+      "name": "relayOutpost solid wall north 1",
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": 146.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_north_2",
+      "name": "relayOutpost solid wall north 2",
+      "position": {
+        "x": 9.0,
+        "y": 0.0,
+        "z": 146.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_north_3",
+      "name": "relayOutpost solid wall north 3",
+      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": 146.5
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 5.25,
+        "z": 0.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_west_0",
+      "name": "relayOutpost solid wall west 0",
+      "position": {
+        "x": -25.0,
+        "y": 0.0,
+        "z": 105.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_west_1",
+      "name": "relayOutpost solid wall west 1",
+      "position": {
+        "x": -25.0,
+        "y": 0.0,
+        "z": 112.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_west_2",
+      "name": "relayOutpost solid wall west 2",
+      "position": {
+        "x": -25.0,
+        "y": 0.0,
+        "z": 119.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_west_3",
+      "name": "relayOutpost solid wall west 3",
+      "position": {
+        "x": -25.0,
+        "y": 0.0,
+        "z": 126.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_west_4",
+      "name": "relayOutpost solid wall west 4",
+      "position": {
+        "x": -25.0,
+        "y": 0.0,
+        "z": 133.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_solid_wall_west_5",
+      "name": "relayOutpost solid wall west 5",
+      "position": {
+        "x": -25.0,
+        "y": 0.0,
+        "z": 140.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 0.25,
+        "z": 5.25
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.25,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_supply_east",
+      "name": "relayOutpost supply east",
+      "position": {
+        "x": 17.0,
+        "y": 0.0,
+        "z": 120.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 1.5,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.004,
+            "z": -0.007
+          },
+          "size": {
+            "x": 1.5,
+            "z": 1.0
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_supply_west",
+      "name": "relayOutpost supply west",
+      "position": {
+        "x": -16.0,
+        "y": 0.0,
+        "z": 117.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "footprint": {
+        "x": 3.5,
+        "z": 2.5
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.027,
+            "z": -0.383
+          },
+          "size": {
+            "x": 3.5,
+            "z": 1.75
+          }
+        },
+        {
+          "center": {
+            "x": 0.527,
+            "z": 0.742
+          },
+          "size": {
+            "x": 2.5,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 0.402,
+            "z": 1.117
+          },
+          "size": {
+            "x": 1.75,
+            "z": 0.25
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayOutpost_wash_supply",
+      "name": "Подача промывочной жидкости",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -1.4,
+        "y": 0.0,
+        "z": 116.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.75,
+        "z": 1.0
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.017,
+            "z": -0.001
+          },
+          "size": {
+            "x": 0.75,
+            "z": 1.0
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -1.4,
+        "y": 0,
+        "z": 116
+      }
+    },
+    {
+      "id": "relayOutpost_wash_valve",
+      "name": "Узел дозирования промывки",
+      "tags": [
+        "site",
+        "site-relayOutpost"
+      ],
+      "site": "relayOutpost",
+      "position": {
+        "x": -1.8,
+        "y": 0.0,
+        "z": 119.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "footprint": {
+        "x": 0.5,
+        "z": 0.75
+      },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": -0.001
+          },
+          "size": {
+            "x": 0.5,
+            "z": 0.75
+          }
+        }
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -1.8,
+        "y": 0,
+        "z": 119
+      }
     }
   ],
   "containers": [
@@ -30646,6 +37822,69 @@
           "qty": 2
         }
       ]
+    },
+    {
+      "id": "perimeter_ammo_box",
+      "name": "Ящик с боекомплектом",
+      "tier": "ammo",
+      "tx": 71,
+      "tz": 147,
+      "x": -17,
+      "y": 2.43443,
+      "z": 134,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "ammo9",
+          "qty": 12
+        },
+        {
+          "id": "ammo556",
+          "qty": 4
+        },
+        {
+          "id": "ammoParts",
+          "qty": 4
+        }
+      ],
+      "sceneVisual": true,
+      "visualObjectId": "relayOutpost_container_visual_0",
+      "site": "relayOutpost",
+      "surfaceSourcePoint": {
+        "x": -17,
+        "z": 134
+      }
+    },
+    {
+      "id": "perimeter_med_box",
+      "name": "Аптечный короб периметра",
+      "tier": "medical",
+      "tx": 86,
+      "tz": 136,
+      "x": 12,
+      "y": 2.43443,
+      "z": 112,
+      "rotationY": 0,
+      "locked": false,
+      "loot": [
+        {
+          "id": "medicine",
+          "qty": 2
+        },
+        {
+          "id": "stim",
+          "qty": 1
+        }
+      ],
+      "sceneVisual": true,
+      "visualObjectId": "relayOutpost_container_visual_1",
+      "site": "relayOutpost",
+      "surfaceSourcePoint": {
+        "x": 12,
+        "z": 112
+      }
     }
   ],
   "anomalyFields": [],

@@ -77,6 +77,9 @@ namespace RealmOfAshes.Game
             public GameObject Root;
             public RoaVisibilityGate Gate;
             public Animation Animation;
+            public Transform VisualRoot;
+            public Vector3 VisualBaseLocalPosition;
+            public float EmergenceStartedAt;
             public RoaCharacterView CharacterView;
             public bool UnifiedHumanoid;
             public string Clip = string.Empty;
@@ -410,10 +413,17 @@ namespace RealmOfAshes.Game
         {
             string state = (aiState ?? string.Empty).Trim().ToLowerInvariant();
             string phase = (activityPhase ?? string.Empty).Trim().ToLowerInvariant();
-            if (dead || moving || hostile || phase == "travel" || IsCombatAiState(state)
+            string action = (visualAction ?? string.Empty).Trim().ToLowerInvariant();
+            if (!dead && action == "emerge" && !IsCombatAiState(state)) return "emerge";
+            if (!dead && !moving && action == "ability") return "ability";
+            // A future authoritative grenade action uses a short off-hand
+            // wind-up. Never infer it from a normal attack or projectile.
+            if (!dead && !moving && (action == "grenade" || action == "throwgrenade"))
+                return "grenade";
+            if (!dead && !moving && action == "cover") return "cover";
+            if (dead || moving || phase == "travel" || IsCombatAiState(state)
                 || state == "alarm" || state == "investigate") return string.Empty;
 
-            string action = (visualAction ?? string.Empty).Trim().ToLowerInvariant();
             string type = (activityType ?? string.Empty).Trim().ToLowerInvariant();
             string source = !string.IsNullOrEmpty(action) && action != "idle" ? action : type;
             switch (source)
@@ -429,7 +439,16 @@ namespace RealmOfAshes.Game
                 case "socialize":
                 case "dialogue": return "social";
                 case "eat": return "eat";
-                case "rest":
+                case "rest": return "rest";
+                case "emerge": return "emerge";
+                case "search":
+                case "artifactsearch": return "search";
+                case "gather": return "gather";
+                case "mine": return "work";
+                case "loot": return "loot";
+                case "heal": return "heal";
+                case "interact": return "work";
+                case "takecover": return "cover";
                 default: return string.Empty;
             }
         }
@@ -1185,6 +1204,12 @@ namespace RealmOfAshes.Game
                 enemy.TargetYawDeg = RoaCoords.AngleToYawDeg(snapshotFacing.ToObject<float>());
             enemy.ActivityRevision = snapshotRevision;
             enemy.Hp = resolvedDead ? 0 : nextHp;
+            string previousAction = enemy.Snapshot?["visualAction"]?.ToString();
+            string nextAction = row["visualAction"]?.ToString();
+            string previousStart = enemy.Snapshot?["visualActionStartedAt"]?.ToString();
+            string nextStart = row["visualActionStartedAt"]?.ToString();
+            if (nextAction == "emerge" && (previousAction != nextAction || previousStart != nextStart))
+                enemy.EmergenceStartedAt = Time.time;
             enemy.Snapshot = (JObject)row.DeepClone();
             // Сервер присылает speechMs — сколько реплике осталось висеть, и делает
             // это заново в каждом снимке. Клиент же читал speechUntil, которого в
@@ -1302,6 +1327,7 @@ namespace RealmOfAshes.Game
                 ContactFallbackAngleDeg = StableContactAngle(id),
                 ActivityPhase01 = StableActivityPhase01(id)
             };
+            if (row["visualAction"]?.ToString() == "emerge") enemy.EmergenceStartedAt = Time.time;
             enemy.BodyCollider = InstallPresentationBody(root, bodyProfile,
                 out enemy.BodyRigidbody);
 
@@ -1310,6 +1336,8 @@ namespace RealmOfAshes.Game
             {
                 var viewRoot = new GameObject("View");
                 viewRoot.transform.SetParent(root.transform, false);
+                enemy.VisualRoot = viewRoot.transform;
+                enemy.VisualBaseLocalPosition = viewRoot.transform.localPosition;
                 enemy.CharacterView = viewRoot.AddComponent<RoaCharacterView>();
                 enemy.CharacterView.OnVisualChanged += enemy.Gate.Invalidate;
                 _ = LoadHumanoidGuarded(enemy, HumanoidAppearance(row));
@@ -1462,6 +1490,8 @@ namespace RealmOfAshes.Game
 
             if (enemy.Root == null) { Destroy(model); return; }
             RoaEnemyModels.RestoreApprovedScale(modelKey, model.transform);
+            enemy.VisualRoot = model.transform;
+            enemy.VisualBaseLocalPosition = model.transform.localPosition;
 
             // У части существ клипы свои, а часть моделей — статичный меш.
             enemy.Animation = model.GetComponentInChildren<Animation>();
@@ -1821,6 +1851,7 @@ namespace RealmOfAshes.Game
                     t.rotation = Quaternion.Slerp(t.rotation, wanted, 1f - Mathf.Exp(-10f * Time.deltaTime));
                 }
 
+                UpdateEmergenceVisual(enemy);
                 if (enemy.CharacterView != null)
                 {
                     enemy.CharacterView.SetDead(enemy.Dead);
@@ -1896,6 +1927,16 @@ namespace RealmOfAshes.Game
                 : enemy.PresentationVelocity.magnitude > RunSpeedThreshold ? "run" : "walk";
 
             PlayClip(enemy, wanted);
+        }
+
+        private static void UpdateEmergenceVisual(Enemy enemy)
+        {
+            if (enemy.VisualRoot == null) return;
+            bool emerging = !enemy.Dead && enemy.Snapshot?["visualAction"]?.ToString() == "emerge";
+            float rise = emerging ? 1f - Mathf.Clamp01((Time.time - enemy.EmergenceStartedAt) / 1.2f) : 0f;
+            enemy.VisualRoot.localPosition = enemy.VisualBaseLocalPosition + Vector3.down * (rise * 0.65f);
+            if (enemy.CharacterView == null)
+                enemy.KromkaPresentation?.SetEmergenceOffset(-rise * 0.65f);
         }
 
         private static void PlayClip(Enemy enemy, string clip, float durationSeconds = 0f)

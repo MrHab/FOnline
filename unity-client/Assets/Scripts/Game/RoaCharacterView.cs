@@ -1887,6 +1887,21 @@ namespace RealmOfAshes.Game
                     AddBoneOffset("head", -0.015f * weight,
                         Mathf.Sin(t * 0.55f) * 0.10f * weight, 0f);
                     break;
+                case "observe":
+                    AddBoneOffset("spine_03", -0.025f * weight,
+                        Mathf.Sin(t * 0.68f) * 0.045f * weight, 0f);
+                    AddBoneOffset("head", -0.055f * weight,
+                        Mathf.Sin(t * 1.15f) * 0.20f * weight, 0f);
+                    break;
+                case "detect":
+                    float alert = Mathf.Clamp01((Time.time - _activityChangedAt) / 0.28f);
+                    AddBoneOffset("spine_03", -0.08f * alert * weight,
+                        0.07f * alert * weight, 0f);
+                    AddBoneOffset("head", -0.11f * alert * weight,
+                        0.12f * alert * weight, 0f);
+                    AddBoneOffset("upperarm_l", -0.16f * alert * weight, 0f,
+                        -0.13f * alert * weight);
+                    break;
                 case "social":
                     AddBoneOffset("spine_03", -0.025f * weight,
                         slow * 0.025f * weight, slow * 0.018f * weight);
@@ -1940,8 +1955,8 @@ namespace RealmOfAshes.Game
                     AddBoneOffset("upperarm_r", -0.05f * weight, 0f, 0.08f * weight);
                     break;
                 case "grenade":
-                    // Ready for an explicit server action. A short off-hand
-                    // wind-up and release keeps the held weapon in the gun hand.
+                    // The explicit server action winds up and releases with the
+                    // off-hand while the weapon stays in the gun hand.
                     float throwPhase = Mathf.Clamp01((Time.time - _activityChangedAt) / 1.1f);
                     float windup = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(throwPhase / 0.53f));
                     float release = Mathf.SmoothStep(0f, 1f,

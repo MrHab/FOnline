@@ -416,13 +416,15 @@ namespace RealmOfAshes.Game
             string action = (visualAction ?? string.Empty).Trim().ToLowerInvariant();
             if (!dead && action == "emerge" && !IsCombatAiState(state)) return "emerge";
             if (!dead && !moving && action == "ability") return "ability";
-            // A future authoritative grenade action uses a short off-hand
+            // Only the explicit authoritative grenade action gets the off-hand
             // wind-up. Never infer it from a normal attack or projectile.
             if (!dead && !moving && (action == "grenade" || action == "throwgrenade"))
                 return "grenade";
             if (!dead && !moving && action == "cover") return "cover";
-            if (dead || moving || phase == "travel" || IsCombatAiState(state)
-                || state == "alarm" || state == "investigate") return string.Empty;
+            if (!dead && !moving && state == "alarm") return "detect";
+            if (!dead && !moving && state == "investigate") return "observe";
+            if (dead || moving || phase == "travel" || IsCombatAiState(state))
+                return string.Empty;
 
             string type = (activityType ?? string.Empty).Trim().ToLowerInvariant();
             string source = !string.IsNullOrEmpty(action) && action != "idle" ? action : type;
@@ -749,6 +751,21 @@ namespace RealmOfAshes.Game
             if (enemy.Root == null) return false;
 
             position = enemy.Root.transform.position;
+            return true;
+        }
+
+        /// <summary>Visible off-hand position for the cosmetic NPC grenade arc.</summary>
+        public bool TryGetGrenadeHandPosition(string id, out Vector3 position)
+        {
+            position = Vector3.zero;
+            if (string.IsNullOrEmpty(id) || !_enemies.TryGetValue(id, out Enemy enemy)
+                || enemy.Dead || enemy.CharacterView == null
+                || (enemy.Gate != null && !enemy.Gate.IsVisible)) return false;
+            RoaApocalypseCharacterSkin skin =
+                enemy.CharacterView.GetComponent<RoaApocalypseCharacterSkin>();
+            Transform hand = skin != null ? skin.VisibleHand(true) : null;
+            if (hand == null) return false;
+            position = hand.position;
             return true;
         }
 

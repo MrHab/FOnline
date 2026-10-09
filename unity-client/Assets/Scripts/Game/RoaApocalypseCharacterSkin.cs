@@ -48,6 +48,11 @@ namespace RealmOfAshes.Game
         private RoaHandGrip _rightGrip;
         private string _lastNpcGestureAction = string.Empty;
         private float _lastNpcGestureElapsed;
+        private GameObject _npcActionProp;
+        private string _npcActionPropKind = string.Empty;
+        private bool _npcActionPropCounted;
+        private static int _activeNpcActionProps;
+        private const int MaxActiveNpcActionProps = 24;
         private Transform _visibleHead;
         private Transform _visibleNeck;
         private RoaIkChain _leftLeg;
@@ -449,6 +454,76 @@ namespace RealmOfAshes.Game
         {
             SyncBones();
             FollowHingedParts();
+            UpdateNpcActionProp();
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetNpcActionPropBudget() => _activeNpcActionProps = 0;
+
+        private void OnDisable() => HideNpcActionProp();
+
+        private void OnDestroy() => HideNpcActionProp();
+
+        private void HideNpcActionProp()
+        {
+            if (_npcActionProp != null) _npcActionProp.SetActive(false);
+            if (!_npcActionPropCounted) return;
+            _activeNpcActionProps = Mathf.Max(0, _activeNpcActionProps - 1);
+            _npcActionPropCounted = false;
+        }
+
+        private void UpdateNpcActionProp()
+        {
+            if (_view == null || _visibleLeftHand == null || !_view.ActivityPresentationCanGesture
+                || _view.ActivityPresentationWeight < 0.25f || _view.Dead)
+            {
+                HideNpcActionProp();
+                return;
+            }
+            string action = _view.ActivityPresentation;
+            bool grenade = action == "grenade" && _view.ActivityPresentationElapsed < 0.64f;
+            bool bandage = action == "heal";
+            if (!grenade && !bandage)
+            {
+                HideNpcActionProp();
+                return;
+            }
+            Camera camera = Camera.main;
+            if (camera != null && (camera.transform.position - transform.position).sqrMagnitude > 24f * 24f)
+            {
+                HideNpcActionProp();
+                return;
+            }
+            RoaVisibilityGate gate = GetComponent<RoaVisibilityGate>();
+            if (gate != null && !gate.IsVisible)
+            {
+                HideNpcActionProp();
+                return;
+            }
+            if (!_npcActionPropCounted && _activeNpcActionProps >= MaxActiveNpcActionProps) return;
+            string kind = grenade ? "grenade" : "bandage";
+            if (_npcActionProp == null || _npcActionPropKind != kind)
+            {
+                if (_npcActionProp != null)
+                {
+                    if (Application.isPlaying) Destroy(_npcActionProp);
+                    else DestroyImmediate(_npcActionProp);
+                }
+                _npcActionProp = grenade
+                    ? RoaNpcActionPropVisual.CreateGrenade(transform)
+                    : RoaNpcActionPropVisual.CreateBandage(transform);
+                _npcActionPropKind = kind;
+                gate?.Invalidate();
+            }
+            if (!_npcActionPropCounted)
+            {
+                _activeNpcActionProps++;
+                _npcActionPropCounted = true;
+            }
+            _npcActionProp.SetActive(true);
+            _npcActionProp.transform.position = _visibleLeftHand.position
+                + transform.forward * 0.035f + transform.up * 0.012f;
+            _npcActionProp.transform.rotation = Quaternion.LookRotation(transform.forward, transform.up);
         }
 
         private void SyncBones()

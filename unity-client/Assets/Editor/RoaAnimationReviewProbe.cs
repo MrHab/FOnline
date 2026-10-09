@@ -160,6 +160,8 @@ namespace RealmOfAshes.EditorTools
                 new State { Name = "consume", Action = view => view.PlayAction("consume", 1.2f), Seconds = 1.2f },
                 new State { Name = "harvest", Action = view => view.PlayAction("harvest", 1.5f, 1.3f), Seconds = 1.5f },
                 new State { Name = "npc_search", Action = view => view.SetActivityPresentation("search", 0f), Seconds = 1.2f },
+                new State { Name = "npc_observe", Action = view => view.SetActivityPresentation("observe", 0f), Seconds = 1.2f },
+                new State { Name = "npc_detect", Action = view => view.SetActivityPresentation("detect", 0f), Seconds = 0.8f },
                 new State { Name = "npc_gather", Action = view => view.SetActivityPresentation("gather", 0f), Seconds = 1.2f },
                 new State { Name = "npc_eat", Action = view => view.SetActivityPresentation("eat", 0f), Seconds = 1.2f },
                 new State { Name = "npc_rest", Action = view => view.SetActivityPresentation("rest", 0f), Seconds = 1.2f },
@@ -288,6 +290,10 @@ namespace RealmOfAshes.EditorTools
                         }
                         TrackHeadClearance(newRig, Time.time - start);
                         Shoot(sheet, f, oldRig, newRig, metrics, state.Name + " t " + (Time.time - start).ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+                        if (f == 2 && (state.Name == "npc_heal" || state.Name == "npc_rifle_heal"))
+                            AssertActionProp(newRig, "NpcBandageVisual");
+                        if (f == 2 && (state.Name == "npc_grenade" || state.Name == "npc_rifle_grenade"))
+                            AssertActionProp(newRig, "NpcGrenadeVisual");
                     }
                     Time.captureDeltaTime = 0f;
                     await Drive(new[] { oldRig, newRig }, state, 0.8f);
@@ -350,6 +356,14 @@ namespace RealmOfAshes.EditorTools
             var names = new List<string>();
             foreach (AnimationState state in animation) names.Add(state.name);
             return string.Join(", ", names);
+        }
+
+        private static void AssertActionProp(Rig rig, string name)
+        {
+            foreach (Transform node in rig.View.GetComponentsInChildren<Transform>(true))
+                if (node.name == name && node.gameObject.activeInHierarchy
+                    && node.GetComponentInChildren<Renderer>() != null) return;
+            throw new InvalidOperationException(rig.Name + " has no visible action prop " + name);
         }
 
         private static float clearance = float.MaxValue, clearanceAt;

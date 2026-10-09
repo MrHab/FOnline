@@ -127,8 +127,10 @@ const bossOf = payload => siteActors(payload).find(enemy => enemy.role === 'boss
       '100 viewers still share one authored garrison, not a garrison per player');
     assert(bosses[0].maxHp > firstMaxHp,
       `Attacking-player count raises defender max HP: ${firstMaxHp} -> ${bosses[0].maxHp}`);
-    assert(bosses[0].hp <= firstHp,
-      `A larger attacking crowd cannot heal existing boss HP: ${firstHp} -> ${bosses[0].hp}`);
+    assert(bosses[0].maxHp - bosses[0].hp >= firstMaxHp - firstHp,
+      `A larger attacking crowd cannot erase damage: ${firstMaxHp - firstHp} -> ${bosses[0].maxHp - bosses[0].hp}`);
+    assert(bosses[0].hp > firstHp,
+      'A fresh boss gains effective HP against the larger attacking crowd');
     const crowdedTask = entries.at(-1).join.worldState?.alife?.captureTasks?.find(row => row.siteId === site.id);
     assert(crowdedTask && crowdedTask.phase === 'defeatBoss' && crowdedTask.progressPercent === 0,
       'The shared capture task cannot accrue hold time while the boss lives');

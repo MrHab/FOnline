@@ -1920,7 +1920,7 @@
     { "id": "hunt_z_02_12_listeners", "locationId": "z_02_12", "tx": 69, "tz": 95, "x": -21, "z": 31, "radius": 7, "speciesId": "listener_pack" }
   ],
   "outposts": [
-    { "id": "alife_scrap_outpost", "locationId": "z_06_10", "siteLocationId": "scrapOutpost", "x": 55, "z": 47, "radius": 20, "bounds": { "minX": 26, "maxX": 86, "minZ": 22, "maxZ": 74 }, "ownerFaction": "free_artels", "garrisonSize": 4, "bossType": "patrol_guard" },
-    { "id": "alife_relay_outpost", "locationId": "z_13_10", "siteLocationId": "relayOutpost", "x": 0, "z": 122, "radius": 20, "bounds": { "minX": -28, "maxX": 28, "minZ": 96, "maxZ": 148 }, "ownerFaction": "contour", "garrisonSize": 4, "bossType": "patrol_guard" }
+    { "id": "alife_scrap_outpost", "displayName": "Сторожевая артель", "locationId": "z_06_10", "siteLocationId": "scrapOutpost", "x": 55, "z": 47, "radius": 20, "bounds": { "minX": 26, "maxX": 86, "minZ": 22, "maxZ": 74 }, "ownerFaction": "free_artels", "garrisonSize": 4, "bossType": "patrol_guard" },
+    { "id": "alife_relay_outpost", "displayName": "Периметр К-3", "locationId": "z_13_10", "siteLocationId": "relayOutpost", "x": 0, "z": 122, "radius": 20, "bounds": { "minX": -28, "maxX": 28, "minZ": 96, "maxZ": 148 }, "ownerFaction": "contour", "garrisonSize": 4, "bossType": "patrol_guard" }
   ]
 }

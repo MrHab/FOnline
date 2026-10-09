@@ -20,11 +20,21 @@ namespace RealmOfAshes.EditorTools
     /// фазе клипа, действия (выстрел, перезарядка, смерть) — по реальному времени.
     /// Рядом — report.json: высота стоп над полом и кистей относительно оружия.
     /// Сервер моделей — ROA_ANIM_SERVER, папка — ROA_ANIM_OUT, выбор состояний —
-    /// ROA_ANIM_ONLY (через запятую).
+    /// ROA_ANIM_ONLY (через запятую). ROA_ANIM_W/H задают размер одного
+    /// кадра для проверки экранных форматов.
     /// </summary>
     public static class RoaAnimationReviewProbe
     {
-        private const int W = 240, H = 300, Frames = 6;
+        private static readonly int W = FrameSize("ROA_ANIM_W", 240);
+        private static readonly int H = FrameSize("ROA_ANIM_H", 300);
+        private const int Frames = 6;
+
+        private static int FrameSize(string variable, int fallback)
+        {
+            string value = Environment.GetEnvironmentVariable(variable);
+            return int.TryParse(value, out int size) && size >= 120 && size <= 1440
+                ? size : fallback;
+        }
         private static bool _batchOptionsCaptured;
         private static bool _previousEnterPlayModeOptionsEnabled;
         private static EnterPlayModeOptions _previousEnterPlayModeOptions;
@@ -156,7 +166,10 @@ namespace RealmOfAshes.EditorTools
                 new State { Name = "npc_loot", Action = view => view.SetActivityPresentation("loot", 0f), Seconds = 1.2f },
                 new State { Name = "npc_heal", Action = view => view.SetActivityPresentation("heal", 0f), Seconds = 1.2f },
                 new State { Name = "npc_cover", Action = view => view.SetActivityPresentation("cover", 0f), Seconds = 1.2f },
-                new State { Name = "npc_grenade", Action = view => view.SetActivityPresentation("grenade", 0f), Seconds = 0.9f },
+                new State { Name = "npc_grenade", Action = view => view.SetActivityPresentation("grenade", 0f), Seconds = 1.1f },
+                new State { Name = "npc_rifle_rest", Weapon = "assaultRifle", Action = view => view.SetActivityPresentation("rest", 0f), Seconds = 1.2f },
+                new State { Name = "npc_rifle_heal", Weapon = "assaultRifle", Action = view => view.SetActivityPresentation("heal", 0f), Seconds = 1.2f },
+                new State { Name = "npc_rifle_grenade", Weapon = "assaultRifle", Action = view => view.SetActivityPresentation("grenade", 0f), Seconds = 1.1f },
                 new State { Name = "rifle_idle", Weapon = "assaultRifle", Aim = true },
                 new State { Name = "rifle_walk", Weapon = "assaultRifle", Aim = true, Velocity = new Vector3(0f, 0f, 1.6f) },
                 new State { Name = "rifle_run", Weapon = "assaultRifle", Velocity = new Vector3(0f, 0f, 4.4f) },

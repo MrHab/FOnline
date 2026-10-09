@@ -2188,7 +2188,8 @@ namespace RealmOfAshes.Game
             if (_candidate["dead"]?.ToObject<bool>() == true) InspectCorpse(_candidate);
             else if (TryOpenMasterStation(_candidate)) return;
             else if (IsConductor(_candidate)) OpenConductor();
-            else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)) OpenNpc(_candidate);
+            else if (IsQuestNpc(_candidate) || HasDialogueService(_candidate)
+                || _candidate["canRob"]?.ToObject<bool>() == true) OpenNpc(_candidate);
             else if (NpcHasTrade(_candidate))
             {
                 _active = (JObject)_candidate.DeepClone();
@@ -3117,9 +3118,10 @@ namespace RealmOfAshes.Game
 
         private bool CanRobEncounterActor(JObject actor)
         {
-            if (!_encounterLocation || actor == null) return false;
+            if (actor == null || (!_encounterLocation && actor["canRob"]?.ToObject<bool>() != true)) return false;
             if (actor["dead"]?.ToObject<bool>() == true) return false;
             if (actor["hostileToPlayer"]?.ToObject<bool>() != false) return false;
+            if (actor["canRob"]?.ToObject<bool>() == true) return true;
 
             string role = (actor["encounterRole"]?.ToString() ?? actor["role"]?.ToString() ?? string.Empty).ToLowerInvariant();
             string faction = (actor["faction"]?.ToString() ?? string.Empty).ToLowerInvariant();

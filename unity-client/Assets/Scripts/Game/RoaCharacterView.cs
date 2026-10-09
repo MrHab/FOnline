@@ -551,6 +551,9 @@ namespace RealmOfAshes.Game
 
         public string ActivityPresentation { get { return _activityPresentation; } }
         public float ActivityPresentationWeight { get { return _activityPresentationWeight; } }
+        public float ActivityPresentationElapsed { get { return Mathf.Max(0f, Time.time - _activityChangedAt); } }
+        public bool ActivityPresentationCanGesture { get { return !_dead && !_locomoting
+            && !_hitReaction.Active && Time.time >= _attackUntil && Time.time >= _hurtUntil; } }
 
         /// <summary>Id оружия в руках. Пусто или «fists» — руки свободны.</summary>
         public string WeaponId { get { return _weapon != null ? _weapon.WeaponId : string.Empty; } }
@@ -1939,10 +1942,10 @@ namespace RealmOfAshes.Game
                 case "grenade":
                     // Ready for an explicit server action. A short off-hand
                     // wind-up and release keeps the held weapon in the gun hand.
-                    float throwPhase = Mathf.Clamp01((Time.time - _activityChangedAt) / 0.9f);
-                    float windup = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(throwPhase / 0.4f));
+                    float throwPhase = Mathf.Clamp01((Time.time - _activityChangedAt) / 1.1f);
+                    float windup = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(throwPhase / 0.53f));
                     float release = Mathf.SmoothStep(0f, 1f,
-                        Mathf.Clamp01((throwPhase - 0.4f) / 0.35f));
+                        Mathf.Clamp01((throwPhase - 0.53f) / 0.31f));
                     AddBoneOffset("spine_03", -0.06f * windup * weight,
                         -0.12f * (windup - release) * weight, 0f);
                     AddBoneOffset("upperarm_l", (-0.55f * windup + 0.85f * release) * weight,
@@ -1958,8 +1961,11 @@ namespace RealmOfAshes.Game
                 case "heal":
                     AddBoneOffset("spine_02", 0.09f * weight, 0f, 0f);
                     AddBoneOffset("head", -0.1f * weight, 0f, 0f);
-                    AddBoneOffset("upperarm_r", (-0.4f + pulse * 0.04f) * weight,
-                        0f, (0.42f + pulse * 0.05f) * weight);
+                    // Leave the gun hand near its grip while the free hand
+                    // applies a bandage; the full two-hand pose is for fists.
+                    bool carrying = !string.IsNullOrEmpty(WeaponId) && WeaponId != "fists";
+                    AddBoneOffset("upperarm_r", (carrying ? -0.05f : -0.4f + pulse * 0.04f) * weight,
+                        0f, (carrying ? 0.08f : 0.42f + pulse * 0.05f) * weight);
                     AddBoneOffset("upperarm_l", -0.35f * weight, 0f, -0.38f * weight);
                     break;
                 case "cover":

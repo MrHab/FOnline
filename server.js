@@ -351,6 +351,7 @@ const {
   normalizeState: normalizeOpenWorldAlifeState,
   serializeState: serializeOpenWorldAlifeState,
   setBossAlive: alifeSetOutpostBossAlive,
+  markGuardDead: alifeMarkOutpostGuardDead,
   tickOutpost: alifeTickOutpost,
   within: alifeWithinOutpost,
   scaleDefenderHealth: alifeScaleDefenderHealth,
@@ -2806,6 +2807,22 @@ function serverAlifeEmitLocation(locationId, reason = 'siteChanged') {
   worldMapResponse = null;
 }
 
+function serverFinalizeNpcDeathState(enemy, now) {
+  finalizeNpcDeathState(enemy, now);
+  if (!enemy?.alifeOutpostId) return;
+  const def = OPEN_WORLD_ALIFE.outposts.find(site => site.id === enemy.alifeOutpostId);
+  if (!def) return;
+  const state = serverOpenWorldAlifeState();
+  const runtime = state.outposts.get(def.id);
+  if (!runtime || enemy.alifeOutpostGeneration !== runtime.garrisonGeneration) return;
+  const changed = enemy.alifeOutpostBoss
+    ? alifeSetOutpostBossAlive(state, def, false)
+    : alifeMarkOutpostGuardDead(state, def, enemy.alifeOutpostSlot);
+  if (!changed) return;
+  serverSaveOpenWorldAlife(true, now);
+  serverAlifeEmitLocation(def.locationId, 'defenderKilled');
+}
+
 function serverPlayerInsideAlifeOutpost(player) {
   if (!player) return false;
   return OPEN_WORLD_ALIFE.outposts.some(def => def.locationId === player.locationId
@@ -2825,7 +2842,7 @@ function serverAlifeWorldMapSites(zoneId) {
     const place = (zone.places || []).find(row => row.locationId === def.siteLocationId);
     if (!place) continue;
     const current = alifePublicOutpost(def, runtime.outposts.get(def.id));
-    sites.push({ id: def.id, kind: 'outpost', u: Number(place.u), v: Number(place.v),
+    sites.push({ id: def.id, displayName: current.displayName, kind: 'outpost', u: Number(place.u), v: Number(place.v),
       active: true, ownerFaction: current.ownerFaction, capturePercent: current.capturePercent });
   }
   return sites;
@@ -2858,6 +2875,7 @@ function serverAlifeEnsureOutpostActors(room, def, runtime) {
     actor.alifeOutpostId = def.id;
     actor.alifeOutpostGeneration = runtime.garrisonGeneration;
     actor.alifeOutpostBoss = boss;
+    actor.alifeOutpostSlot = boss ? -1 : index;
     actor.ecologySiteId = def.id;
     actor.ecologyVisualAction = 'guard';
     actor.alifeBaseMaxHp = Math.max(1, Number(actor.maxHp || 1)) * (boss ? 3 : 1);
@@ -2868,8 +2886,11 @@ function serverAlifeEnsureOutpostActors(room, def, runtime) {
     return actor;
   };
   if (runtime.bossAlive && !current.some(actor => actor.alifeOutpostBoss)) create(0, true);
-  for (let index = current.filter(actor => !actor.alifeOutpostBoss).length;
-    index < def.garrisonSize; index += 1) create(index, false);
+  const deadSlots = new Set(runtime.garrisonDeadSlots || []);
+  for (let index = 0; index < def.garrisonSize; index += 1) {
+    if (deadSlots.has(index) || current.some(actor => !actor.alifeOutpostBoss && actor.alifeOutpostSlot === index)) continue;
+    create(index, false);
+  }
   if (changed) {
     refreshRoomWorldState(room);
     emitEnemySnapshot(room, true);
@@ -2984,14 +3005,14 @@ function serverTickOpenWorldAlife(now = Date.now()) {
       && alifeWithinOutpost(def, player)).length;
     for (const actor of actors) if (!actor.dead) {
       // The permanent outpost defenders scale with the number of attacking
-      // players standing inside its boundary. The pure rule keeps the current
-      // HP unchanged when the maximum grows; increasing the attacking party
-      // cannot heal a damaged boss, and leaving cannot raise a defender above
-      // the newly reduced maximum.
+      // players standing inside its boundary. The pure rule adds effective HP
+      // to a fresh defender while preserving every point of prior damage.
       alifeScaleDefenderHealth(actor, attackers);
     }
-    const point = storm?.phase === 'active' ? serverStormPointForLocation(def.locationId) : null;
-    const stormInside = !!point && sampleRadiationStorm(storm, point.x, point.y, now).inside;
+    // Sample the actual outpost footprint, using the same sector-to-map
+    // transform as a player sheltering inside it.
+    const stormInside = storm?.phase === 'active'
+      && serverStormAtPlayer(storm, { locationId: def.locationId, x: def.x, z: def.z }, now).here?.inside === true;
     // Patrols travel in the persistent world simulation even when no player
     // has loaded this scene. Their on-site members can conduct an abstract
     // siege offscreen; the live room still owns detailed NPC combat.
@@ -3195,6 +3216,8 @@ function serverEcologyMaterialize(room, group, options = {}) {
       enemy.ecologyCaravanMerchant = true;
       enemy.ecologyCaravanRewardTier = serverRoomTier(room);
     }
+    if (species.travel?.mode === 'caravan') enemy.ecologyCaravanGroup = true;
+    if (enemy.ecologyCaravanMerchant) enemy.ecologyCaravanRobbable = roomAllowsNpcCombat(room);
     if (guardingLair) {
       enemy.ecologyVisualAction = 'emerge';
       enemy.ecologyVisualActionStartedAt = Date.now();
@@ -3305,7 +3328,7 @@ function serverEcologyShowAftermath(room, cell, state, now = Date.now()) {
         minPlayerDistance: 0
       });
       if (!actor) return;
-      finalizeNpcDeathState(actor, now);
+      serverFinalizeNpcDeathState(actor, now);
       actor.lastLootInspectAt = keepUntil - CORPSE_FULL_CLEANUP_MS;
       actor.aftermathSiteId = site.id;
       serverSpawnCarcass(room, actor, now);
@@ -4075,7 +4098,7 @@ app.post('/api/dev/danger-ecology/kill', (req, res) => {
     if (killed >= count) break;
     if (!enemy || enemy.dead || enemy.ecologyGroupId !== group.id) continue;
     enemy.hp = 0;
-    finalizeNpcDeathState(enemy, now);
+    serverFinalizeNpcDeathState(enemy, now);
     serverEcologyNoteDeath(room, enemy);
     killed += 1;
   }
@@ -14274,7 +14297,7 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), optio
     ? Number(options.sourceX) : Number(p.x || enemy.x || 0);
   const sourceZ = Number.isFinite(Number(options.sourceZ))
     ? Number(options.sourceZ) : Number(p.z || enemy.z || 0);
-  finalizeNpcDeathState(enemy, now);
+  serverFinalizeNpcDeathState(enemy, now);
   serverNoteWorldBossKill(room, enemy, now);
   serverNotePublicEventBossKill(room, enemy, now);
   enemy.looted = false;
@@ -15448,7 +15471,8 @@ function setEncounterFactionHostileToPlayer(room, faction, player, now = Date.no
   const factionKey = serverCombatFactionGroup(faction);
   let changed = 0;
   for (const actor of room.enemies.values()) {
-    if (!actor || actor.dead || serverCombatFactionGroup(actor.faction) !== factionKey) continue;
+    if (!actor || actor.dead || serverCombatFactionGroup(actor.faction) !== factionKey
+      || (opts.ecologyGroupId && actor.ecologyGroupId !== opts.ecologyGroupId)) continue;
     if (markActorHostileToPlayer(actor, player)) changed++;
     const distance = Math.hypot(Number(player.x || 0) - Number(actor.x || 0), Number(player.z || 0) - Number(actor.z || 0));
     const visible = enemyCanSeePlayer(room, actor, player, now);
@@ -21186,6 +21210,7 @@ function publicEnemy(e, viewer = null) {
     variantId: e.variantId || 'normal',
     variantName: e.variantName || '',
     faction: e.faction || 'wild',
+    canRob: e.ecologyCaravanMerchant === true && e.ecologyCaravanRobbable === true && !e.dead,
     hostileToPlayer: viewer
       ? serverActorHostileToPlayer(e, viewer)
       : (e.hostileToPlayer !== false || !!actorHostilityKeys(e, false)?.size),
@@ -27239,7 +27264,7 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
     if (actor.dead || enemy.hp <= 0) {
       const diedAt = Date.now() - Math.max(1000,
         Math.round(Math.max(0, Number(zone.worldHour || 0) - Number(actor.diedHour || 0)) * 60000));
-      finalizeNpcDeathState(enemy, diedAt);
+      serverFinalizeNpcDeathState(enemy, diedAt);
       serverPrepareNpcCorpseLoot(enemy, room);
     }
   });
@@ -27942,7 +27967,7 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
     if (ranged) serverNpcConsumeCombatAmmo(actor, weapon, foe, now);
     foe.aiState = foe.hp <= 0 ? 'dead' : 'factionCombat';
     if (foe.hp <= 0 && !foe.dead) {
-      finalizeNpcDeathState(foe, now);
+      serverFinalizeNpcDeathState(foe, now);
       foe.killerId = actor.id;
       serverPrepareNpcCorpseLoot(foe, room);
       serverDropNpcLootBag(room, foe, now);
@@ -34685,8 +34710,9 @@ io.on('connection', (socket) => {
     if (dist > 5.2) return fail('NPC слишком далеко.');
     if (!serverInteractionHasLineOfSight(room, p, actor)) return fail('NPC находится за препятствием.');
     if (actor.hostileToPlayer !== false || serverNpcIsNaturalCreature(actor, actor)) return fail('С этим NPC нельзя торговать.');
+    if (actor.ecologyCaravanMerchant === true && serverActorHostileToPlayer(actor, p)) return fail('С этим NPC нельзя торговать.');
     if (npcScheduledServiceClosed(room, actor, Date.now())) return fail('Торговец сейчас не работает или занят. Приходите позже.');
-    const grudgeHours = serverCaravanGrievanceHours(actor, p);
+    const grudgeHours = actor.ecologyCaravanMerchant === true ? 0 : serverCaravanGrievanceHours(actor, p);
     if (grudgeHours > 0) return fail(`Торговцы фракции не работают с грабителями их караванов. Обида остынет через ${grudgeHours} ч.`);
 
     if (!serverNpcTradeOpen(actor, room.locationId)) return fail(SERVER_NPC_TRADE_CLOSED_ERROR);
@@ -34706,8 +34732,9 @@ io.on('connection', (socket) => {
     const actor = room.enemies.get(enemyId);
     if (!actor || actor.dead) return fail('NPC недоступен.');
     if (actor.hostileToPlayer !== false || serverNpcIsNaturalCreature(actor, actor)) return fail('С этим NPC нельзя торговать.');
+    if (actor.ecologyCaravanMerchant === true && serverActorHostileToPlayer(actor, p)) return fail('С этим NPC нельзя торговать.');
     if (npcScheduledServiceClosed(room, actor, Date.now())) return fail('Торговец сейчас не работает или занят. Приходите позже.');
-    const grudgeHours = serverCaravanGrievanceHours(actor, p);
+    const grudgeHours = actor.ecologyCaravanMerchant === true ? 0 : serverCaravanGrievanceHours(actor, p);
     if (grudgeHours > 0) return fail(`Торговцы фракции не работают с грабителями их караванов. Обида остынет через ${grudgeHours} ч.`);
     if (Math.hypot(Number(p.x || 0) - Number(actor.x || 0), Number(p.z || 0) - Number(actor.z || 0)) > 5.2) return fail('NPC слишком далеко.');
     if (!serverInteractionHasLineOfSight(room, p, actor)) return fail('NPC находится за препятствием.');
@@ -34727,19 +34754,24 @@ io.on('connection', (socket) => {
     ensureRoomWorld(room);
     const loc = roomLocation(room);
     if (!locationAllowsNpcCombat(loc) && !room.locationWorldEvent) return fail('В мирной локации нельзя нападать или грабить НПС.');
-    if (!loc.encounterOnly && !loc.randomTemplate) return fail('Ограбление каравана доступно только в событии каравана.');
     const enemyId = String(data.enemyId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
     const actor = room.enemies.get(enemyId);
     if (serverNpcIsKromkaOnboardingProtected(actor)) return fail('Сюжетного персонажа нельзя ограбить.');
     if (!actor || actor.dead) return fail('Цель уже недоступна.');
-    if (actor.hostileToPlayer !== false) return fail('Цель уже враждебна.');
+    const openWorldCaravan = actor.ecologyCaravanMerchant === true
+      && actor.ecologyCaravanRobbable === true && !!actor.ecologyGroupId;
+    if (!loc.encounterOnly && !loc.randomTemplate && !openWorldCaravan)
+      return fail('Ограбление доступно только у каравана.');
+    if (actor.hostileToPlayer !== false || serverActorHostileToPlayer(actor, p)) return fail('Цель уже враждебна.');
     const dist = Math.hypot(Number(p.x || 0) - Number(actor.x || 0), Number(p.z || 0) - Number(actor.z || 0));
     if (dist > 4.4) return fail('Подойдите ближе, чтобы ограбить.');
     if (!serverInteractionHasLineOfSight(room, p, actor)) return fail('Цель находится за препятствием.');
-    const changed = setEncounterFactionHostileToPlayer(room, actor.faction, p, Date.now());
+    const changed = setEncounterFactionHostileToPlayer(room, actor.faction, p, Date.now(), openWorldCaravan
+      ? { remember: false, ecologyGroupId: actor.ecologyGroupId } : {});
     addRoomNoise(room, p.x, p.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE), socket.id, 'combat');
     refreshRoomWorldState(room);
-    const factionEnemies = [...room.enemies.values()].filter(e => e && e.faction === actor.faction);
+    const factionEnemies = [...room.enemies.values()].filter(e => e && e.faction === actor.faction
+      && (!openWorldCaravan || e.ecologyGroupId === actor.ecologyGroupId));
     const enemies = factionEnemies.map(enemy => publicEnemy(enemy, p));
     if (typeof ack === 'function') ack({ ok: true, targetName: actor.name, faction: actor.faction, changed, enemies });
     const hostilityTime = Date.now();

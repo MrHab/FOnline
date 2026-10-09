@@ -16,6 +16,8 @@ const { createLocationCollision, circleBlockerPenalty } = require('../src/server
 const catalog = alife.normalizeCatalog(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data/kromka/open-world-alife.json'), 'utf8')));
 assert.equal(catalog.huntingGrounds.length, 3);
 assert.equal(catalog.outposts.length, 2);
+assert(catalog.outposts.every(site => site.displayName && !site.displayName.startsWith('alife_')),
+  'outposts have player-facing names in authored data');
 const merchantStock = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data/traders.json'), 'utf8')).profiles.caravan.stock;
 assert(['ammo9', 'medkit', 'antibiotics', 'repairKit'].every(itemId => merchantStock.some(row => row.id === itemId)),
   'caravan profile offers the required consumables');
@@ -223,6 +225,8 @@ console.log('PASS marauders and wandering packs travel between POIs or road stop
 const outpost = catalog.outposts[0];
 let outposts = alife.normalizeState({}, catalog);
 let runtime = outposts.outposts.get(outpost.id);
+assert.equal(alife.publicOutpost(outpost, runtime).displayName, outpost.displayName,
+  'the live outpost map and capture UI receive the authored name');
 let tick = 1_000_000;
 const attacker = { id: 'one', faction: 'uprava', x: outpost.x, z: outpost.z };
 const ally = { id: 'two', faction: 'uprava', x: outpost.x, z: outpost.z };
@@ -284,12 +288,31 @@ assert(patrolCapture && runtime.ownerFaction === 'uprava', 'the NPC patrol then 
 assert.deepEqual(patrolCapture.contributions, {}, 'NPC patrol capture does not grant player XP');
 console.log('PASS offscreen NPC patrol defeats the boss, holds for three minutes and captures without player XP');
 
+const fallen = alife.normalizeState({}, catalog);
+assert.equal(alife.markGuardDead(fallen, outpost, 1), true);
+assert.equal(alife.markGuardDead(fallen, outpost, 1), false, 'one guard death is counted once');
+assert.deepEqual(alife.normalizeState(alife.serializeState(fallen), catalog).outposts.get(outpost.id).garrisonDeadSlots, [1],
+  'a killed guard stays absent after restart and corpse cleanup');
+const fallenRuntime = fallen.outposts.get(outpost.id);
+alife.tickOutpost(fallen, outpost, tick, { stormInside: true });
+alife.tickOutpost(fallen, outpost, tick + 1000, { stormInside: false });
+assert.deepEqual(fallenRuntime.garrisonDeadSlots, [], 'a new raider generation receives a fresh garrison');
+console.log('PASS guard casualties persist until owner generation changes');
+
 let actor = { hp: 60, maxHp: 100, alifeBaseMaxHp: 100 };
 alife.scaleDefenderHealth(actor, 3);
-assert.deepEqual([actor.hp, actor.maxHp], [60, 190], 'more attackers increase maximum without healing damage');
+assert.deepEqual([actor.hp, actor.maxHp], [150, 190], 'more attackers add effective HP while preserving 40 damage');
 alife.scaleDefenderHealth(actor, 0);
-assert.deepEqual([actor.hp, actor.maxHp], [60, 100], 'fewer attackers do not heal either');
-console.log('PASS outpost defender scaling never restores current HP');
+assert.deepEqual([actor.hp, actor.maxHp], [60, 100], 'fewer attackers keep the same 40 damage');
+actor = { hp: 100, maxHp: 100, alifeBaseMaxHp: 100 };
+alife.scaleDefenderHealth(actor, 3);
+assert.deepEqual([actor.hp, actor.maxHp], [190, 190], 'a fresh defender gains real HP when attackers grow');
+actor.hp -= 35;
+alife.scaleDefenderHealth(actor, 1);
+assert.deepEqual([actor.hp, actor.maxHp], [95, 130], 'scaling down retains all 35 damage');
+alife.scaleDefenderHealth(actor, 3);
+assert.deepEqual([actor.hp, actor.maxHp], [155, 190], 'scaling back up never erases damage');
+console.log('PASS outpost defender scaling raises effective HP and preserves damage');
 
 outposts = alife.normalizeState({}, catalog);
 runtime = outposts.outposts.get(outpost.id);

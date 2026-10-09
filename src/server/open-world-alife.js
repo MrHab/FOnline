@@ -22,7 +22,7 @@ function normalizeCatalog(input = {}) {
   const lairAnchorsById = Object.freeze(Object.fromEntries(lairAnchors.map(row => [row.id, row])));
   const read = (rows, kind) => (Array.isArray(rows) ? rows : []).map(row => {
     const site = {
-      id: id(row.id), kind, locationId: id(row.locationId),
+      id: id(row.id), displayName: String(row.displayName || '').slice(0, 80), kind, locationId: id(row.locationId),
       x: number(row.x), z: number(row.z), radius: Math.max(3, number(row.radius, 12)),
       ...(kind === 'huntingGround' ? {
         tx: Math.round(number(row.tx)), tz: Math.round(number(row.tz)), speciesId: id(row.speciesId)
@@ -57,6 +57,7 @@ function normalizeCatalog(input = {}) {
 function emptyOutpost(def) {
   return {
     id: def.id, ownerFaction: def.ownerFaction, bossAlive: true, garrisonGeneration: 1,
+    garrisonDeadSlots: [],
     captureMs: {}, contributionMs: {}, captureFaction: '', lastTickAt: 0,
     stormActive: false, stormSheltered: false, bossSiegeMs: 0, version: 1
   };
@@ -72,6 +73,8 @@ function normalizeState(input = {}, catalog = normalizeCatalog()) {
     runtime.ownerFaction = id(row.ownerFaction) || runtime.ownerFaction;
     runtime.bossAlive = row.bossAlive !== false;
     runtime.garrisonGeneration = Math.max(1, Math.floor(number(row.garrisonGeneration, 1)));
+    runtime.garrisonDeadSlots = [...new Set((Array.isArray(row.garrisonDeadSlots) ? row.garrisonDeadSlots : [])
+      .map(slot => Math.floor(number(slot, -1))).filter(slot => slot >= 0 && slot < def.garrisonSize))].sort((a, b) => a - b);
     runtime.captureMs = Object.fromEntries(Object.entries(row.captureMs || {})
       .map(([faction, ms]) => [id(faction), Math.max(0, Math.min(CAPTURE_MS, number(ms)))])
       .filter(([faction]) => faction));
@@ -94,7 +97,8 @@ function serializeState(state) {
     version: 1, revision: state.revision, pendingXp: { ...state.pendingXp },
     outposts: [...state.outposts.values()].map(row => ({
       id: row.id, ownerFaction: row.ownerFaction, bossAlive: row.bossAlive,
-      garrisonGeneration: row.garrisonGeneration, captureMs: { ...row.captureMs },
+      garrisonGeneration: row.garrisonGeneration, garrisonDeadSlots: [...row.garrisonDeadSlots],
+      captureMs: { ...row.captureMs },
       contributionMs: { ...row.contributionMs }, captureFaction: row.captureFaction,
       stormActive: row.stormActive, stormSheltered: row.stormSheltered,
       bossSiegeMs: row.bossSiegeMs, version: row.version
@@ -125,6 +129,16 @@ function setBossAlive(state, def, alive) {
   return true;
 }
 
+function markGuardDead(state, def, slot) {
+  const runtime = state.outposts.get(def.id);
+  const index = Math.floor(number(slot, -1));
+  if (!runtime || index < 0 || index >= def.garrisonSize || runtime.garrisonDeadSlots.includes(index)) return false;
+  runtime.garrisonDeadSlots.push(index);
+  runtime.garrisonDeadSlots.sort((a, b) => a - b);
+  markChanged(state, runtime);
+  return true;
+}
+
 function tickOutpost(state, def, now, observed = {}) {
   const runtime = state.outposts.get(def.id);
   if (!runtime) return [];
@@ -144,6 +158,7 @@ function tickOutpost(state, def, now, observed = {}) {
       runtime.ownerFaction = 'raiders';
       runtime.bossAlive = true;
       runtime.garrisonGeneration += 1;
+      runtime.garrisonDeadSlots = [];
       runtime.captureMs = {};
       runtime.contributionMs = {};
       runtime.captureFaction = '';
@@ -196,6 +211,7 @@ function tickOutpost(state, def, now, observed = {}) {
     runtime.ownerFaction = leader;
     runtime.bossAlive = true;
     runtime.garrisonGeneration += 1;
+    runtime.garrisonDeadSlots = [];
     runtime.captureMs = {};
     runtime.contributionMs = {};
     runtime.captureFaction = '';
@@ -211,15 +227,17 @@ function scaleDefenderHealth(actor, attackerCount, multiplier = 0.3) {
   const oldHp = Math.max(0, number(actor.hp, 0));
   const nextMax = Math.max(1, Math.round(number(actor.alifeBaseMaxHp, oldMax)
     * (1 + Math.max(0, attackerCount) * multiplier)));
+  const damageTaken = Math.max(0, oldMax - oldHp);
   actor.maxHp = nextMax;
-  // A changing attacker count never restores current health.
-  actor.hp = Math.min(oldHp, nextMax);
+  // A fresh defender gains effective HP, while all prior damage is retained.
+  // A defeated defender cannot revive when the attacker count changes.
+  actor.hp = oldHp <= 0 ? 0 : Math.max(0, nextMax - damageTaken);
   return actor;
 }
 
 function publicOutpost(def, runtime) {
   return {
-    id: def.id, kind: 'outpost', locationId: def.locationId,
+    id: def.id, displayName: def.displayName, kind: 'outpost', locationId: def.locationId,
     x: def.x, z: def.z, radius: def.radius, bounds: def.bounds, active: true,
     ownerFaction: runtime.ownerFaction, captureFaction: runtime.captureFaction,
     capturePercent: Math.round(100 * (runtime.captureMs[runtime.captureFaction] || 0) / CAPTURE_MS),
@@ -230,7 +248,7 @@ function publicOutpost(def, runtime) {
 function publicCaptureTask(def, runtime) {
   const site = publicOutpost(def, runtime);
   return {
-    id: `capture:${site.id}`, siteId: site.id, title: 'Захват аванпоста',
+    id: `capture:${site.id}`, siteId: site.id, title: 'Захват аванпоста', displayName: site.displayName,
     phase: site.bossAlive ? 'defeatBoss' : 'hold',
     ownerFaction: site.ownerFaction, captureFaction: site.captureFaction,
     progressPercent: site.capturePercent, requiredSeconds: CAPTURE_MS / 1000,
@@ -238,4 +256,5 @@ function publicCaptureTask(def, runtime) {
   };
 }
 
-module.exports = { CAPTURE_MS, normalizeCatalog, normalizeState, serializeState, setBossAlive, tickOutpost, scaleDefenderHealth, publicOutpost, publicCaptureTask, within };
+module.exports = { CAPTURE_MS, normalizeCatalog, normalizeState, serializeState, setBossAlive, markGuardDead,
+  tickOutpost, scaleDefenderHealth, publicOutpost, publicCaptureTask, within };

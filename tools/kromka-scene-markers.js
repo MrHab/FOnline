@@ -19,8 +19,8 @@ const CLASS_SPHERE_COLLIDER = 135;
 const CLASS_CAPSULE_COLLIDER = 136;
 const CLASS_MONO_BEHAVIOUR = 114;
 const CLASS_PREFAB_INSTANCE = 1001;
-// Every Unity collider class. The scenes use the three analytic ones; any other
-// (mesh, terrain, wheel) has no exact 2D shape here and must fail loudly.
+// Object colliders use three analytic shapes. Ground markers are checked by the
+// sector surface probes and can own a generated MeshCollider instead.
 const COLLIDER_CLASSES = new Map([
   [CLASS_BOX_COLLIDER, 'box'], [CLASS_SPHERE_COLLIDER, 'sphere'], [CLASS_CAPSULE_COLLIDER, 'capsule'],
   [64, 'mesh'], [154, 'terrain'], [146, 'wheel']
@@ -181,6 +181,7 @@ function readMarkerColliders(scenePath) {
         trigger: field('m_IsTrigger') === '1',
         center: inlineVector(field('m_Center'), ['x', 'y', 'z']) || { x: 0, y: 0, z: 0 }
       };
+      if (kind === 'mesh') collider.mesh = reference(field('m_Mesh'));
       if (kind === 'box') collider.size = inlineVector(field('m_Size'), ['x', 'y', 'z']);
       if (kind === 'sphere' || kind === 'capsule') collider.radius = Number(field('m_Radius'));
       if (kind === 'capsule') {
@@ -193,7 +194,7 @@ function readMarkerColliders(scenePath) {
 
   const worldCache = new Map();
   function world(transform) {
-    if (!transform) return { matrix: IDENTITY, active: true, marker: null };
+    if (!transform) return { matrix: IDENTITY, active: true, marker: null, surfaceGenerated: false };
     if (worldCache.has(transform.fileId)) return worldCache.get(transform.fileId);
     const gameObject = gameObjects.get(transform.gameObject);
     const ownMarker = markerOfGameObject.get(transform.gameObject) || null;
@@ -202,13 +203,15 @@ function readMarkerColliders(scenePath) {
       // A prefab instance root keeps its TRS in the PrefabInstance overrides. No blocking
       // marker is built that way, so only the chain above it matters here.
       const parent = world(transforms.get(prefabParents.get(transform.prefabInstance)));
-      result = { matrix: null, active: parent.active, marker: ownMarker || parent.marker };
+      result = { matrix: null, active: parent.active, marker: ownMarker || parent.marker,
+        surfaceGenerated: parent.surfaceGenerated };
     } else {
       const parent = world(transforms.get(transform.father));
       result = {
         matrix: parent.matrix ? multiply(parent.matrix, trsMatrix(transform.position, transform.rotation, transform.scale)) : null,
         active: parent.active && (!gameObject || gameObject.active),
-        marker: ownMarker || parent.marker
+        marker: ownMarker || parent.marker,
+        surfaceGenerated: parent.surfaceGenerated || gameObject?.name === 'SectorSurface_AUTHORED'
       };
     }
     worldCache.set(transform.fileId, result);
@@ -219,9 +222,16 @@ function readMarkerColliders(scenePath) {
   for (const collider of colliders) {
     const transform = transformOfGameObject.get(collider.gameObject);
     const placed = world(transform);
-    if (!collider.enabled || collider.trigger || !placed.active) continue;
+    if (!collider.enabled || collider.trigger || !placed.active || placed.surfaceGenerated) continue;
     const name = gameObjects.get(collider.gameObject)?.name || '';
     const owner = placed.marker ? placed.marker.id : '';
+    if (placed.marker?.role === 'terrain' && collider.kind === 'mesh') {
+      if (!collider.mesh || collider.mesh === '0')
+        throw new Error(`${scenePath}: ${owner} has an empty terrain mesh collider`);
+      if (!byMarker.has(owner)) byMarker.set(owner, []);
+      byMarker.get(owner).push({kind: 'mesh', name, mesh: collider.mesh});
+      continue;
+    }
     if (!['box', 'sphere', 'capsule'].includes(collider.kind))
       throw new Error(`${scenePath}: ${owner || name} carries a ${collider.kind} collider; only box, sphere and capsule have an exported server shape`);
     if (!placed.matrix)

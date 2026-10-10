@@ -1,0 +1,25 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {applyResourceFootings}=require('./lib/sector-resource-footings');
+const {groundHeight}=require('../src/server/sector-surface');
+const field={samplesX:2,samplesY:2,width:400,depth:400,heights:[0,0,0,0]};
+const profile=()=>({zoneId:'z_00_00',locationId:'z_00_00',width:320,depth:320,mapMinX:0,mapMinY:0,mapSpan:20,gain:160,datum:0,
+  foundations:[],roads:[],bridges:[],corridors:[],hydroCuts:[],waterIndices:[],waterVertices:[],waterEdges:[]});
+const object={id:'oil',model:'oilPumpJack',resourceType:'oil',hp:8,maxHp:8,position:{x:0,y:0,z:0}},definition={objects:[object,{id:'decoration',model:'oilPumpJack',position:{x:12,y:0,z:12}}]};
+const definitionBefore=structuredClone(definition),p=profile(),before=structuredClone(p);
+assert.deepEqual(applyResourceFootings([p],field,{},()=>definition),[]);assert.deepEqual(p,before);
+const recipe={zone:p.zoneId,id:'native_support_oil',objectId:'oil',x:0,z:0,halfX:2.51,halfZ:2.51,blend:3,height:1};
+applyResourceFootings([p],field,{resourceFootings:[recipe]},()=>definition);
+for(const x of [-2.5,0,2.5])for(const z of [-2.5,0,2.5])assert.equal(groundHeight(p,field,x,z),1);
+assert.equal(groundHeight(p,field,7,0),0);
+const slopeOne=groundHeight(p,field,3.2,0),slopeTwo=groundHeight(p,field,4.4,0);
+assert(slopeOne<1&&slopeOne>slopeTwo&&slopeTwo>0,'Smooth dry transition');
+assert.deepEqual(definition,definitionBefore,'Resource metadata/native placement unchanged');
+applyResourceFootings([p],field,{resourceFootings:[recipe]},()=>definition);assert.equal(p.foundations.length,1,'Replay does not accumulate duplicate pads');
+const wet=profile();wet.waterVertices=[{x:-10,z:-10,h:0},{x:10,z:-10,h:0},{x:0,z:10,h:0}];wet.waterIndices=[0,1,2];
+const originalBed=groundHeight(wet,field,0,0);applyResourceFootings([wet],field,{resourceFootings:[recipe]},()=>definition);
+assert.equal(groundHeight(wet,field,0,0),originalBed,'Dry pad never fills source water triangle');
+const invalid=profile(),invalidBefore=structuredClone(invalid);
+assert.throws(()=>applyResourceFootings([invalid],field,{resourceFootings:[recipe,{...recipe,id:'invalid',objectId:'decoration'}]},()=>definition),/protected rigid/);
+assert.deepEqual(invalid,invalidBefore,'Invalid later recipe cannot partially apply');
+console.log('Protected native resource footings: default parity, physical plane/grid, smooth dry transition, water preservation, metadata/replay and atomic validation PASS.');

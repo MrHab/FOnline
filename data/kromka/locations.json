@@ -113,8 +113,8 @@
         {
           "id": "contour-mute-01",
           "type": "mute",
-          "x": 14,
-          "z": -6,
+          "x": 14.0,
+          "z": -6.0,
           "radius": 2.8,
           "dischargeMs": 5000,
           "training": false,

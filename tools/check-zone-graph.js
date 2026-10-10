@@ -111,7 +111,15 @@ for (const zone of graph.zones) {
     assert(back && back.to === zone.id, `${zone.id} ${side}: the neighbour points back`);
     assert.deepEqual({ open: back.open, along: back.along, road: back.road }, { open: edge.open, along: edge.along, road: edge.road },
       `${zone.id} ${side}: both zones agree on the shared edge`);
-    assert(edge.along >= 0.15 && edge.along <= 0.85);
+    const pair = [zone.id, other.id].sort().join('|');
+    const authoredAlong = overrides.gatePositions?.[pair];
+    if (authoredAlong === undefined) {
+      assert(edge.along >= 0.15 && edge.along <= 0.85, `${pair}: generated gate stays away from the corners`);
+    } else {
+      assert.equal(edge.along, authoredAlong, `${pair}: gate matches its authored crossing`);
+      assert(edge.along > 0 && edge.along < 1, `${pair}: authored gate lies on the shared edge`);
+      assert(edge.sourceAlong >= 0.15 && edge.sourceAlong <= 0.85, `${pair}: generated fallback stays away from the corners`);
+    }
     assert.equal(other.col - zone.col, SIDES[side].dc);
     assert.equal(other.row - zone.row, SIDES[side].dr);
   }

@@ -402,7 +402,9 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void RecoverFromFall()
         {
-            float standing = _controller.height * 0.5f;
+            float floor = RoaZoneReliefProjection.GroundHeightAt(transform.position.x,
+                transform.position.z, FeetY());
+            float standing = floor + _controller.height * 0.5f;
             if (transform.position.y > standing - FallRecoveryDepth) return;
             Vector3 place = transform.position;
             place.y = standing;

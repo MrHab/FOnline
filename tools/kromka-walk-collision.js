@@ -41,9 +41,9 @@ function halfTurn(angle) {
   return value;
 }
 
-function distanceToBand(low, high) {
-  if (high < WALK_BAND_BOTTOM) return WALK_BAND_BOTTOM - high;
-  if (low > WALK_BAND_TOP) return low - WALK_BAND_TOP;
+function distanceToBand(low, high, groundY = 0) {
+  if (high < groundY + WALK_BAND_BOTTOM) return groundY + WALK_BAND_BOTTOM - high;
+  if (low > groundY + WALK_BAND_TOP) return low - groundY - WALK_BAND_TOP;
   return 0;
 }
 
@@ -63,14 +63,14 @@ function rectangleAround(points, yaw) {
   return { x: u * cos + v * sin, z: -u * sin + v * cos, sizeX: maxU - minU, sizeZ: maxV - minV, yaw };
 }
 
-function boxShape(corners, axes) {
+function boxShape(corners, axes, groundY = 0) {
   const points = [];
   for (const corner of corners)
-    if (corner[1] >= WALK_BAND_BOTTOM && corner[1] <= WALK_BAND_TOP) points.push([corner[0], corner[2]]);
+    if (corner[1] >= groundY + WALK_BAND_BOTTOM && corner[1] <= groundY + WALK_BAND_TOP) points.push([corner[0], corner[2]]);
   for (const [a, b] of BOX_EDGES) {
     const from = corners[a];
     const to = corners[b];
-    for (const level of [WALK_BAND_BOTTOM, WALK_BAND_TOP]) {
+    for (const level of [groundY + WALK_BAND_BOTTOM, groundY + WALK_BAND_TOP]) {
       if ((from[1] - level) * (to[1] - level) >= 0) continue;
       const t = (level - from[1]) / (to[1] - from[1]);
       points.push([from[0] + (to[0] - from[0]) * t, from[2] + (to[2] - from[2]) * t]);
@@ -101,14 +101,14 @@ function boxCornersOfCapsule(shape) {
 }
 
 // World-space ground shapes of one collider: { x, z, radius } or { x, z, sizeX, sizeZ, yaw }.
-function colliderShapes(shape) {
+function colliderShapes(shape, groundY = 0) {
   if (shape.kind === 'box') {
-    const rectangle = boxShape(shape.corners, shape.axes);
+    const rectangle = boxShape(shape.corners, shape.axes, groundY);
     return rectangle ? [rectangle] : [];
   }
   if (shape.kind === 'sphere') {
     const radius = shape.radius * Math.max(...shape.scale);
-    const away = distanceToBand(shape.center[1], shape.center[1]);
+    const away = distanceToBand(shape.center[1], shape.center[1], groundY);
     if (away >= radius) return [];
     return [{ x: shape.center[0], z: shape.center[2], radius: Math.sqrt(radius * radius - away * away) }];
   }
@@ -118,14 +118,14 @@ function colliderShapes(shape) {
   const radius = shape.radius * Math.max(shape.scale[around[0]], shape.scale[around[1]]);
   const straight = Math.max(0, shape.height * shape.scale[shape.direction] / 2 - radius);
   if (Math.abs(axis[1]) > UPRIGHT) {
-    const away = distanceToBand(shape.center[1] - straight, shape.center[1] + straight);
+    const away = distanceToBand(shape.center[1] - straight, shape.center[1] + straight, groundY);
     if (away >= radius) return [];
     return [{ x: shape.center[0], z: shape.center[2], radius: Math.sqrt(radius * radius - away * away) }];
   }
   if (Math.abs(axis[1]) < HORIZONTAL) {
     // A pipe: as wide as the chord of its round section at body height, as long as its
     // straight run; the rounded ends add the side of the square inscribed in them.
-    const away = distanceToBand(shape.center[1], shape.center[1]);
+    const away = distanceToBand(shape.center[1], shape.center[1], groundY);
     if (away >= radius) return [];
     const chord = Math.sqrt(radius * radius - away * away);
     const length = Math.hypot(axis[0], axis[2]) || 1;
@@ -138,14 +138,14 @@ function colliderShapes(shape) {
     }];
   }
   // A leaning capsule has no simple ground shape; its bounding box errs on the blocking side.
-  const rectangle = boxShape(boxCornersOfCapsule(shape), shape.axes);
+  const rectangle = boxShape(boxCornersOfCapsule(shape), shape.axes, groundY);
   return rectangle ? [rectangle] : [];
 }
 
 // The collisionParts of a row, in the frame the server decodes them in
 // (src/server/location-collision.js): offset from the row position, turned back by
 // the row's yaw, divided by the row's scale.
-function walkCollisionParts(colliders, row) {
+function walkCollisionParts(colliders, row, groundY = 0) {
   const position = row.position || {};
   const yaw = Number(row.rotation?.y || 0);
   const scaleX = Math.abs(Number(row.scale?.x)) > 1e-6 ? Number(row.scale.x) : 1;
@@ -154,7 +154,7 @@ function walkCollisionParts(colliders, row) {
   const sin = Math.sin(yaw);
   const parts = [];
   for (const collider of colliders) {
-    for (const shape of colliderShapes(collider)) {
+    for (const shape of colliderShapes(collider, groundY)) {
       if (shape.radius !== undefined ? shape.radius * 2 < MIN_PART_SIZE
         : Math.min(shape.sizeX, shape.sizeZ) < MIN_PART_SIZE) continue;
       const dx = shape.x - Number(position.x || 0);

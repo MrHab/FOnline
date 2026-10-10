@@ -1,0 +1,1529 @@
+{
+  "theme": "Командная плотина Управы: бетонные опоры, водомерная башня, упорядоченные склады и топливный двор.",
+  "color": [
+    0.39,
+    0.43,
+    0.44
+  ],
+  "schema": "roa.cityAppearance.v1",
+  "id": "sluiceCity",
+  "replacements": [
+    {
+      "id": "plaza_landmark",
+      "prefab": "SM_Bld_WaterTower_01",
+      "x": 1,
+      "z": 9
+    },
+    {
+      "id": "home_0",
+      "prefab": "SM_Bld_House_03"
+    },
+    {
+      "id": "home_1",
+      "prefab": "SM_Bld_House_03"
+    },
+    {
+      "id": "home_2",
+      "prefab": "SM_Bld_Military_Tent_02"
+    },
+    {
+      "id": "home_3",
+      "prefab": "SM_Bld_House_03"
+    },
+    {
+      "id": "market_awning_0",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "market_awning_1",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "market_awning_2",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "market_awning_3",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "plaza_dispatch_post",
+      "prefab": "SM_Bld_Industrial_Small_01"
+    },
+    {
+      "id": "market_crate_0",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -25.8,
+      "z": 29.5,
+      "y": 0
+    },
+    {
+      "id": "market_crate_1",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -41.8,
+      "z": 29.5,
+      "y": 0
+    },
+    {
+      "id": "market_crate_2",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -25.8,
+      "z": 45.5,
+      "y": 0
+    },
+    {
+      "id": "market_crate_3",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -57.8,
+      "z": 29.5,
+      "y": 0
+    }
+  ],
+  "remove": [
+    "city_shore_1_11",
+    "city_shore_1_12",
+    "city_shore_1_13",
+    "city_shore_1_14",
+    "city_shore_3_11",
+    "city_shore_3_12",
+    "city_shore_3_13",
+    "city_shore_3_14",
+    "city_shore_5_11",
+    "city_shore_5_12",
+    "city_shore_5_13",
+    "city_shore_5_14",
+    "city_shore_7_11",
+    "city_shore_7_12",
+    "city_shore_7_13",
+    "city_shore_7_14"
+  ],
+  "additions": [
+    {
+      "id": "city_detail_control_post",
+      "prefab": "SM_Bld_Industrial_Small_01",
+      "x": -64,
+      "z": 14,
+      "rotY": 90
+    },
+    {
+      "id": "city_detail_fuel_valve",
+      "prefab": "SM_Prop_Pipe_Valve_02",
+      "x": -62,
+      "z": 7,
+      "rotY": 0
+    },
+    {
+      "id": "city_detail_fuel_pipe",
+      "prefab": "SM_Prop_Pipe_Large_01",
+      "x": -63,
+      "z": -10,
+      "rotY": 0
+    },
+    {
+      "id": "city_shore_0_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -68.5,
+      "z": -65.5,
+      "y": -2.98,
+      "rotY": 45,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_0_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -65.5,
+      "z": -68.5,
+      "y": -2.98,
+      "rotY": 45,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -61.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -56.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -51.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_3",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -46.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_4",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -41.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -36.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_6",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -31.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_7",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -26.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_8",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -21.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_9",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -16.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_10",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -11.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_15",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 13.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_16",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 18.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_17",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 23.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_18",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 28.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_19",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 33.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_20",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 38.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_21",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 43.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_22",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 48.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_23",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 53.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_24",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 58.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_1_25",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 63.5,
+      "z": -70,
+      "y": -2.98,
+      "rotY": 0,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_2_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 67.5,
+      "z": -68.5,
+      "y": -2.98,
+      "rotY": -45,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_2_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 70.5,
+      "z": -65.5,
+      "y": -2.98,
+      "rotY": -45,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": -61.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": -56.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": -51.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_3",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": -46.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_4",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": -41.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": -36.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_6",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": -31.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_7",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": -26.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_8",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": -21.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_9",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": -16.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_10",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": -11.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_15",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": 13.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_16",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": 18.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_17",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": 23.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_18",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": 28.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_19",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": 33.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_20",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": 38.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_21",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": 43.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_22",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": 48.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_23",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": 53.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_24",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": 58.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_3_25",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 72,
+      "z": 63.5,
+      "y": -2.98,
+      "rotY": -90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_4_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 70.5,
+      "z": 67.5,
+      "y": -2.98,
+      "rotY": -135,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_4_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 67.5,
+      "z": 70.5,
+      "y": -2.98,
+      "rotY": -135,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 63.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 58.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 53.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_3",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 48.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_4",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 43.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 38.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_6",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 33.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_7",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 28.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_8",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 23.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_9",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 18.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_10",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 13.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_15",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -11.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_16",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -16.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_17",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -21.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_18",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -26.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_19",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -31.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_20",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -36.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_21",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -41.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_22",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -46.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_23",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -51.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_24",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -56.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_5_25",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -61.5,
+      "z": 72,
+      "y": -2.98,
+      "rotY": -180,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_6_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -65.5,
+      "z": 70.5,
+      "y": -2.98,
+      "rotY": 135,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_6_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -68.5,
+      "z": 67.5,
+      "y": -2.98,
+      "rotY": 135,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_0",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": 63.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": 58.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_2",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": 53.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_3",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": 48.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_4",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": 43.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": 38.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_6",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": 33.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_7",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": 28.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_8",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": 23.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_9",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": 18.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_10",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": 13.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_15",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": -11.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_16",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": -16.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_17",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": -21.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_18",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": -26.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_19",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": -31.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_20",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": -36.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_21",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": -41.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_22",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": -46.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_23",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": -51.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_24",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": -56.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_shore_7_25",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -70,
+      "z": -61.5,
+      "y": -2.98,
+      "rotY": 90,
+      "tags": [
+        "city-shore",
+        "canal"
+      ],
+      "name": "Бетонная подпорная секция набережной"
+    },
+    {
+      "id": "city_detail_bank_service_canopy",
+      "x": 31,
+      "y": 0,
+      "z": 47,
+      "rotY": 0,
+      "name": "Приём банка Управы",
+      "type": "civicCanopy",
+      "civicCaption": [
+        "УПРАВА",
+        "БАНК",
+        "АУКЦИОН"
+      ],
+      "tags": [
+        "bank",
+        "city-public-service",
+        "camera-cutaway",
+        "camera-cutaway-renderer:CivicCanopyRoof"
+      ]
+    },
+    {
+      "id": "city_detail_bank_registry_a",
+      "prefab": "SM_Prop_Desk_02",
+      "x": 36,
+      "z": 47,
+      "rotY": 0,
+      "name": "Стол регистрации вкладов",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_registry_b",
+      "prefab": "SM_Prop_Study_Desk_01",
+      "x": 39,
+      "z": 47,
+      "rotY": 0,
+      "name": "Стол регистрации аукциона",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_archive_a",
+      "prefab": "SM_Prop_Shelf_01_Combined",
+      "x": 43,
+      "z": 48,
+      "rotY": 0,
+      "name": "Картотека вкладов Управы",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_archive_b",
+      "prefab": "SM_Prop_Shelf_01_Combined",
+      "x": 46,
+      "z": 48,
+      "rotY": 0,
+      "name": "Картотека аукциона Управы",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_waiting_a",
+      "prefab": "SM_Prop_Plank_Bench_01",
+      "x": 35,
+      "z": 41,
+      "rotY": 90,
+      "name": "Лавка ожидания банка",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_waiting_b",
+      "prefab": "SM_Prop_Plank_Bench_01",
+      "x": 40,
+      "z": 41,
+      "rotY": 90,
+      "name": "Лавка ожидания банка",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_notice",
+      "prefab": "SM_Prop_Blackboard_01",
+      "x": 30,
+      "z": 43,
+      "rotY": 0,
+      "name": "Условия банковского обслуживания",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_storage",
+      "prefab": "SM_Prop_Shipping_Container_02",
+      "x": 47,
+      "z": 39,
+      "rotY": 0,
+      "name": "Опечатанное хранение банка",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    }
+  ],
+  "retainingLine": [
+    {
+      "x": -70,
+      "z": -64
+    },
+    {
+      "x": -64,
+      "z": -70
+    },
+    {
+      "x": 66,
+      "z": -70
+    },
+    {
+      "x": 72,
+      "z": -64
+    },
+    {
+      "x": 72,
+      "z": 66
+    },
+    {
+      "x": 66,
+      "z": 72
+    },
+    {
+      "x": -64,
+      "z": 72
+    },
+    {
+      "x": -70,
+      "z": 66
+    }
+  ]
+}

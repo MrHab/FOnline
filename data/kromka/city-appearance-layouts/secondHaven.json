@@ -1,0 +1,222 @@
+{
+  "theme": "Вторые: меловые опоры над карьером, карантинные палатки, источник воды, пиломатериалы для тоннельной крепи.",
+  "color": [
+    0.54,
+    0.52,
+    0.45
+  ],
+  "schema": "roa.cityAppearance.v1",
+  "id": "secondHaven",
+  "replacements": [
+    {
+      "id": "plaza_landmark",
+      "prefab": "SM_Bld_WaterTower_01",
+      "x": 1,
+      "z": 9
+    },
+    {
+      "id": "home_0",
+      "prefab": "SM_Bld_Quarantine_Tent_01"
+    },
+    {
+      "id": "home_1",
+      "prefab": "SM_Bld_House_03"
+    },
+    {
+      "id": "home_2",
+      "prefab": "SM_Bld_Quarantine_Tent_01"
+    },
+    {
+      "id": "home_3",
+      "prefab": "SM_Bld_Military_Tent_02"
+    },
+    {
+      "id": "market_awning_0",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "market_awning_1",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "market_awning_2",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "market_awning_3",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "plaza_dispatch_post",
+      "prefab": "SM_Bld_Quarantine_Tent_01"
+    },
+    {
+      "id": "market_crate_0",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -25.8,
+      "z": 29.5,
+      "y": 0
+    },
+    {
+      "id": "market_crate_1",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -41.8,
+      "z": 29.5,
+      "y": 0
+    },
+    {
+      "id": "market_crate_2",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -25.8,
+      "z": 45.5,
+      "y": 0
+    },
+    {
+      "id": "market_crate_3",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -57.8,
+      "z": 29.5,
+      "y": 0
+    }
+  ],
+  "additions": [
+    {
+      "id": "city_detail_source_barrels",
+      "prefab": "SM_Prop_Barrel_Water_01",
+      "x": -12,
+      "z": 19,
+      "rotY": 0
+    },
+    {
+      "id": "city_detail_timber_pallet",
+      "prefab": "SM_Prop_Pallet_01",
+      "x": -8,
+      "z": 19,
+      "rotY": 0
+    },
+    {
+      "id": "city_detail_bank_service_canopy",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "x": 31,
+      "y": 2.4,
+      "z": 47,
+      "rotY": 0,
+      "name": "Приём банка и аукциона",
+      "type": "marketStall",
+      "civicCaption": [
+        "БАНК",
+        "АУКЦИОН"
+      ],
+      "tags": [
+        "bank",
+        "city-public-service",
+        "camera-cutaway",
+        "camera-cutaway-renderer:SM_Bld_Tarp_Generic_04"
+      ]
+    },
+    {
+      "id": "city_detail_bank_shared_desk",
+      "prefab": "SM_Prop_Study_Desk_01",
+      "x": 36,
+      "z": 47,
+      "rotY": 0,
+      "name": "Учёт общих вкладов",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_supply_shelf",
+      "prefab": "SM_Prop_Medical_Shelf_01",
+      "x": 43,
+      "z": 48,
+      "rotY": 0,
+      "name": "Оформленные медицинские запасы",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_storage",
+      "prefab": "SM_Prop_Crate_Wall_01",
+      "x": 47,
+      "z": 39,
+      "rotY": 0,
+      "name": "Ящики общих вкладов",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_water_reserve",
+      "prefab": "SM_Prop_Barrel_Water_01",
+      "x": 47,
+      "z": 43,
+      "rotY": 0,
+      "name": "Вода для ожидающих",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_lot_crate",
+      "prefab": "SM_Prop_Crate_Open_05",
+      "x": 46,
+      "z": 46,
+      "rotY": 0,
+      "name": "Ящик взаимопомощи и лотов",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_waiting_a",
+      "prefab": "SM_Prop_Plank_Bench_01",
+      "x": 35,
+      "z": 41,
+      "rotY": 90,
+      "name": "Лавка ожидания банка",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_waiting_b",
+      "prefab": "SM_Prop_Plank_Bench_01",
+      "x": 40,
+      "z": 41,
+      "rotY": 90,
+      "name": "Лавка ожидания банка",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_notice",
+      "prefab": "SM_Prop_Blackboard_01",
+      "x": 30,
+      "z": 43,
+      "rotY": 0,
+      "name": "Правила банка и аукциона",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    }
+  ]
+}

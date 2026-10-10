@@ -6,7 +6,7 @@
 // враг шёл не туда. Модуль чистый, поэтому проверяется без сервера.
 
 const assert = require('node:assert/strict');
-const { findGridPath, nearestOpenTile, canUseDiagonalStep } = require('../src/server/enemy-pathing');
+const { findGridPath, findGridPathWithSegmentValidation, nearestOpenTile, canUseDiagonalStep } = require('../src/server/enemy-pathing');
 
 const TILE = 2;
 const toWorldFor = dims => (tx, tz) => ({ x: (tx - dims.w / 2 + 0.5) * TILE, z: (tz - dims.h / 2 + 0.5) * TILE });
@@ -75,6 +75,18 @@ function grid(w, h, walls = []) {
   assert.equal(sealed, null, 'a sealed goal is unreachable');
   const far = findGridPath({ isOpen: grid(160, 160).isOpen, toWorld: toWorldFor({ w: 160, h: 160 }), startTx: 2, startTz: 2, goalTx: 157, goalTz: 157, maxIterations: 50 });
   assert.equal(far, null, 'the iteration cap ends the search');
+}
+
+// A collider can cut the space between two open tile centres. The path must
+// use a neighbouring row, otherwise movement stops at the collider forever.
+{
+  const room = grid(6, 5);
+  const path = findGridPathWithSegmentValidation({
+    isOpen: room.isOpen,
+    toWorld: toWorldFor(room),
+    startTx: 1, startTz: 2, goalTx: 4, goalTz: 2
+  }, (ax, az, bx, bz) => !(az === 2 && bz === 2 && Math.min(ax, bx) === 1 && Math.max(ax, bx) === 2));
+  assert(path && path.some(step => step.tz !== 2), 'an open-centre path detours around a blocked segment');
 }
 
 console.log('Enemy pathing OK: waypoints use the room\'s own grid (160×160 verified), detours, corner rule, snapping and the iteration cap.');

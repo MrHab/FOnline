@@ -2,12 +2,12 @@
   "schema": "roa.sectorStaticBlockers.v1",
   "inputs": {
     "schema": "roa.sectorStaticBlockers.v1",
-    "catalogSHA256": "229ea060f82d89f3f47825075f9db587071532eb13e37ed2a09b68f40993148f",
+    "catalogSHA256": "b18ec301be8f8cbe340caec1b50364e28c8c999960ee5d6c6b690d0100b202a1",
     "groundLatticeCodeHash": "e3aab4a299fc7dc13a4985310583751df23c01936088c54b02e7e413e10199e1",
     "sectorTerrainSHA256": "9302f7eff323cae5ce7016b624042f4c0db78b542937ea252a5dee0b726615c3",
     "loaderSHA256": "b82572c0ed8c25a6847a945e6b85467051712ec30d64d35aebb9e1db2110d76f"
   },
-  "inputFingerprint": "791a49f6a162d00f169af3c9b71b8b1b8c855188f0f9b714a649ec316349643e",
+  "inputFingerprint": "3d20279230831120f154006fe96ea99d49a697b07f76c8c86ed2a85ac6b6d878",
   "profiles": [
     {
       "locationId": "caravanCamp",
@@ -36,7 +36,7 @@
     {
       "locationId": "settlement",
       "zoneId": "z_10_07",
-      "profileSHA256": "53af58ceeae1d6c27c55124986a964146e7e0ae79c36f844edd70886ec84ed53",
+      "profileSHA256": "5ce3a748c0d5cba4478a77a1fd35080021b023b25ffb7be524b22ec1538af923",
       "blockers": []
     },
     {
@@ -1455,7 +1455,7 @@
     {
       "locationId": "z_08_14",
       "zoneId": "z_08_14",
-      "profileSHA256": "8f7271916f9f81be549ed8675c9d2ec9ee6d67e1b01abcfb64b60f3b057694b2",
+      "profileSHA256": "8d25275cfbdd302dbf803154bad6891f38dcf4c738d4796c0ab0fe1c0f70d2a0",
       "blockers": [
         {
           "id": "surface_bank_revetment_stvor_south_bank_b_concrete_0",
@@ -171023,13 +171023,13 @@
     {
       "locationId": "z_09_07",
       "zoneId": "z_09_07",
-      "profileSHA256": "2cae940dd836800ece71c3b653fb570cabf31e0a4d0461094e850cee0fae1856",
+      "profileSHA256": "42949ba7084ebc2525538bf852db424badbbeed395771d804f62b175125abffc",
       "blockers": []
     },
     {
       "locationId": "z_09_08",
       "zoneId": "z_09_08",
-      "profileSHA256": "760f832bd99d764028fb58fb86ccc6a8f8e3b54d132be309ad86e033c26b782b",
+      "profileSHA256": "ab2bb47d64ae1663c6df680ed23ff6dd87197e74d7f2c90c84a48b7a8eead8ea",
       "blockers": []
     },
     {
@@ -171058,7 +171058,7 @@
     {
       "locationId": "z_09_11",
       "zoneId": "z_09_11",
-      "profileSHA256": "9dbf70c65489415c4776d9b177d2d87a2c12bbd27a755b8316466678a7db7d3c",
+      "profileSHA256": "ee7ed80e0ca3bce3275e5ef796f70a66f227a78495ff0bdd6d967d6f700fa14d",
       "blockers": []
     },
     {
@@ -171070,7 +171070,7 @@
     {
       "locationId": "z_09_13",
       "zoneId": "z_09_13",
-      "profileSHA256": "251e64bd4ac1cd5cb763adcfeeb825bcfefb20ba485ca24d7107ff95ea0fbe6a",
+      "profileSHA256": "c70ddf7ce96c2ecf01fbb5ee9cd4885378380743ea24f6e3dc8aa45be85ba952",
       "blockers": [
         {
           "id": "surface_retaining_bank_0_1",
@@ -181612,7 +181612,7 @@
     {
       "locationId": "z_11_12",
       "zoneId": "z_11_12",
-      "profileSHA256": "9ed53c659df9e7b5c101b69a7f034105f99e8c9c8cf9a4da79e796793977334d",
+      "profileSHA256": "07f348a22d2570ab64606a05b90c4c9f1d8c5a871b22c0b25ee7da1359fc004b",
       "blockers": []
     },
     {
@@ -181756,7 +181756,7 @@
     {
       "locationId": "z_13_10",
       "zoneId": "z_13_10",
-      "profileSHA256": "15789bb2fa7e7f3712bfbf65afcc0ad6c05de022bfb6a24f6886a1d9033c902f",
+      "profileSHA256": "b3a3a603f2cb804e869840f446a06d018399c4c54b2d2b78bc8ae528b02ce472",
       "blockers": []
     },
     {
@@ -181994,5 +181994,5 @@
       "blockers": []
     }
   ],
-  "payloadSHA256": "21277c5d7bde7e16967851a531652e4052c259f9ec213081815cb45a2db6cece"
+  "payloadSHA256": "9b0f72ee7ff56b266e2651506f4c803dbe7924ecbd49eaf7e85707421ad21f23"
 }

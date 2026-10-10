@@ -161,7 +161,7 @@
         "z": -1
       },
       "x": 29,
-      "y": -8.26813,
+      "y": -8.72651,
       "z": -1
     }
   ],
@@ -200,14 +200,19 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -6.991,
+        "z": 14
+      }
     },
     {
       "id": "facility_coreZone_entry_floodlight_east",
       "name": "facility coreZone entry floodlight east",
       "position": {
         "x": 35,
-        "y": -10.147,
+        "y": -10.705,
         "z": -2
       },
       "rotation": {
@@ -286,14 +291,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 35,
+        "y": -10.147,
+        "z": -2
+      }
     },
     {
       "id": "facility_coreZone_entry_floodlight_west",
       "name": "facility coreZone entry floodlight west",
       "position": {
         "x": 25,
-        "y": -7.241,
+        "y": -7.656,
         "z": -2
       },
       "rotation": {
@@ -372,14 +382,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 25,
+        "y": -7.241,
+        "z": -2
+      }
     },
     {
       "id": "facility_coreZone_entry_lookout_east",
       "name": "facility coreZone entry lookout east",
       "position": {
         "x": 38,
-        "y": -10.877,
+        "y": -10.39,
         "z": 3.4
       },
       "rotation": {
@@ -488,14 +503,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 38,
+        "y": -10.877,
+        "z": 3.4
+      }
     },
     {
       "id": "facility_coreZone_entry_lookout_west",
       "name": "facility coreZone entry lookout west",
       "position": {
         "x": 22,
-        "y": -6.282,
+        "y": -5.826,
         "z": 3.4
       },
       "rotation": {
@@ -604,7 +624,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 22,
+        "y": -6.282,
+        "z": 3.4
+      }
     },
     {
       "id": "facility_coreZone_entry_radio_landmark",
@@ -650,14 +675,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 17,
+        "y": -3.817,
+        "z": 11
+      }
     },
     {
       "id": "facility_coreZone_entry_warning_east",
       "name": "facility coreZone entry warning east",
       "position": {
         "x": 41,
-        "y": -11.983,
+        "y": -12.489,
         "z": -2
       },
       "rotation": {
@@ -696,14 +726,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 41,
+        "y": -11.983,
+        "z": -2
+      }
     },
     {
       "id": "facility_coreZone_entry_warning_west",
       "name": "facility coreZone entry warning west",
       "position": {
         "x": 19,
-        "y": -5.539,
+        "y": -5.657,
         "z": -2
       },
       "rotation": {
@@ -742,7 +777,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 19,
+        "y": -5.539,
+        "z": -2
+      }
     },
     {
       "id": "facility_coreZone_freight_store",
@@ -788,14 +828,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 51,
+        "y": -12.419,
+        "z": 21
+      }
     },
     {
       "id": "facility_coreZone_physical_door",
       "name": "facility coreZone physical door",
       "position": {
         "x": 30,
-        "y": -8.643,
+        "y": -8.883,
         "z": 0
       },
       "rotation": {
@@ -846,14 +891,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -8.643,
+        "z": 0
+      }
     },
     {
       "id": "facility_coreZone_power",
       "name": "facility coreZone power",
       "position": {
         "x": 49,
-        "y": -13.319,
+        "y": -13.312,
         "z": 7
       },
       "rotation": {
@@ -892,7 +942,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 49,
+        "y": -13.319,
+        "z": 7
+      }
     },
     {
       "id": "facility_coreZone_purpose",
@@ -988,7 +1043,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 13,
+        "y": -2.118,
+        "z": 19
+      }
     },
     {
       "id": "facility_coreZone_rear_wall_-13",
@@ -1034,7 +1094,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 17,
+        "y": -2.233,
+        "z": 30
+      }
     },
     {
       "id": "facility_coreZone_rear_wall_-17.5",
@@ -1080,7 +1145,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 12.5,
+        "y": -1.125,
+        "z": 30
+      }
     },
     {
       "id": "facility_coreZone_rear_wall_-22",
@@ -1126,7 +1196,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 8,
+        "y": -0.018,
+        "z": 30
+      }
     },
     {
       "id": "facility_coreZone_rear_wall_-4",
@@ -1172,7 +1247,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 26,
+        "y": -4.447,
+        "z": 30
+      }
     },
     {
       "id": "facility_coreZone_rear_wall_-8.5",
@@ -1218,7 +1298,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21.5,
+        "y": -3.34,
+        "z": 30
+      }
     },
     {
       "id": "facility_coreZone_rear_wall_0.5",
@@ -1264,7 +1349,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30.5,
+        "y": -5.555,
+        "z": 30
+      }
     },
     {
       "id": "facility_coreZone_rear_wall_14",
@@ -1310,7 +1400,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 44,
+        "y": -9.42,
+        "z": 30
+      }
     },
     {
       "id": "facility_coreZone_rear_wall_18.5",
@@ -1356,7 +1451,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 48.5,
+        "y": -10.731,
+        "z": 30
+      }
     },
     {
       "id": "facility_coreZone_rear_wall_23",
@@ -1402,7 +1502,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 53,
+        "y": -12.043,
+        "z": 30
+      }
     },
     {
       "id": "facility_coreZone_rear_wall_5",
@@ -1448,7 +1553,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 35,
+        "y": -6.798,
+        "z": 30
+      }
     },
     {
       "id": "facility_coreZone_rear_wall_9.5",
@@ -1494,14 +1604,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 39.5,
+        "y": -8.109,
+        "z": 30
+      }
     },
     {
       "id": "facility_coreZone_security_bastion",
       "name": "facility coreZone security bastion",
       "position": {
         "x": 30,
-        "y": -8.517,
+        "y": -8.024,
         "z": 3.4
       },
       "rotation": {
@@ -1580,7 +1695,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -8.517,
+        "z": 3.4
+      }
     },
     {
       "id": "facility_coreZone_service_house",
@@ -1614,14 +1734,19 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 49,
+        "y": -12.783,
+        "z": 12
+      }
     },
     {
       "id": "facility_coreZone_service_walk_-12",
       "name": "facility coreZone service walk -12",
       "position": {
         "x": 30,
-        "y": -8.863,
+        "y": -8.528,
         "z": 2
       },
       "rotation": {
@@ -1648,7 +1773,12 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -8.863,
+        "z": 2
+      }
     },
     {
       "id": "facility_coreZone_service_walk_-2",
@@ -1682,7 +1812,12 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -7.426,
+        "z": 12
+      }
     },
     {
       "id": "facility_coreZone_service_walk_-4.5",
@@ -1716,14 +1851,19 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -7.669,
+        "z": 9.5
+      }
     },
     {
       "id": "facility_coreZone_service_walk_-7",
       "name": "facility coreZone service walk -7",
       "position": {
         "x": 30,
-        "y": -7.967,
+        "y": -7.913,
         "z": 7
       },
       "rotation": {
@@ -1750,14 +1890,19 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -7.967,
+        "z": 7
+      }
     },
     {
       "id": "facility_coreZone_service_walk_-9.5",
       "name": "facility coreZone service walk -9.5",
       "position": {
         "x": 30,
-        "y": -8.564,
+        "y": -8.157,
         "z": 4.5
       },
       "rotation": {
@@ -1784,7 +1929,12 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -8.564,
+        "z": 4.5
+      }
     },
     {
       "id": "facility_coreZone_service_walk_0.5",
@@ -1818,7 +1968,12 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -7.182,
+        "z": 14.5
+      }
     },
     {
       "id": "facility_coreZone_service_walk_10.5",
@@ -1852,7 +2007,12 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -6.208,
+        "z": 24.5
+      }
     },
     {
       "id": "facility_coreZone_service_walk_13",
@@ -1886,7 +2046,12 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -5.964,
+        "z": 27
+      }
     },
     {
       "id": "facility_coreZone_service_walk_3",
@@ -1920,7 +2085,12 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -6.939,
+        "z": 17
+      }
     },
     {
       "id": "facility_coreZone_service_walk_5.5",
@@ -1954,7 +2124,12 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -6.695,
+        "z": 19.5
+      }
     },
     {
       "id": "facility_coreZone_service_walk_8",
@@ -1988,7 +2163,12 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 30,
+        "y": -6.451,
+        "z": 22
+      }
     },
     {
       "id": "facility_coreZone_wall_-24_-1",
@@ -2034,14 +2214,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 6,
+        "y": -0.093,
+        "z": 13
+      }
     },
     {
       "id": "facility_coreZone_wall_-24_-10",
       "name": "facility coreZone wall -24 -10",
       "position": {
         "x": 6,
-        "y": -0.405,
+        "y": -0.056,
         "z": 4
       },
       "rotation": {
@@ -2080,14 +2265,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 6,
+        "y": -0.405,
+        "z": 4
+      }
     },
     {
       "id": "facility_coreZone_wall_-24_-5.5",
       "name": "facility coreZone wall -24 -5.5",
       "position": {
         "x": 6,
-        "y": 0.238,
+        "y": 0.242,
         "z": 8.5
       },
       "rotation": {
@@ -2126,7 +2316,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 6,
+        "y": 0.238,
+        "z": 8.5
+      }
     },
     {
       "id": "facility_coreZone_wall_-24_12.5",
@@ -2172,7 +2367,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 6,
+        "y": 0.224,
+        "z": 26.5
+      }
     },
     {
       "id": "facility_coreZone_wall_-24_3.5",
@@ -2218,7 +2418,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 6,
+        "y": -0.42,
+        "z": 17.5
+      }
     },
     {
       "id": "facility_coreZone_wall_-24_8",
@@ -2264,7 +2469,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 6,
+        "y": -0.098,
+        "z": 22
+      }
     },
     {
       "id": "facility_coreZone_wall_24_-1",
@@ -2310,14 +2520,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 54,
+        "y": -14.165,
+        "z": 13
+      }
     },
     {
       "id": "facility_coreZone_wall_24_-10",
       "name": "facility coreZone wall 24 -10",
       "position": {
         "x": 54,
-        "y": -15.638,
+        "y": -15.182,
         "z": 4
       },
       "rotation": {
@@ -2356,7 +2571,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 54,
+        "y": -15.638,
+        "z": 4
+      }
     },
     {
       "id": "facility_coreZone_wall_24_-5.5",
@@ -2402,7 +2622,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 54,
+        "y": -14.65,
+        "z": 8.5
+      }
     },
     {
       "id": "facility_coreZone_wall_24_12.5",
@@ -2448,7 +2673,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 54,
+        "y": -12.711,
+        "z": 26.5
+      }
     },
     {
       "id": "facility_coreZone_wall_24_3.5",
@@ -2494,7 +2724,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 54,
+        "y": -13.681,
+        "z": 17.5
+      }
     },
     {
       "id": "facility_coreZone_wall_24_8",
@@ -2540,7 +2775,12 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 54,
+        "y": -13.196,
+        "z": 22
+      }
     },
     {
       "id": "s00_c1",
@@ -17646,234 +17886,6 @@
       }
     },
     {
-      "id": "s40_sc0_0",
-      "model": "rubbleRock",
-      "prefab": "rubble_rock",
-      "name": "Глыба",
-      "position": {
-        "x": 20.41,
-        "y": 1.296,
-        "z": 126.83
-      },
-      "rotation": {
-        "x": 0,
-        "y": 5.375,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.66,
-        "y": 1.66,
-        "z": 1.66
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.04,
-            "z": -0.044
-          },
-          "size": {
-            "x": 1.156,
-            "z": 1.731
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.92,
-        "depth": 2.87
-      },
-      "footprint": {
-        "x": 3.446,
-        "z": 3.28
-      },
-      "vision": {
-        "blocks": true
-      },
-      "role": "cover",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "surfaceSourcePosition": {
-        "x": 20.41,
-        "y": 0,
-        "z": 126.83
-      }
-    },
-    {
-      "id": "s40_sc0_1",
-      "model": "rubbleRock",
-      "prefab": "rubble_rock",
-      "name": "Глыба",
-      "position": {
-        "x": 22.84,
-        "y": 1.106,
-        "z": 139.85
-      },
-      "rotation": {
-        "x": 0,
-        "y": 2.272,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.43,
-        "y": 1.43,
-        "z": 1.43
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.04,
-            "z": -0.044
-          },
-          "size": {
-            "x": 1.156,
-            "z": 1.731
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.65,
-        "depth": 2.48
-      },
-      "footprint": {
-        "x": 2.958,
-        "z": 2.86
-      },
-      "vision": {
-        "blocks": true
-      },
-      "role": "cover",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "surfaceSourcePosition": {
-        "x": 22.84,
-        "y": 0,
-        "z": 139.85
-      }
-    },
-    {
-      "id": "s40_sc0_2",
-      "model": "rubbleRock",
-      "prefab": "rubble_rock",
-      "name": "Глыба",
-      "position": {
-        "x": 24.94,
-        "y": 0.821,
-        "z": 125.37
-      },
-      "rotation": {
-        "x": 0,
-        "y": 5.465,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.17,
-        "y": 1.17,
-        "z": 1.17
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.04,
-            "z": -0.044
-          },
-          "size": {
-            "x": 1.156,
-            "z": 1.731
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.35,
-        "depth": 2.03
-      },
-      "footprint": {
-        "x": 2.403,
-        "z": 2.371
-      },
-      "vision": {
-        "blocks": true
-      },
-      "role": "cover",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "surfaceSourcePosition": {
-        "x": 24.94,
-        "y": 0,
-        "z": 125.37
-      }
-    },
-    {
-      "id": "s40_sc0_3",
-      "model": "rubbleRock",
-      "prefab": "rubble_rock",
-      "name": "Глыба",
-      "position": {
-        "x": 34.56,
-        "y": 0.03,
-        "z": 141.3
-      },
-      "rotation": {
-        "x": 0,
-        "y": 3.735,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.49,
-        "y": 1.49,
-        "z": 1.49
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.04,
-            "z": -0.044
-          },
-          "size": {
-            "x": 1.156,
-            "z": 1.731
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 1.72,
-        "depth": 2.58
-      },
-      "footprint": {
-        "x": 2.87,
-        "z": 3.101
-      },
-      "vision": {
-        "blocks": true
-      },
-      "role": "cover",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "surfaceSourcePosition": {
-        "x": 34.56,
-        "y": 0,
-        "z": 141.3
-      }
-    },
-    {
       "id": "s40_sc0_4",
       "model": "rubbleRock",
       "prefab": "rubble_rock",
@@ -18051,47 +18063,6 @@
         "x": 22.35,
         "y": 0,
         "z": 111.19
-      }
-    },
-    {
-      "id": "s41_sc0_2",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": 3.18,
-        "y": 2.971,
-        "z": 110.49
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0.522,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.03,
-        "y": 1.03,
-        "z": 1.03
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.45,
-        "z": 0.46
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "surfaceSourcePosition": {
-        "x": 3.18,
-        "y": 0,
-        "z": 110.49
       }
     },
     {
@@ -18388,7 +18359,7 @@
       "name": "Сухой куст",
       "position": {
         "x": 18.11,
-        "y": -4.886,
+        "y": -4.588,
         "z": 5.39
       },
       "rotation": {
@@ -18420,88 +18391,6 @@
         "x": 18.11,
         "y": 0,
         "z": 5.39
-      }
-    },
-    {
-      "id": "s43_sc0_4",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": 19.39,
-        "y": -2.792,
-        "z": 30.33
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0.302,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.21,
-        "y": 1.21,
-        "z": 1.21
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.53,
-        "z": 0.55
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "surfaceSourcePosition": {
-        "x": 19.39,
-        "y": 0,
-        "z": 30.33
-      }
-    },
-    {
-      "id": "s44_sc0_1",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": 19.81,
-        "y": -6.706,
-        "z": -12.33
-      },
-      "rotation": {
-        "x": 0,
-        "y": 5.135,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.24,
-        "y": 1.24,
-        "z": 1.24
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.55,
-        "z": 0.56
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "surfaceSourcePosition": {
-        "x": 19.81,
-        "y": 0,
-        "z": -12.33
       }
     },
     {
@@ -18543,47 +18432,6 @@
         "x": 14.42,
         "y": 0,
         "z": -35.81
-      }
-    },
-    {
-      "id": "s44_sc0_5",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": 26.51,
-        "y": -8.277,
-        "z": -11.08
-      },
-      "rotation": {
-        "x": 0,
-        "y": 4.505,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.16,
-        "y": 1.16,
-        "z": 1.16
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.51,
-        "z": 0.52
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "surfaceSourcePosition": {
-        "x": 26.51,
-        "y": 0,
-        "z": -11.08
       }
     },
     {
@@ -19693,47 +19541,6 @@
         "x": 59.13,
         "y": 0,
         "z": 27.82
-      }
-    },
-    {
-      "id": "s53_sc1_6",
-      "model": "dryBush",
-      "prefab": "dry_bush",
-      "name": "Сухой куст",
-      "position": {
-        "x": 46.71,
-        "y": -10.114,
-        "z": 30.91
-      },
-      "rotation": {
-        "x": 0,
-        "y": 4.415,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.77,
-        "y": 1.77,
-        "z": 1.77
-      },
-      "collision": "none",
-      "footprint": {
-        "x": 0.78,
-        "z": 0.8
-      },
-      "vision": {
-        "blocks": false
-      },
-      "role": "scenery",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "surfaceSourcePosition": {
-        "x": 46.71,
-        "y": 0,
-        "z": 30.91
       }
     },
     {
@@ -22667,63 +22474,6 @@
       }
     },
     {
-      "id": "s64_sc0_4",
-      "model": "rubbleRock",
-      "prefab": "rubble_rock",
-      "name": "Глыба",
-      "position": {
-        "x": 103.71,
-        "y": -25.32,
-        "z": -8.73
-      },
-      "rotation": {
-        "x": 0,
-        "y": 1.292,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.99,
-        "y": 1.99,
-        "z": 1.99
-      },
-      "collision": "solid",
-      "collisionParts": [
-        {
-          "center": {
-            "x": 0.04,
-            "z": -0.044
-          },
-          "size": {
-            "x": 1.156,
-            "z": 1.731
-          }
-        }
-      ],
-      "collisionSize": {
-        "width": 2.3,
-        "depth": 3.44
-      },
-      "footprint": {
-        "x": 3.945,
-        "z": 3.161
-      },
-      "vision": {
-        "blocks": true
-      },
-      "role": "cover",
-      "tags": [
-        "scatter",
-        "zone-kit"
-      ],
-      "unityAuthored": true,
-      "worldRevision": "kromka-1",
-      "surfaceSourcePosition": {
-        "x": 103.71,
-        "y": 0,
-        "z": -8.73
-      }
-    },
-    {
       "id": "s64_sc0_5",
       "model": "rubbleRock",
       "prefab": "rubble_rock",
@@ -25098,7 +24848,7 @@
       "name": "Сухой куст",
       "position": {
         "x": 141.25,
-        "y": -30.069,
+        "y": -30.147,
         "z": 13.79
       },
       "rotation": {
@@ -26434,9 +26184,9 @@
             "x": -1,
             "z": -3
           },
-          "x": -0.17455,
-          "y": 0.73506,
-          "z": 7.18402
+          "x": -0.5125,
+          "y": 0.77672,
+          "z": 7.2125
         },
         {
           "id": "gate_north",
@@ -26452,15 +26202,15 @@
         },
         {
           "id": "gate_north_turn",
-          "tx": 107,
-          "tz": 159,
+          "tx": 81,
+          "tz": 131,
           "surfaceSourcePoint": {
             "x": 55,
             "z": 9
           },
-          "x": 54.4,
-          "y": -1.90083,
-          "z": 160
+          "x": 3.60445,
+          "y": 3.03263,
+          "z": 102.00978
         },
         {
           "id": "gate_south",
@@ -26519,7 +26269,7 @@
             "z": 1
           },
           "x": 21,
-          "y": -5.97782,
+          "y": -5.81783,
           "z": 1
         },
         {
@@ -26531,7 +26281,7 @@
             "z": 1
           },
           "x": -1,
-          "y": -0.25078,
+          "y": -0.04118,
           "z": 1
         },
         {
@@ -26608,75 +26358,11 @@
         },
         {
           "id": "surface_path_8_1",
-          "tx": 82,
+          "tx": 89,
           "tz": 80,
-          "x": 5.78158,
-          "y": -1.47364,
-          "z": 0.1048
-        },
-        {
-          "id": "surface_path_8_2",
-          "tx": 82,
-          "tz": 80,
-          "x": 5.33668,
-          "y": -1.23518,
-          "z": 0.08571
-        },
-        {
-          "id": "surface_path_8_3",
-          "tx": 82,
-          "tz": 80,
-          "x": 4.89276,
-          "y": -1.14472,
-          "z": 0.08082
-        },
-        {
-          "id": "surface_path_8_4",
-          "tx": 82,
-          "tz": 80,
-          "x": 4.44984,
-          "y": -1.05197,
-          "z": 0.09016
-        },
-        {
-          "id": "surface_path_8_5",
-          "tx": 82,
-          "tz": 80,
-          "x": 4.00789,
-          "y": -0.95687,
-          "z": 0.1137
-        },
-        {
-          "id": "surface_path_8_6",
-          "tx": 81,
-          "tz": 80,
-          "x": 3.56694,
-          "y": -0.85929,
-          "z": 0.15146
-        },
-        {
-          "id": "surface_path_8_7",
-          "tx": 81,
-          "tz": 80,
-          "x": 3.12697,
-          "y": -0.78241,
-          "z": 0.20342
-        },
-        {
-          "id": "surface_path_8_8",
-          "tx": 81,
-          "tz": 80,
-          "x": 2.68799,
-          "y": -0.72124,
-          "z": 0.26961
-        },
-        {
-          "id": "surface_path_8_9",
-          "tx": 81,
-          "tz": 80,
-          "x": 2.25,
-          "y": -0.65686,
-          "z": 0.35
+          "x": 18,
+          "y": -5.01995,
+          "z": 0
         },
         {
           "id": "surface_path_10_1",
@@ -26824,291 +26510,99 @@
         },
         {
           "id": "surface_path_13_1",
-          "tx": 144,
+          "tx": 138,
           "tz": 84,
-          "x": 128.5006,
-          "y": -18.23164,
-          "z": 8.78549
+          "x": 117.29912,
+          "y": -18.90694,
+          "z": 8.37014
         },
         {
           "id": "surface_path_13_2",
-          "tx": 145,
-          "tz": 84,
-          "x": 130.37954,
-          "y": -17.97245,
-          "z": 8.10233
+          "tx": 139,
+          "tz": 83,
+          "x": 118.99387,
+          "y": -20.32521,
+          "z": 7.33209
         },
         {
           "id": "surface_path_13_3",
-          "tx": 146,
+          "tx": 140,
           "tz": 83,
-          "x": 132.26666,
-          "y": -17.97004,
-          "z": 7.44557
+          "x": 120.72769,
+          "y": -21.58815,
+          "z": 6.40299
         },
         {
           "id": "surface_path_13_4",
-          "tx": 147,
-          "tz": 83,
-          "x": 134.16196,
-          "y": -17.9688,
-          "z": 6.81523
+          "tx": 141,
+          "tz": 82,
+          "x": 122.50059,
+          "y": -21.19204,
+          "z": 5.58285
         },
         {
           "id": "surface_path_13_5",
-          "tx": 148,
-          "tz": 83,
-          "x": 136.06543,
-          "y": -17.96095,
-          "z": 6.2113
+          "tx": 142,
+          "tz": 82,
+          "x": 124.31255,
+          "y": -20.10685,
+          "z": 4.87167
         },
         {
           "id": "surface_path_13_6",
-          "tx": 148,
+          "tx": 143,
           "tz": 82,
-          "x": 137.97709,
-          "y": -17.73155,
-          "z": 5.63379
+          "x": 126.16357,
+          "y": -19.61081,
+          "z": 4.26945
         },
         {
           "id": "surface_path_13_7",
-          "tx": 149,
-          "tz": 82,
-          "x": 139.89693,
-          "y": -17.50117,
-          "z": 5.08268
+          "tx": 144,
+          "tz": 81,
+          "x": 128.05367,
+          "y": -19.09133,
+          "z": 3.77619
         },
         {
           "id": "surface_path_13_8",
-          "tx": 150,
-          "tz": 82,
-          "x": 141.82495,
-          "y": -17.26981,
-          "z": 4.55799
+          "tx": 144,
+          "tz": 81,
+          "x": 129.98284,
+          "y": -18.3927,
+          "z": 3.39189
         },
         {
           "id": "surface_path_13_9",
-          "tx": 151,
-          "tz": 82,
-          "x": 143.76114,
-          "y": -17.03746,
-          "z": 4.05971
+          "tx": 145,
+          "tz": 81,
+          "x": 131.95107,
+          "y": -17.97943,
+          "z": 3.11655
         },
         {
           "id": "surface_path_14_1",
-          "tx": 136,
-          "tz": 56,
-          "x": 112.96641,
-          "y": -33.46217,
-          "z": -46.21796
+          "tx": 139,
+          "tz": 60,
+          "x": 118,
+          "y": -33.02865,
+          "z": -40
         },
         {
           "id": "surface_path_14_2",
-          "tx": 137,
-          "tz": 57,
-          "x": 114.14616,
-          "y": -33.53026,
-          "z": -44.63562
+          "tx": 140,
+          "tz": 76,
+          "x": 120,
+          "y": -22.20276,
+          "z": -8
         },
         {
           "id": "surface_path_14_3",
-          "tx": 137,
-          "tz": 58,
-          "x": 115.16861,
-          "y": -33.59012,
-          "z": -42.9976
-        },
-        {
-          "id": "surface_path_14_4",
-          "tx": 138,
-          "tz": 59,
-          "x": 116.03376,
-          "y": -33.45007,
-          "z": -41.30389
-        },
-        {
-          "id": "surface_path_14_5",
-          "tx": 138,
-          "tz": 60,
-          "x": 116.7416,
-          "y": -33.01945,
-          "z": -39.55449
-        },
-        {
-          "id": "surface_path_14_6",
-          "tx": 138,
-          "tz": 61,
-          "x": 117.29215,
-          "y": -32.34388,
-          "z": -37.7494
-        },
-        {
-          "id": "surface_path_14_7",
-          "tx": 138,
-          "tz": 62,
-          "x": 117.6854,
-          "y": -31.4704,
-          "z": -35.88862
-        },
-        {
-          "id": "surface_path_14_8",
-          "tx": 138,
-          "tz": 63,
-          "x": 117.92135,
-          "y": -30.44842,
-          "z": -33.97216
-        },
-        {
-          "id": "surface_path_14_9",
-          "tx": 139,
-          "tz": 64,
-          "x": 118,
-          "y": -29.33041,
-          "z": -32
-        },
-        {
-          "id": "surface_path_14_10",
-          "tx": 139,
-          "tz": 76,
-          "x": 118,
-          "y": -22.86125,
-          "z": -7.9799
-        },
-        {
-          "id": "surface_path_14_11",
-          "tx": 139,
-          "tz": 76,
-          "x": 118.02187,
-          "y": -22.6193,
-          "z": -7.49399
-        },
-        {
-          "id": "surface_path_14_12",
-          "tx": 139,
-          "tz": 76,
-          "x": 118.0875,
-          "y": -22.36143,
-          "z": -7.02619
-        },
-        {
-          "id": "surface_path_14_13",
-          "tx": 139,
-          "tz": 76,
-          "x": 118.19688,
-          "y": -22.10989,
-          "z": -6.57652
-        },
-        {
-          "id": "surface_path_14_14",
-          "tx": 139,
-          "tz": 76,
-          "x": 118.35,
-          "y": -21.87932,
-          "z": -6.14497
-        },
-        {
-          "id": "surface_path_14_15",
-          "tx": 139,
-          "tz": 77,
-          "x": 118.54688,
-          "y": -21.67876,
-          "z": -5.73155
-        },
-        {
-          "id": "surface_path_14_16",
-          "tx": 139,
-          "tz": 77,
-          "x": 118.7875,
-          "y": -21.51333,
-          "z": -5.33624
-        },
-        {
-          "id": "surface_path_14_17",
-          "tx": 139,
-          "tz": 77,
-          "x": 119.07188,
-          "y": -21.3458,
-          "z": -4.95906
-        },
-        {
-          "id": "surface_path_14_18",
-          "tx": 139,
-          "tz": 77,
-          "x": 119.4,
-          "y": -21.18928,
-          "z": -4.6
-        },
-        {
-          "id": "surface_path_14_19",
-          "tx": 140,
-          "tz": 78,
-          "x": 120.6,
-          "y": -20.82149,
-          "z": -3.4
-        },
-        {
-          "id": "surface_path_14_20",
-          "tx": 140,
-          "tz": 78,
-          "x": 120.95902,
-          "y": -20.83781,
-          "z": -3.07025
-        },
-        {
-          "id": "surface_path_14_21",
-          "tx": 140,
-          "tz": 78,
-          "x": 121.33607,
-          "y": -20.89598,
-          "z": -2.781
-        },
-        {
-          "id": "surface_path_14_22",
-          "tx": 140,
-          "tz": 78,
-          "x": 121.73116,
-          "y": -20.98485,
-          "z": -2.53224
-        },
-        {
-          "id": "surface_path_14_23",
-          "tx": 141,
-          "tz": 78,
-          "x": 122.14429,
-          "y": -20.94924,
-          "z": -2.32398
-        },
-        {
-          "id": "surface_path_14_24",
-          "tx": 141,
-          "tz": 78,
-          "x": 122.57545,
-          "y": -20.90548,
-          "z": -2.15623
-        },
-        {
-          "id": "surface_path_14_25",
-          "tx": 141,
-          "tz": 78,
-          "x": 123.02465,
-          "y": -20.86137,
-          "z": -2.02897
-        },
-        {
-          "id": "surface_path_14_26",
-          "tx": 141,
-          "tz": 79,
-          "x": 123.49189,
-          "y": -20.7835,
-          "z": -1.9422
-        },
-        {
-          "id": "surface_path_14_27",
-          "tx": 141,
-          "tz": 79,
-          "x": 123.97716,
-          "y": -20.56286,
-          "z": -1.89594
+          "tx": 157,
+          "tz": 80,
+          "x": 154,
+          "y": -15.8088,
+          "z": 0
         },
         {
           "id": "surface_path_15_1",
@@ -27253,6 +26747,78 @@
           "x": 101.65,
           "y": -32.89681,
           "z": -64.25
+        },
+        {
+          "id": "surface_gate_north_1",
+          "tx": 81,
+          "tz": 131,
+          "x": 3.60445,
+          "y": 3.03263,
+          "z": 102.00978
+        },
+        {
+          "id": "surface_gate_north_2",
+          "tx": 81,
+          "tz": 131,
+          "x": 3.78589,
+          "y": 3.00638,
+          "z": 103.97053
+        },
+        {
+          "id": "surface_gate_north_3",
+          "tx": 82,
+          "tz": 132,
+          "x": 4.13246,
+          "y": 2.96046,
+          "z": 105.85765
+        },
+        {
+          "id": "surface_gate_north_4",
+          "tx": 82,
+          "tz": 133,
+          "x": 4.64414,
+          "y": 2.89612,
+          "z": 107.67114
+        },
+        {
+          "id": "surface_gate_north_5",
+          "tx": 82,
+          "tz": 134,
+          "x": 5.32095,
+          "y": 2.81451,
+          "z": 109.41101
+        },
+        {
+          "id": "surface_gate_north_6",
+          "tx": 83,
+          "tz": 135,
+          "x": 6.16287,
+          "y": 2.71668,
+          "z": 111.07726
+        },
+        {
+          "id": "surface_gate_north_7",
+          "tx": 83,
+          "tz": 136,
+          "x": 7.16991,
+          "y": 2.60354,
+          "z": 112.66989
+        },
+        {
+          "id": "surface_gate_north_8",
+          "tx": 84,
+          "tz": 137,
+          "x": 8.34207,
+          "y": 2.47595,
+          "z": 114.18889
+        },
+        {
+          "id": "surface_gate_north_9",
+          "tx": 84,
+          "tz": 137,
+          "x": 9.67935,
+          "y": 2.3346,
+          "z": 115.63427
         },
         {
           "id": "surface_gate_west_1",
@@ -27890,689 +27456,721 @@
           "id": "surface_gate_east_1",
           "tx": 79,
           "tz": 83,
-          "x": -0.17455,
-          "y": 0.73506,
-          "z": 7.18402
+          "x": -0.5125,
+          "y": 0.77672,
+          "z": 7.2125
         },
         {
           "id": "surface_gate_east_2",
-          "tx": 80,
+          "tx": 79,
           "tz": 82,
-          "x": 0.65089,
-          "y": 0.4715,
-          "z": 5.36804
+          "x": -0.025,
+          "y": 0.608,
+          "z": 5.425
         },
         {
           "id": "surface_gate_east_3",
           "tx": 80,
           "tz": 81,
-          "x": 1.47634,
-          "y": 0.0674,
-          "z": 3.55205
+          "x": 0.4625,
+          "y": 0.33474,
+          "z": 3.6375
         },
         {
           "id": "surface_gate_east_4",
-          "tx": 81,
+          "tx": 80,
           "tz": 80,
-          "x": 2.3083,
-          "y": -0.39109,
-          "z": 1.73926
+          "x": 0.95,
+          "y": 0.00379,
+          "z": 1.85
         },
         {
           "id": "surface_gate_east_5",
-          "tx": 81,
+          "tx": 80,
           "tz": 80,
-          "x": 3.37157,
-          "y": -0.83519,
-          "z": 0.05898
+          "x": 1.25582,
+          "y": -0.17223,
+          "z": 0.92974
         },
         {
           "id": "surface_gate_east_6",
-          "tx": 82,
-          "tz": 79,
-          "x": 4.88565,
-          "y": -1.37006,
-          "z": -1.22224
+          "tx": 80,
+          "tz": 80,
+          "x": 1.64827,
+          "y": -0.35035,
+          "z": 0.09396
         },
         {
           "id": "surface_gate_east_7",
-          "tx": 83,
+          "tx": 81,
           "tz": 79,
-          "x": 6.73375,
-          "y": -1.95175,
-          "z": -1.94213
+          "x": 2.12736,
+          "y": -0.55005,
+          "z": -0.65735
         },
         {
           "id": "surface_gate_east_8",
-          "tx": 84,
-          "tz": 78,
-          "x": 8.71241,
-          "y": -2.52577,
-          "z": -2.15708
+          "tx": 81,
+          "tz": 79,
+          "x": 2.69308,
+          "y": -0.76614,
+          "z": -1.32417
         },
         {
           "id": "surface_gate_east_9",
-          "tx": 85,
-          "tz": 78,
-          "x": 10.70609,
-          "y": -3.09077,
-          "z": -2.22354
+          "tx": 81,
+          "tz": 79,
+          "x": 3.34544,
+          "y": -0.99959,
+          "z": -1.90652
         },
         {
           "id": "surface_gate_east_10",
-          "tx": 86,
+          "tx": 82,
           "tz": 78,
-          "x": 12.69976,
-          "y": -3.65599,
-          "z": -2.28999
+          "x": 4.08443,
+          "y": -1.25052,
+          "z": -2.40439
         },
         {
           "id": "surface_gate_east_11",
-          "tx": 87,
+          "tx": 82,
           "tz": 78,
-          "x": 14.69343,
-          "y": -4.22143,
-          "z": -2.35645
+          "x": 4.91005,
+          "y": -1.51888,
+          "z": -2.81778
         },
         {
           "id": "surface_gate_east_12",
-          "tx": 88,
+          "tx": 82,
           "tz": 78,
-          "x": 16.68711,
-          "y": -4.7871,
-          "z": -2.4229
+          "x": 5.82231,
+          "y": -1.80458,
+          "z": -3.14669
         },
         {
           "id": "surface_gate_east_13",
-          "tx": 89,
+          "tx": 83,
           "tz": 78,
-          "x": 18.68078,
-          "y": -5.35298,
-          "z": -2.48936
+          "x": 7.65785,
+          "y": -2.3708,
+          "z": -3.69736
         },
         {
           "id": "surface_gate_east_14",
-          "tx": 90,
-          "tz": 78,
-          "x": 20.67446,
-          "y": -5.91908,
-          "z": -2.55582
+          "tx": 84,
+          "tz": 77,
+          "x": 9.49339,
+          "y": -2.9387,
+          "z": -4.24802
         },
         {
           "id": "surface_gate_east_15",
-          "tx": 91,
-          "tz": 78,
-          "x": 22.66813,
-          "y": -6.4854,
-          "z": -2.62227
+          "tx": 85,
+          "tz": 77,
+          "x": 11.32893,
+          "y": -3.50827,
+          "z": -4.79868
         },
         {
           "id": "surface_gate_east_16",
-          "tx": 92,
-          "tz": 78,
-          "x": 24.6618,
-          "y": -7.05194,
-          "z": -2.68873
+          "tx": 86,
+          "tz": 77,
+          "x": 13.16446,
+          "y": -4.07951,
+          "z": -5.34934
         },
         {
           "id": "surface_gate_east_17",
-          "tx": 93,
-          "tz": 78,
-          "x": 26.65548,
-          "y": -7.6187,
-          "z": -2.75518
+          "tx": 87,
+          "tz": 77,
+          "x": 15,
+          "y": -4.65244,
+          "z": -5.9
         },
         {
           "id": "surface_gate_east_18",
-          "tx": 94,
-          "tz": 78,
-          "x": 28.64915,
-          "y": -8.18568,
-          "z": -2.82164
+          "tx": 88,
+          "tz": 76,
+          "x": 16.75462,
+          "y": -5.19765,
+          "z": -6.38558
         },
         {
           "id": "surface_gate_east_19",
-          "tx": 95,
-          "tz": 78,
-          "x": 30.64283,
-          "y": -8.75288,
-          "z": -2.88809
+          "tx": 89,
+          "tz": 76,
+          "x": 18.5185,
+          "y": -5.73899,
+          "z": -6.79232
         },
         {
           "id": "surface_gate_east_20",
-          "tx": 96,
-          "tz": 78,
-          "x": 32.6365,
-          "y": -9.33408,
-          "z": -2.95455
+          "tx": 90,
+          "tz": 76,
+          "x": 20.29162,
+          "y": -6.27613,
+          "z": -7.12021
         },
         {
           "id": "surface_gate_east_21",
-          "tx": 97,
-          "tz": 78,
-          "x": 34.63017,
-          "y": -9.94475,
-          "z": -3.02101
+          "tx": 91,
+          "tz": 76,
+          "x": 22.07399,
+          "y": -6.80872,
+          "z": -7.36926
         },
         {
           "id": "surface_gate_east_22",
-          "tx": 98,
-          "tz": 78,
-          "x": 36.62385,
-          "y": -10.55544,
-          "z": -3.08746
+          "tx": 91,
+          "tz": 76,
+          "x": 23.86561,
+          "y": -7.33643,
+          "z": -7.53947
         },
         {
           "id": "surface_gate_east_23",
-          "tx": 99,
-          "tz": 78,
-          "x": 38.61752,
-          "y": -11.16613,
-          "z": -3.15392
+          "tx": 92,
+          "tz": 76,
+          "x": 25.66648,
+          "y": -7.85891,
+          "z": -7.63084
         },
         {
           "id": "surface_gate_east_24",
-          "tx": 100,
-          "tz": 78,
-          "x": 40.6112,
-          "y": -11.77684,
-          "z": -3.22037
+          "tx": 93,
+          "tz": 76,
+          "x": 27.4766,
+          "y": -8.3758,
+          "z": -7.64336
         },
         {
           "id": "surface_gate_east_25",
-          "tx": 101,
-          "tz": 78,
-          "x": 42.60487,
-          "y": -12.38757,
-          "z": -3.28683
+          "tx": 94,
+          "tz": 76,
+          "x": 29.29596,
+          "y": -8.88676,
+          "z": -7.57705
         },
         {
           "id": "surface_gate_east_26",
-          "tx": 102,
-          "tz": 78,
-          "x": 44.59855,
-          "y": -12.9983,
-          "z": -3.35328
+          "tx": 95,
+          "tz": 76,
+          "x": 31.27633,
+          "y": -9.43797,
+          "z": -7.46224
         },
         {
           "id": "surface_gate_east_27",
-          "tx": 103,
-          "tz": 78,
-          "x": 46.59222,
-          "y": -13.60905,
-          "z": -3.41974
+          "tx": 96,
+          "tz": 76,
+          "x": 33.25669,
+          "y": -10.0117,
+          "z": -7.34744
         },
         {
           "id": "surface_gate_east_28",
-          "tx": 104,
-          "tz": 78,
-          "x": 48.58589,
-          "y": -14.38894,
-          "z": -3.4862
+          "tx": 97,
+          "tz": 76,
+          "x": 35.23706,
+          "y": -10.59853,
+          "z": -7.23263
         },
         {
           "id": "surface_gate_east_29",
-          "tx": 105,
-          "tz": 78,
-          "x": 50.57957,
-          "y": -15.18686,
-          "z": -3.55265
+          "tx": 98,
+          "tz": 76,
+          "x": 37.21742,
+          "y": -11.18533,
+          "z": -7.11783
         },
         {
           "id": "surface_gate_east_30",
-          "tx": 106,
-          "tz": 78,
-          "x": 52.57324,
-          "y": -15.70119,
-          "z": -3.61911
+          "tx": 99,
+          "tz": 76,
+          "x": 39.19779,
+          "y": -11.77212,
+          "z": -7.00303
         },
         {
           "id": "surface_gate_east_31",
-          "tx": 107,
-          "tz": 78,
-          "x": 54.56692,
-          "y": -16.2089,
-          "z": -3.68556
+          "tx": 100,
+          "tz": 76,
+          "x": 41.17815,
+          "y": -12.35888,
+          "z": -6.88822
         },
         {
           "id": "surface_gate_east_32",
-          "tx": 108,
-          "tz": 78,
-          "x": 56.56059,
-          "y": -16.85384,
-          "z": -3.75202
+          "tx": 101,
+          "tz": 76,
+          "x": 43.15851,
+          "y": -12.94562,
+          "z": -6.77342
         },
         {
           "id": "surface_gate_east_33",
-          "tx": 109,
-          "tz": 78,
-          "x": 58.55426,
-          "y": -17.52868,
-          "z": -3.81848
+          "tx": 102,
+          "tz": 76,
+          "x": 45.13888,
+          "y": -13.53234,
+          "z": -6.65862
         },
         {
           "id": "surface_gate_east_34",
-          "tx": 110,
-          "tz": 78,
-          "x": 60.54773,
-          "y": -18.25076,
-          "z": -3.80011
+          "tx": 103,
+          "tz": 76,
+          "x": 47.11924,
+          "y": -14.11904,
+          "z": -6.54381
         },
         {
           "id": "surface_gate_east_35",
-          "tx": 111,
-          "tz": 78,
-          "x": 62.52594,
-          "y": -18.79428,
-          "z": -3.55549
+          "tx": 104,
+          "tz": 76,
+          "x": 49.09961,
+          "y": -14.70571,
+          "z": -6.42901
         },
         {
           "id": "surface_gate_east_36",
-          "tx": 112,
-          "tz": 78,
-          "x": 64.45103,
-          "y": -19.0947,
-          "z": -3.04036
+          "tx": 105,
+          "tz": 76,
+          "x": 51.07997,
+          "y": -15.42398,
+          "z": -6.3142
         },
         {
           "id": "surface_gate_east_37",
-          "tx": 113,
-          "tz": 78,
-          "x": 66.29541,
-          "y": -19.05058,
-          "z": -2.28672
+          "tx": 106,
+          "tz": 76,
+          "x": 53.06034,
+          "y": -16.21746,
+          "z": -6.1994
         },
         {
           "id": "surface_gate_east_38",
-          "tx": 114,
-          "tz": 79,
-          "x": 68.02998,
-          "y": -19.18965,
-          "z": -1.30452
+          "tx": 107,
+          "tz": 76,
+          "x": 55.0407,
+          "y": -16.71907,
+          "z": -6.0846
         },
         {
           "id": "surface_gate_east_39",
-          "tx": 114,
-          "tz": 79,
-          "x": 69.6937,
-          "y": -19.08717,
-          "z": -0.2042
+          "tx": 108,
+          "tz": 77,
+          "x": 57.02106,
+          "y": -17.2707,
+          "z": -5.96979
         },
         {
           "id": "surface_gate_east_40",
-          "tx": 115,
-          "tz": 80,
-          "x": 71.35346,
-          "y": -18.98473,
-          "z": 0.9023
+          "tx": 109,
+          "tz": 77,
+          "x": 59.00143,
+          "y": -18.15708,
+          "z": -5.85499
         },
         {
           "id": "surface_gate_east_41",
-          "tx": 116,
-          "tz": 80,
-          "x": 73.0506,
-          "y": -19.43813,
-          "z": 1.94867
+          "tx": 110,
+          "tz": 77,
+          "x": 60.98179,
+          "y": -18.99628,
+          "z": -5.74019
         },
         {
           "id": "surface_gate_east_42",
-          "tx": 117,
-          "tz": 81,
-          "x": 74.85892,
-          "y": -20.07241,
-          "z": 2.787
+          "tx": 111,
+          "tz": 77,
+          "x": 62.96216,
+          "y": -19.58461,
+          "z": -5.62538
         },
         {
           "id": "surface_gate_east_43",
-          "tx": 118,
-          "tz": 81,
-          "x": 76.76333,
-          "y": -20.67905,
-          "z": 3.37231
+          "tx": 112,
+          "tz": 77,
+          "x": 64.94252,
+          "y": -19.58692,
+          "z": -5.51058
         },
         {
           "id": "surface_gate_east_44",
-          "tx": 119,
-          "tz": 81,
-          "x": 78.72765,
-          "y": -21.27683,
-          "z": 3.70673
+          "tx": 113,
+          "tz": 77,
+          "x": 66.92288,
+          "y": -19.57401,
+          "z": -5.39577
         },
         {
           "id": "surface_gate_east_45",
-          "tx": 120,
-          "tz": 81,
-          "x": 80.71984,
-          "y": -21.87482,
-          "z": 3.77337
+          "tx": 114,
+          "tz": 77,
+          "x": 68.90325,
+          "y": -19.59619,
+          "z": -5.28097
         },
         {
           "id": "surface_gate_east_46",
-          "tx": 121,
-          "tz": 81,
-          "x": 82.71288,
-          "y": -22.47319,
-          "z": 3.69487
+          "tx": 115,
+          "tz": 77,
+          "x": 70.88361,
+          "y": -19.60976,
+          "z": -5.16617
         },
         {
           "id": "surface_gate_east_47",
-          "tx": 122,
-          "tz": 81,
-          "x": 84.70561,
-          "y": -23.27111,
-          "z": 3.60429
+          "tx": 116,
+          "tz": 77,
+          "x": 72.86398,
+          "y": -20.11819,
+          "z": -5.05136
         },
         {
           "id": "surface_gate_east_48",
-          "tx": 123,
-          "tz": 81,
-          "x": 86.69833,
-          "y": -24.06902,
-          "z": 3.51371
+          "tx": 117,
+          "tz": 77,
+          "x": 74.84434,
+          "y": -20.95369,
+          "z": -4.93656
         },
         {
           "id": "surface_gate_east_49",
-          "tx": 124,
-          "tz": 81,
-          "x": 88.69105,
-          "y": -24.86693,
-          "z": 3.42313
+          "tx": 118,
+          "tz": 77,
+          "x": 76.82471,
+          "y": -21.75698,
+          "z": -4.82176
         },
         {
           "id": "surface_gate_east_50",
-          "tx": 125,
-          "tz": 81,
-          "x": 90.68378,
-          "y": -25.47705,
-          "z": 3.33256
+          "tx": 119,
+          "tz": 77,
+          "x": 78.80507,
+          "y": -22.55046,
+          "z": -4.70695
         },
         {
           "id": "surface_gate_east_51",
-          "tx": 126,
-          "tz": 81,
-          "x": 92.6765,
-          "y": -25.73314,
-          "z": 3.24198
+          "tx": 120,
+          "tz": 77,
+          "x": 80.78543,
+          "y": -23.22735,
+          "z": -4.59215
         },
         {
           "id": "surface_gate_east_52",
-          "tx": 127,
-          "tz": 81,
-          "x": 94.66923,
-          "y": -25.80082,
-          "z": 3.1514
+          "tx": 121,
+          "tz": 77,
+          "x": 82.7658,
+          "y": -24.02083,
+          "z": -4.47734
         },
         {
           "id": "surface_gate_east_53",
-          "tx": 128,
-          "tz": 81,
-          "x": 96.66195,
-          "y": -25.70055,
-          "z": 3.06082
+          "tx": 122,
+          "tz": 77,
+          "x": 84.74616,
+          "y": -24.79738,
+          "z": -4.36254
         },
         {
           "id": "surface_gate_east_54",
-          "tx": 129,
-          "tz": 81,
-          "x": 98.65467,
-          "y": -25.45163,
-          "z": 2.97024
+          "tx": 123,
+          "tz": 77,
+          "x": 86.72653,
+          "y": -25.33912,
+          "z": -4.24774
         },
         {
           "id": "surface_gate_east_55",
-          "tx": 130,
-          "tz": 81,
-          "x": 100.6474,
-          "y": -25.01683,
-          "z": 2.87966
+          "tx": 124,
+          "tz": 77,
+          "x": 88.70689,
+          "y": -25.87446,
+          "z": -4.13293
         },
         {
           "id": "surface_gate_east_56",
-          "tx": 131,
-          "tz": 81,
-          "x": 102.64012,
-          "y": -24.41348,
-          "z": 2.78909
+          "tx": 125,
+          "tz": 77,
+          "x": 90.68725,
+          "y": -26.27465,
+          "z": -4.01813
         },
         {
           "id": "surface_gate_east_57",
-          "tx": 132,
-          "tz": 81,
-          "x": 104.63284,
-          "y": -23.66644,
-          "z": 2.69851
+          "tx": 126,
+          "tz": 78,
+          "x": 92.66762,
+          "y": -26.48203,
+          "z": -3.90333
         },
         {
           "id": "surface_gate_east_58",
-          "tx": 133,
-          "tz": 81,
-          "x": 106.62557,
-          "y": -22.86853,
-          "z": 2.60793
+          "tx": 127,
+          "tz": 78,
+          "x": 94.64798,
+          "y": -26.49228,
+          "z": -3.78852
         },
         {
           "id": "surface_gate_east_59",
-          "tx": 134,
-          "tz": 81,
-          "x": 108.61829,
-          "y": -22.07062,
-          "z": 2.51735
+          "tx": 128,
+          "tz": 78,
+          "x": 96.62835,
+          "y": -26.32378,
+          "z": -3.67372
         },
         {
           "id": "surface_gate_east_60",
-          "tx": 135,
-          "tz": 81,
-          "x": 110.61102,
-          "y": -21.2727,
-          "z": 2.42677
+          "tx": 129,
+          "tz": 78,
+          "x": 98.60871,
+          "y": -25.99793,
+          "z": -3.55892
         },
         {
           "id": "surface_gate_east_61",
-          "tx": 136,
-          "tz": 81,
-          "x": 112.60374,
-          "y": -20.47479,
-          "z": 2.33619
+          "tx": 130,
+          "tz": 78,
+          "x": 100.58907,
+          "y": -25.48913,
+          "z": -3.44411
         },
         {
           "id": "surface_gate_east_62",
-          "tx": 137,
-          "tz": 81,
-          "x": 114.59646,
-          "y": -19.67688,
-          "z": 2.24562
+          "tx": 131,
+          "tz": 78,
+          "x": 102.56944,
+          "y": -24.8165,
+          "z": -3.32931
         },
         {
           "id": "surface_gate_east_63",
-          "tx": 138,
-          "tz": 81,
-          "x": 116.58919,
-          "y": -19.83882,
-          "z": 2.15504
+          "tx": 132,
+          "tz": 78,
+          "x": 104.5498,
+          "y": -24.02302,
+          "z": -3.2145
         },
         {
           "id": "surface_gate_east_64",
-          "tx": 139,
-          "tz": 81,
-          "x": 118.57743,
-          "y": -20.43573,
-          "z": 2.23114
+          "tx": 133,
+          "tz": 78,
+          "x": 106.53017,
+          "y": -23.22955,
+          "z": -3.0997
         },
         {
           "id": "surface_gate_east_65",
-          "tx": 140,
-          "tz": 81,
-          "x": 120.28872,
-          "y": -20.96929,
-          "z": 2.71557
+          "tx": 134,
+          "tz": 78,
+          "x": 108.51053,
+          "y": -22.43607,
+          "z": -2.9849
         },
         {
           "id": "surface_gate_east_66",
-          "tx": 141,
-          "tz": 81,
-          "x": 122,
-          "y": -20.8644,
-          "z": 3.2
+          "tx": 135,
+          "tz": 78,
+          "x": 110.4909,
+          "y": -21.6426,
+          "z": -2.87009
         },
         {
           "id": "surface_gate_east_67",
-          "tx": 141,
-          "tz": 81,
-          "x": 123.33333,
-          "y": -20.31126,
-          "z": 3.56667
+          "tx": 136,
+          "tz": 78,
+          "x": 112.47126,
+          "y": -20.84912,
+          "z": -2.75529
         },
         {
           "id": "surface_gate_east_68",
-          "tx": 142,
-          "tz": 81,
-          "x": 124.66667,
-          "y": -19.75813,
-          "z": 3.93333
+          "tx": 137,
+          "tz": 78,
+          "x": 114.45162,
+          "y": -20.05565,
+          "z": -2.64049
         },
         {
           "id": "surface_gate_east_69",
-          "tx": 143,
-          "tz": 82,
-          "x": 126,
-          "y": -19.205,
-          "z": 4.3
+          "tx": 138,
+          "tz": 78,
+          "x": 116.43199,
+          "y": -20.77182,
+          "z": -2.52568
         },
         {
           "id": "surface_gate_east_70",
-          "tx": 143,
-          "tz": 82,
-          "x": 127.51119,
-          "y": -18.58873,
-          "z": 4.59999
+          "tx": 139,
+          "tz": 78,
+          "x": 118.41235,
+          "y": -21.56529,
+          "z": -2.41088
         },
         {
           "id": "surface_gate_east_71",
-          "tx": 144,
-          "tz": 82,
-          "x": 129.02239,
-          "y": -18.28059,
-          "z": 4.89997
+          "tx": 140,
+          "tz": 78,
+          "x": 120.39272,
+          "y": -22.35877,
+          "z": -2.29607
         },
         {
           "id": "surface_gate_east_72",
-          "tx": 145,
-          "tz": 82,
-          "x": 130.53358,
-          "y": -17.97245,
-          "z": 5.19996
+          "tx": 141,
+          "tz": 78,
+          "x": 122.37308,
+          "y": -21.56529,
+          "z": -2.18127
         },
         {
           "id": "surface_gate_east_73",
-          "tx": 146,
-          "tz": 82,
-          "x": 132.49801,
-          "y": -17.9688,
-          "z": 4.85329
+          "tx": 142,
+          "tz": 78,
+          "x": 124.35345,
+          "y": -20.77182,
+          "z": -2.06647
         },
         {
           "id": "surface_gate_east_74",
-          "tx": 147,
-          "tz": 82,
-          "x": 134.46244,
-          "y": -17.9688,
-          "z": 4.50663
+          "tx": 143,
+          "tz": 79,
+          "x": 126.33381,
+          "y": -19.97834,
+          "z": -1.95166
         },
         {
           "id": "surface_gate_east_75",
-          "tx": 148,
-          "tz": 82,
-          "x": 136.42687,
-          "y": -17.91758,
-          "z": 4.15996
+          "tx": 144,
+          "tz": 79,
+          "x": 128.31417,
+          "y": -19.18487,
+          "z": -1.83686
         },
         {
           "id": "surface_gate_east_76",
-          "tx": 149,
-          "tz": 81,
-          "x": 138.39129,
-          "y": -17.68184,
-          "z": 3.8133
+          "tx": 145,
+          "tz": 79,
+          "x": 130.29454,
+          "y": -18.39139,
+          "z": -1.72206
         },
         {
           "id": "surface_gate_east_77",
-          "tx": 150,
-          "tz": 81,
-          "x": 140.35572,
-          "y": -17.44611,
-          "z": 3.46664
+          "tx": 146,
+          "tz": 79,
+          "x": 132.2749,
+          "y": -17.9688,
+          "z": -1.60725
         },
         {
           "id": "surface_gate_east_78",
-          "tx": 151,
-          "tz": 81,
-          "x": 142.32015,
-          "y": -17.21038,
-          "z": 3.11997
+          "tx": 147,
+          "tz": 79,
+          "x": 134.25527,
+          "y": -17.9688,
+          "z": -1.49245
         },
         {
           "id": "surface_gate_east_79",
-          "tx": 152,
-          "tz": 81,
-          "x": 144.28458,
-          "y": -16.97465,
-          "z": 2.77331
+          "tx": 148,
+          "tz": 79,
+          "x": 136.23563,
+          "y": -17.94052,
+          "z": -1.37764
         },
         {
           "id": "surface_gate_east_80",
-          "tx": 153,
-          "tz": 81,
-          "x": 146.249,
-          "y": -16.73892,
-          "z": 2.42665
+          "tx": 149,
+          "tz": 79,
+          "x": 138.21599,
+          "y": -17.70288,
+          "z": -1.26284
         },
         {
           "id": "surface_gate_east_81",
-          "tx": 154,
-          "tz": 81,
-          "x": 148.21343,
-          "y": -16.50319,
-          "z": 2.07998
+          "tx": 150,
+          "tz": 79,
+          "x": 140.19636,
+          "y": -17.46524,
+          "z": -1.14804
         },
         {
           "id": "surface_gate_east_82",
-          "tx": 155,
-          "tz": 80,
-          "x": 150.17786,
-          "y": -16.26746,
-          "z": 1.73332
+          "tx": 151,
+          "tz": 79,
+          "x": 142.17672,
+          "y": -17.22759,
+          "z": -1.03323
         },
         {
           "id": "surface_gate_east_83",
-          "tx": 156,
-          "tz": 80,
-          "x": 152.14229,
-          "y": -16.03173,
-          "z": 1.38665
+          "tx": 152,
+          "tz": 79,
+          "x": 144.15709,
+          "y": -16.98995,
+          "z": -0.91843
         },
         {
           "id": "surface_gate_east_84",
-          "tx": 157,
-          "tz": 80,
-          "x": 154.10672,
-          "y": -15.79599,
-          "z": 1.03999
+          "tx": 153,
+          "tz": 79,
+          "x": 146.13745,
+          "y": -16.75231,
+          "z": -0.80363
         },
         {
           "id": "surface_gate_east_85",
-          "tx": 158,
-          "tz": 80,
-          "x": 156.07114,
-          "y": -15.56026,
-          "z": 0.69333
+          "tx": 154,
+          "tz": 79,
+          "x": 148.11782,
+          "y": -16.51466,
+          "z": -0.68882
         },
         {
           "id": "surface_gate_east_86",
+          "tx": 155,
+          "tz": 79,
+          "x": 150.09818,
+          "y": -16.27702,
+          "z": -0.57402
+        },
+        {
+          "id": "surface_gate_east_87",
+          "tx": 156,
+          "tz": 79,
+          "x": 152.07854,
+          "y": -16.03937,
+          "z": -0.45921
+        },
+        {
+          "id": "surface_gate_east_88",
+          "tx": 157,
+          "tz": 79,
+          "x": 154.05891,
+          "y": -15.80173,
+          "z": -0.34441
+        },
+        {
+          "id": "surface_gate_east_89",
+          "tx": 158,
+          "tz": 79,
+          "x": 156.03927,
+          "y": -15.56409,
+          "z": -0.22961
+        },
+        {
+          "id": "surface_gate_east_90",
           "tx": 159,
-          "tz": 80,
-          "x": 158.03557,
-          "y": -15.32453,
-          "z": 0.34666
+          "tz": 79,
+          "x": 158.01964,
+          "y": -15.32644,
+          "z": -0.1148
         }
       ],
       "links": [
@@ -28582,38 +28180,6 @@
         ],
         [
           "surface_path_8_1",
-          "surface_path_8_2"
-        ],
-        [
-          "surface_path_8_2",
-          "surface_path_8_3"
-        ],
-        [
-          "surface_path_8_3",
-          "surface_path_8_4"
-        ],
-        [
-          "surface_path_8_4",
-          "surface_path_8_5"
-        ],
-        [
-          "surface_path_8_5",
-          "surface_path_8_6"
-        ],
-        [
-          "surface_path_8_6",
-          "surface_path_8_7"
-        ],
-        [
-          "surface_path_8_7",
-          "surface_path_8_8"
-        ],
-        [
-          "surface_path_8_8",
-          "surface_path_8_9"
-        ],
-        [
-          "surface_path_8_9",
           "place_coreZone_turn"
         ],
         [
@@ -28758,102 +28324,6 @@
         ],
         [
           "surface_path_14_3",
-          "surface_path_14_4"
-        ],
-        [
-          "surface_path_14_4",
-          "surface_path_14_5"
-        ],
-        [
-          "surface_path_14_5",
-          "surface_path_14_6"
-        ],
-        [
-          "surface_path_14_6",
-          "surface_path_14_7"
-        ],
-        [
-          "surface_path_14_7",
-          "surface_path_14_8"
-        ],
-        [
-          "surface_path_14_8",
-          "surface_path_14_9"
-        ],
-        [
-          "surface_path_14_9",
-          "surface_path_14_10"
-        ],
-        [
-          "surface_path_14_10",
-          "surface_path_14_11"
-        ],
-        [
-          "surface_path_14_11",
-          "surface_path_14_12"
-        ],
-        [
-          "surface_path_14_12",
-          "surface_path_14_13"
-        ],
-        [
-          "surface_path_14_13",
-          "surface_path_14_14"
-        ],
-        [
-          "surface_path_14_14",
-          "surface_path_14_15"
-        ],
-        [
-          "surface_path_14_15",
-          "surface_path_14_16"
-        ],
-        [
-          "surface_path_14_16",
-          "surface_path_14_17"
-        ],
-        [
-          "surface_path_14_17",
-          "surface_path_14_18"
-        ],
-        [
-          "surface_path_14_18",
-          "surface_path_14_19"
-        ],
-        [
-          "surface_path_14_19",
-          "surface_path_14_20"
-        ],
-        [
-          "surface_path_14_20",
-          "surface_path_14_21"
-        ],
-        [
-          "surface_path_14_21",
-          "surface_path_14_22"
-        ],
-        [
-          "surface_path_14_22",
-          "surface_path_14_23"
-        ],
-        [
-          "surface_path_14_23",
-          "surface_path_14_24"
-        ],
-        [
-          "surface_path_14_24",
-          "surface_path_14_25"
-        ],
-        [
-          "surface_path_14_25",
-          "surface_path_14_26"
-        ],
-        [
-          "surface_path_14_26",
-          "surface_path_14_27"
-        ],
-        [
-          "surface_path_14_27",
           "gate_east"
         ],
         [
@@ -28934,11 +28404,47 @@
         ],
         [
           "hub",
+          "surface_gate_north_1"
+        ],
+        [
+          "surface_gate_north_1",
+          "surface_gate_north_2"
+        ],
+        [
+          "surface_gate_north_2",
+          "surface_gate_north_3"
+        ],
+        [
+          "surface_gate_north_3",
+          "surface_gate_north_4"
+        ],
+        [
+          "surface_gate_north_4",
+          "surface_gate_north_5"
+        ],
+        [
+          "surface_gate_north_5",
+          "surface_gate_north_6"
+        ],
+        [
+          "surface_gate_north_6",
+          "surface_gate_north_7"
+        ],
+        [
+          "surface_gate_north_7",
+          "surface_gate_north_8"
+        ],
+        [
+          "surface_gate_north_8",
+          "surface_gate_north_9"
+        ],
+        [
+          "surface_gate_north_9",
           "gate_north"
         ],
         [
           "gate_north_turn",
-          "gate_north"
+          "surface_gate_north_1"
         ],
         [
           "hub",
@@ -29618,6 +29124,22 @@
         ],
         [
           "surface_gate_east_86",
+          "surface_gate_east_87"
+        ],
+        [
+          "surface_gate_east_87",
+          "surface_gate_east_88"
+        ],
+        [
+          "surface_gate_east_88",
+          "surface_gate_east_89"
+        ],
+        [
+          "surface_gate_east_89",
+          "surface_gate_east_90"
+        ],
+        [
+          "surface_gate_east_90",
           "gate_east"
         ],
         [
@@ -32708,6 +32230,234 @@
         "worldRevision": "kromka-1"
       },
       {
+        "id": "s40_sc0_0",
+        "model": "rubbleRock",
+        "prefab": "rubble_rock",
+        "name": "Глыба",
+        "position": {
+          "x": 20.41,
+          "y": 1.296,
+          "z": 126.83
+        },
+        "rotation": {
+          "x": 0,
+          "y": 5.375,
+          "z": 0
+        },
+        "scale": {
+          "x": 1.66,
+          "y": 1.66,
+          "z": 1.66
+        },
+        "collision": "solid",
+        "collisionParts": [
+          {
+            "center": {
+              "x": 0.04,
+              "z": -0.044
+            },
+            "size": {
+              "x": 1.156,
+              "z": 1.731
+            }
+          }
+        ],
+        "collisionSize": {
+          "width": 1.92,
+          "depth": 2.87
+        },
+        "footprint": {
+          "x": 3.446,
+          "z": 3.28
+        },
+        "vision": {
+          "blocks": true
+        },
+        "role": "cover",
+        "tags": [
+          "scatter",
+          "zone-kit"
+        ],
+        "unityAuthored": true,
+        "worldRevision": "kromka-1",
+        "surfaceSourcePosition": {
+          "x": 20.41,
+          "y": 0,
+          "z": 126.83
+        }
+      },
+      {
+        "id": "s40_sc0_1",
+        "model": "rubbleRock",
+        "prefab": "rubble_rock",
+        "name": "Глыба",
+        "position": {
+          "x": 22.84,
+          "y": 1.106,
+          "z": 139.85
+        },
+        "rotation": {
+          "x": 0,
+          "y": 2.272,
+          "z": 0
+        },
+        "scale": {
+          "x": 1.43,
+          "y": 1.43,
+          "z": 1.43
+        },
+        "collision": "solid",
+        "collisionParts": [
+          {
+            "center": {
+              "x": 0.04,
+              "z": -0.044
+            },
+            "size": {
+              "x": 1.156,
+              "z": 1.731
+            }
+          }
+        ],
+        "collisionSize": {
+          "width": 1.65,
+          "depth": 2.48
+        },
+        "footprint": {
+          "x": 2.958,
+          "z": 2.86
+        },
+        "vision": {
+          "blocks": true
+        },
+        "role": "cover",
+        "tags": [
+          "scatter",
+          "zone-kit"
+        ],
+        "unityAuthored": true,
+        "worldRevision": "kromka-1",
+        "surfaceSourcePosition": {
+          "x": 22.84,
+          "y": 0,
+          "z": 139.85
+        }
+      },
+      {
+        "id": "s40_sc0_2",
+        "model": "rubbleRock",
+        "prefab": "rubble_rock",
+        "name": "Глыба",
+        "position": {
+          "x": 24.94,
+          "y": 0.821,
+          "z": 125.37
+        },
+        "rotation": {
+          "x": 0,
+          "y": 5.465,
+          "z": 0
+        },
+        "scale": {
+          "x": 1.17,
+          "y": 1.17,
+          "z": 1.17
+        },
+        "collision": "solid",
+        "collisionParts": [
+          {
+            "center": {
+              "x": 0.04,
+              "z": -0.044
+            },
+            "size": {
+              "x": 1.156,
+              "z": 1.731
+            }
+          }
+        ],
+        "collisionSize": {
+          "width": 1.35,
+          "depth": 2.03
+        },
+        "footprint": {
+          "x": 2.403,
+          "z": 2.371
+        },
+        "vision": {
+          "blocks": true
+        },
+        "role": "cover",
+        "tags": [
+          "scatter",
+          "zone-kit"
+        ],
+        "unityAuthored": true,
+        "worldRevision": "kromka-1",
+        "surfaceSourcePosition": {
+          "x": 24.94,
+          "y": 0,
+          "z": 125.37
+        }
+      },
+      {
+        "id": "s40_sc0_3",
+        "model": "rubbleRock",
+        "prefab": "rubble_rock",
+        "name": "Глыба",
+        "position": {
+          "x": 34.56,
+          "y": 0.03,
+          "z": 141.3
+        },
+        "rotation": {
+          "x": 0,
+          "y": 3.735,
+          "z": 0
+        },
+        "scale": {
+          "x": 1.49,
+          "y": 1.49,
+          "z": 1.49
+        },
+        "collision": "solid",
+        "collisionParts": [
+          {
+            "center": {
+              "x": 0.04,
+              "z": -0.044
+            },
+            "size": {
+              "x": 1.156,
+              "z": 1.731
+            }
+          }
+        ],
+        "collisionSize": {
+          "width": 1.72,
+          "depth": 2.58
+        },
+        "footprint": {
+          "x": 2.87,
+          "z": 3.101
+        },
+        "vision": {
+          "blocks": true
+        },
+        "role": "cover",
+        "tags": [
+          "scatter",
+          "zone-kit"
+        ],
+        "unityAuthored": true,
+        "worldRevision": "kromka-1",
+        "surfaceSourcePosition": {
+          "x": 34.56,
+          "y": 0,
+          "z": 141.3
+        }
+      },
+      {
         "id": "s40_sc1_0",
         "model": "perimeterDebris",
         "prefab": "perimeter_debris",
@@ -32886,6 +32636,47 @@
         ],
         "unityAuthored": true,
         "worldRevision": "kromka-1"
+      },
+      {
+        "id": "s41_sc0_2",
+        "model": "dryBush",
+        "prefab": "dry_bush",
+        "name": "Сухой куст",
+        "position": {
+          "x": 3.18,
+          "y": 2.971,
+          "z": 110.49
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.522,
+          "z": 0
+        },
+        "scale": {
+          "x": 1.03,
+          "y": 1.03,
+          "z": 1.03
+        },
+        "collision": "none",
+        "footprint": {
+          "x": 0.45,
+          "z": 0.46
+        },
+        "vision": {
+          "blocks": false
+        },
+        "role": "scenery",
+        "tags": [
+          "scatter",
+          "zone-kit"
+        ],
+        "unityAuthored": true,
+        "worldRevision": "kromka-1",
+        "surfaceSourcePosition": {
+          "x": 3.18,
+          "y": 0,
+          "z": 110.49
+        }
       },
       {
         "id": "s41_sc0_3",
@@ -33212,6 +33003,47 @@
         "worldRevision": "kromka-1"
       },
       {
+        "id": "s43_sc0_4",
+        "model": "dryBush",
+        "prefab": "dry_bush",
+        "name": "Сухой куст",
+        "position": {
+          "x": 19.39,
+          "y": -2.792,
+          "z": 30.33
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.302,
+          "z": 0
+        },
+        "scale": {
+          "x": 1.21,
+          "y": 1.21,
+          "z": 1.21
+        },
+        "collision": "none",
+        "footprint": {
+          "x": 0.53,
+          "z": 0.55
+        },
+        "vision": {
+          "blocks": false
+        },
+        "role": "scenery",
+        "tags": [
+          "scatter",
+          "zone-kit"
+        ],
+        "unityAuthored": true,
+        "worldRevision": "kromka-1",
+        "surfaceSourcePosition": {
+          "x": 19.39,
+          "y": 0,
+          "z": 30.33
+        }
+      },
+      {
         "id": "s43_sc0_5",
         "model": "dryBush",
         "prefab": "dry_bush",
@@ -33354,6 +33186,88 @@
         ],
         "unityAuthored": true,
         "worldRevision": "kromka-1"
+      },
+      {
+        "id": "s44_sc0_1",
+        "model": "dryBush",
+        "prefab": "dry_bush",
+        "name": "Сухой куст",
+        "position": {
+          "x": 19.81,
+          "y": -6.706,
+          "z": -12.33
+        },
+        "rotation": {
+          "x": 0,
+          "y": 5.135,
+          "z": 0
+        },
+        "scale": {
+          "x": 1.24,
+          "y": 1.24,
+          "z": 1.24
+        },
+        "collision": "none",
+        "footprint": {
+          "x": 0.55,
+          "z": 0.56
+        },
+        "vision": {
+          "blocks": false
+        },
+        "role": "scenery",
+        "tags": [
+          "scatter",
+          "zone-kit"
+        ],
+        "unityAuthored": true,
+        "worldRevision": "kromka-1",
+        "surfaceSourcePosition": {
+          "x": 19.81,
+          "y": 0,
+          "z": -12.33
+        }
+      },
+      {
+        "id": "s44_sc0_5",
+        "model": "dryBush",
+        "prefab": "dry_bush",
+        "name": "Сухой куст",
+        "position": {
+          "x": 26.51,
+          "y": -8.277,
+          "z": -11.08
+        },
+        "rotation": {
+          "x": 0,
+          "y": 4.505,
+          "z": 0
+        },
+        "scale": {
+          "x": 1.16,
+          "y": 1.16,
+          "z": 1.16
+        },
+        "collision": "none",
+        "footprint": {
+          "x": 0.51,
+          "z": 0.52
+        },
+        "vision": {
+          "blocks": false
+        },
+        "role": "scenery",
+        "tags": [
+          "scatter",
+          "zone-kit"
+        ],
+        "unityAuthored": true,
+        "worldRevision": "kromka-1",
+        "surfaceSourcePosition": {
+          "x": 26.51,
+          "y": 0,
+          "z": -11.08
+        }
       },
       {
         "id": "s44_sc1_1",
@@ -35452,6 +35366,47 @@
         "worldRevision": "kromka-1"
       },
       {
+        "id": "s53_sc1_6",
+        "model": "dryBush",
+        "prefab": "dry_bush",
+        "name": "Сухой куст",
+        "position": {
+          "x": 46.71,
+          "y": -10.114,
+          "z": 30.91
+        },
+        "rotation": {
+          "x": 0,
+          "y": 4.415,
+          "z": 0
+        },
+        "scale": {
+          "x": 1.77,
+          "y": 1.77,
+          "z": 1.77
+        },
+        "collision": "none",
+        "footprint": {
+          "x": 0.78,
+          "z": 0.8
+        },
+        "vision": {
+          "blocks": false
+        },
+        "role": "scenery",
+        "tags": [
+          "scatter",
+          "zone-kit"
+        ],
+        "unityAuthored": true,
+        "worldRevision": "kromka-1",
+        "surfaceSourcePosition": {
+          "x": 46.71,
+          "y": 0,
+          "z": 30.91
+        }
+      },
+      {
         "id": "s54_c1",
         "model": "carWreck",
         "prefab": "car_wreck",
@@ -37105,6 +37060,63 @@
         ],
         "unityAuthored": true,
         "worldRevision": "kromka-1"
+      },
+      {
+        "id": "s64_sc0_4",
+        "model": "rubbleRock",
+        "prefab": "rubble_rock",
+        "name": "Глыба",
+        "position": {
+          "x": 103.71,
+          "y": -25.32,
+          "z": -8.73
+        },
+        "rotation": {
+          "x": 0,
+          "y": 1.292,
+          "z": 0
+        },
+        "scale": {
+          "x": 1.99,
+          "y": 1.99,
+          "z": 1.99
+        },
+        "collision": "solid",
+        "collisionParts": [
+          {
+            "center": {
+              "x": 0.04,
+              "z": -0.044
+            },
+            "size": {
+              "x": 1.156,
+              "z": 1.731
+            }
+          }
+        ],
+        "collisionSize": {
+          "width": 2.3,
+          "depth": 3.44
+        },
+        "footprint": {
+          "x": 3.945,
+          "z": 3.161
+        },
+        "vision": {
+          "blocks": true
+        },
+        "role": "cover",
+        "tags": [
+          "scatter",
+          "zone-kit"
+        ],
+        "unityAuthored": true,
+        "worldRevision": "kromka-1",
+        "surfaceSourcePosition": {
+          "x": 103.71,
+          "y": 0,
+          "z": -8.73
+        }
       },
       {
         "id": "s64_sc1_3",
@@ -40014,5 +40026,5 @@
       ]
     ]
   },
-  "sectorSurfaceVersion": "d8502b337dad34a5af8091033f8a88156a5dbbf847e759cdbb4b010d5c39cbea"
+  "sectorSurfaceVersion": "f8acd110f3dfb7c5a8ea99c78f680d2ad80bd891b2de5bb64ce4ebdab88251a3"
 }

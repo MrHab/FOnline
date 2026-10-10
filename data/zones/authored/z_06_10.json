@@ -13963,7 +13963,12 @@
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 41.38,
+        "y": 11.233,
+        "z": 49.52
+      }
     },
     {
       "id": "s53_sc0_1",
@@ -40850,7 +40855,7 @@
       ]
     ]
   },
-  "sectorSurfaceVersion": "d8502b337dad34a5af8091033f8a88156a5dbbf847e759cdbb4b010d5c39cbea",
+  "sectorSurfaceVersion": "f8acd110f3dfb7c5a8ea99c78f680d2ad80bd891b2de5bb64ce4ebdab88251a3",
   "sites": [
     {
       "id": "scrapOutpost",

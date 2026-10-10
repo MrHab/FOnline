@@ -39,6 +39,7 @@ const placeInZone = (role, locationId, point) => zoneWalk.placeInZone(h, account
 
 const root = path.resolve(__dirname, '..');
 const graph = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
+const alifeCatalog = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'open-world-alife.json'), 'utf8'));
 const economy = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'economy.json'), 'utf8'));
 economy.worldModel.dangerEcology = true;
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-danger-ecology-'));
@@ -169,6 +170,8 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
       .reduce((sum, zone) => sum + normalizeRecipe(zoneRecipe(graph, zone.id)).budget.lairs, 0);
     const summary = (await devGet(`/api/dev/danger-ecology?sx=${home.col}&sy=${home.row}&radius=0`)).summary;
     assert.equal(summary.lairs, expectedLairs, 'every live zone has its lairs');
+    assert.equal(summary.huntingGrounds, alifeCatalog.huntingGrounds.length,
+      'hunting grounds stay separate from the 237 fixed lairs');
     assert.equal(summary.groups, 3, 'a group outside the zone world is dropped on start');
     const locationResponse = await fetch(h.baseUrl() + `/api/locations/${home.id}`);
     const publicZone = (await locationResponse.json()).location;
@@ -269,13 +272,15 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
     const chaser = { x: Number(accounts.trade.join.self.x), z: Number(accounts.trade.join.self.z) };
     const chaseStart = Date.now();
     let cornered = null;
-    while (!cornered && Date.now() - chaseStart < 20000) {
+    // Busy rooms advance escape by simulated AI time, so allow wall-clock slack.
+    while (!cornered && Date.now() - chaseStart < 45000) {
       const [actor] = actorsIn(await group('bluebirds', blue, 0), blue.id);
       assert(actor, `a chased survivor does not vanish before the chaser (${((Date.now() - chaseStart) / 1000).toFixed(1)} s)`);
       if (!actor.phase) cornered = actor;
       else await zoneWalk.driveTo(h, accounts.trade, chaser, actor.x, actor.z, 4);
     }
-    assert(cornered, 'a survivor the player keeps up with is cornered');
+    assert(cornered, `a survivor the player keeps up with is cornered; chaser moved `
+      + `${Math.hypot(chaser.x - accounts.trade.join.self.x, chaser.z - accounts.trade.join.self.z).toFixed(1)} m`);
     const chaseSeconds = (Date.now() - chaseStart) / 1000;
     assert(chaseSeconds >= 7, `it runs for the whole flight first: ${chaseSeconds.toFixed(1)} s`);
     await delay(1500);

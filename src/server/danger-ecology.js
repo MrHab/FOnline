@@ -1377,11 +1377,21 @@ function ecologySummary(state, config) {
     if (group.online) row.online += 1;
   }
   const lairsByMode = {};
-  for (const lair of state.lairs.values()) lairsByMode[lair.mode] = (lairsByMode[lair.mode] || 0) + 1;
+  let lairs = 0;
+  let huntingGrounds = 0;
+  for (const site of state.lairs.values()) {
+    if (site.kind === 'huntingGround') {
+      huntingGrounds += 1;
+      continue;
+    }
+    lairs += 1;
+    lairsByMode[site.mode] = (lairsByMode[site.mode] || 0) + 1;
+  }
   return {
     version: ECOLOGY_VERSION,
     mapRevision: state.mapRevision,
-    lairs: state.lairs.size,
+    lairs,
+    huntingGrounds,
     lairsByMode,
     groups: state.groups.size,
     species: config.species.map(row => row.id),

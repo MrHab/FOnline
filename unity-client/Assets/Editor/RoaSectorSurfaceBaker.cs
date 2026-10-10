@@ -45,6 +45,63 @@ namespace RealmOfAshes.EditorTools
             }
             catch(Exception error){Debug.LogException(error);if(Application.isBatchMode)EditorApplication.Exit(1);else throw;}
         }
+
+        [MenuItem("Realm of Ashes/Zones/Prune archived removed markers")]
+        public static void PruneArchivedRemovedMarkers()
+        {
+            try
+            {
+                string requested=Environment.GetEnvironmentVariable("ROA_SECTOR_IDS");
+                if(string.IsNullOrWhiteSpace(requested))
+                    throw new InvalidOperationException("Set ROA_SECTOR_IDS for the source scenes to reconcile");
+                string repository=Path.GetFullPath(Path.Combine(Application.dataPath,"../.."));
+                foreach(string id in requested.Split(',').Select(value=>value.Trim()).Where(value=>value.Length>0))
+                {
+                    if(!KromkaLocationSceneCatalog.IsZoneId(id))
+                        throw new InvalidOperationException("Expected authored sector ID: "+id);
+                    JObject definition=JObject.Parse(File.ReadAllText(Path.Combine(repository,
+                        "data/zones/authored/"+id+".json")));
+                    var current=new HashSet<string>((definition["objects"] as JArray??new JArray())
+                        .OfType<JObject>().Select(row=>row.Value<string>("id")),StringComparer.Ordinal);
+                    var archived=new HashSet<string>((definition["surfaceSource"]?["removedObjects"] as JArray??new JArray())
+                        .OfType<JObject>().Select(row=>row.Value<string>("id")),StringComparer.Ordinal);
+                    Scene scene=EditorSceneManager.OpenScene(KromkaLocationSceneCatalog.ScenePath(id));
+                    var markers=scene.GetRootGameObjects()
+                        .SelectMany(root=>root.GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true))
+                        .Where(marker=>marker.Role!="terrain"&&!current.Contains(marker.StableObjectId)).ToList();
+                    var unexpected=markers.Where(marker=>!archived.Contains(marker.StableObjectId))
+                        .Select(marker=>marker.StableObjectId).ToArray();
+                    if(unexpected.Length>0)
+                        throw new InvalidOperationException("Unarchived orphan markers "+id+": "+string.Join(", ",unexpected));
+                    foreach(var marker in markers)Object.DestroyImmediate(marker.gameObject);
+                    int aligned=0;
+                    if(id=="z_09_07")
+                    {
+                        var rows=(definition["objects"] as JArray??new JArray()).OfType<JObject>()
+                            .ToDictionary(row=>row.Value<string>("id"),StringComparer.Ordinal);
+                        foreach(var marker in scene.GetRootGameObjects()
+                            .SelectMany(root=>root.GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true)))
+                        {
+                            if(!marker.StableObjectId.StartsWith("facility_coreZone_",StringComparison.Ordinal))continue;
+                            if(!rows.TryGetValue(marker.StableObjectId,out JObject row)
+                                || row["surfaceSourcePosition"]?["y"]==null)
+                                throw new InvalidOperationException("Missing Core facility source position: "+marker.StableObjectId);
+                            float y=row["surfaceSourcePosition"]["y"].Value<float>();
+                            Vector3 position=marker.transform.position;
+                            if(Mathf.Abs(position.y-y)<0.0001f)continue;
+                            marker.transform.position=new Vector3(position.x,y,position.z);
+                            aligned++;
+                        }
+                    }
+                    if(markers.Count>0||aligned>0)EditorSceneManager.SaveScene(scene);
+                    Debug.Log("[SECTOR SOURCE] Removed "+markers.Count+" archived markers from "+id);
+                    Debug.Log("[SECTOR SOURCE] Aligned "+aligned+" Core facility source heights in "+id);
+                }
+                if(Application.isBatchMode)EditorApplication.Exit(0);
+            }
+            catch(Exception error){Debug.LogException(error);if(Application.isBatchMode)EditorApplication.Exit(1);else throw;}
+        }
+
         private static void Bake(RoaSectorSurface.Profile profile,string repository,string version)
         {
             _id=profile.locationId;Saved.Clear();_part=0;

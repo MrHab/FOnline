@@ -162,7 +162,15 @@ for (const definitionFile of definitionFiles) {
     if (moved > 0.05) failures.npcs.push(`${file}: ${row.id} stands ${moved.toFixed(2)} m from its row — the scene was not exported`);
     if (angleGap(placed.yaw, Number(row.rotation?.y || 0)) > 0.02)
       failures.npcs.push(`${file}: ${row.id} faces another way than its row`);
-    const look = row.entity.appearance || {};
+    const authoredLook = row.entity.appearance || {};
+    // Match sanitizeCharacterAppearance's defaults for NPC rows without an
+    // authored look; the prefab must still show the same effective appearance.
+    const sex = authoredLook.sex || 'male';
+    const look = {
+      sex,
+      hairId: authoredLook.hairId || (sex === 'female' ? 'tied_back' : 'short_crop'),
+      hairColorId: authoredLook.hairColorId || 'hair_03'
+    };
     const differs = ['sex', 'hairId', 'hairColorId'].filter(key => look[key] !== placed.appearance[key]);
     if (differs.length) failures.npcs.push(`${file}: ${row.id} looks different in the scene (${differs.join(', ')})`);
     const outfit = row.entity.equipment || {};

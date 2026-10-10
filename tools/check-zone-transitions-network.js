@@ -145,12 +145,15 @@ function nearestDryArrivalDistance(def, expected, reverseSide) {
 
 let walker = null;
 const timing = { place: 0, change: 0, step: 0 };
+// A cold terrain-heavy sector can pause the event loop during its first room
+// build. The exhaustive sweep still verifies the returned position and walk.
+const ZONE_TRAVEL_ACK_MS = 30000;
 const timed = async (key, work) => { const t = Date.now(); try { return await work(); } finally { timing[key] += Date.now() - t; } };
 const place = (to, point = {}) => timed('place', async () => {
-  const ack = await h.socketAck(walker.socket, 'qaTravel', { to, ...point }, 12000);
+  const ack = await h.socketAck(walker.socket, 'qaTravel', { to, ...point }, ZONE_TRAVEL_ACK_MS);
   return ack?.ok ? { x: Number(ack.x), z: Number(ack.z), roomId: ack.roomId, self: ack.self } : null;
 });
-const change = to => timed('change', () => h.socketAck(walker.socket, 'changeLocation', { locationId: to }, 12000));
+const change = to => timed('change', () => h.socketAck(walker.socket, 'changeLocation', { locationId: to }, ZONE_TRAVEL_ACK_MS));
 const fail = (where, text) => problems.push(`${where}: ${text}`);
 
 // Номер пакета движения растёт через все шаги: сервер отбрасывает номер не больше

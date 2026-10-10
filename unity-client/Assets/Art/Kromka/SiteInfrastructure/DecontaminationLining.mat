@@ -1,0 +1,117 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7402499556983998597
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: DecontaminationLining
+  m_Shader: {fileID: 4800000, guid: 361ea7ab2300ba24cb1c3ac0e3a5c186, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GroundAlbedo:
+        m_Texture: {fileID: 2800000, guid: cf138336f0ab0024ab5e03ab419b564e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GroundMask:
+        m_Texture: {fileID: 2800000, guid: 69c576d9e7e1346429c5dae840c9131a, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GroundNormal:
+        m_Texture: {fileID: 2800000, guid: 7131d30824e7bd14b898ba095ec52f48, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MudAlbedo:
+        m_Texture: {fileID: 2800000, guid: 8263297140d02054ab1cc7a38a8c741a, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MudMask:
+        m_Texture: {fileID: 2800000, guid: dee8ce77dd6e0f942b21bfad3c73c70b, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MudNormal:
+        m_Texture: {fileID: 2800000, guid: 16e0a7e8630f9da4bb1ae2c632b7b241, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PathAlbedo:
+        m_Texture: {fileID: 2800000, guid: 5cb95d199b289f844a0d24f13b1b5805, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PathMask:
+        m_Texture: {fileID: 2800000, guid: e0338327a7e20ca439f3e34381e27222, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PathNormal:
+        m_Texture: {fileID: 2800000, guid: e82d48b275664084eac0faebe7c1c64d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RiverBankMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SurfaceMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _DrySmoothness: 0.16
+    - _GrainMacroContrast: 1
+    - _GroundPrints: 0.05
+    - _GroundSaturation: 0.5
+    - _GroundTiling: 2.3
+    - _MacroStrength: 0
+    - _Metallic: 0
+    - _Mud: 0
+    - _MudGroundColour: 0.45
+    - _MudPrints: 1
+    - _MudSaturation: 1
+    - _MudTiling: 3
+    - _NormalStrength: 0.75
+    - _PathGroundColour: 0.5
+    - _PathPrints: 0.3
+    - _PathSaturation: 1
+    - _PathTiling: 2.6
+    - _Puddles: 0
+    - _Rain: 0
+    - _Wetness: 0
+    m_Colors:
+    - _BaseColor: {r: 1.1333333, g: 1.0888889, b: 0.6, a: 1}
+    - _GroundTint: {r: 1, g: 1, b: 1, a: 1}
+    - _MacroMean: {r: 0.62, g: 0.5, b: 0.34, a: 1}
+    - _MudTint: {r: 1, g: 1, b: 1, a: 1}
+    - _PathTint: {r: 1, g: 1, b: 1, a: 1}
+    - _WaterColour: {r: 0.07, g: 0.085, b: 0.075, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

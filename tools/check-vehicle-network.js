@@ -87,13 +87,17 @@ async function waitFor(list, predicate, label, timeoutMs = 4000) {
   assert(riderInJoin?.vehicle?.itemId === 'motorcycle', `late joiner must see the rider mounted: ${JSON.stringify(riderInJoin)}`);
 
   // Стартер: слезть можно сразу, а снова сесть — только после паузы.
-  const off = await h.socketAck(rider.socket, 'vehicleAction', { action: 'dismount' });
+  // Queue both requests on the same socket. Socket.IO preserves their order,
+  // so the cooldown is tested without depending on round-trip or observer lag.
+  const offPending = h.socketAck(rider.socket, 'vehicleAction', { action: 'dismount' });
+  const tooSoonPending = h.socketAck(rider.socket, 'vehicleAction', { action: 'mount' });
+  const off = await offPending;
   assert(off.ok && !off.mounted && off.self.vehicle === null, JSON.stringify(off));
-  await waitFor(observerEvents, row => row.id === rider.join.self.id && !row.vehicle && row.reason === 'request',
-    'observer sees the requested dismount');
-  const tooSoon = await h.socketAck(rider.socket, 'vehicleAction', { action: 'mount' });
+  const tooSoon = await tooSoonPending;
   assert.equal(tooSoon.ok, false);
   assert.match(tooSoon.error, /Не так часто/);
+  await waitFor(observerEvents, row => row.id === rider.join.self.id && !row.vehicle && row.reason === 'request',
+    'observer sees the requested dismount');
   await delay(750);
   const again = await h.socketAck(rider.socket, 'vehicleAction', { action: 'mount' });
   assert(again.ok && again.mounted, JSON.stringify(again));

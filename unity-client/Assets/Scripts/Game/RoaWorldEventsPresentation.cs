@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Text;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
+using RealmOfAshes.World;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Компактная панель мировых событий в HUD: аванпосты Сердцевины (владелец,
-    /// состояние события, отсчёт, прогресс, гарнизон), публичное событие
+    /// Компактная панель мировых событий в HUD: аванпосты открытого мира
+    /// (владелец, босс и прогресс удержания), публичное событие
     /// (таймер, предупреждение, спорный сундук, возврат после смерти), мировой
     /// босс (щит, уязвимость, телеграф импульса), PvE-область («Искать следы»)
     /// и зал боковой лаборатории (шкала угрозы, объявленный удар, узлы).
@@ -25,6 +26,7 @@ namespace RealmOfAshes.Game
         private static readonly Color Calm = new Color(0.62f, 0.84f, 0.62f, 1f);
 
         private RoaSocketClient _socket;
+        private RoaPlayerController _player;
         private Canvas _canvas;
         private GameObject _panel;
         private Text _text;
@@ -32,7 +34,8 @@ namespace RealmOfAshes.Game
         private Text _tracksLabel;
         private Button _openChestButton;
         private Text _openChestLabel;
-        private JObject _territory;
+        private JObject _alife;
+        private long _alifeVersion = -1;
         private JObject _publicEvent;
         private JObject _worldBoss;
         private JObject _pveArea;
@@ -47,7 +50,12 @@ namespace RealmOfAshes.Game
             BuildUi();
             Subscribe();
             ApplyJoinedWorldState();
-            RequestTerritory();
+        }
+
+        public void SetPlayer(RoaPlayerController player)
+        {
+            _player = player;
+            Refresh();
         }
 
         private void OnDestroy() { Unsubscribe(); }
@@ -55,7 +63,7 @@ namespace RealmOfAshes.Game
         private void Subscribe()
         {
             if (_socket == null) return;
-            _socket.OnTerritoryOutpostState += ApplyTerritory;
+            _socket.OnAlifeUpdate += ApplyAlifeUpdate;
             _socket.OnPublicEventState += ApplyPublicEvent;
             _socket.OnWorldBossState += ApplyWorldBoss;
             _socket.OnPveAreaState += ApplyPveArea;
@@ -67,7 +75,7 @@ namespace RealmOfAshes.Game
         private void Unsubscribe()
         {
             if (_socket == null) return;
-            _socket.OnTerritoryOutpostState -= ApplyTerritory;
+            _socket.OnAlifeUpdate -= ApplyAlifeUpdate;
             _socket.OnPublicEventState -= ApplyPublicEvent;
             _socket.OnWorldBossState -= ApplyWorldBoss;
             _socket.OnPveAreaState -= ApplyPveArea;
@@ -76,7 +84,7 @@ namespace RealmOfAshes.Game
             _socket.OnServerWorldTransfer -= HandleTransfer;
         }
 
-        private void HandleJoined(JoinAck _) { ApplyJoinedWorldState(); RequestTerritory(); }
+        private void HandleJoined(JoinAck _) { ApplyJoinedWorldState(); }
         private void HandleTransfer(JObject _) { ApplyJoinedWorldState(); }
 
         /// <summary>Снимок комнаты при входе несёт PvE/событие/босса; сброс при смене локации.</summary>
@@ -87,34 +95,144 @@ namespace RealmOfAshes.Game
             _labHall = world?["labHall"] as JObject;
             _worldBoss = world?["worldBoss"] as JObject;
             _pveArea = world?["pveArea"] as JObject;
+            _alife = null;
+            _alifeVersion = -1;
+            ApplyAlifeUpdate(world?["alife"] as JObject);
             _receivedAt = Time.realtimeSinceStartupAsDouble;
             Refresh();
         }
 
-        private void RequestTerritory()
+        private void ApplyAlifeUpdate(JObject payload)
         {
-            if (_socket == null || _socket.Phase != RoaSocketClient.ConnectionPhase.Joined) return;
-            RoaTerritoryNet.RequestTerritoryState(_socket, ack =>
-            {
-                if (!(ack?["territory"] is JObject territory)) return;
-                // Имена фракций для подписей приходят с каталогом территории.
-                var names = new JObject();
-                foreach (JToken row in ack["catalog"]?["factions"] as JArray ?? new JArray())
-                {
-                    string id = row["id"]?.ToString();
-                    if (!string.IsNullOrEmpty(id)) names[id] = row["displayName"]?.ToString() ?? id;
-                }
-                territory["factionNames"] = names;
-                ApplyTerritory(territory);
-            });
+            if (!ShouldApplyAlifeUpdate(_socket?.Session?.LocationId, _alifeVersion, payload)) return;
+            long version = payload["version"].Value<long>();
+            _alifeVersion = version;
+            _alife = (JObject)payload.DeepClone();
+            Refresh();
         }
 
-        private void ApplyTerritory(JObject payload)
+        public static bool ShouldApplyAlifeUpdate(string currentLocationId, long currentVersion, JObject payload)
         {
-            JObject next = payload?["territory"] as JObject ?? payload;
-            if (next != null && next["factionNames"] == null && _territory?["factionNames"] is JObject names) next["factionNames"] = names;
-            _territory = next;
-            Refresh();
+            return payload != null && !string.IsNullOrEmpty(currentLocationId)
+                && string.Equals(payload["locationId"]?.ToString(), currentLocationId, StringComparison.Ordinal)
+                && (payload["version"]?.Value<long>() ?? -1) > currentVersion
+                && payload["sites"] is JArray;
+        }
+
+        public void CollectMinimapMarkers(List<RoaMinimap.Marker> markers)
+        {
+            CollectAlifeMarkers(_alife, _socket?.Session?.LocationId, markers);
+        }
+
+        public static void CollectAlifeMarkers(JObject alife, string locationId,
+            List<RoaMinimap.Marker> markers)
+        {
+            JArray sites = alife?["sites"] as JArray;
+            if (markers == null || sites == null) return;
+            foreach (JToken token in sites)
+            {
+                JObject site = token as JObject;
+                if (site == null || site["locationId"]?.ToString() != locationId) continue;
+                string kind = site["kind"]?.ToString();
+                if (kind == "lair" && site["active"]?.Value<bool>() != true) continue;
+                RoaMinimap.MarkerKind markerKind;
+                if (kind == "lair") markerKind = RoaMinimap.MarkerKind.Lair;
+                else if (kind == "huntingGround") markerKind = RoaMinimap.MarkerKind.HuntingGround;
+                else if (kind == "outpost") markerKind = RoaMinimap.MarkerKind.Outpost;
+                else continue;
+                float x = site["x"]?.Value<float>() ?? 0f;
+                float z = site["z"]?.Value<float>() ?? 0f;
+                markers.Add(new RoaMinimap.Marker(markerKind, RoaCoords.ToUnity(x, z)));
+            }
+        }
+
+        public static string DescribeAlifeOutposts(JObject alife, string locationId)
+        {
+            JArray sites = alife?["sites"] as JArray;
+            if (sites == null || string.IsNullOrEmpty(locationId)) return string.Empty;
+            var rows = new List<string>();
+            foreach (JToken token in sites)
+            {
+                JObject site = token as JObject;
+                if (site?["kind"]?.ToString() != "outpost" || site["locationId"]?.ToString() != locationId) continue;
+                string name = site["displayName"]?.ToString() ?? site["id"]?.ToString() ?? "Аванпост";
+                string owner = site["ownerFaction"]?.ToString() ?? string.Empty;
+                string label = string.IsNullOrEmpty(owner) ? "нейтральный" : RoaPipboy.FactionLabel(owner);
+                int percent = Mathf.Clamp(Mathf.RoundToInt(site["capturePercent"]?.Value<float>() ?? 0f), 0, 100);
+                string boss = site["bossAlive"]?.Value<bool>() == true ? "босс защищает" : "босс побеждён";
+                rows.Add(name + ": " + label + " · " + boss + " · захват " + percent + "%");
+            }
+            return rows.Count == 0 ? string.Empty : "АВАНПОСТЫ\n" + string.Join("\n", rows);
+        }
+
+        /// <summary>Активное задание только в границах аванпоста, где стоит игрок.</summary>
+        public static string DescribeAlifeCaptureTask(JObject alife, string locationId, Vector3 playerPosition)
+        {
+            JArray sites = alife?["sites"] as JArray;
+            JArray tasks = alife?["captureTasks"] as JArray;
+            if (sites == null || tasks == null || string.IsNullOrEmpty(locationId)) return string.Empty;
+
+            JObject closest = null;
+            float closestDistance = float.MaxValue;
+            RoaCoords.ToServer(playerPosition, out float playerX, out float playerZ);
+            foreach (JToken token in sites)
+            {
+                JObject site = token as JObject;
+                if (site?["kind"]?.ToString() != "outpost" || site["locationId"]?.ToString() != locationId) continue;
+                float siteX = site["x"]?.Value<float>() ?? 0f;
+                float siteZ = site["z"]?.Value<float>() ?? 0f;
+                float dx = playerX - siteX;
+                float dz = playerZ - siteZ;
+                float distance = dx * dx + dz * dz;
+                JObject bounds = site["bounds"] as JObject;
+                bool within;
+                if (bounds != null && bounds["minX"] != null && bounds["maxX"] != null
+                    && bounds["minZ"] != null && bounds["maxZ"] != null)
+                    within = playerX >= bounds["minX"].Value<float>()
+                        && playerX <= bounds["maxX"].Value<float>()
+                        && playerZ >= bounds["minZ"].Value<float>()
+                        && playerZ <= bounds["maxZ"].Value<float>();
+                else
+                {
+                    float radius = Mathf.Max(0f, site["radius"]?.Value<float>() ?? 0f);
+                    within = radius > 0f && distance <= radius * radius;
+                }
+                if (!within || distance >= closestDistance) continue;
+                closest = site;
+                closestDistance = distance;
+            }
+            if (closest == null) return string.Empty;
+
+            JObject task = null;
+            string siteId = closest["id"]?.ToString();
+            foreach (JToken token in tasks)
+            {
+                JObject candidate = token as JObject;
+                if (candidate?["siteId"]?.ToString() != siteId) continue;
+                task = candidate;
+                break;
+            }
+            if (task == null) return string.Empty;
+
+            string title = task["title"]?.ToString() ?? "Захват аванпоста";
+            string name = closest["displayName"]?.ToString();
+            var line = new StringBuilder("ЗАДАНИЕ · ").Append(title.ToUpperInvariant());
+            if (!string.IsNullOrEmpty(name)) line.Append(" · ").Append(name);
+            string phase = task["phase"]?.ToString();
+            if (phase == "defeatBoss" || task["bossAlive"]?.Value<bool>() == true)
+                line.Append("\nЭтап 1/2 · победите босса аванпоста");
+            else if (phase == "hold")
+            {
+                int percent = Mathf.Clamp(Mathf.RoundToInt(task["progressPercent"]?.Value<float>() ?? 0f), 0, 100);
+                int seconds = Mathf.Max(0, task["requiredSeconds"]?.Value<int>() ?? 180);
+                line.Append("\nЭтап 2/2 · удержание ").Append(percent).Append("% / ")
+                    .Append(Clock(seconds));
+                string faction = task["captureFaction"]?.ToString();
+                if (!string.IsNullOrEmpty(faction)) line.Append(" · ").Append(RoaPipboy.FactionLabel(faction));
+            }
+            else if (phase == "owned") line.Append("\nАванпост захвачен");
+            else return string.Empty;
+            return line.ToString();
         }
 
         private void ApplyPublicEvent(JObject payload)
@@ -143,7 +261,9 @@ namespace RealmOfAshes.Game
             string roomId = _socket?.Session?.RoomId ?? string.Empty;
             int elapsed = (int)Math.Max(0, Time.realtimeSinceStartupAsDouble - _receivedAt);
             var lines = new List<string>();
-            string outposts = DescribeOutposts(_territory, locationId);
+            string outposts = _player != null
+                ? DescribeAlifeCaptureTask(_alife, locationId, _player.transform.position)
+                : string.Empty;
             if (!string.IsNullOrEmpty(outposts)) lines.Add(outposts);
             string publicEvent = DescribePublicEvent(_publicEvent, roomId, elapsed);
             if (!string.IsNullOrEmpty(publicEvent)) lines.Add(publicEvent);

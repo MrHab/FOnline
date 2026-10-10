@@ -6,6 +6,7 @@ using RealmOfAshes.Net;
 using RealmOfAshes.World;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RealmOfAshes.Game
@@ -36,6 +37,25 @@ namespace RealmOfAshes.Game
         public static readonly Color YellowZoneColor = new Color(0.97f, 0.8f, 0.3f, 1f);
         public static readonly Color RedZoneColor = new Color(0.9f, 0.2f, 0.14f, 1f);
         public static readonly Color BlackZoneColor = new Color(0.36f, 0.06f, 0.24f, 1f);
+        private static Color OutpostMarkerColor(JObject site)
+        {
+            switch (RoaPipboy.CanonicalFactionId(site?["ownerFaction"]?.ToString()))
+            {
+                case "uprava": return new Color(0.38f, 0.7f, 1f);
+                case "free_artels": return new Color(1f, 0.68f, 0.35f);
+                case "contour": return new Color(0.58f, 0.85f, 0.65f);
+                case "tract_league": return new Color(1f, 0.85f, 0.48f);
+                case "seconds": return new Color(0.9f, 0.88f, 0.82f);
+                case "continuity": return new Color(0.94f, 0.44f, 0.48f);
+                case "raiders": return new Color(1f, 0.35f, 0.24f);
+                default: return Accent;
+            }
+        }
+
+        private static string OutpostMarkerLabel(JObject site)
+        {
+            return "А · " + RoaPipboy.FactionLabel(site?["ownerFaction"]?.ToString());
+        }
         private const int PixelsPerZone = 32;
         // Подписи 3D-вида: номера зон — только вблизи, имена мест — ближе среднего, столицы — всегда.
         private const float ZoneNumbersDistance = 16f;
@@ -75,12 +95,21 @@ namespace RealmOfAshes.Game
         private readonly List<Text> _viewLabelPool = new List<Text>();
 
         private RoaWorldMap3D _map3D;
+        // The full 3D world scene exceeds the WebGL heap when opened. The flat
+        // overview already carries the same interactive zones and markers.
+#if UNITY_WEBGL && !UNITY_EDITOR
+        private bool _use3D = false;
+#else
         private bool _use3D = true;
+#endif
         private JObject _world;
         private readonly Dictionary<string, JObject> _zonesById = new Dictionary<string, JObject>(StringComparer.Ordinal);
         private readonly HashSet<string> _capitals = new HashSet<string>(StringComparer.Ordinal);
         private readonly List<Text> _labelPool = new List<Text>();
         private bool _loading;
+        private Texture2D _bakedOverview;
+        private bool _opening3D;
+        private int _openRevision;
         private int _cols = 19;
         private int _rows = 15;
         private float _zoneKm = 20f;
@@ -233,7 +262,34 @@ namespace RealmOfAshes.Game
         private void OnDestroy()
         {
             ReleaseZoneWindow();
+            if (_texture != null) Destroy(_texture);
         }
+
+        private void Start()
+        {
+            EnsureBuilt();
+            LoadBundledWorld();
+            EnsureMap3D();
+            LayoutLabels(1f); // Allocate the label pool before the first click.
+        }
+
+        private void LoadBundledWorld()
+        {
+            if (_world != null) return;
+            TextAsset cached = Resources.Load<TextAsset>("RealmOfAshes/WorldMapOverview");
+            _bakedOverview = Resources.Load<Texture2D>("RealmOfAshes/WorldMapOverviewTerrain");
+            if (cached != null) ApplyWorld(JObject.Parse(cached.text));
+        }
+
+        private void EnsureMap3D()
+        {
+            if (_map3D != null) return;
+            _map3D = GetComponent<RoaWorldMap3D>() ?? gameObject.AddComponent<RoaWorldMap3D>();
+            _map3D.PointPicked += OnPointPicked;
+        }
+
+        private bool MobileMap => Application.isMobilePlatform ||
+            (RoaGameBootstrap.Active?.MobileControls != null && RoaGameBootstrap.Active.MobileControls.ControlsEnabled);
 
         public void Toggle()
         {
@@ -253,19 +309,26 @@ namespace RealmOfAshes.Game
             // Карта мира — окно: терминал, карта локации и верстак при этом закрываются.
             RoaGameBootstrap.FocusGameplayWindow(this);
             EnsureBuilt();
+            LoadBundledWorld();
             _root.SetActive(true);
+            ++_openRevision;
             if (_world == null)
             {
                 ShowMode(false);
                 if (!_loading) StartCoroutine(FetchWorld(self));
                 return;
             }
-            if (_use3D) StartCoroutine(Open3D(self));
+            // The baked terrain and interactive zone data are available in this same frame.
+            if (!_use3D || _map3D == null || !_map3D.Ready) ShowFlat(self);
+            if (_use3D && !_opening3D) StartCoroutine(Open3D(self));
             else ShowFlat(self);
+            // Refresh live ownership and capture markers whenever the map is opened.
+            if (Socket != null && !_loading) StartCoroutine(FetchWorld(self));
         }
 
         public void Close()
         {
+            ++_openRevision;
             EndTravel();
             if (_map3D != null) _map3D.Close();
             if (_root != null) _root.SetActive(false);
@@ -274,15 +337,15 @@ namespace RealmOfAshes.Game
         private IEnumerator FetchWorld(JObject self)
         {
             _loading = true;
-            _status.text = "Загрузка карты…";
             string baseUrl = Loader != null ? Loader.BaseUrl : "http://127.0.0.1:3000";
             using (UnityWebRequest request = UnityWebRequest.Get(baseUrl.TrimEnd('/') + "/api/world-map"))
             {
+                request.timeout = 10;
                 yield return request.SendWebRequest();
                 _loading = false;
                 if (request.result != UnityWebRequest.Result.Success)
                 {
-                    _status.text = "Карта недоступна: " + request.error;
+                    if (_world == null) _status.text = "Карта недоступна: " + request.error;
                     yield break;
                 }
                 try
@@ -297,13 +360,15 @@ namespace RealmOfAshes.Game
             }
             _status.text = string.Empty;
             if (!IsOpen) yield break;
-            if (_use3D) StartCoroutine(Open3D(self ?? CurrentSelf));
-            else ShowFlat(self ?? CurrentSelf);
+            if (_use3D && !_opening3D) StartCoroutine(Open3D(CurrentSelf ?? self));
+            else if (!Uses3D) ShowFlat(CurrentSelf ?? self);
         }
 
         /// <summary>Подставить карту мира без запроса (пробы).</summary>
         public void ApplyWorld(JObject world)
         {
+            string selectedZoneId = _selectedZone?["id"]?.ToString();
+            string selectedPlaceId = _selectedPlace?["id"]?.ToString();
             _world = world;
             _zonesById.Clear();
             _capitals.Clear();
@@ -316,6 +381,11 @@ namespace RealmOfAshes.Game
                 if (token is JObject zone && !string.IsNullOrEmpty(zone["id"]?.ToString())) _zonesById[zone["id"].ToString()] = zone;
             }
             foreach (JToken id in world["capitals"] as JArray ?? new JArray()) _capitals.Add(id.ToString());
+            _selectedZone = !string.IsNullOrEmpty(selectedZoneId) && _zonesById.TryGetValue(selectedZoneId, out JObject selected)
+                ? selected : null;
+            _selectedPlace = null;
+            foreach (JToken token in _selectedZone?["places"] as JArray ?? new JArray())
+                if (token is JObject place && place["id"]?.ToString() == selectedPlaceId) _selectedPlace = place;
             BuildTexture();
         }
 
@@ -323,18 +393,15 @@ namespace RealmOfAshes.Game
 
         private IEnumerator Open3D(JObject self)
         {
-            ShowMode(true);
-            if (_map3D == null)
-            {
-                _map3D = gameObject.GetComponent<RoaWorldMap3D>();
-                if (_map3D == null) _map3D = gameObject.AddComponent<RoaWorldMap3D>();
-                _map3D.PointPicked += OnPointPicked;
-            }
-            _viewStatus.text = "Загрузка карты мира…";
+            _opening3D = true;
+            int revision = _openRevision;
+            EnsureMap3D();
             _map3D.SetWorldSize(_cols * _zoneKm, _rows * _zoneKm);
-            RoaMobileControls touch = RoaGameBootstrap.Active != null ? RoaGameBootstrap.Active.MobileControls : null;
-            yield return _map3D.Open(Application.isMobilePlatform || (touch != null && touch.ControlsEnabled));
-            if (!_map3D.IsOpen)
+            if (!_map3D.Ready) yield return _map3D.Prepare(MobileMap);
+            _opening3D = false;
+            if (!IsOpen) yield break;
+            if (revision != _openRevision) { StartCoroutine(Open3D(CurrentSelf)); yield break; }
+            if (!_map3D.OpenPrepared())
             {
                 // Сцена не поднялась: окно остаётся полезным в плоском виде.
                 Debug.LogWarning("[ROA] 3D-карта мира недоступна: " + _map3D.FailReason);
@@ -349,9 +416,10 @@ namespace RealmOfAshes.Game
             }
             _viewStatus.text = string.Empty;
             if (!_map3D.HasZones) _map3D.ShowZones(_zonesById.Values, _zoneKm, DangerZoneColor);
+            ShowMode(true);
             RefreshRouteView();
             ApplyTravelView();
-            Vector2? player = PlayerPoint(self, out JObject zone);
+            Vector2? player = PlayerPoint(CurrentSelf ?? self, out JObject zone);
             _map3D.SetPlayer(player);
             _viewSubtitle.text = zone != null ? "Вы здесь: " + ZoneCaption(zone) : "Где вы — не видно: вы не в зоне мира.";
             // У проводника в кадре все города: они разбросаны по всему миру.
@@ -516,6 +584,23 @@ namespace RealmOfAshes.Game
                         + PlaceTierSuffix(zone, place);
                     PlaceViewLabel(name, at + new Vector2(0f, 16f));
                 }
+                foreach (JToken token in zone["alifeSites"] as JArray ?? new JArray())
+                {
+                    JObject site = token as JObject;
+                    string kind = site?["kind"]?.ToString();
+                    if (kind != "huntingGround" && kind != "outpost") continue;
+                    Vector2 uv = SiteUv(site);
+                    Vector2 point = new Vector2((RoaWorldMapRoute.Col(zone) + uv.x) * _zoneKm,
+                        (RoaWorldMapRoute.Row(zone) + uv.y) * _zoneKm);
+                    if (!_map3D.PointToScreen(point, 0.45f, out Vector2 at)) continue;
+                    Text marker = TakeViewLabel(ref used);
+                    marker.fontSize = 16;
+                    marker.color = kind == "outpost" ? OutpostMarkerColor(site) : new Color(0.8f, 0.53f, 0.83f);
+                    marker.text = kind == "outpost"
+                        ? distance <= PlaceNamesDistance ? OutpostMarkerLabel(site) : "А"
+                        : "У";
+                    PlaceViewLabel(marker, at);
+                }
             }
         }
 
@@ -633,7 +718,8 @@ namespace RealmOfAshes.Game
         private void Rebuild(JObject self)
         {
             if (_world == null || _texture == null) return;
-            _mapImage.texture = _texture;
+            _mapImage.texture = _bakedOverview != null ? _bakedOverview : _texture;
+            _mapImage.enabled = _mapImage.texture != null;
             // Карта вписывается в окно, пропорции сетки сохраняются.
             Rect area = ((RectTransform)_map.parent).rect;
             float scale = Mathf.Min(area.width / _cols, area.height / _rows);
@@ -687,14 +773,18 @@ namespace RealmOfAshes.Game
             foreach (JObject zone in _zonesById.Values)
             {
                 Vector2 cell = CellOrigin(zone, scale);
-                // Номер зоны в углу клетки: по нему зону ищут в разговоре.
-                Text number = TakeLabel(ref used);
-                number.fontSize = Mathf.Clamp(Mathf.RoundToInt(scale * 0.28f), 8, 12);
-                number.color = new Color(0f, 0f, 0f, 0.62f);
-                number.alignment = TextAnchor.UpperLeft;
-                string flatBadge = RoaTierData.Badge(Tier(zone));
-                number.text = (zone["n"]?.ToString() ?? string.Empty) + (flatBadge.Length > 0 ? " " + flatBadge : string.Empty);
-                SetLabelRect(number, cell + new Vector2(2f, -2f), new Vector2(scale, scale * 0.4f), new Vector2(0f, 1f));
+                // At overview scale every sector number overlaps its neighbours.
+                // The selected sector still shows its number and tier in the zone card.
+                if (scale >= 55f)
+                {
+                    Text number = TakeLabel(ref used);
+                    number.fontSize = Mathf.Clamp(Mathf.RoundToInt(scale * 0.28f), 8, 12);
+                    number.color = new Color(0f, 0f, 0f, 0.62f);
+                    number.alignment = TextAnchor.UpperLeft;
+                    string flatBadge = RoaTierData.Badge(Tier(zone));
+                    number.text = (zone["n"]?.ToString() ?? string.Empty) + (flatBadge.Length > 0 ? " " + flatBadge : string.Empty);
+                    SetLabelRect(number, cell + new Vector2(2f, -2f), new Vector2(scale, scale * 0.4f), new Vector2(0f, 1f));
+                }
                 // Город занимает сектор: его знак и имя стоят в центре клетки.
                 string cityId = zone["city"]?.ToString() ?? string.Empty;
                 if (!string.IsNullOrEmpty(cityId))
@@ -727,12 +817,32 @@ namespace RealmOfAshes.Game
                     dot.alignment = TextAnchor.MiddleCenter;
                     dot.text = "•";
                     SetLabelRect(dot, at, new Vector2(18f, 18f), new Vector2(0.5f, 0.5f));
-                    Text name = TakeLabel(ref used);
-                    name.fontSize = capital ? 12 : 10;
-                    name.color = capital ? Accent : Ink;
-                    name.alignment = TextAnchor.UpperCenter;
-                    name.text = (place["name"]?.ToString() ?? string.Empty) + PlaceTierSuffix(zone, place);
-                    SetLabelRect(name, at + new Vector2(0f, -8f), new Vector2(scale * 2.4f, 16f), new Vector2(0.5f, 1f));
+                    if (capital || scale >= 55f)
+                    {
+                        Text name = TakeLabel(ref used);
+                        name.fontSize = capital ? 12 : 10;
+                        name.color = capital ? Accent : Ink;
+                        name.alignment = TextAnchor.UpperCenter;
+                        name.text = (place["name"]?.ToString() ?? string.Empty) + PlaceTierSuffix(zone, place);
+                        SetLabelRect(name, at + new Vector2(0f, -8f), new Vector2(scale * 2.4f, 16f), new Vector2(0.5f, 1f));
+                    }
+                }
+                foreach (JToken token in zone["alifeSites"] as JArray ?? new JArray())
+                {
+                    JObject site = token as JObject;
+                    string kind = site?["kind"]?.ToString();
+                    if (kind != "outpost" && kind != "huntingGround") continue;
+                    Vector2 uv = SiteUv(site);
+                    Vector2 at = cell + new Vector2(uv.x * scale, -uv.y * scale);
+                    Text marker = TakeLabel(ref used);
+                    marker.fontSize = scale >= 35f ? 16 : 13;
+                    marker.fontStyle = FontStyle.Bold;
+                    marker.color = kind == "outpost" ? OutpostMarkerColor(site) : new Color(0.8f, 0.53f, 0.83f);
+                    marker.alignment = TextAnchor.MiddleCenter;
+                    marker.text = kind == "outpost" && scale >= 55f
+                        ? OutpostMarkerLabel(site) : kind == "outpost" ? "А" : "У";
+                    SetLabelRect(marker, at, new Vector2(kind == "outpost" && scale >= 55f ? 135f : 20f, 20f),
+                        new Vector2(0.5f, 0.5f));
                 }
             }
         }
@@ -877,6 +987,18 @@ namespace RealmOfAshes.Game
             _map.pivot = new Vector2(0.5f, 0.5f);
             _mapImage = _map.gameObject.AddComponent<RawImage>();
             _mapImage.color = Color.white;
+            _mapImage.texture = null;
+            _mapImage.enabled = false;
+            var click = _map.gameObject.AddComponent<EventTrigger>();
+            var entry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+            entry.callback.AddListener(data => {
+                var pointer = (PointerEventData)data;
+                if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_map, pointer.position, pointer.pressEventCamera, out Vector2 local)) return;
+                Rect rect = _map.rect;
+                OnPointPicked(new Vector2((local.x-rect.xMin)/rect.width*_cols*_zoneKm,
+                    (rect.yMax-local.y)/rect.height*_rows*_zoneKm));
+            });
+            click.triggers.Add(entry);
             _labels = Child("Labels", _map);
             Place(_labels, 0f, 0f, 1f, 1f, Vector2.zero, Vector2.zero);
 
@@ -921,7 +1043,7 @@ namespace RealmOfAshes.Game
             Place((RectTransform)close.transform, 1f, 0.5f, 1f, 0.5f, new Vector2(-110f, -19f), new Vector2(-70f, 19f));
 
             BuildCompass(_view);
-            BuildZoneWindow(_view);
+            BuildZoneWindow(rootRect);
             BuildTravelBanner(_view);
 
             RectTransform bottom = Child("Bottom", _view);

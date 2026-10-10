@@ -385,7 +385,7 @@ function npcMeleeFormationSlot(index, count, contactRadius, attackRange, seed = 
 /**
  * Preserve melee engagement slots while the set of attackers changes.  A
  * sorted-per-frame index makes every remaining NPC choose a different point
- * whenever somebody joins, dies or retreats; the resulting crossovers are
+ * whenever somebody joins, dies or leaves combat; the resulting crossovers are
  * especially visible at point-blank range.  Existing valid reservations keep
  * their index and only a newcomer receives the lowest free one.
  */

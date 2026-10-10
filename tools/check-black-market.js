@@ -32,7 +32,9 @@ const accepts = id => ['knife', 'pistol', 'leather', 'rifle', 'heavyArmor', 'roc
 const HOUR = 3600000;
 
 // --- настройки из data/kromka/economy.json ----------------------------------------
-assert.equal(config.hubLocationId, 'coreMarket', 'the market lives in the core hub');
+assert.equal(config.hubLocationId, 'settlement', 'the broker now works in Keys');
+const keys = JSON.parse(fs.readFileSync(path.join(root, 'data/locations/settlement.json'), 'utf8'));
+assert(keys.objects.some(row => row.entity?.service === 'blackMarket'), 'Keys have an authored broker');
 assert.equal(config.service, 'blackMarket');
 assert.deepEqual([...config.categories], ['weapons', 'armor'], 'the market buys weapons and armour only');
 assert.equal(config.treasuryShare, 0.2, 'a fifth of NPC marks funds the market');

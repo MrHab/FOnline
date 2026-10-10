@@ -88,6 +88,8 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnKromkaClanState;
         public event Action<JObject> OnKromkaSiegeState;
         public event Action<JObject> OnTerritoryOutpostState;
+        /// <summary>Версионированный полный снимок A-Life текущей локации.</summary>
+        public event Action<JObject> OnAlifeUpdate;
         public event Action<JObject> OnPveAreaState;
         public event Action<JObject> OnDangerCellNotice;
         public event Action<JObject> OnPublicEventState;
@@ -117,6 +119,8 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnEnemyMelee;
         public event Action<JObject> OnEnemyAttack;
         public event Action<JObject> OnEnemyAttackMiss;
+        public event Action<JObject> OnEnemyGrenadeTelegraph;
+        public event Action<JObject> OnEnemyGrenadeDetonate;
         public event Action<JObject> OnEnemyKilled;
         public event Action<JObject> OnPlayerStatusEffect;
 
@@ -532,6 +536,15 @@ namespace RealmOfAshes.Net
                 if (payload != null) OnTerritoryOutpostState?.Invoke(payload);
             }));
 
+            _connection.On("alife:update", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                string locationId = payload?["locationId"]?.ToString();
+                if (payload != null && !string.IsNullOrEmpty(locationId)
+                    && string.Equals(locationId, Session?.LocationId, StringComparison.Ordinal))
+                    OnAlifeUpdate?.Invoke(payload);
+            }));
+
             // PvE-области: состояние личной встречи (затишье, следы, группы)
             // приходит всей комнате после каждой серверной проверки.
             _connection.On("pveAreaState", args => _mainThread.Enqueue(() =>
@@ -540,7 +553,7 @@ namespace RealmOfAshes.Net
                 if (payload != null) OnPveAreaState?.Invoke(payload);
             }));
 
-            // A-Life опасных клеток: группа подходит к сцене или отступает —
+            // A-Life опасных клеток: группа подходит к сцене или следует маршруту —
             // строка приходит всей комнате.
             _connection.On("dangerCellNotice", args => _mainThread.Enqueue(() =>
             {
@@ -770,6 +783,20 @@ namespace RealmOfAshes.Net
                     MergeLocalVitals(payload);
                     OnEnemyAttack?.Invoke(payload);
                 }
+            }));
+
+            _connection.On("enemyGrenadeTelegraph", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null && IsForCurrentLocation(payload["locationId"]?.ToString()))
+                    OnEnemyGrenadeTelegraph?.Invoke(payload);
+            }));
+
+            _connection.On("enemyGrenadeDetonate", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null && IsForCurrentLocation(payload["locationId"]?.ToString()))
+                    OnEnemyGrenadeDetonate?.Invoke(payload);
             }));
 
             _connection.On("playerStatusEffect", args => _mainThread.Enqueue(() =>

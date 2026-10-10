@@ -1,14 +1,10 @@
 'use strict';
 
 /**
- * Контракт наёмника на входе в Сердцевину.
+ * Сведения для вступления во фракцию у регистратора города.
  *
- * Принадлежность к фракции оформляется на входе в территорию, а не только у
- * регистратора на базе: игрок или группа приходит к узлу Сердцевины на
- * глобальной карте, видит доли фракций среди сохранённых персонажей и
- * подписывает контракт. После подписания сервер заводит прибывших на базу
- * выбранной фракции; сама зона по-прежнему открывается только с платформы
- * метро своей базы.
+ * Принадлежность к фракции оформляется в её городе. Предложение показывает
+ * доли фракций среди сохранённых персонажей и условия смены членства.
  *
  * Модуль чистый: доли считаются по переданному списку принадлежностей, время
  * приходит аргументом. Сервер добавляет кэш и источник данных.
@@ -65,7 +61,7 @@ function territoryFactionShares(memberships = [], catalog = {}) {
 /**
  * Предложение контракта для персонажа: доли фракций, возможность подписать и
  * причина отказа по каждой фракции. Клиент показывает это окном при прибытии
- * к воротам Сердцевины.
+ * к регистратору города.
  */
 function territoryContractOffer(options = {}) {
   const catalog = options.catalog && typeof options.catalog === 'object' ? options.catalog : {};
@@ -88,8 +84,7 @@ function territoryContractOffer(options = {}) {
     return {
       factionId: id,
       displayName: String(names[id] || row.baseDisplayName || id),
-      baseLocationId: String(row.baseLocationId || ''),
-      baseDisplayName: String(row.baseDisplayName || ''),
+      capitalLocationId: String(row.capitalLocationId || ''),
       characters: Math.max(0, Math.floor(Number(share.characters || 0))),
       sharePct: roundShare(share.sharePct),
       canSign: check.ok === true,
@@ -107,7 +102,7 @@ function territoryContractOffer(options = {}) {
     factionDisplayName: membership.factionId
       ? String(names[membership.factionId] || currentRow?.baseDisplayName || membership.factionId)
       : '',
-    baseLocationId: String(currentRow?.baseLocationId || ''),
+    capitalLocationId: String(currentRow?.capitalLocationId || ''),
     signed: !!membership.factionId,
     canSign: !membership.factionId && !changeLocked,
     changeLocked,
@@ -119,20 +114,8 @@ function territoryContractOffer(options = {}) {
   };
 }
 
-/**
- * База фракции, на которую сервер заводит прибывшего к воротам. Пустая строка
- * означает, что контракт ещё не подписан и нужно показать окно выбора.
- */
-function territoryContractBaseLocationId(membership = {}, catalog = {}) {
-  const current = sanitizeTerritoryMembership(membership, catalog);
-  if (!current.factionId) return '';
-  const row = territoryFactionRow(catalog, current.factionId);
-  return String(row?.baseLocationId || '');
-}
-
 module.exports = {
   TERRITORY_CONTRACT_VERSION,
-  territoryContractBaseLocationId,
   territoryContractOffer,
   territoryFactionShares
 };

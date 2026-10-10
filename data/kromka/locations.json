@@ -175,7 +175,7 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "artel-watch-gate",
       "legacyStable": true,
-      "unityScene": "Assets/Scenes/Kromka/Locations/scrapOutpost.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/z_06_10.unity"
     },
     {
       "id": "scrapFoundry",
@@ -209,7 +209,7 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "k3-clean-side",
       "legacyStable": true,
-      "unityScene": "Assets/Scenes/Kromka/Locations/relayOutpost.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/z_13_10.unity"
     },
     {
       "id": "relayWorkshop",

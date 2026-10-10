@@ -375,6 +375,7 @@ namespace RealmOfAshes.Game
             var worldEvents = GetComponent<RoaWorldEventsPresentation>();
             if (worldEvents == null) worldEvents = gameObject.AddComponent<RoaWorldEventsPresentation>();
             worldEvents.Configure(Socket);
+            if (Minimap != null) Minimap.WorldEvents = worldEvents;
 
             var mobileCanvas = GetComponent<RoaMobileControlsCanvas>();
             if (mobileCanvas == null) mobileCanvas = gameObject.AddComponent<RoaMobileControlsCanvas>();
@@ -2010,6 +2011,7 @@ namespace RealmOfAshes.Game
             if (Pipboy != null) Pipboy.SetPlayer(_controller);
             if (ActorNameplates != null) ActorNameplates.SetPlayer(_controller);
             if (Minimap != null) Minimap.SetPlayer(_controller);
+            GetComponent<RoaWorldEventsPresentation>()?.SetPlayer(_controller);
             if (GroundPrints != null) GroundPrints.Player = _controller;
             if (Enemies != null) Enemies.SetLocalPlayer(_controller);
             if (Vehicles != null)

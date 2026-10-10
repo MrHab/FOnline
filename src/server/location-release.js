@@ -1,10 +1,9 @@
 'use strict';
 
-// Every permanent marker authored on the active global map is enterable. The
-// journal can still gate a location's story purpose, while private, encounter
-// and siege instances remain outside this public-map release list.
+// Every visible permanent marker authored on the active global map is enterable.
+// Hidden legacy Core bases retain stable IDs for save migration only.
 const LOCATION_RELEASE_SCHEMA = 'realm.locationRelease.v1';
-const LOCATION_RELEASE_VERSION = 4;
+const LOCATION_RELEASE_VERSION = 5;
 const RELEASED_LOCATION_IDS = Object.freeze([
   'klimAmmoWorks',
   'resourceKlimQuarry',
@@ -45,11 +44,7 @@ const RELEASED_LOCATION_IDS = Object.freeze([
   'cascadeRegenerator',
   'clanFortZero',
   'wasteland',
-  'coreZone',
-  'coreBaseUprava',
-  'coreBaseArtels',
-  'coreBaseContour',
-  'coreBaseLeague'
+  'coreZone'
 ]);
 
 const RELEASED_LOCATION_ID_SET = new Set(RELEASED_LOCATION_IDS);

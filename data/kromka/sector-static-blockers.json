@@ -2,47 +2,47 @@
   "schema": "roa.sectorStaticBlockers.v1",
   "inputs": {
     "schema": "roa.sectorStaticBlockers.v1",
-    "catalogSHA256": "d47c6a8e5d88720a7557c3447442c500b0aa30fb8de1beee9c194c4811b83a5c",
+    "catalogSHA256": "b18ec301be8f8cbe340caec1b50364e28c8c999960ee5d6c6b690d0100b202a1",
     "groundLatticeCodeHash": "e3aab4a299fc7dc13a4985310583751df23c01936088c54b02e7e413e10199e1",
     "sectorTerrainSHA256": "9302f7eff323cae5ce7016b624042f4c0db78b542937ea252a5dee0b726615c3",
     "loaderSHA256": "b82572c0ed8c25a6847a945e6b85467051712ec30d64d35aebb9e1db2110d76f"
   },
-  "inputFingerprint": "ba6a325fa42b2920029ebf25d8422cb9173060e0c85b4be5bfca98a6c98939b8",
+  "inputFingerprint": "3d20279230831120f154006fe96ea99d49a697b07f76c8c86ed2a85ac6b6d878",
   "profiles": [
     {
       "locationId": "caravanCamp",
       "zoneId": "z_07_02",
-      "profileSHA256": "220a4af36fc0b86af91528dda86b8cbdd37f34d6ff613716c38b4e7ecb6dec08",
+      "profileSHA256": "24a8b7fd3817fc78dc563e9b092593acd8ce9aa3f0e0478e9986b24e15f03c57",
       "blockers": []
     },
     {
       "locationId": "relayStation",
       "zoneId": "z_15_10",
-      "profileSHA256": "d6d648beadcfb9607f9972310786ba337b6294a934bdb73e4c1a2c2a9b0b64b6",
+      "profileSHA256": "6a07cf432e40a1fe7cf0bb290d68f2cfc7c1be02573e12450400feaab66e0aec",
       "blockers": []
     },
     {
       "locationId": "scrapTown",
       "zoneId": "z_03_08",
-      "profileSHA256": "c4d2676d1b44ea9c7b247cb8e19c57368e9b3d65a266402c09586b0b6d70dfad",
+      "profileSHA256": "2d559c1eb2e23b441dda0e18b67992e63640001d1e4a76f9c0629b124608b40d",
       "blockers": []
     },
     {
       "locationId": "secondHaven",
       "zoneId": "z_14_03",
-      "profileSHA256": "56cfc165136ce613fcaa49898e23d348728477ad30e3b671351060ab630634cb",
+      "profileSHA256": "63b11db7548292b16d2c5289c0fa291875adeb413ef4d2ad8b8697e60f7bc14e",
       "blockers": []
     },
     {
       "locationId": "settlement",
       "zoneId": "z_10_07",
-      "profileSHA256": "73e95ca627e551ae6bd16ec8d07a6ca47a93b50a00a1f1000450490170b5bffc",
+      "profileSHA256": "5ce3a748c0d5cba4478a77a1fd35080021b023b25ffb7be524b22ec1538af923",
       "blockers": []
     },
     {
       "locationId": "sluiceCity",
       "zoneId": "z_08_13",
-      "profileSHA256": "5954f51a0777cacd616b3cbe948496656d84f74bff7bfc6d064ca4c5ca7f949d",
+      "profileSHA256": "43699307cf9d7bc80f71dc2203046236213a3b0f6ce10868b1551788f7496381",
       "blockers": []
     },
     {
@@ -988,7 +988,7 @@
     {
       "locationId": "z_05_10",
       "zoneId": "z_05_10",
-      "profileSHA256": "533bf7fe1b71d38f06205ab26b26520c072f3e7fe8fb8239a72ca08dda735627",
+      "profileSHA256": "fa04777aeebe98818f5107429d52f33eaf3f2593904db2d332bd3c48c19f3cc8",
       "blockers": [
         {
           "id": "freight_pier_1068",
@@ -1287,7 +1287,7 @@
     {
       "locationId": "z_06_10",
       "zoneId": "z_06_10",
-      "profileSHA256": "456cedbf14d64a8d47bfa75b1900b755434d0181999fe8b4b904d7c7d3a60c22",
+      "profileSHA256": "0a29db861a45a2bf2c4597c7f16d45277def4950fe9cdf21defdaceecbb8f8c9",
       "blockers": []
     },
     {
@@ -1359,7 +1359,7 @@
     {
       "locationId": "z_07_10",
       "zoneId": "z_07_10",
-      "profileSHA256": "5b8acf78bd400b01b23f8fd92ef28183a77b6abaad206b4cd219885d6128ab30",
+      "profileSHA256": "b050a9aee63a52b0b09dc7b96c6b133369dee837c4e661bb057d7939d99cdce4",
       "blockers": []
     },
     {
@@ -1455,7 +1455,7 @@
     {
       "locationId": "z_08_14",
       "zoneId": "z_08_14",
-      "profileSHA256": "6262691c8de5a680bf4c9c63584817839872fd87f7750f32d47eebf7ddbba57e",
+      "profileSHA256": "8d25275cfbdd302dbf803154bad6891f38dcf4c738d4796c0ab0fe1c0f70d2a0",
       "blockers": [
         {
           "id": "surface_bank_revetment_stvor_south_bank_b_concrete_0",
@@ -171023,13 +171023,13 @@
     {
       "locationId": "z_09_07",
       "zoneId": "z_09_07",
-      "profileSHA256": "864eca084610ecd9fb667098e3f2b207884a96beed6487051068aaba606cf9d1",
+      "profileSHA256": "42949ba7084ebc2525538bf852db424badbbeed395771d804f62b175125abffc",
       "blockers": []
     },
     {
       "locationId": "z_09_08",
       "zoneId": "z_09_08",
-      "profileSHA256": "760f832bd99d764028fb58fb86ccc6a8f8e3b54d132be309ad86e033c26b782b",
+      "profileSHA256": "ab2bb47d64ae1663c6df680ed23ff6dd87197e74d7f2c90c84a48b7a8eead8ea",
       "blockers": []
     },
     {
@@ -171058,7 +171058,7 @@
     {
       "locationId": "z_09_11",
       "zoneId": "z_09_11",
-      "profileSHA256": "ef7415931ad43f6778a6c80ae4e45e03fd71013da5374eb61fbe22b9c19c808a",
+      "profileSHA256": "ee7ed80e0ca3bce3275e5ef796f70a66f227a78495ff0bdd6d967d6f700fa14d",
       "blockers": []
     },
     {
@@ -171070,7 +171070,7 @@
     {
       "locationId": "z_09_13",
       "zoneId": "z_09_13",
-      "profileSHA256": "c46296d1ee50e420e656973c61af693e10aeeccde50712d98efc8209e421f001",
+      "profileSHA256": "c70ddf7ce96c2ecf01fbb5ee9cd4885378380743ea24f6e3dc8aa45be85ba952",
       "blockers": [
         {
           "id": "surface_retaining_bank_0_1",
@@ -181612,7 +181612,7 @@
     {
       "locationId": "z_11_12",
       "zoneId": "z_11_12",
-      "profileSHA256": "d27d99623164383c27aa1f4efa6f371754972d8a1bb0a503b09c309000d723a0",
+      "profileSHA256": "07f348a22d2570ab64606a05b90c4c9f1d8c5a871b22c0b25ee7da1359fc004b",
       "blockers": []
     },
     {
@@ -181750,13 +181750,13 @@
     {
       "locationId": "z_13_09",
       "zoneId": "z_13_09",
-      "profileSHA256": "e93f9de2b02a6b35608f5f2f56b6104d37fc5f1662a248c129addd58e559cc8b",
+      "profileSHA256": "7cd9bc0b76ecf312702a9ed183e9cdaa1902d2aede28ce09da0f6576d34fce57",
       "blockers": []
     },
     {
       "locationId": "z_13_10",
       "zoneId": "z_13_10",
-      "profileSHA256": "9f5f1e3a492aaff0f33c149a1fcf9fbcb456d743c902bf5d8a93dbde47fd15d4",
+      "profileSHA256": "b3a3a603f2cb804e869840f446a06d018399c4c54b2d2b78bc8ae528b02ce472",
       "blockers": []
     },
     {
@@ -181978,7 +181978,7 @@
     {
       "locationId": "z_17_07",
       "zoneId": "z_17_07",
-      "profileSHA256": "e8cac51c2eb33bd6f4633975ff8a890760813a8a0183d1f71835f475a707bc48",
+      "profileSHA256": "0e95857db0d2e6019aedb9f57f3fbb9dc1f1a2fb81aa6181955c301e8e63d754",
       "blockers": []
     },
     {
@@ -181994,5 +181994,5 @@
       "blockers": []
     }
   ],
-  "payloadSHA256": "bc22e41390758f16987e2abf55357eb9e356301af4f7e5b6763af4e83aebc204"
+  "payloadSHA256": "9b0f72ee7ff56b266e2651506f4c803dbe7924ecbd49eaf7e85707421ad21f23"
 }

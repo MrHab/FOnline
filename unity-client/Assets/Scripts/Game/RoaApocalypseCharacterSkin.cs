@@ -46,6 +46,13 @@ namespace RealmOfAshes.Game
         private RoaIkChain _rightArm;
         private RoaHandGrip _leftGrip;
         private RoaHandGrip _rightGrip;
+        private string _lastNpcGestureAction = string.Empty;
+        private float _lastNpcGestureElapsed;
+        private GameObject _npcActionProp;
+        private string _npcActionPropKind = string.Empty;
+        private bool _npcActionPropCounted;
+        private static int _activeNpcActionProps;
+        private const int MaxActiveNpcActionProps = 24;
         private Transform _visibleHead;
         private Transform _visibleNeck;
         private RoaIkChain _leftLeg;
@@ -447,6 +454,76 @@ namespace RealmOfAshes.Game
         {
             SyncBones();
             FollowHingedParts();
+            UpdateNpcActionProp();
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetNpcActionPropBudget() => _activeNpcActionProps = 0;
+
+        private void OnDisable() => HideNpcActionProp();
+
+        private void OnDestroy() => HideNpcActionProp();
+
+        private void HideNpcActionProp()
+        {
+            if (_npcActionProp != null) _npcActionProp.SetActive(false);
+            if (!_npcActionPropCounted) return;
+            _activeNpcActionProps = Mathf.Max(0, _activeNpcActionProps - 1);
+            _npcActionPropCounted = false;
+        }
+
+        private void UpdateNpcActionProp()
+        {
+            if (_view == null || _visibleLeftHand == null || !_view.ActivityPresentationCanGesture
+                || _view.ActivityPresentationWeight < 0.25f || _view.Dead)
+            {
+                HideNpcActionProp();
+                return;
+            }
+            string action = _view.ActivityPresentation;
+            bool grenade = action == "grenade" && _view.ActivityPresentationElapsed < 0.64f;
+            bool bandage = action == "heal";
+            if (!grenade && !bandage)
+            {
+                HideNpcActionProp();
+                return;
+            }
+            Camera camera = Camera.main;
+            if (camera != null && (camera.transform.position - transform.position).sqrMagnitude > 24f * 24f)
+            {
+                HideNpcActionProp();
+                return;
+            }
+            RoaVisibilityGate gate = GetComponent<RoaVisibilityGate>();
+            if (gate != null && !gate.IsVisible)
+            {
+                HideNpcActionProp();
+                return;
+            }
+            if (!_npcActionPropCounted && _activeNpcActionProps >= MaxActiveNpcActionProps) return;
+            string kind = grenade ? "grenade" : "bandage";
+            if (_npcActionProp == null || _npcActionPropKind != kind)
+            {
+                if (_npcActionProp != null)
+                {
+                    if (Application.isPlaying) Destroy(_npcActionProp);
+                    else DestroyImmediate(_npcActionProp);
+                }
+                _npcActionProp = grenade
+                    ? RoaNpcActionPropVisual.CreateGrenade(transform)
+                    : RoaNpcActionPropVisual.CreateBandage(transform);
+                _npcActionPropKind = kind;
+                gate?.Invalidate();
+            }
+            if (!_npcActionPropCounted)
+            {
+                _activeNpcActionProps++;
+                _npcActionPropCounted = true;
+            }
+            _npcActionProp.SetActive(true);
+            _npcActionProp.transform.position = _visibleLeftHand.position
+                + transform.forward * 0.035f + transform.up * 0.012f;
+            _npcActionProp.transform.rotation = Quaternion.LookRotation(transform.forward, transform.up);
         }
 
         private void SyncBones()
@@ -493,6 +570,7 @@ namespace RealmOfAshes.Game
                 RelaxFreeHands();
                 PunchLine();
                 DrinkFromHand();
+                ApplyNpcGesture(true, true);
                 return;
             }
             RoaWeaponView weapon = _view.HeldWeapon;
@@ -592,6 +670,10 @@ namespace RealmOfAshes.Game
                 }
                 TiltHead(weapon.HoldHeadPitch, weapon.HoldHeadRoll);
                 HandReachError = HoldMissPrimary;
+                // A throwing or bandaging NPC briefly releases the support grip.
+                // The gun hand remains on the weapon throughout the action.
+                ApplyNpcGesture(offhand == null || !offhand.HoldLeft.Active,
+                    !weapon.HoldRight.Active);
                 return;
             }
             if (_view.WeaponId == "medkit" && _rightGrip != null)
@@ -616,12 +698,104 @@ namespace RealmOfAshes.Game
                     medical.rotation = want * Quaternion.Inverse(have);
                     medical.position += centre - medical.TransformPoint(_caseGrip);
                 }
+                ApplyNpcGesture(true, false);
                 return;
             }
             ReachHand(_rightArm, _sourceRightHand, _visibleRightHand);
             ReachHand(_leftArm, _sourceLeftHand, _visibleLeftHand);
             HandReachError = _sourceRightHand != null && _visibleRightHand != null
                 ? Vector3.Distance(_sourceRightHand.position, _visibleRightHand.position) : -1f;
+            ApplyNpcGesture(true, true);
+        }
+
+        // The source skeleton's small shoulder offsets get lost when the visible
+        // body's arm lengths and the weapon grip are resolved. These three NPC
+        // actions need a readable hand silhouette on the final rendered body.
+        private void ApplyNpcGesture(bool leftAvailable, bool rightAvailable)
+        {
+            if (_view == null || !_view.ActivityPresentationCanGesture
+                || _view.ActivityPresentationWeight <= 0.01f)
+            {
+                _lastNpcGestureAction = string.Empty;
+                return;
+            }
+            string action = _view.ActivityPresentation;
+            if (action == "rest" || action == "heal" || action == "grenade")
+            {
+                _lastNpcGestureAction = action;
+                _lastNpcGestureElapsed = _view.ActivityPresentationElapsed;
+            }
+            else if (string.IsNullOrEmpty(action))
+                action = _lastNpcGestureAction;
+            else
+                _lastNpcGestureAction = string.Empty;
+            if (action != "rest" && action != "heal" && action != "grenade") return;
+            float weight = _view.ActivityPresentationWeight;
+            Vector3 forward = transform.forward;
+            Vector3 right = transform.right;
+            Vector3 up = transform.up;
+            float elapsed = _lastNpcGestureElapsed;
+            if (leftAvailable)
+            {
+                Transform hand = _visibleLeftHand;
+                Transform elbow = hand != null ? hand.parent : null;
+                Transform shoulder = elbow != null ? elbow.parent : null;
+                if (shoulder != null)
+                {
+                    Vector3 target;
+                    Vector3 bend;
+                    if (action == "grenade")
+                    {
+                        float release = Mathf.SmoothStep(0f, 1f,
+                            Mathf.Clamp01((elapsed - 0.58f) / 0.34f));
+                        Vector3 windup = shoulder.position - forward * 0.16f
+                            - right * 0.02f + up * 0.26f;
+                        Vector3 throwEnd = shoulder.position + forward * 0.62f
+                            + right * 0.12f + up * 0.13f;
+                        target = Vector3.Lerp(windup, throwEnd, release);
+                        bend = -right * 0.7f + up * (0.35f - release * 0.55f)
+                            + forward * 0.15f;
+                    }
+                    else if (action == "heal")
+                    {
+                        float bandage = Mathf.Sin(elapsed * 7.5f) * 0.025f;
+                        target = shoulder.position + right * 0.32f + forward * 0.20f
+                            - up * (0.17f + bandage);
+                        bend = -right * 0.75f - up * 0.25f + forward * 0.35f;
+                    }
+                    else
+                    {
+                        float breathe = Mathf.Sin(elapsed * 1.1f) * 0.018f;
+                        target = shoulder.position - forward * 0.10f - right * 0.06f
+                            + up * (0.25f + breathe);
+                        bend = -right * 0.8f + up * 0.15f;
+                    }
+                    PoseGestureHand(shoulder, elbow, hand, target, bend, weight);
+                    if (_leftGrip != null)
+                        _leftGrip.ApplyFingers(action == "grenade" && elapsed < 0.9f
+                            ? RoaFingerPose.Wrap : RoaFingerPose.Loose, 0.025f);
+                }
+            }
+            if (rightAvailable && action == "heal")
+            {
+                Transform hand = _visibleRightHand;
+                Transform elbow = hand != null ? hand.parent : null;
+                Transform shoulder = elbow != null ? elbow.parent : null;
+                if (shoulder != null)
+                {
+                    Vector3 target = shoulder.position - right * 0.22f
+                        + forward * 0.20f - up * 0.30f;
+                    PoseGestureHand(shoulder, elbow, hand, target,
+                        right * 0.7f - up * 0.2f + forward * 0.3f, weight);
+                }
+            }
+        }
+
+        private static void PoseGestureHand(Transform shoulder, Transform elbow, Transform hand,
+            Vector3 target, Vector3 bend, float weight)
+        {
+            Vector3 blended = Vector3.Lerp(hand.position, target, weight);
+            TwoBone(shoulder, elbow, hand, blended, hand.rotation, bend);
         }
 
         private Transform _caseRoot;

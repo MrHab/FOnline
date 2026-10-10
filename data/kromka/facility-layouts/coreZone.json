@@ -1,0 +1,375 @@
+{
+  "schema": "roa.facilityExterior.v1",
+  "id": "coreZone",
+  "zone": "z_09_07",
+  "width": 52,
+  "depth": 36,
+  "center": {
+    "x": 30,
+    "z": 14
+  },
+  "entrance": {
+    "x": 30,
+    "z": 0
+  },
+  "lore": "docs/KROMKA_GAME_BIBLE_AND_PATCH_PLAN.md; original location identity, clan/raid/private/faction room rules retained.",
+  "additions": [
+    {
+      "id": "facility_coreZone_physical_door",
+      "prefab": "Assets/Art/Kromka/SiteInfrastructure/Kromka_ServiceGateFrame.prefab",
+      "x": 0,
+      "z": -14,
+      "tags": [
+        "facility-door",
+        "room-entry"
+      ]
+    },
+    {
+      "id": "facility_coreZone_wall_-24_-10",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -24,
+      "z": -10,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_wall_-24_-5.5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -24,
+      "z": -5.5,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_wall_-24_-1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -24,
+      "z": -1,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_wall_-24_3.5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -24,
+      "z": 3.5,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_wall_-24_8",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -24,
+      "z": 8,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_wall_-24_12.5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -24,
+      "z": 12.5,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_wall_24_-10",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 24,
+      "z": -10,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_wall_24_-5.5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 24,
+      "z": -5.5,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_wall_24_-1",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 24,
+      "z": -1,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_wall_24_3.5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 24,
+      "z": 3.5,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_wall_24_8",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 24,
+      "z": 8,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_wall_24_12.5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 24,
+      "z": 12.5,
+      "rotY": 90
+    },
+    {
+      "id": "facility_coreZone_rear_wall_-22",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -22,
+      "z": 16
+    },
+    {
+      "id": "facility_coreZone_rear_wall_-17.5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -17.5,
+      "z": 16
+    },
+    {
+      "id": "facility_coreZone_rear_wall_-13",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -13,
+      "z": 16
+    },
+    {
+      "id": "facility_coreZone_rear_wall_-8.5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -8.5,
+      "z": 16
+    },
+    {
+      "id": "facility_coreZone_rear_wall_-4",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": -4,
+      "z": 16
+    },
+    {
+      "id": "facility_coreZone_rear_wall_0.5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 0.5,
+      "z": 16
+    },
+    {
+      "id": "facility_coreZone_rear_wall_5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 5,
+      "z": 16
+    },
+    {
+      "id": "facility_coreZone_rear_wall_9.5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 9.5,
+      "z": 16
+    },
+    {
+      "id": "facility_coreZone_rear_wall_14",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 14,
+      "z": 16
+    },
+    {
+      "id": "facility_coreZone_rear_wall_18.5",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 18.5,
+      "z": 16
+    },
+    {
+      "id": "facility_coreZone_rear_wall_23",
+      "prefab": "SM_Bld_Bunker_Wall_Concrete_x2_01",
+      "x": 23,
+      "z": 16
+    },
+    {
+      "id": "facility_coreZone_service_house",
+      "prefab": "SM_Bld_Industrial_Small_01",
+      "x": 19,
+      "z": -2
+    },
+    {
+      "id": "facility_coreZone_power",
+      "prefab": "SM_Prop_Generator_01",
+      "x": 19,
+      "z": -7
+    },
+    {
+      "id": "facility_coreZone_freight_store",
+      "prefab": "SM_Prop_Crate_Large_01",
+      "x": 21,
+      "z": 7
+    },
+    {
+      "id": "facility_coreZone_service_walk_-12",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 0,
+      "z": -12,
+      "y": -0.24,
+      "blocksMovement": false
+    },
+    {
+      "id": "facility_coreZone_service_walk_-9.5",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 0,
+      "z": -9.5,
+      "y": -0.24,
+      "blocksMovement": false
+    },
+    {
+      "id": "facility_coreZone_service_walk_-7",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 0,
+      "z": -7,
+      "y": -0.24,
+      "blocksMovement": false
+    },
+    {
+      "id": "facility_coreZone_service_walk_-4.5",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 0,
+      "z": -4.5,
+      "y": -0.24,
+      "blocksMovement": false
+    },
+    {
+      "id": "facility_coreZone_service_walk_-2",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 0,
+      "z": -2,
+      "y": -0.24,
+      "blocksMovement": false
+    },
+    {
+      "id": "facility_coreZone_service_walk_0.5",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 0,
+      "z": 0.5,
+      "y": -0.24,
+      "blocksMovement": false
+    },
+    {
+      "id": "facility_coreZone_service_walk_3",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 0,
+      "z": 3,
+      "y": -0.24,
+      "blocksMovement": false
+    },
+    {
+      "id": "facility_coreZone_service_walk_5.5",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 0,
+      "z": 5.5,
+      "y": -0.24,
+      "blocksMovement": false
+    },
+    {
+      "id": "facility_coreZone_service_walk_8",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 0,
+      "z": 8,
+      "y": -0.24,
+      "blocksMovement": false
+    },
+    {
+      "id": "facility_coreZone_service_walk_10.5",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 0,
+      "z": 10.5,
+      "y": -0.24,
+      "blocksMovement": false
+    },
+    {
+      "id": "facility_coreZone_service_walk_13",
+      "prefab": "SM_Bld_Bunker_Floor_Stone_x2_01",
+      "x": 0,
+      "z": 13,
+      "y": -0.24,
+      "blocksMovement": false
+    },
+    {
+      "id": "facility_coreZone_purpose",
+      "prefab": "Assets/Art/Kromka/SiteInfrastructure/Kromka_ServiceRegistrarBay.prefab",
+      "x": -17,
+      "z": 5,
+      "role": "landmark"
+    },
+    {
+      "id": "facility_coreZone_security_bastion",
+      "prefab": "Assets/Art/Kromka/SiteInfrastructure/Kromka_CommandBastion.prefab",
+      "x": 0,
+      "z": -10.6
+    },
+    {
+      "id": "facility_coreZone_entry_radio_landmark",
+      "prefab": "SM_Bld_RadioTower_01",
+      "x": -13,
+      "z": -3
+    },
+    {
+      "id": "facility_coreZone_entry_warning_west",
+      "prefab": "SM_Prop_Sign_Danger_01",
+      "x": -11,
+      "z": -16,
+      "rotY": 180
+    },
+    {
+      "id": "facility_coreZone_entry_warning_east",
+      "prefab": "SM_Prop_Sign_Danger_01",
+      "x": 11,
+      "z": -16,
+      "rotY": 180
+    },
+    {
+      "id": "facility_coreZone_entry_lookout_west",
+      "prefab": "Assets/Art/Kromka/SiteInfrastructure/Kromka_GuardLookout.prefab",
+      "x": -8,
+      "z": -10.6,
+      "rotY": 35
+    },
+    {
+      "id": "facility_coreZone_entry_floodlight_west",
+      "prefab": "SM_Prop_Floodlights_01",
+      "x": -5,
+      "z": -16,
+      "rotY": 180
+    },
+    {
+      "id": "facility_coreZone_entry_lookout_east",
+      "prefab": "Assets/Art/Kromka/SiteInfrastructure/Kromka_GuardLookout.prefab",
+      "x": 8,
+      "z": -10.6,
+      "rotY": -35
+    },
+    {
+      "id": "facility_coreZone_entry_floodlight_east",
+      "prefab": "SM_Prop_Floodlights_01",
+      "x": 5,
+      "z": -16,
+      "rotY": 180
+    }
+  ],
+  "cables": [
+    {
+      "id": "checkpoint_power",
+      "radius": 0.06,
+      "points": [
+        {
+          "x": 19,
+          "y": 0.06,
+          "z": -7
+        },
+        {
+          "x": 19,
+          "y": 0.06,
+          "z": -7
+        },
+        {
+          "x": 4.8,
+          "y": 0.06,
+          "z": -7
+        },
+        {
+          "x": 4.8,
+          "y": 0.06,
+          "z": -10.6
+        }
+      ]
+    }
+  ],
+  "pipes": [],
+  "earthworks": []
+}

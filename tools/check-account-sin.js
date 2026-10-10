@@ -9,6 +9,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const sin = require('../src/server/account-sin');
+const { migrateAccountMarks } = require('../src/server/account-marks-migration');
 const { loadWorldEconomy, normalizeWorldEconomy } = require('../src/server/world-economy');
 
 const DAY = 24 * 3600000;
@@ -106,9 +107,28 @@ assert.equal(economy.auctions.premiumTaxPct, config.premium.auctionTaxPct, 'the 
     ['return !!account && sinPremiumActive(account, Date.now())', 'the auction premium tax'],
     ['serverConvertSinCassettes(p);', 'cassettes onto the account'],
     ['const sinCost = account ?', 'sin prices paid from the account'],
-    ['else delete view.marks;', 'no account marks balance without marks on the account'],
-    ['player.marksOnAccount = false;\n  return false;', 'a failed marks migration keeps the account untouched']
+    ['else delete view.marks;', 'no account marks balance without marks on the account']
   ]) assert(server.includes(hook), `server.js wires ${label}`);
+}
+
+// A failed account/character write must roll back both live balances.
+{
+  const oldInventory = [{ id: 'silver', qty: 5 }];
+  const player = { inventory: oldInventory, marksOnAccount: false };
+  const account = { marks: 10 };
+  let reported = false;
+  const migrated = migrateAccountMarks(player, account, {
+    maxMarks: 100,
+    inventoryQty: rows => rows.reduce((sum, row) => sum + (row.id === 'silver' ? row.qty : 0), 0),
+    inventorySetRows: (_rows, _id, qty) => [{ id: 'silver', qty }],
+    persist: () => { throw new Error('test write failure'); },
+    onError: () => { reported = true; }
+  });
+  assert.equal(migrated, false);
+  assert.equal(account.marks, 10, 'a failed migration restores the account balance');
+  assert.equal(player.inventory, oldInventory, 'a failed migration restores the character inventory');
+  assert.equal(player.marksOnAccount, false, 'the player still uses character marks after a failed migration');
+  assert.equal(reported, true, 'the storage failure is reported');
 }
 
 console.log('Account sin OK: an account balance with a ledger and no overdraft, premium bought and extended with sin, focus that accrues only under premium, caps and pays for crafting returns, and the premium bonuses wired into the server.');

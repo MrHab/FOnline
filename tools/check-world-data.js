@@ -14,6 +14,7 @@ const { usesAuthoredWorldSites } = require('../src/server/authored-world-sites')
 const root = path.resolve(__dirname, '..');
 const dataDir = path.join(root, 'data');
 const locationsDir = path.join(dataDir, 'locations');
+const zoneGraphFile = path.join(dataDir, 'kromka', 'zone-graph.json');
 const globalMapFile = path.join(dataDir, 'global-map.json');
 const tradersFile = path.join(dataDir, 'traders.json');
 const questsFile = path.join(dataDir, 'quests.json');
@@ -738,6 +739,14 @@ if (!fs.existsSync(locationsDir)) {
 }
 
 const locations = new Map();
+const zoneGraph = readJson(zoneGraphFile);
+const zoneIds = new Set((Array.isArray(zoneGraph?.zones) ? zoneGraph.zones : [])
+  .map(zone => safeId(zone?.id)).filter(Boolean));
+function transitionTargetExists(transition) {
+  if (transition?.type === 'globalMap' || !transition?.to) return true;
+  const id = safeId(transition.to);
+  return locations.has(id) || zoneIds.has(id);
+}
 if (fs.existsSync(tradersFile)) {
   const rawTraders = readJson(tradersFile);
   const rel = path.relative(root, tradersFile);
@@ -985,13 +994,13 @@ for (const [id, row] of locations) {
       errors.push(`${rel}: transitions[${index}] is not an object`);
       return;
     }
-    if (tr.type !== 'globalMap' && tr.to && !locations.has(safeId(tr.to))) {
+    if (!transitionTargetExists(tr)) {
       errors.push(`${rel}: transition "${tr.id || index}" points to missing location "${tr.to}"`);
     }
     if (!pointLooksValid(tr)) warnings.push(`${rel}: transition "${tr.id || index}" has no tx/tz`);
   });
 
-  if (loc.exit && loc.exit.to && !locations.has(safeId(loc.exit.to))) {
+  if (loc.exit && loc.exit.to && !transitionTargetExists(loc.exit)) {
     errors.push(`${rel}: exit points to missing location "${loc.exit.to}"`);
   }
 

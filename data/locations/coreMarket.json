@@ -127,8 +127,6 @@
         "hostileToPlayer": false,
         "stationary": true,
         "service": "blackMarket",
-        "traderProfile": "blackMarket",
-        "tradeProfile": "blackMarket",
         "dialogueProfile": "blackMarket"
       },
       "unityAuthored": true,

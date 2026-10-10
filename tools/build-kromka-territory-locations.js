@@ -1,14 +1,14 @@
 'use strict';
 
-// Генерирует авторские определения Сердцевины: одну большую сцену `coreZone`,
-// четыре базы фракций, четыре боковые лаборатории, три уровня «Объекта Ноль»
-// и хаб Чёрного рынка. Источник — data/kromka/territory.json. Результат
+// Генерирует авторские определения Сердцевины: общую сцену `coreZone`,
+// боковые лаборатории и уровни «Объекта Ноль». Источник —
+// data/kromka/territory.json. Результат
 // детерминирован; Unity пересобирает сцены только для новых id и дописывает
 // объекты при экспорте.
 //
 // Внимание: перезапись существующего определения теряет поля, которые Unity
 // дописала при экспорте. Новую локацию генерируйте адресно:
-//   node tools/build-kromka-territory-locations.js --only=coreMarket
+//   node tools/build-kromka-territory-locations.js --only=coreZone
 // Посмотреть вывод, не трогая данные (так его сверяет check-world-containers):
 //   node tools/build-kromka-territory-locations.js --out=<каталог>
 const fs = require('fs');
@@ -270,7 +270,7 @@ function zoneDefinition() {
   const anomalyFields = [];
   const entries = {};
 
-  territory.factions.forEach((faction, index) => {
+  territory.factions.filter(faction => faction.platform).forEach((faction, index) => {
     const p = faction.platform;
     const sign = { x: Math.sign(p.x), z: Math.sign(p.z) };
     const inward = { x: -sign.x, z: -sign.z };
@@ -340,9 +340,9 @@ function zoneDefinition() {
   });
 
   const c = territory.centralLab;
-  // Спуск на Рынок Ядра — напротив служебного лифта Объекта Ноль: самое
-  // опасное место чёрной зоны, до него идут через всю Сердцевину.
+  // Старые сохранения знают Рынок Ядра, но новая Сердцевина его не создаёт.
   const hub = territory.marketHub;
+  if (hub) {
   objects.push(prop('market_stairs', `${hub.displayName} — спуск`, 'cargo_stack.glb', hub.door.x, hub.door.z - 2, { x: 1.6, y: 1.2, z: 1.2 }, ['territory-center', 'market-door'], {
     fields: { interactive: { kind: 'transition', role: 'marketDoor', to: hub.id } }
   }));
@@ -353,6 +353,7 @@ function zoneDefinition() {
   // По оси x = 0 идут труба каскада и колонна Регенератора: прибытие — сбоку от
   // лестницы, в досягаемости её перехода, иначе сервер сдвинул бы игрока прочь от неё.
   entries[hub.entryKey] = point(hub.door.x + 3, hub.door.z - 1, width, depth, { rotationY: 0 });
+  }
   objects.push(prop('center_core', `${c.displayName}: надземный блок`, 'concrete_wall.glb', 0, 0, { x: 4.5, y: 3, z: 4.5 }, ['territory-center', 'landmark', 'central-lab']));
   objects.push(prop('center_antenna', 'Мачта установки', 'relay_antenna.glb', 6, 6, 1.8, ['territory-center', 'landmark']));
   objects.push(prop('center_lift', 'Служебный лифт', 'cargo_stack.glb', 0, -8, { x: 1.6, y: 1.8, z: 1.2 }, ['territory-center', 'lab-door'], {
@@ -411,7 +412,12 @@ function zoneDefinition() {
   containers.push(container('center_cache_a', 'Сейф установки', 14, 14, width, depth, 'rare', { locked: true, lockDifficulty: 'hard', terminalLocked: true, terminalDifficulty: 'hard', terminalUnlocksLock: true, terminalName: 'Терминал Объекта Ноль' }));
   containers.push(container('center_cache_b', 'Сейф установки', -14, -14, width, depth, 'rare', { locked: true, lockDifficulty: 'hard' }));
 
-  const first = territory.factions[0];
+  const entryFromWorld = point(0, 132, width, depth);
+  transitions.push({
+    id: 'exit_to_world', type: 'location', label: 'Выход из Сердцевины',
+    to: territory.worldEntranceZoneId, entryKey: 'entryFromPlace_coreZone',
+    ...point(0, 146, width, depth), radius: 3.2
+  });
   return {
     schema: 'realm.location.v1', version: 1, id: territory.zoneLocationId, name: territory.displayName,
     seed: 2026091510, safe: false, pvpMode: territory.zone.pvpMode, kind: 'territoryZone', respawnAllowed: false,
@@ -419,8 +425,8 @@ function zoneDefinition() {
     territoryId: territory.id, territoryRole: 'zone', factionAccess: 'territory',
     ground: { preset: 'glassAsh', label: territory.displayName },
     map: { width, depth, origin: 'center' }, grid: { snap: true, step: 2 },
-    spawn: entries[first.platform.entryKey],
-    entryFromWorld: entries[first.platform.entryKey],
+    spawn: entryFromWorld,
+    entryFromWorld,
     ...entries,
     transitions,
     worldZones,
@@ -698,10 +704,10 @@ const onlyIds = onlyArg ? new Set(onlyArg.slice('--only='.length).split(',').map
 
 const definitions = [
   zoneDefinition(),
-  ...territory.factions.map(baseDefinition),
+  ...territory.factions.filter(faction => faction.platform).map(baseDefinition),
   ...territory.labs.map(labDefinition),
   ...territory.centralLab.levels.map(centralLevelDefinition),
-  marketHubDefinition()
+  ...(territory.marketHub ? [marketHubDefinition()] : [])
 ].filter(definition => !onlyIds || onlyIds.has(definition.id));
 
 // При повторном запуске сохраняем экспортированные Unity объекты и точки.

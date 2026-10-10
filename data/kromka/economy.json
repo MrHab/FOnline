@@ -199,7 +199,7 @@
   },
   "blackMarket": {
     "service": "blackMarket",
-    "hubLocationId": "coreMarket",
+    "hubLocationId": "settlement",
     "categories": [
       "weapons",
       "armor"

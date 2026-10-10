@@ -63,11 +63,18 @@ for (const id of RELEASED_LOCATION_IDS) {
   assert(isReleasedLocationId(id), `release predicate rejected ${id}`);
 }
 
-const globalNodeIds = (globalMap.nodes || []).map(node => String(node.locationId || node.id || ''));
+const globalNodeIds = (globalMap.nodes || [])
+  .filter(node => !node.hidden)
+  .map(node => String(node.locationId || node.id || ''));
 assert.strictEqual(new Set(globalNodeIds).size, globalNodeIds.length,
   'active global-map destination IDs must be unique');
 assert.deepStrictEqual(RELEASED_LOCATION_IDS, globalNodeIds,
   'every visible global-map location, and only a visible location, must be released');
+for (const node of (globalMap.nodes || []).filter(row => row.hidden)) {
+  const id = String(node.locationId || node.id || '');
+  assert(!isReleasedLocationId(id), `hidden legacy site ${id} must not be released`);
+  assert(authoredFiles.includes(`${id}.json`), `hidden legacy site ${id} must remain available for migration`);
+}
 
 const release = publicLocationRelease();
 assert.strictEqual(release.schema, LOCATION_RELEASE_SCHEMA);

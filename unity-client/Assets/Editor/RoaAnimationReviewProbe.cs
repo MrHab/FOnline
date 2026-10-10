@@ -20,11 +20,21 @@ namespace RealmOfAshes.EditorTools
     /// фазе клипа, действия (выстрел, перезарядка, смерть) — по реальному времени.
     /// Рядом — report.json: высота стоп над полом и кистей относительно оружия.
     /// Сервер моделей — ROA_ANIM_SERVER, папка — ROA_ANIM_OUT, выбор состояний —
-    /// ROA_ANIM_ONLY (через запятую).
+    /// ROA_ANIM_ONLY (через запятую). ROA_ANIM_W/H задают размер одного
+    /// кадра для проверки экранных форматов.
     /// </summary>
     public static class RoaAnimationReviewProbe
     {
-        private const int W = 240, H = 300, Frames = 6;
+        private static readonly int W = FrameSize("ROA_ANIM_W", 240);
+        private static readonly int H = FrameSize("ROA_ANIM_H", 300);
+        private const int Frames = 6;
+
+        private static int FrameSize(string variable, int fallback)
+        {
+            string value = Environment.GetEnvironmentVariable(variable);
+            return int.TryParse(value, out int size) && size >= 120 && size <= 1440
+                ? size : fallback;
+        }
         private static bool _batchOptionsCaptured;
         private static bool _previousEnterPlayModeOptionsEnabled;
         private static EnterPlayModeOptions _previousEnterPlayModeOptions;
@@ -149,6 +159,19 @@ namespace RealmOfAshes.EditorTools
                 new State { Name = "pickup", Action = view => view.PlayAction("pickup", 1.35f), Seconds = 1.35f },
                 new State { Name = "consume", Action = view => view.PlayAction("consume", 1.2f), Seconds = 1.2f },
                 new State { Name = "harvest", Action = view => view.PlayAction("harvest", 1.5f, 1.3f), Seconds = 1.5f },
+                new State { Name = "npc_search", Action = view => view.SetActivityPresentation("search", 0f), Seconds = 1.2f },
+                new State { Name = "npc_observe", Action = view => view.SetActivityPresentation("observe", 0f), Seconds = 1.2f },
+                new State { Name = "npc_detect", Action = view => view.SetActivityPresentation("detect", 0f), Seconds = 0.8f },
+                new State { Name = "npc_gather", Action = view => view.SetActivityPresentation("gather", 0f), Seconds = 1.2f },
+                new State { Name = "npc_eat", Action = view => view.SetActivityPresentation("eat", 0f), Seconds = 1.2f },
+                new State { Name = "npc_rest", Action = view => view.SetActivityPresentation("rest", 0f), Seconds = 1.2f },
+                new State { Name = "npc_loot", Action = view => view.SetActivityPresentation("loot", 0f), Seconds = 1.2f },
+                new State { Name = "npc_heal", Action = view => view.SetActivityPresentation("heal", 0f), Seconds = 1.2f },
+                new State { Name = "npc_cover", Action = view => view.SetActivityPresentation("cover", 0f), Seconds = 1.2f },
+                new State { Name = "npc_grenade", Action = view => view.SetActivityPresentation("grenade", 0f), Seconds = 1.1f },
+                new State { Name = "npc_rifle_rest", Weapon = "assaultRifle", Action = view => view.SetActivityPresentation("rest", 0f), Seconds = 1.2f },
+                new State { Name = "npc_rifle_heal", Weapon = "assaultRifle", Action = view => view.SetActivityPresentation("heal", 0f), Seconds = 1.2f },
+                new State { Name = "npc_rifle_grenade", Weapon = "assaultRifle", Action = view => view.SetActivityPresentation("grenade", 0f), Seconds = 1.1f },
                 new State { Name = "rifle_idle", Weapon = "assaultRifle", Aim = true },
                 new State { Name = "rifle_walk", Weapon = "assaultRifle", Aim = true, Velocity = new Vector3(0f, 0f, 1.6f) },
                 new State { Name = "rifle_run", Weapon = "assaultRifle", Velocity = new Vector3(0f, 0f, 4.4f) },
@@ -203,6 +226,8 @@ namespace RealmOfAshes.EditorTools
             for (int s = 0; s < states.Count; s++)
             {
                 State state = states[s];
+                foreach (Rig rig in new[] { oldRig, newRig })
+                    rig.View.SetActivityPresentation(string.Empty, 0f);
                 if (state.Weapon != weapon)
                 {
                     foreach (Rig rig in new[] { oldRig, newRig })
@@ -265,6 +290,10 @@ namespace RealmOfAshes.EditorTools
                         }
                         TrackHeadClearance(newRig, Time.time - start);
                         Shoot(sheet, f, oldRig, newRig, metrics, state.Name + " t " + (Time.time - start).ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+                        if (f == 2 && (state.Name == "npc_heal" || state.Name == "npc_rifle_heal"))
+                            AssertActionProp(newRig, "NpcBandageVisual");
+                        if (f == 2 && (state.Name == "npc_grenade" || state.Name == "npc_rifle_grenade"))
+                            AssertActionProp(newRig, "NpcGrenadeVisual");
                     }
                     Time.captureDeltaTime = 0f;
                     await Drive(new[] { oldRig, newRig }, state, 0.8f);
@@ -327,6 +356,14 @@ namespace RealmOfAshes.EditorTools
             var names = new List<string>();
             foreach (AnimationState state in animation) names.Add(state.name);
             return string.Join(", ", names);
+        }
+
+        private static void AssertActionProp(Rig rig, string name)
+        {
+            foreach (Transform node in rig.View.GetComponentsInChildren<Transform>(true))
+                if (node.name == name && node.gameObject.activeInHierarchy
+                    && node.GetComponentInChildren<Renderer>() != null) return;
+            throw new InvalidOperationException(rig.Name + " has no visible action prop " + name);
         }
 
         private static float clearance = float.MaxValue, clearanceAt;
@@ -437,6 +474,8 @@ namespace RealmOfAshes.EditorTools
                 .Append("\"old\": ").Append(Measure(oldRig, "foot_l", "foot_r", "ball_l", "ball_r", "hand_l", "hand_r"))
                 .Append(", \"new\": ").Append(Measure(newRig, "ankle_l", "ankle_r", "ball_l", "ball_r", "hand_l", "hand_r", "src_hand_l", "src_hand_r", "weapon_support",
                     "head", "spine_03", "elbow_l", "elbow_r", "hips"))
+                .Append(", \"npcActivity\": \"").Append(newRig.View.ActivityPresentation)
+                .Append("\", \"npcActivityWeight\": ").Append(F(newRig.View.ActivityPresentationWeight))
                 .Append(", \"skin\": ").Append(SkinState(newRig)).Append("},\n");
         }
 

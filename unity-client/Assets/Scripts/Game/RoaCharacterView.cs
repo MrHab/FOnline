@@ -215,6 +215,7 @@ namespace RealmOfAshes.Game
         private string _activityPresentation = string.Empty;
         private float _activityPhaseOffset;
         private float _activityPresentationWeight;
+        private float _activityChangedAt;
         private Vector2 _lastImpactLocalSource = Vector2.up;
         private float _lastImpactAt = -100f;
         private bool _hasLastImpactDirection;
@@ -512,12 +513,49 @@ namespace RealmOfAshes.Game
         /// </summary>
         public void SetActivityPresentation(string activity, float phaseOffset01)
         {
-            _activityPresentation = (activity ?? string.Empty).Trim().ToLowerInvariant();
+            string next = (activity ?? string.Empty).Trim().ToLowerInvariant();
+            if (!string.Equals(next, _activityPresentation, StringComparison.Ordinal))
+            {
+                if (_activityPresentation == "reload") CancelReload();
+                _activityChangedAt = Time.time;
+                _actionUntil = 0f;
+                if (next == "reload") StartReload(0f);
+            }
+            _activityPresentation = next;
             _activityPhaseOffset = Mathf.Repeat(phaseOffset01, 1f);
+            if (!_dead && !_locomoting && !_hitReaction.Active
+                && Time.time >= _attackUntil && Time.time >= _hurtUntil && !ActionActive)
+            {
+                string clip = ActivityClip(next);
+                if (!string.IsNullOrEmpty(clip)) PlayAction(clip, 2f);
+            }
+        }
+
+        private string ActivityClip(string activity)
+        {
+            string clip;
+            switch (activity)
+            {
+                case "work":
+                case "search": clip = "kneel_work"; break;
+                case "gather": clip = "harvest"; break;
+                case "loot": clip = "chest_open"; break;
+                case "eat": clip = "consume"; break;
+                // A bandage belongs at the torso. The eating clip puts a hand
+                // at the mouth, so healing uses its separate procedural pose.
+                case "heal": return string.Empty;
+                case "cover": clip = "crouch_idle"; break;
+                case "guard": clip = "pistol_idle"; break;
+                default: return string.Empty;
+            }
+            return _clips.Contains(clip) ? clip : string.Empty;
         }
 
         public string ActivityPresentation { get { return _activityPresentation; } }
         public float ActivityPresentationWeight { get { return _activityPresentationWeight; } }
+        public float ActivityPresentationElapsed { get { return Mathf.Max(0f, Time.time - _activityChangedAt); } }
+        public bool ActivityPresentationCanGesture { get { return !_dead && !_locomoting
+            && !_hitReaction.Active && Time.time >= _attackUntil && Time.time >= _hurtUntil; } }
 
         /// <summary>Id оружия в руках. Пусто или «fists» — руки свободны.</summary>
         public string WeaponId { get { return _weapon != null ? _weapon.WeaponId : string.Empty; } }
@@ -1670,12 +1708,24 @@ namespace RealmOfAshes.Game
             // Хват и оружие поверх позы: кисть считается от таза и позвоночника,
             // которые направленная поза уже развернула.
             // Во время действия руки ведёт клип: оружие просто держится в кисти.
+            // То же правило нужно для действий без отдельного клипа: иначе IK
+            // прицеливания сразу возвращает руки в стойку и скрывает жест.
+            bool activityHands = _activityPresentationWeight > 0.01f && !_locomoting
+                && !Turning && !_hitReaction.Active
+                && Time.time >= _attackUntil && Time.time >= _hurtUntil
+                && (_activityPresentation == "rest" || _activityPresentation == "heal"
+                    || _activityPresentation == "reload"
+                    || _activityPresentation == "grenade" || _activityPresentation == "ability"
+                    || _activityPresentation == "eat" || _activityPresentation == "search"
+                    || _activityPresentation == "gather" || _activityPresentation == "loot"
+                    || _activityPresentation == "work" || _activityPresentation == "social");
             if (_weapon != null)
             {
-                if (ActionActive) _weapon.ApplyHeld();
+                if (ActionActive || activityHands) _weapon.ApplyHeld();
                 else _weapon.Apply(_aimPoint, _hasAim);
             }
-            if (_offhandWeapon != null) _offhandWeapon.Apply(_aimPoint, _hasAim, _weapon);
+            if (_offhandWeapon != null && !activityHands)
+                _offhandWeapon.Apply(_aimPoint, _hasAim, _weapon);
 
             // Травма — самый верхний визуальный слой. Перелом руки намеренно
             // ослабляет идеальный IK-хват, а перелом ноги остаётся видим поверх
@@ -1796,7 +1846,8 @@ namespace RealmOfAshes.Game
 
         private void ApplyActivityPresentation(float dt)
         {
-            bool actionBlocked = _dead || _locomoting || Turning || _hitReaction.Active
+            bool actionBlocked = _dead || (_locomoting && _activityPresentation != "emerge")
+                || Turning || _hitReaction.Active
                 || Time.time < _attackUntil || Time.time < _hurtUntil
                 || string.IsNullOrEmpty(_activityPresentation);
             float targetWeight = actionBlocked ? 0f : 1f;
@@ -1839,6 +1890,21 @@ namespace RealmOfAshes.Game
                     AddBoneOffset("head", -0.015f * weight,
                         Mathf.Sin(t * 0.55f) * 0.10f * weight, 0f);
                     break;
+                case "observe":
+                    AddBoneOffset("spine_03", -0.025f * weight,
+                        Mathf.Sin(t * 0.68f) * 0.045f * weight, 0f);
+                    AddBoneOffset("head", -0.055f * weight,
+                        Mathf.Sin(t * 1.15f) * 0.20f * weight, 0f);
+                    break;
+                case "detect":
+                    float alert = Mathf.Clamp01((Time.time - _activityChangedAt) / 0.28f);
+                    AddBoneOffset("spine_03", -0.08f * alert * weight,
+                        0.07f * alert * weight, 0f);
+                    AddBoneOffset("head", -0.11f * alert * weight,
+                        0.12f * alert * weight, 0f);
+                    AddBoneOffset("upperarm_l", -0.16f * alert * weight, 0f,
+                        -0.13f * alert * weight);
+                    break;
                 case "social":
                     AddBoneOffset("spine_03", -0.025f * weight,
                         slow * 0.025f * weight, slow * 0.018f * weight);
@@ -1858,10 +1924,80 @@ namespace RealmOfAshes.Game
                         (0.24f + pulse * 0.045f) * weight);
                     break;
                 case "rest":
-                    AddBoneOffset("spine_03", 0.025f * weight,
+                    AddBoneOffset("spine_03", (0.075f + slow * 0.018f) * weight,
                         slow * 0.018f * weight, slow * 0.022f * weight);
-                    AddBoneOffset("head", 0.025f * weight,
+                    AddBoneOffset("head", (0.055f + slow * 0.02f) * weight,
                         slow * 0.025f * weight, -slow * 0.025f * weight);
+                    AddBoneOffset("upperarm_r", 0.12f * weight, 0f, 0.16f * weight);
+                    AddBoneOffset("upperarm_l", 0.12f * weight, 0f, -0.16f * weight);
+                    break;
+                case "emerge":
+                    float rise = 1f - Mathf.Clamp01((Time.time - _activityChangedAt) / 1.2f);
+                    AddBoneOffset("spine_02", 0.17f * rise * weight, 0f, 0f);
+                    AddBoneOffset("head", -0.11f * rise * weight, slow * 0.02f * weight, 0f);
+                    AddBoneOffset("upperarm_r", -0.18f * rise * weight, 0f, 0.11f * rise * weight);
+                    AddBoneOffset("upperarm_l", -0.18f * rise * weight, 0f, -0.11f * rise * weight);
+                    break;
+                case "search":
+                    AddBoneOffset("spine_02", 0.06f * weight, slow * 0.025f * weight, 0f);
+                    AddBoneOffset("head", -0.08f * weight, slow * 0.13f * weight, 0f);
+                    break;
+                case "gather":
+                    AddBoneOffset("spine_02", 0.11f * weight, 0f, 0f);
+                    AddBoneOffset("head", -0.08f * weight, slow * 0.045f * weight, 0f);
+                    AddBoneOffset("upperarm_r", -0.13f * weight, 0f,
+                        (0.20f + pulse * 0.08f) * weight);
+                    AddBoneOffset("upperarm_l", -0.09f * weight, 0f,
+                        (-0.18f - pulse * 0.04f) * weight);
+                    break;
+                case "ability":
+                    AddBoneOffset("spine_03", -0.035f * weight, 0.10f * weight, 0f);
+                    AddBoneOffset("head", -0.04f * weight, 0.08f * weight, 0f);
+                    AddBoneOffset("upperarm_l", -0.35f * weight, 0f,
+                        (-0.48f - pulse * 0.035f) * weight);
+                    AddBoneOffset("upperarm_r", -0.05f * weight, 0f, 0.08f * weight);
+                    break;
+                case "reload":
+                    // Hold the weapon at the chest and bring the support hand
+                    // to the magazine while the authoritative AI reloads.
+                    AddBoneOffset("spine_03", 0.035f * weight, 0f, 0f);
+                    AddBoneOffset("head", -0.055f * weight, 0f, 0f);
+                    AddBoneOffset("upperarm_r", -0.13f * weight, 0f, 0.20f * weight);
+                    AddBoneOffset("upperarm_l", -0.24f * weight, 0f,
+                        (-0.32f - pulse * 0.045f) * weight);
+                    break;
+                case "grenade":
+                    // The explicit server action winds up and releases with the
+                    // off-hand while the weapon stays in the gun hand.
+                    float throwPhase = Mathf.Clamp01((Time.time - _activityChangedAt) / 1.1f);
+                    float windup = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(throwPhase / 0.53f));
+                    float release = Mathf.SmoothStep(0f, 1f,
+                        Mathf.Clamp01((throwPhase - 0.53f) / 0.31f));
+                    AddBoneOffset("spine_03", -0.06f * windup * weight,
+                        -0.12f * (windup - release) * weight, 0f);
+                    AddBoneOffset("upperarm_l", (-0.55f * windup + 0.85f * release) * weight,
+                        0f, (-0.48f * windup + 0.22f * release) * weight);
+                    AddBoneOffset("head", -0.04f * windup * weight, 0f, 0f);
+                    break;
+                case "loot":
+                    AddBoneOffset("spine_02", 0.18f * weight, 0f, 0f);
+                    AddBoneOffset("head", -0.1f * weight, slow * 0.035f * weight, 0f);
+                    AddBoneOffset("upperarm_r", -0.16f * weight, 0f, (0.2f + pulse * 0.1f) * weight);
+                    AddBoneOffset("upperarm_l", -0.12f * weight, 0f, (-0.16f - pulse * 0.08f) * weight);
+                    break;
+                case "heal":
+                    AddBoneOffset("spine_02", 0.09f * weight, 0f, 0f);
+                    AddBoneOffset("head", -0.1f * weight, 0f, 0f);
+                    // Leave the gun hand near its grip while the free hand
+                    // applies a bandage; the full two-hand pose is for fists.
+                    bool carrying = !string.IsNullOrEmpty(WeaponId) && WeaponId != "fists";
+                    AddBoneOffset("upperarm_r", (carrying ? -0.05f : -0.4f + pulse * 0.04f) * weight,
+                        0f, (carrying ? 0.08f : 0.42f + pulse * 0.05f) * weight);
+                    AddBoneOffset("upperarm_l", -0.35f * weight, 0f, -0.38f * weight);
+                    break;
+                case "cover":
+                    AddBoneOffset("spine_02", 0.16f * weight, 0f, 0f);
+                    AddBoneOffset("head", -0.04f * weight, slow * 0.08f * weight, 0f);
                     break;
             }
         }

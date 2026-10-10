@@ -14,16 +14,18 @@ const http = require('node:http');
 const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
 const zoneWalk = require('./lib/zone-walk');
-const { zoneById, zoneLocationId, zoneOfPlace, zoneRecipe } = require('../src/server/zone-graph');
+const { zoneById, zoneLocationId, zoneOfPlace } = require('../src/server/zone-graph');
 const { zoneRules } = require('../src/server/zone-rules');
-const { loadZoneCatalog } = require('../src/server/zone-chunks');
-const { buildZone } = require('../src/server/zone-builder');
+const { createZoneRuntime } = require('../src/server/zone-runtime');
 const { readTieredCatalogs, enemyTierScale } = require('../src/server/kromka-tiers');
 const accounts = {};
-// Зона Сердцевины и её портал — ворота территории.
+// Портал зоны мира ведёт пешком в одну общую PvP-сцену Сердцевины.
 const zoneGraph = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'zone-graph.json'), 'utf8'));
 const coreHome = zoneOfPlace(zoneGraph, 'coreZone');
-const coreHomeDef = buildZone(zoneRecipe(zoneGraph, coreHome.id), loadZoneCatalog(path.join(__dirname, '..', 'data', 'zones')));
+// Match the server: frozen authored sectors override procedural chunk positions.
+const coreHomeDef = createZoneRuntime({ graph: zoneGraph,
+  zonesDir: path.join(__dirname, '..', 'data', 'zones'), normalize: row => row
+}).ensure({}, coreHome.id);
 const corePortal = zoneWalk.world(coreHomeDef.transitions.find(row => row.to === 'coreZone'));
 
 const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce((s, r) => s + r.qty, 0);
@@ -67,7 +69,7 @@ const getJson = route => new Promise((resolve, reject) => {
   base.rights = { granted: true, outcomeId: 'official', questId: 'personal_aktov_air_rights', grantedAt: Date.now() - 100000 };
   saves.personalBases[baseUserId] = base;
 
-  // Член «Артелей», чьё сохранение указывает на чужую базу — при reconnect его вернут.
+  // Старое сохранение на выведенной базе: перенос к наружному порталу без потери членства.
   const intruder = stateFor('target');
   intruder.currentLocationId = 'coreBaseUprava';
   intruder.serverLocationContext = { locationId: 'coreBaseUprava' };
@@ -82,13 +84,19 @@ const getJson = route => new Promise((resolve, reject) => {
     state.equipment.detector = 'artifactDetectorMk1';
   }
 
-  // Наёмник без контракта стоит в зоне Сердцевины у её портала: там подписывают
-  // первый контракт и оттуда заводят на базу фракции.
+  // Нейтральный игрок у портала: здесь не оформляют членство.
   const mercenary = stateFor('untargeted');
   mercenary.territoryFaction = { version: 1, factionId: '', joinedAt: 0, changeAllowedAt: 0, history: [] };
   mercenary.currentLocationId = coreHome.id;
   mercenary.player = { ...(mercenary.player || {}), x: corePortal.x, z: corePortal.z + 2 };
   delete mercenary.serverLocationContext;
+
+  // Пятая фракция вступает у регистратора своего города.
+  const recruit = stateFor('legacyMix');
+  recruit.currentLocationId = 'secondHaven';
+  recruit.player = { ...(recruit.player || {}), x: 21, z: 47 };
+  recruit.territoryFaction = { version: 1, factionId: '', joinedAt: 0, changeAllowedAt: 0, history: [] };
+  delete recruit.serverLocationContext;
 
   // Член «Управы» в зале боковой лаборатории «Цепь».
   const technician = stateFor('modification');
@@ -141,7 +149,7 @@ const getJson = route => new Promise((resolve, reject) => {
 
   // --- членство и доступ ------------------------------------------------------------
   await h.connectAndJoin(accounts.target);
-  assert.notEqual(accounts.target.join.locationId, 'coreBaseUprava', 'A member of another faction is not reconnected into a foreign base.');
+  assert.equal(accounts.target.join.locationId, coreHome.id, 'A saved character in a retired base returns to the exterior zone.');
   const membershipState = await request(accounts.target, 'territoryFactionAction', { action: 'state' });
   assert.equal(membershipState.membership.factionId, 'free_artels');
   assert.equal(membershipState.membership.changeLocked, true, 'The 72-hour change cooldown is reported.');
@@ -151,13 +159,14 @@ const getJson = route => new Promise((resolve, reject) => {
   // предупреждает до входа, а не после прибытия.
   const definitions = await getJson('/api/locations');
   assert.equal(definitions.status, 200);
-  const baseDefinition = definitions.json.locations.coreBaseUprava;
-  const metro = (baseDefinition.transitions || []).find(row => row.id === 'metro_platform');
-  assert(metro && metro.targetZoneRules, 'The metro platform carries the rules of the zone behind it: ' + JSON.stringify(metro || {}).slice(0, 200));
-  assert.equal(metro.targetPvpMode, 'pvpBlack', 'The territory is a black zone (economy v3).');
-  assert.equal(metro.targetZoneRules.loss, 'all', 'Death in the territory drops everything.');
-  assert.equal(metro.targetZoneRules.confirmBeforeEntry, true, 'The territory asks for confirmation before entry.');
-  assert(String(metro.targetZoneRules.lossLabel || '').length > 0, 'The rules explain what is lost on death.');
+  const exterior = (await getJson('/api/locations/' + coreHome.id)).json.location;
+  const exteriorPortal = (exterior.transitions || []).find(row => row.to === 'coreZone');
+  assert(exteriorPortal && exteriorPortal.targetZoneRules, 'The on-foot portal carries Core PvP rules.');
+  assert.equal(exteriorPortal.targetPvpMode, 'pvpBlack');
+  assert.equal(exteriorPortal.targetZoneRules.loss, 'all');
+  assert.equal(exteriorPortal.targetZoneRules.confirmBeforeEntry, true);
+  const returnPortal = (definitions.json.locations.coreZone.transitions || []).find(row => row.to === coreHome.id);
+  assert(returnPortal && returnPortal.entryKey === 'entryFromPlace_coreZone', 'Core exits to its exterior entrance.');
   const labDoor = (definitions.json.locations.coreZone.transitions || []).find(row => row.id === 'enter_coreLabSprout');
   assert.equal(labDoor.targetZoneRules.mode, 'pvpBlack', 'A laboratory inherits the rules of the territory.');
   // Ключи — город-сектор: его определение сервер отдаёт по одному, как зону.
@@ -181,44 +190,52 @@ const getJson = route => new Promise((resolve, reject) => {
   assert.equal(intoKeys.targetZoneRules.confirmBeforeEntry, false, 'A peaceful transition does not ask.');
   console.log('PASS territory membership on reconnect and transitions');
 
-  // --- контракт наёмника у ворот Сердцевины -----------------------------------------
+  // --- городской регистратор и прямой вход ------------------------------------------
   const worldMap = await getJson('/api/world-map');
   const places = (worldMap.json.map?.zones || []).flatMap(zone => zone.places.map(place => place.id));
-  assert(places.includes('coreZone'), 'The territory stays on the world map: it is the only entrance.');
+  assert(places.includes('coreZone'), 'The only visible Core location on the world map is its entrance.');
   for (const baseId of ['coreBaseUprava', 'coreBaseArtels', 'coreBaseContour', 'coreBaseLeague']) {
-    assert(!places.includes(baseId), `Faction bases are hidden from the world map: ${baseId}`);
+    assert(!places.includes(baseId), `Retired bases stay hidden: ${baseId}`);
   }
   await h.connectAndJoin(accounts.untargeted);
   assert.equal(accounts.untargeted.join.locationId, coreHome.id);
-  const gateOffer = await request(accounts.untargeted, 'territoryFactionAction', { action: 'offer' });
-  assert.equal(gateOffer.atGate, true, 'A player at the Core portal of its zone is at the contract gate.');
-  assert.equal(gateOffer.contract.canSign, true, 'A character without a contract may sign one.');
-  assert.equal(gateOffer.contract.factions.length, 4, 'The window offers every territory faction.');
-  assert(gateOffer.contract.factions.every(row => typeof row.sharePct === 'number' && row.displayName),
-    'Every faction row carries a share and a display name: ' + JSON.stringify(gateOffer.contract.factions).slice(0, 400));
-  // Портал Сердцевины: без контракта сервер возвращает предложение, после
-  // подписи тот же портал заводит на базу выбранной фракции.
+  const gateOffer = await h.socketAck(accounts.untargeted.socket, 'territoryFactionAction', { action: 'offer' });
+  assert.equal(gateOffer.ok, false, 'The portal does not offer faction contracts.');
   const refused = await h.socketAck(accounts.untargeted.socket, 'changeLocation', { locationId: 'coreZone' });
-  assert.equal(refused.ok, false, 'Without a contract the gate does not let the player in.');
-  assert.equal(refused.contractRequired, true, 'The refusal carries the contract offer: ' + JSON.stringify(refused).slice(0, 400));
-  assert.equal(refused.contract.factions.length, 4);
-  const signed = await request(accounts.untargeted, 'territoryFactionAction',
-    { action: 'join', factionId: 'contour', requestId: 'gate-contract-1' });
-  assert.equal(signed.atGate, true);
-  assert.equal(signed.membership.factionId, 'contour', 'Signing at the gate joins the chosen faction.');
-  assert.equal(signed.contract.baseLocationId, 'coreBaseContour', 'The contract names the base the player will arrive at.');
-  const entered = await h.socketAck(accounts.untargeted.socket, 'changeLocation', { locationId: 'coreZone' });
-  assert.equal(entered.ok, true, 'A signed contract opens the territory gate: ' + JSON.stringify(entered).slice(0, 400));
-  assert.equal(entered.locationId, 'coreBaseContour', 'The gate routes the player to the base of the signed faction.');
-  assert.equal(entered.self.pvpMode ?? entered.self.zoneRules?.mode ?? 'peaceful', 'peaceful', 'The base is a protected area, not the contested zone.');
-  const switchAtGate = await h.socketAck(accounts.untargeted.socket, 'territoryFactionAction',
-    { action: 'join', factionId: 'uprava', requestId: 'gate-contract-2' });
-  assert(!switchAtGate.ok && /регистратора/.test(switchAtGate.error || ''),
-    'Switching factions still requires the registrar on the base.');
-  const farFromGate = await h.socketAck(accounts.target.socket, 'territoryFactionAction',
-    { action: 'join', factionId: 'uprava', requestId: 'far-contract-1' });
-  assert(!farFromGate.ok, 'A contract is not signed from an arbitrary location.');
-  console.log('PASS mercenary contract at the Core portal of its zone and hidden bases');
+  assert.equal(refused.ok, false);
+  assert.equal(refused.contractRequired, false, 'The portal requires prior city membership, not signing at the gate.');
+  const joinAtGate = await h.socketAck(accounts.untargeted.socket, 'territoryFactionAction',
+    { action: 'join', factionId: 'seconds', requestId: 'rejected-gate-join' });
+  assert.equal(joinAtGate.ok, false);
+
+  await h.connectAndJoin(accounts.legacyMix);
+  assert.equal(accounts.legacyMix.join.locationId, 'secondHaven');
+  const cityOffer = await request(accounts.legacyMix, 'territoryFactionAction', { action: 'offer' });
+  assert.equal(cityOffer.atGate, false);
+  assert.equal(cityOffer.contract.factions.length, 5);
+  assert.equal(cityOffer.contract.registrarFactionId, 'seconds');
+  assert.deepEqual(cityOffer.contract.factions.filter(row => row.canSign).map(row => row.factionId), ['seconds'],
+    'Only the local city faction can be signed with this registrar.');
+  const joinedSeconds = await request(accounts.legacyMix, 'territoryFactionAction',
+    { action: 'join', factionId: 'seconds', requestId: 'city-contract-seconds' });
+  assert.equal(joinedSeconds.membership.factionId, 'seconds');
+  const wrongCity = await h.socketAck(accounts.legacyMix.socket, 'territoryFactionAction',
+    { action: 'join', factionId: 'uprava', requestId: 'wrong-city-join' });
+  assert.equal(wrongCity.ok, false);
+
+  const targetPosition = { x: accounts.target.join.self.x, z: accounts.target.join.self.z };
+  assert(await zoneWalk.driveTo(h, accounts.target, targetPosition, corePortal.x, corePortal.z, 160), 'Member reaches the exterior Core entrance.');
+  const entered = await request(accounts.target, 'changeLocation', { locationId: 'coreZone' });
+  assert.equal(entered.locationId, 'coreZone', 'The portal enters the shared PvP scene directly.');
+  assert.equal(entered.worldState.pvpMode, 'pvpBlack');
+  const inside = { x: entered.self.x, z: entered.self.z };
+  assert(await zoneWalk.driveTo(h, accounts.target, inside, 0, 146, 180), 'Member reaches the Core exit.');
+  const exited = await request(accounts.target, 'changeLocation', { locationId: coreHome.id });
+  assert.equal(exited.locationId, coreHome.id, 'Core exits into the same exterior world zone.');
+  const returnPosition = { x: exited.self.x, z: exited.self.z };
+  assert(await zoneWalk.driveTo(h, accounts.target, returnPosition, corePortal.x, corePortal.z, 180),
+    'The Core exit leaves the player on a traversable approach to the same entrance.');
+  console.log('PASS city registrar, five factions, migrated base save, direct shared Core portal and return');
 
   // --- артефакты: скрытые свойства, платная стабилизация, разбор ---------------------------
   await h.connectAndJoin(accounts.trade);
@@ -317,9 +334,8 @@ const getJson = route => new Promise((resolve, reject) => {
 
   // --- аванпосты, публичные события, здоровье -------------------------------------------------
   const territory = await request(accounts.trade, 'requestTerritoryState', {});
-  assert.equal(territory.territory.outposts.length, 3);
-  assert(territory.territory.outposts.every(row => row.eventStatus === 'open'), 'Neutral outposts start with the capture event open.');
-  assert(Array.isArray(territory.catalog.factions) && territory.catalog.factions.length === 4, 'The territory catalog names the four factions.');
+  assert.equal(territory.territory.outposts.length, 0, 'The shared Core scene has no internal outposts.');
+  assert(Array.isArray(territory.catalog.factions) && territory.catalog.factions.length === 5, 'Core membership covers all five city factions.');
   const wasteland = await getJson('/api/wasteland');
   assert.equal(wasteland.status, 200);
   assert.equal(wasteland.json.publicEvents.length, 1);

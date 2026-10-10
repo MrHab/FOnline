@@ -149,6 +149,8 @@ namespace RealmOfAshes.Game
         /// <summary>Всплывающий текст над целью: (текст, мир, до какого времени).</summary>
         private readonly List<FloatingText> _floating = new List<FloatingText>();
         private readonly List<HitConfirmation> _hitConfirmations = new List<HitConfirmation>();
+        private readonly Dictionary<string, RoaNpcGrenadeFlightVisual> _npcGrenadeFlights =
+            new Dictionary<string, RoaNpcGrenadeFlightVisual>();
         private const float RemotePlayerHitRadius = 0.58f;
         private const int HitConfirmationLimit = 12;
 
@@ -182,6 +184,8 @@ namespace RealmOfAshes.Game
             if (Socket == null) return;
             Socket.OnEnemyAttack += HandleEnemyAttack;
             Socket.OnEnemyAttackMiss += HandleEnemyAttackMiss;
+            Socket.OnEnemyGrenadeTelegraph += HandleEnemyGrenadeTelegraph;
+            Socket.OnEnemyGrenadeDetonate += HandleEnemyGrenadeDetonate;
             Socket.OnPlayerDamaged += HandlePlayerDamaged;
             Socket.OnPlayerStatusEffect += HandlePlayerStatusEffect;
             Socket.OnEnemyKilled += HandleEnemyKilled;
@@ -195,9 +199,14 @@ namespace RealmOfAshes.Game
             _meleePresentationToken = string.Empty;
             _meleeVisualStartedAt = -100f;
             _combatPresentationUntil = -100f;
+            foreach (RoaNpcGrenadeFlightVisual flight in _npcGrenadeFlights.Values)
+                if (flight != null) Destroy(flight.gameObject);
+            _npcGrenadeFlights.Clear();
             if (Socket == null) return;
             Socket.OnEnemyAttack -= HandleEnemyAttack;
             Socket.OnEnemyAttackMiss -= HandleEnemyAttackMiss;
+            Socket.OnEnemyGrenadeTelegraph -= HandleEnemyGrenadeTelegraph;
+            Socket.OnEnemyGrenadeDetonate -= HandleEnemyGrenadeDetonate;
             Socket.OnPlayerDamaged -= HandlePlayerDamaged;
             Socket.OnPlayerStatusEffect -= HandlePlayerStatusEffect;
             Socket.OnEnemyKilled -= HandleEnemyKilled;
@@ -205,7 +214,7 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// A-Life опасных клеток: группа подходит к сцене с края или отступает.
+        /// A-Life опасных клеток: группа подходит к сцене с края или следует маршруту.
         /// Строка — в журнал HUD и надписью над персонажем (на телефоне журнала нет).
         /// </summary>
         private void HandleDangerCellNotice(JObject payload)
@@ -237,9 +246,11 @@ namespace RealmOfAshes.Game
             string name = payload["enemyName"]?.ToString() ?? "Противник";
             string type = payload["damageType"]?.ToString() ?? "ballistic";
             bool critical = payload["critical"]?.ToObject<bool>() == true;
-            bool hasSource = payload["x"] != null && payload["z"] != null;
+            bool impactSource = payload["impactX"] != null && payload["impactZ"] != null;
+            bool hasSource = impactSource || (payload["x"] != null && payload["z"] != null);
             Vector3 source = hasSource
-                ? RoaCoords.ToUnity(payload["x"].ToObject<float>(), payload["z"].ToObject<float>())
+                ? RoaCoords.ToUnity((impactSource ? payload["impactX"] : payload["x"]).ToObject<float>(),
+                    (impactSource ? payload["impactZ"] : payload["z"]).ToObject<float>())
                 : Vector3.zero;
             if (hasSource) Player.View?.PlayHit(source, damage, critical);
             else Player.View?.PlayHit();
@@ -251,6 +262,63 @@ namespace RealmOfAshes.Game
                 + (absorbed > 0 ? ", броня " + absorbed : string.Empty));
             if (payload["secondChance"]?.ToObject<bool>() == true)
                 AddLog("Второй шанс: смертельный удар оставил 1 HP.");
+        }
+
+        private void HandleEnemyGrenadeTelegraph(JObject payload)
+        {
+            if (payload == null || Player == null || payload["x"] == null || payload["z"] == null) return;
+            Vector3 impact = EnemyGrenadeImpact(payload);
+            if (Vector3.Distance(Player.transform.position, impact) > 14f) return;
+            Float("ГРАНАТА!", impact + Vector3.up * 0.45f, new Color(1f, 0.58f, 0.18f));
+            if (Vector3.Distance(Player.transform.position, impact)
+                <= Mathf.Max(2f, payload["radius"]?.ToObject<float>() ?? 2.8f) + 3f)
+                AddLog((payload["enemyName"]?.ToString() ?? "Налётчик") + " бросает гранату — уходите из зоны взрыва!");
+            string enemyId = payload["enemyId"]?.ToString();
+            if (string.IsNullOrEmpty(enemyId) || Enemies == null) return;
+            if (_npcGrenadeFlights.TryGetValue(enemyId, out RoaNpcGrenadeFlightVisual previous)
+                && previous != null) Destroy(previous.gameObject);
+            _npcGrenadeFlights.Remove(enemyId);
+            RoaNpcGrenadeFlightVisual flight = RoaNpcGrenadeFlightVisual.TryCreate(this,
+                Enemies, enemyId, impact, payload["t"]?.ToObject<long>() ?? 0L,
+                payload["fuseMs"]?.ToObject<int>() ?? 1100);
+            if (flight != null) _npcGrenadeFlights[enemyId] = flight;
+        }
+
+        private void HandleEnemyGrenadeDetonate(JObject payload)
+        {
+            if (payload == null || Player == null || payload["x"] == null || payload["z"] == null) return;
+            string enemyId = payload["enemyId"]?.ToString();
+            if (!string.IsNullOrEmpty(enemyId)
+                && _npcGrenadeFlights.TryGetValue(enemyId, out RoaNpcGrenadeFlightVisual flight))
+            {
+                if (flight != null) Destroy(flight.gameObject);
+                _npcGrenadeFlights.Remove(enemyId);
+            }
+            Vector3 impact = EnemyGrenadeImpact(payload);
+            if (Vector3.Distance(Player.transform.position, impact) > 24f) return;
+            float radius = Mathf.Max(0.5f, payload["radius"]?.ToObject<float>() ?? 2.8f);
+            Fx?.PlayExplosion(impact, radius);
+        }
+
+        private Vector3 EnemyGrenadeImpact(JObject payload)
+        {
+            Vector3 impact = RoaCoords.ToUnity(payload["x"].ToObject<float>(),
+                payload["z"].ToObject<float>());
+            impact.y = Player != null ? Player.transform.position.y : 0f;
+            Renderer ground = Bootstrap != null && Bootstrap.Loader != null
+                ? Bootstrap.Loader.CurrentGroundRenderer : null;
+            Collider groundCollider = ground != null ? ground.GetComponent<Collider>() : null;
+            if (groundCollider != null && groundCollider.Raycast(
+                new Ray(impact + Vector3.up * 100f, Vector3.down), out RaycastHit groundHit, 200f))
+                impact.y = groundHit.point.y;
+            return impact;
+        }
+
+        internal void ForgetNpcGrenadeFlight(string enemyId, RoaNpcGrenadeFlightVisual flight)
+        {
+            if (!string.IsNullOrEmpty(enemyId)
+                && _npcGrenadeFlights.TryGetValue(enemyId, out RoaNpcGrenadeFlightVisual current)
+                && current == flight) _npcGrenadeFlights.Remove(enemyId);
         }
 
         private void HandlePlayerDamaged(JObject payload)

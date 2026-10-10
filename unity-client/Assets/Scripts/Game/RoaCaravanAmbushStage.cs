@@ -42,7 +42,7 @@ namespace RealmOfAshes.Game
             new Role("raider_ridge", "rifle", true, P(15,-3), P(8,-6), 14.3f),
             new Role("raider_flank", "pistol", true, P(16,-10), P(9,-11), 16.1f),
             new Role("raider_rusher", "shotgun", true, P(14,-18), P(7,-15), 11.4f),
-            new Role("raider_retreat", "rifle", true, P(-16,-4), P(-10,-9), 0f)
+            new Role("raider_survivor", "rifle", true, P(-16,-4), P(-10,-9), 0f)
         };
 
         private sealed class Performer
@@ -191,24 +191,20 @@ namespace RealmOfAshes.Game
                 Performer actor = _people[i];
                 Role role = actor.Role;
                 bool dead = role.FallsAt > 0f && time >= role.FallsAt;
-                bool retreat = role.FallsAt == 0f && time >= 18f;
-                actor.Root.gameObject.SetActive((!role.Raider || time >= 4.4f)
-                    && !(retreat && time >= 22f));
+                actor.Root.gameObject.SetActive(!role.Raider || time >= 4.4f);
                 Vector3 march = role.Start + P(0f, Mathf.Min(time,5.2f));
                 float entering = Mathf.Clamp01((time - (role.Raider ? 4.4f : 5.2f)) / 2.8f);
                 Vector3 position = Vector3.Lerp(role.Raider ? role.Start : role.Start + P(0,5.2f),
                     role.Cover, entering);
                 if (!role.Raider && time < 5.2f) position = march;
-                if (retreat) position += P(role.Raider ? -8f : -6f, role.Raider ? 9f : -5f)
-                    * Mathf.Clamp01((time - 18f) / 4f);
                 Vector3 velocity = time < 5.2f && !role.Raider ? Vector3.back
                     : entering > 0f && entering < 1f
                         ? (role.Cover - (role.Raider ? role.Start : role.Start + P(0,5.2f))) / 2.8f
-                    : retreat ? P(-1f, role.Raider ? 1f : -1f) * 2f : Vector3.zero;
+                    : Vector3.zero;
                 if (dead) position = role.Cover;
                 Place(actor, AmbushWorld(position), dead ? Vector3.zero : velocity);
                 Vector3 source = (role.Raider ? _people[3] : _people[5]).Root.position;
-                actor.View.SetAim(source + Vector3.up, time >= 5.2f && !dead && !retreat);
+                actor.View.SetAim(source + Vector3.up, time >= 5.2f && !dead);
                 if (dead && !actor.Fallen)
                 {
                     actor.View.PrepareDeath(source);

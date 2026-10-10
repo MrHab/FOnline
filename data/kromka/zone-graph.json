@@ -5018,7 +5018,7 @@
      "name": "Рудный перевал",
      "u": 0.5,
      "v": 0.5,
-     "road": false
+     "road": true
     }
    ],
    "authored": false
@@ -5487,7 +5487,7 @@
      "name": "Сортировочные поля",
      "u": 0.5,
      "v": 0.5,
-     "road": true
+     "road": false
     }
    ],
    "authored": false
@@ -5977,7 +5977,7 @@
      "name": "Ретранслятор В-9",
      "u": 0.5,
      "v": 0.5,
-     "road": false
+     "road": true
     }
    ],
    "authored": false
@@ -6419,9 +6419,10 @@
      "locationId": "scrapOutpost",
      "kind": "outpost",
      "name": "Сторожевая артель",
-     "u": 0.65,
-     "v": 0.25,
-     "road": true
+     "u": 0.675,
+     "v": 0.35,
+     "road": true,
+     "site": true
     }
    ],
    "authored": false
@@ -6477,7 +6478,7 @@
      "name": "Цех обратного цикла",
      "u": 0.5,
      "v": 0.5,
-     "road": false
+     "road": true
     }
    ],
    "authored": false
@@ -6690,7 +6691,7 @@
      "name": "ГЭС-2",
      "u": 0.5,
      "v": 0.5,
-     "road": false
+     "road": true
     }
    ],
    "authored": false
@@ -6786,8 +6787,9 @@
      "kind": "outpost",
      "name": "Периметр К-3",
      "u": 0.5,
-     "v": 0.08,
-     "road": true
+     "v": 0.119,
+     "road": true,
+     "site": true
     }
    ],
    "authored": false

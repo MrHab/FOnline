@@ -210,9 +210,11 @@
     "z_17_09": "Ретрансляторная гора"
   },
   "sites": {
+    "relayOutpost": {},
     "roadOutpost": {
       "safe": true
-    }
+    },
+    "scrapOutpost": {}
   },
   "gatePositions": {
     "z_01_05|z_01_06": 0.718,

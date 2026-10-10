@@ -259,6 +259,18 @@ namespace RealmOfAshes.Game
                 PreviewMark(ref marks, uv, capital ? 14f : 10f, color);
                 PreviewLabel(ref used, uv, (place["name"]?.ToString() ?? string.Empty) + PlaceTierSuffix(zone, place), 12, color, -16f);
             }
+            foreach (JToken token in zone["alifeSites"] as JArray ?? new JArray())
+            {
+                JObject site = token as JObject;
+                string kind = site?["kind"]?.ToString();
+                if (kind != "huntingGround" && kind != "outpost") continue;
+                Vector2 uv = SiteUv(site);
+                Color color = kind == "outpost" ? OutpostMarkerColor(site) : new Color(0.8f, 0.53f, 0.83f);
+                PreviewMark(ref marks, uv, kind == "outpost" ? 15f : 12f, color);
+                PreviewLabel(ref used, uv, kind == "outpost"
+                    ? "Аванпост · " + RoaPipboy.FactionLabel(site["ownerFaction"]?.ToString())
+                    : "Угодья", 11, color, -16f);
+            }
 
             Vector2? player = RoaWorldMapRoute.Id(zone) == CurrentZoneId() ? PlayerPoint(CurrentSelf, out JObject _) : null;
             _previewFlag.gameObject.SetActive(player.HasValue);
@@ -275,6 +287,12 @@ namespace RealmOfAshes.Game
         {
             float span = 1f + 2f * _previewMargin;
             return new Vector2((_previewMargin + uv.x) / span * PreviewSize, -(_previewMargin + uv.y) / span * PreviewSize);
+        }
+
+        private static Vector2 SiteUv(JObject site)
+        {
+            return new Vector2(Mathf.Clamp01(site?["u"]?.Value<float>() ?? 0.5f),
+                Mathf.Clamp01(site?["v"]?.Value<float>() ?? 0.5f));
         }
 
         /// <summary>Запечённая карта зоны: манифест один раз, снимок — по первому показу зоны.</summary>

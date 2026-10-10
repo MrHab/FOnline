@@ -11,6 +11,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const { normalizeSite, normalizeSites, siteAt, safeSiteAt, siteContains, siteCorners, siteLocalPoint } = require('../src/server/zone-sites');
 const { frozenZoneProblems } = require('../src/server/zone-runtime');
 const { migrateSaveStateToZones } = require('../src/server/zone-migration');
@@ -106,6 +107,28 @@ for (const zone of graph.zones) {
   assert.deepEqual([state.player.x, state.player.z], [(tile(place.u) - 79.5) * 2, (tile(1 - place.v) - 79.5) * 2], 'at the place point, where the portal used to be');
   const again = migrateSaveStateToZones(state, fakeGraph);
   assert.equal(again.reason, '', 'a second migration leaves the character where it is');
+}
+
+// The relay quest antenna keeps its canonical gameplay ID and metadata when the
+// former place is authored as a site in z_13_10. A dry site rebuild is read-only.
+{
+  const file = path.join(root, 'data', 'zones', 'authored', 'z_13_10.json');
+  const before = fs.readFileSync(file, 'utf8');
+  const zone = JSON.parse(before);
+  const antenna = zone.objects.filter(row => row.id === 'relay_outpost_antenna');
+  assert.equal(antenna.length, 1, 'the embedded relay has one canonical quest antenna');
+  assert.equal(antenna[0].model, 'relayAntenna');
+  assert.deepEqual(antenna[0].interactive, {
+    kind: 'questObject', questObjective: 'recover_measurement_block',
+    interactionLabel: 'Снять измерительный блок'
+  });
+  assert.equal(antenna[0].vision?.blocks, true);
+  assert.equal(antenna[0].site, 'relayOutpost');
+  assert.ok(siteContains(normalizeSite(zone.sites.find(site => site.id === 'relayOutpost')),
+    antenna[0].position.x, antenna[0].position.z));
+  execFileSync(process.execPath, ['tools/site-apply.js', 'data/kromka/site-layouts/relayOutpost.json', '--check'],
+    { cwd: root, stdio: 'pipe' });
+  assert.equal(fs.readFileSync(file, 'utf8'), before, 'site-apply --check leaves the authored zone unchanged');
 }
 
 console.log(`zone sites: PASS (${Object.keys(siteRules).length} sites in the graph)`);

@@ -17,7 +17,7 @@ const DEFAULT_RULES = Object.freeze({
   refreshOnEmission: true
 });
 
-const STORE_VERSION = 1;
+const STORE_VERSION = 2;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value || 0)));
@@ -60,6 +60,22 @@ function sanitizeBirthRow(row = {}) {
   };
 }
 
+function sanitizeNpcClaim(row = {}) {
+  const id = cleanId(row.id, 160);
+  const locationId = cleanId(row.locationId);
+  const groupId = cleanId(row.groupId);
+  const memberId = cleanId(row.memberId, 24);
+  const typeId = cleanId(row.typeId, 48);
+  const itemId = cleanId(row.itemId, 64);
+  if (!id || !locationId || !groupId || !memberId || !typeId || !itemId) return null;
+  return {
+    id, locationId, groupId, memberId, typeId, itemId,
+    tier: clamp(Math.floor(Number(row.tier || 1)), 1, 5),
+    claimedAt: Math.max(0, Math.floor(Number(row.claimedAt || 0))),
+    consumedAt: Math.max(0, Math.floor(Number(row.consumedAt || 0)))
+  };
+}
+
 function normalizeBirthStore(input = {}) {
   const src = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
   const locations = {};
@@ -84,7 +100,14 @@ function normalizeBirthStore(input = {}) {
       births: Math.max(0, Math.floor(Number(rawLoc.births || 0)))
     };
   }
-  return { version: STORE_VERSION, locations };
+  const npcClaims = {};
+  for (const [rawId, row] of Object.entries(src.npcClaims && typeof src.npcClaims === 'object' ? src.npcClaims : {})) {
+    const claim = sanitizeNpcClaim({ ...row, id: row?.id || rawId });
+    // Consumed IDs remain in the global claimedArtifactIds ledger; retaining
+    // full claim rows here only grows saves.
+    if (claim && !claim.consumedAt) npcClaims[claim.id] = claim;
+  }
+  return { version: STORE_VERSION, locations, npcClaims };
 }
 
 function ensureLocation(store = {}, locationId = '') {
@@ -237,6 +260,44 @@ function claimBirth(store = {}, locationId = '', artifactId = '') {
   return null;
 }
 
+// The birth and the NPC owner move in one savesDb snapshot. The caller must
+// commit that snapshot before making the claimed artifact usable in combat.
+function claimBirthForNpc(store = {}, locationId = '', artifactId = '', owner = {}, now = Date.now()) {
+  const groupId = cleanId(owner.groupId);
+  const memberId = cleanId(owner.memberId, 24);
+  const id = cleanId(artifactId, 160);
+  const locId = cleanId(locationId);
+  if (!groupId || !memberId || !id || !locId) return null;
+  if (!store.npcClaims || typeof store.npcClaims !== 'object') store.npcClaims = {};
+  if (store.npcClaims[id] || Object.values(store.npcClaims).some(row =>
+    !row.consumedAt && row.groupId === groupId && row.memberId === memberId)) return null;
+  const birth = claimBirth(store, locId, id);
+  if (!birth) return null;
+  const claim = sanitizeNpcClaim({ ...birth, locationId: locId, groupId, memberId, claimedAt: now });
+  if (!claim) {
+    ensureLocation(store, locId).artifacts[birth.fieldId] = birth;
+    return null;
+  }
+  store.npcClaims[id] = claim;
+  return claim;
+}
+
+function npcClaimForMember(store = {}, groupId = '', memberId = '') {
+  const group = cleanId(groupId);
+  const member = cleanId(memberId, 24);
+  if (!group || !member) return null;
+  return Object.values(store.npcClaims || {}).find(row =>
+    !row.consumedAt && row.groupId === group && row.memberId === member) || null;
+}
+
+function consumeNpcClaim(store = {}, groupId = '', memberId = '', now = Date.now()) {
+  const claim = npcClaimForMember(store, groupId, memberId);
+  if (!claim) return null;
+  claim.consumedAt = Math.max(1, Math.floor(Number(now) || Date.now()));
+  delete store.npcClaims[claim.id];
+  return claim;
+}
+
 function publicBirthSummary(store = {}, locationId = '') {
   const loc = store?.locations?.[cleanId(locationId)];
   return {
@@ -252,11 +313,14 @@ module.exports = {
   birthChance,
   birthRules,
   claimBirth,
+  claimBirthForNpc,
+  consumeNpcClaim,
   currentEmissionId,
   findBirth,
   lastEmissionEndAt,
   liveBirths,
   normalizeBirthStore,
+  npcClaimForMember,
   publicBirthSummary,
   tickLocationBirths,
   usableFields

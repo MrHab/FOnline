@@ -25,6 +25,10 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_SupplyPile_02.prefab"
     },
     {
+      "guid": "09f6dcdf77c3c114e822909385b37310",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Bunker_Floor_Stone_x2_01.prefab"
+    },
+    {
       "guid": "0afb193a74634d74182b4a6a6e9dc8fb",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/FX/Fx_Road_Flare_01.prefab"
     },
@@ -35,6 +39,10 @@
     {
       "guid": "0d8974133bae69b4bb417ea8542855b1",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_Rock_01.prefab"
+    },
+    {
+      "guid": "1033ef80459eaf841a495441afaca434",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Fence_01.prefab"
     },
     {
       "guid": "15302bd74a0fa344c8fee77ad7a46e50",
@@ -89,6 +97,10 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Trailer_02.prefab"
     },
     {
+      "guid": "3183cdcc476b897429c6b157dee15536",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Trailer_Aerial_03.prefab"
+    },
+    {
       "guid": "31b0f5421e075ad4abc0222da922caf7",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_FirePit_Frame_01.prefab"
     },
@@ -121,6 +133,10 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_Overgrowth_01.prefab"
     },
     {
+      "guid": "3c8cbdd59e10c2849ac414015c0736d9",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Sandbag_Wall_03.prefab"
+    },
+    {
       "guid": "4059f27effe0a7f4bb2eafe347220053",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Construction_Blocks_03.prefab"
     },
@@ -131,6 +147,10 @@
     {
       "guid": "46133089344458744b67372c6e18592d",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_WaterTank_01.prefab"
+    },
+    {
+      "guid": "464f78a898f604d4aa6188472f930185",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Generator_01.prefab"
     },
     {
       "guid": "46811183dfd86f843b4fd9934f288d43",
@@ -201,6 +221,14 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Rubble_Concrete_02.prefab"
     },
     {
+      "guid": "5e0fcd6279f918d45bf29d4934471087",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Junk_Shelter_06.prefab"
+    },
+    {
+      "guid": "5f0025e958817e446aaed10a1ff0902f",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Bunker_Wall_Concrete_x1_01.prefab"
+    },
+    {
       "guid": "5f0a587201ef70a48836ebd1572c155b",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Radio_01.prefab"
     },
@@ -225,6 +253,10 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Wall_Junk_01.prefab"
     },
     {
+      "guid": "70bdd61fdd3576648a7d9a78df63adc8",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Tire_Pile_03.prefab"
+    },
+    {
       "guid": "70fb46fb4d63e3340b0f223f24a9af39",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_BarrelStack_01.prefab"
     },
@@ -241,8 +273,16 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Barrier_Plastic_02.prefab"
     },
     {
+      "guid": "77c2e2e401f5ad04ea0f6853a3f3558d",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_AutoRepair_01.prefab"
+    },
+    {
       "guid": "77d08fb99f4943e48bd06fc41d6453b9",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_LightPole_Base_04.prefab"
+    },
+    {
+      "guid": "7abf822fb24a9e241b80a6e895a5da65",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Quarantine_Tent_02.prefab"
     },
     {
       "guid": "7cddecf69ef38c44f8baf578d2fe4a84",
@@ -263,6 +303,10 @@
     {
       "guid": "8d16041c0d131c94fa77f8401777777f",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_Rock_02.prefab"
+    },
+    {
+      "guid": "8dbdf6585915f2644a44577e1ede2521",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Pipe_Valve_01.prefab"
     },
     {
       "guid": "97e64d2ab35bbe34d9a34e327dcaf5ea",
@@ -373,8 +417,16 @@
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Table_02.prefab"
     },
     {
+      "guid": "d0521494728afa040a7ee397dac54d07",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Quarantine_Tent_01.prefab"
+    },
+    {
       "guid": "d6354bbe70c01c6448dab2cac4f88072",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_Wall_Quarantine_Column_Short_01.prefab"
+    },
+    {
+      "guid": "d6434865ece210b44b997e978bda66e8",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Buildings/SM_Bld_Quarantine_DomeTent_01.prefab"
     },
     {
       "guid": "d7ef0a4417e3c154bb14482f7b5e018b",
@@ -427,6 +479,10 @@
     {
       "guid": "f8a48f8be2524674799f72b2d14af8e9",
       "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Environment/SM_Env_Road_01.prefab"
+    },
+    {
+      "guid": "fae614550b766604bb03f019f586c0a1",
+      "path": "unity-client/Assets/Synty/PolygonApocalypse/Prefabs/Props/SM_Prop_ToolBox_01.prefab"
     },
     {
       "guid": "fd5265e1bff79694782bf5c50669f524",

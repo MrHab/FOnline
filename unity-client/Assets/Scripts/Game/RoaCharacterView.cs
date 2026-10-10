@@ -516,8 +516,10 @@ namespace RealmOfAshes.Game
             string next = (activity ?? string.Empty).Trim().ToLowerInvariant();
             if (!string.Equals(next, _activityPresentation, StringComparison.Ordinal))
             {
+                if (_activityPresentation == "reload") CancelReload();
                 _activityChangedAt = Time.time;
                 _actionUntil = 0f;
+                if (next == "reload") StartReload(0f);
             }
             _activityPresentation = next;
             _activityPhaseOffset = Mathf.Repeat(phaseOffset01, 1f);
@@ -1712,6 +1714,7 @@ namespace RealmOfAshes.Game
                 && !Turning && !_hitReaction.Active
                 && Time.time >= _attackUntil && Time.time >= _hurtUntil
                 && (_activityPresentation == "rest" || _activityPresentation == "heal"
+                    || _activityPresentation == "reload"
                     || _activityPresentation == "grenade" || _activityPresentation == "ability"
                     || _activityPresentation == "eat" || _activityPresentation == "search"
                     || _activityPresentation == "gather" || _activityPresentation == "loot"
@@ -1953,6 +1956,15 @@ namespace RealmOfAshes.Game
                     AddBoneOffset("upperarm_l", -0.35f * weight, 0f,
                         (-0.48f - pulse * 0.035f) * weight);
                     AddBoneOffset("upperarm_r", -0.05f * weight, 0f, 0.08f * weight);
+                    break;
+                case "reload":
+                    // Hold the weapon at the chest and bring the support hand
+                    // to the magazine while the authoritative AI reloads.
+                    AddBoneOffset("spine_03", 0.035f * weight, 0f, 0f);
+                    AddBoneOffset("head", -0.055f * weight, 0f, 0f);
+                    AddBoneOffset("upperarm_r", -0.13f * weight, 0f, 0.20f * weight);
+                    AddBoneOffset("upperarm_l", -0.24f * weight, 0f,
+                        (-0.32f - pulse * 0.045f) * weight);
                     break;
                 case "grenade":
                     // The explicit server action winds up and releases with the

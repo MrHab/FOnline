@@ -75,6 +75,9 @@ public static class RoaAlifePresentationProbe
             || RoaEnemies.ResolveNpcActivityVisual("rest", "use", "rest", "idle", false, false) != "rest"
             || RoaEnemies.ResolveNpcActivityVisual("eat", "use", "eat", "idle", false, false) != "eat"
             || RoaEnemies.ResolveNpcActivityVisual("heal", "use", "heal", "idle", false, false) != "heal"
+            || RoaEnemies.ResolveNpcActivityVisual("guard", "", "combat", "reload", false, false) != "reload"
+            || RoaEnemies.ResolveNpcActivityVisual("guard", "", "combat", "reload", true, false) != string.Empty
+            || RoaEnemies.ResolveNpcActivityVisual("guard", "", "combat", "reload", false, true) != string.Empty
             || RoaEnemies.ResolveNpcActivityVisual("mine", "use", "mine", "idle", false, false) != "work"
             || RoaEnemies.ResolveNpcActivityVisual("mine", "travel", "mine", "idle", true, false) != string.Empty
             || RoaEnemies.ResolveNpcActivityVisual("eat", "travel", "eat", "idle", true, false) != string.Empty

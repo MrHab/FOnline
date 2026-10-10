@@ -37,6 +37,25 @@ namespace RealmOfAshes.Game
         public static readonly Color YellowZoneColor = new Color(0.97f, 0.8f, 0.3f, 1f);
         public static readonly Color RedZoneColor = new Color(0.9f, 0.2f, 0.14f, 1f);
         public static readonly Color BlackZoneColor = new Color(0.36f, 0.06f, 0.24f, 1f);
+        private static Color OutpostMarkerColor(JObject site)
+        {
+            switch (RoaPipboy.CanonicalFactionId(site?["ownerFaction"]?.ToString()))
+            {
+                case "uprava": return new Color(0.38f, 0.7f, 1f);
+                case "free_artels": return new Color(1f, 0.68f, 0.35f);
+                case "contour": return new Color(0.58f, 0.85f, 0.65f);
+                case "tract_league": return new Color(1f, 0.85f, 0.48f);
+                case "seconds": return new Color(0.9f, 0.88f, 0.82f);
+                case "continuity": return new Color(0.94f, 0.44f, 0.48f);
+                case "raiders": return new Color(1f, 0.35f, 0.24f);
+                default: return Accent;
+            }
+        }
+
+        private static string OutpostMarkerLabel(JObject site)
+        {
+            return "А · " + RoaPipboy.FactionLabel(site?["ownerFaction"]?.ToString());
+        }
         private const int PixelsPerZone = 32;
         // Подписи 3D-вида: номера зон — только вблизи, имена мест — ближе среднего, столицы — всегда.
         private const float ZoneNumbersDistance = 16f;
@@ -576,8 +595,10 @@ namespace RealmOfAshes.Game
                     if (!_map3D.PointToScreen(point, 0.45f, out Vector2 at)) continue;
                     Text marker = TakeViewLabel(ref used);
                     marker.fontSize = 16;
-                    marker.color = kind == "outpost" ? Accent : new Color(0.8f, 0.53f, 0.83f);
-                    marker.text = kind == "outpost" ? "А" : "У";
+                    marker.color = kind == "outpost" ? OutpostMarkerColor(site) : new Color(0.8f, 0.53f, 0.83f);
+                    marker.text = kind == "outpost"
+                        ? distance <= PlaceNamesDistance ? OutpostMarkerLabel(site) : "А"
+                        : "У";
                     PlaceViewLabel(marker, at);
                 }
             }
@@ -816,10 +837,12 @@ namespace RealmOfAshes.Game
                     Text marker = TakeLabel(ref used);
                     marker.fontSize = scale >= 35f ? 16 : 13;
                     marker.fontStyle = FontStyle.Bold;
-                    marker.color = kind == "outpost" ? Accent : new Color(0.8f, 0.53f, 0.83f);
+                    marker.color = kind == "outpost" ? OutpostMarkerColor(site) : new Color(0.8f, 0.53f, 0.83f);
                     marker.alignment = TextAnchor.MiddleCenter;
-                    marker.text = kind == "outpost" ? "А" : "У";
-                    SetLabelRect(marker, at, new Vector2(20f, 20f), new Vector2(0.5f, 0.5f));
+                    marker.text = kind == "outpost" && scale >= 55f
+                        ? OutpostMarkerLabel(site) : kind == "outpost" ? "А" : "У";
+                    SetLabelRect(marker, at, new Vector2(kind == "outpost" && scale >= 55f ? 135f : 20f, 20f),
+                        new Vector2(0.5f, 0.5f));
                 }
             }
         }

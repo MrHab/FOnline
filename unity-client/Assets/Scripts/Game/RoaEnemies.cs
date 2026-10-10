@@ -421,6 +421,7 @@ namespace RealmOfAshes.Game
             if (!dead && !moving && (action == "grenade" || action == "throwgrenade"))
                 return "grenade";
             if (!dead && !moving && action == "cover") return "cover";
+            if (!dead && !moving && state == "reload") return "reload";
             if (!dead && !moving && state == "alarm") return "detect";
             if (!dead && !moving && state == "investigate") return "observe";
             if (dead || moving || phase == "travel" || IsCombatAiState(state))

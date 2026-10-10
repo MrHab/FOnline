@@ -24,6 +24,11 @@ const graph = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/zone-graph
 const zoneId = 'z_09_07';
 const zone = graph.zones.find(row => row.id === zoneId);
 assert(zone && !zone.city && zone.mode !== 'pve', 'The fixture uses a combat-enabled open sector');
+const north = graph.zones.find(row => row.id === zone.edges?.north?.to);
+const south = graph.zones.find(row => row.id === zone.edges?.south?.to);
+assert(north && south, 'The moving caravan has a real road route through the sector');
+const rewards = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/open-world-alife.json'), 'utf8'))
+  .caravanRobberyRewards;
 const runtime = createZoneRuntime({ graph, zonesDir: path.join(root, 'data/zones'), normalize: row => row });
 const definition = runtime.ensure({}, zoneId);
 const coreEntry = definition.transitions.find(row => row.type === 'location' && row.to === 'coreZone');
@@ -59,6 +64,8 @@ fs.writeFileSync(path.join(scratch, 'danger-ecology.json'), JSON.stringify({
 process.env.KROMKA_DANGER_ECOLOGY_FILE = path.join(scratch, 'danger-ecology.json');
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id)
+  .reduce((sum, row) => sum + Number(row.qty || 0), 0);
 const devGet = route => new Promise((resolve, reject) => {
   http.get(h.baseUrl() + route, { headers: { 'x-dev-token': DEV_TOKEN } }, res => {
     let body = '';
@@ -82,6 +89,13 @@ async function waitFor(label, probe, timeoutMs = 12000) {
   await h.bootstrapCharacters(accounts);
   zoneWalk.placeInZone(h, accounts, 'untargeted', zoneId, zoneWalk.world(definition.spawn));
   zoneWalk.placeInZone(h, accounts, 'trade', zoneId, zoneWalk.world(coreEntry));
+  const users = JSON.parse(fs.readFileSync(path.join(h.DATA_DIR, 'users.json'), 'utf8'));
+  const savesPath = path.join(h.DATA_DIR, 'saves.json');
+  const saves = JSON.parse(fs.readFileSync(savesPath, 'utf8'));
+  const traderCustomer = saves.characters[users.users[accounts.trade.login].id][accounts.trade.characterId].state;
+  traderCustomer.inventory = { ...(traderCustomer.inventory || {}), silver: 200, trophy: 3 };
+  traderCustomer.itemRuntime.ui_laserPistol_trade_1.loaded = 5;
+  fs.writeFileSync(savesPath, JSON.stringify(saves));
   const far = Date.now() + 3600000;
   const members = (type, role, count, label) => Array.from({ length: count }, (_, i) => ({
     id: `${role}_${i}`, type, spec: role === 'merchant' ? 0 : 1,
@@ -95,9 +109,13 @@ async function waitFor(label, probe, timeoutMs = 12000) {
   });
   fs.writeFileSync(path.join(h.DATA_DIR, 'danger-ecology.json'), JSON.stringify({
     version: 1, mapRevision: 'check', nextId: 4, lairs: [], groups: [
-      group('robbed_caravan', 'robbery_caravan', [
-        ...members('caravaneer', 'merchant', 1, 'Первый'), ...members('caravan_guard', 'guard', 2, 'Первый')
-      ], 'coreZone'),
+      // Half of this fixture's 3600s road step keeps the moving merchant near the player.
+      { ...group('robbed_caravan', 'robbery_caravan', [
+        ...members('caravaneer', 'merchant', 1, 'Первый').map(row => ({ ...row, hp: 1 })),
+        ...members('caravan_guard', 'guard', 2, 'Первый')
+      ], 'coreZone'), state: 'travel', restUntil: 0, nextStepAt: Date.now() + 1800000,
+      home: 'settlement', routeIndex: 1,
+      route: [south, zone, north].map(row => ({ sx: row.col, sy: row.row })) },
       group('other_caravan', 'robbery_caravan', [
         ...members('caravaneer', 'merchant', 1, 'Второй'), ...members('caravan_guard', 'guard', 2, 'Второй')
       ]),
@@ -121,6 +139,8 @@ async function waitFor(label, probe, timeoutMs = 12000) {
     });
     const actorCount = id => groups[id].actors.filter(actor => actor.roomId === zoneId).length;
     assert.equal(actorCount('robbed_caravan'), 3, JSON.stringify(groups.robbed_caravan));
+    assert(groups.robbed_caravan.actors.every(actor => actor.phase === 'transit'),
+      'The caravan is walking its road route rather than resting at a fixed trader point');
     assert.equal(actorCount('other_caravan'), 3, JSON.stringify(groups.other_caravan));
     assert.equal(actorCount('road_patrol'), 2, JSON.stringify(groups.road_patrol));
 
@@ -145,19 +165,49 @@ async function waitFor(label, probe, timeoutMs = 12000) {
     const merchant = [...robbedIds].map(byEnemyId).find(row => row?.role === 'merchant');
     assert(merchant && merchant.canRob === true && merchant.hostileToPlayer === false,
       'A neutral player sees the open-sector caravan merchant as robbable');
+    await waitFor('moving caravan merchant', () => byEnemyId(merchant.id)?.moving, 5000);
+    const merchantNow = () => byEnemyId(merchant.id) || merchant;
     assert([...otherIds, ...patrolIds].every(id => byEnemyId(id)?.hostileToPlayer === false),
       'Both other groups begin neutral to the robber');
     const tooFar = await h.socketAck(observer.socket, 'robEncounterActor', { enemyId: merchant.id });
     assert(!tooFar.ok && /Подойдите ближе/.test(tooFar.error),
       'The server rejects a robbery attempt outside interaction range: ' + JSON.stringify(tooFar));
     const position = { x: robber.join.self.x, z: robber.join.self.z };
-    if (Math.hypot(position.x - merchant.x, position.z - merchant.z) > 4) {
-      await zoneWalk.driveTo(h, robber, position, merchant.x, merchant.z, 20);
-    }
-    assert(Math.hypot(position.x - merchant.x, position.z - merchant.z) <= 4.4,
-      `The robber reaches the merchant's interaction radius: ${JSON.stringify({ position, merchant: [merchant.x, merchant.z] })}`);
+    const reachMerchant = async distance => {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const current = merchantNow();
+        if (Math.hypot(position.x - current.x, position.z - current.z) <= distance - 0.6) return;
+        await zoneWalk.driveTo(h, robber, position, current.x, current.z, 20);
+      }
+      const current = merchantNow();
+      assert(Math.hypot(position.x - current.x, position.z - current.z) <= distance,
+        `The player reaches the moving merchant: ${JSON.stringify({ position, merchant: [current.x, current.z] })}`);
+    };
+    await reachMerchant(4.4);
     const before = await h.socketAck(robber.socket, 'syncNpcTradeState', { enemyId: merchant.id });
     assert(before.ok && before.market?.stock, 'The neutral merchant trades before robbery: ' + JSON.stringify(before.error));
+    const medkitStock = before.market.stock.find(row => row.id === 'medkit');
+    assert(medkitStock?.qty > 0, 'The moving caravan carries authored medical supplies');
+    const initialSilver = qty(robber.join.self, 'silver');
+    const initialMedkits = qty(robber.join.self, 'medkit');
+    const initialTrophies = qty(robber.join.self, 'trophy');
+    const bought = await h.socketAck(robber.socket, 'npcTradeExchange', {
+      enemyId: merchant.id, buys: [{ id: 'medkit', qty: 1 }], sells: []
+    });
+    assert(bought.ok && bought.buyTotal > 0, 'A real purchase succeeds with the moving merchant: ' + JSON.stringify(bought).slice(0, 350));
+    assert.equal(qty(bought.self, 'medkit'), initialMedkits + 1);
+    assert.equal(qty(bought.self, 'silver'), initialSilver - bought.buyTotal);
+    assert.equal(bought.market.stock.find(row => row.id === 'medkit')?.qty, medkitStock.qty - 1,
+      'The server decrements the real trade shelf');
+    const sold = await h.socketAck(robber.socket, 'npcTradeExchange', {
+      enemyId: merchant.id, buys: [], sells: [{ id: 'trophy', qty: 1 }]
+    });
+    assert(sold.ok && sold.sellTotal > 0, 'A real trophy sale succeeds with the moving merchant: ' + JSON.stringify(sold).slice(0, 350));
+    assert.equal(qty(sold.self, 'trophy'), initialTrophies - 1);
+    assert.equal(qty(sold.self, 'silver'), initialSilver - bought.buyTotal + sold.sellTotal);
+    assert((sold.market.stock.find(row => row.id === 'trophy')?.qty || 0) >= 1,
+      'The merchant shelf receives the sold trophy');
+    await reachMerchant(4.4);
 
     const robbery = await h.socketAck(robber.socket, 'robEncounterActor', { enemyId: merchant.id });
     assert(robbery.ok && robbery.changed === robbedIds.size,
@@ -179,7 +229,29 @@ async function waitFor(label, probe, timeoutMs = 12000) {
     });
     assert(!exchange.ok && /нельзя торговать/.test(exchange.error),
       'Direct trade packets cannot bypass the combat lock: ' + JSON.stringify(exchange).slice(0, 300));
-    console.log('PASS mobile A-Life caravan robbery in an open sector: canRob, range, group-only hostility, unaffected same-faction groups, closed trade');
+    let killed = false;
+    for (let attempt = 0; attempt < 5 && !killed; attempt += 1) {
+      const current = merchantNow();
+      const hit = await h.socketAck(robber.socket, 'enemyHit', {
+        enemyId: merchant.id, weapon: 'laserPistol', mode: 'single',
+        attackToken: `alife_caravan_reward_${Date.now()}_${attempt}`,
+        shotDirX: current.x - position.x, shotDirZ: current.z - position.z,
+        skillRanks: {}, talentRanks: {}
+      });
+      killed = hit?.killed === true;
+      if (!killed) await delay(1200);
+    }
+    assert(killed, 'The robbed merchant can be killed through authoritative combat');
+    const bag = await waitFor('the robbed caravan reward sack', async () => {
+      const world = await h.socketAck(robber.socket, 'requestWorldState', {});
+      return world.state?.containers?.find(row => row.id === `bag_${merchant.id}`) || null;
+    }, 5000);
+    const tier = Math.max(1, Math.min(5, Math.round(Number(zone.difficulty || 1))));
+    const byId = rows => [...rows].map(row => ({ id: row.id, qty: row.qty }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+    assert.deepEqual(byId(bag.loot || []), byId(rewards[tier] || []),
+      'The raid sack follows the tier reward table after stock was bought and trophies were sold');
+    console.log('PASS moving A-Life caravan: server trade buy/sell, group-only robbery, closed combat trade and tier reward independent of shelf stock');
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();

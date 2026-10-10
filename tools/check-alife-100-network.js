@@ -50,6 +50,11 @@ const devGet = route => new Promise((resolve, reject) => {
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const siteActors = payload => (payload?.enemies || []).filter(enemy => enemy.siteId === site.id);
 const bossOf = payload => siteActors(payload).find(enemy => enemy.role === 'boss');
+const distanceFromSpawn = point => Math.hypot(Number(point.x) - spawn.x, Number(point.z) - spawn.z);
+const percentile = (values, fraction) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.ceil(sorted.length * fraction) - 1];
+};
 
 (async () => {
   await h.bootstrapCharacters(accounts);
@@ -109,6 +114,9 @@ const bossOf = payload => siteActors(payload).find(enemy => enemy.role === 'boss
     assert.equal(outside.length, 0, 'All 100 sockets remain connected inside the outpost boundary: '
       + JSON.stringify(outside.slice(0, 4).map(account => ({ role: account.role,
         connected: account.socket.connected, x: account.join.self.x, z: account.join.self.z }))));
+    const joinRadius = Math.max(...entries.map(account => distanceFromSpawn(account.join.self)));
+    assert(joinRadius <= site.radius,
+      `All 100 players occupy the same ${site.radius}m encounter area, not just the wider outpost bounds: ${joinRadius.toFixed(1)}m`);
     const view = await devGet(`/api/dev/danger-ecology?sx=${home.col}&sy=${home.row}&radius=0`);
     const pack = view.near.find(row => row.id === 'one_pack');
     assert(pack && pack.actors.length === 3, 'one NPC actor set serves all 100 players');
@@ -136,8 +144,54 @@ const bossOf = payload => siteActors(payload).find(enemy => enemy.role === 'boss
       'The shared capture task cannot accrue hold time while the boss lives');
     const health = await devGet('/health');
     assert(health.ok, '/health stays available with 100 connected players');
+    // All players remain in one physical encounter area while a burst of
+    // authoritative action packets and pings passes through the same room.
+    const actionLatency = [];
+    const pingLatency = [];
+    const positions = await Promise.all(entries.map(async account => {
+      const started = Date.now();
+      const state = await h.socketAck(account.socket, 'state', {
+        seq: account.movementSeq = (account.movementSeq || 0) + 1,
+        x: account.join.self.x, z: account.join.self.z,
+        angle: 0, moving: false, turning: false, crouching: false, vx: 0, vz: 0
+      }, 30000);
+      actionLatency.push(Date.now() - started);
+      assert(state.ok && state.self, `The crowded room ACKs ${account.role}'s stationary action: `
+        + JSON.stringify(state).slice(0, 250));
+      const pingAt = Date.now();
+      const ping = await h.socketAck(account.socket, 'networkPing', { clientTime: pingAt }, 30000);
+      pingLatency.push(Date.now() - pingAt);
+      assert(ping.ok && ping.clientTime === pingAt, `The crowded room ACKs ${account.role}'s ping`);
+      return state.self;
+    }));
+    const actionP95 = percentile(actionLatency, 0.95);
+    const pingP95 = percentile(pingLatency, 0.95);
+    assert(actionP95 <= 5000 && pingP95 <= 5000,
+      `95% of crowded action and ping ACKs finish within 5s: ${actionP95}ms / ${pingP95}ms`);
+    assert(Math.max(...actionLatency, ...pingLatency) <= 10000,
+      'No crowded action or ping ACK stalls for more than 10s');
+    assert(Math.max(...positions.map(distanceFromSpawn)) <= site.radius,
+      'The server keeps all 100 players within the same physical encounter after the burst');
+    const healthStarted = Date.now();
+    const afterHealth = await devGet('/health');
+    const healthLatency = Date.now() - healthStarted;
+    assert(afterHealth.ok && healthLatency <= 3000,
+      `/health remains responsive after the crowded burst: ${healthLatency}ms`);
+    assert(entries.every(account => account.socket.connected), 'All 100 sockets survive the action burst');
+    const afterWorld = await h.socketAck(entries.at(-1).socket, 'requestWorldState', {}, 30000);
+    assert(afterWorld.ok, 'The crowded room still serves a fresh authoritative world snapshot');
+    const afterDefenders = siteActors(afterWorld.state);
+    assert.equal(afterDefenders.filter(enemy => enemy.role === 'boss').length, 1,
+      'The action burst cannot duplicate the mandatory boss');
+    assert.equal(afterDefenders.length, site.garrisonSize + 1,
+      'The action burst cannot duplicate the garrison');
+    const afterPack = (await devGet(`/api/dev/danger-ecology?sx=${home.col}&sy=${home.row}&radius=0`))
+      .near.find(row => row.id === 'one_pack');
+    assert(afterPack && afterPack.actors.length === 3,
+      'The action burst cannot duplicate roaming NPCs');
     console.log(`PASS 100 players share ${home.id}, 3 separated pack members, one outpost garrison and boss, `
-      + 'scaling without healing, gated capture task, /health');
+      + `scaling without healing, gated capture task, collocated action p95 ${actionP95}ms, `
+      + `ping p95 ${pingP95}ms, /health ${healthLatency}ms`);
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();

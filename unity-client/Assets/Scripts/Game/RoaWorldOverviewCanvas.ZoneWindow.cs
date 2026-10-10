@@ -265,9 +265,11 @@ namespace RealmOfAshes.Game
                 string kind = site?["kind"]?.ToString();
                 if (kind != "huntingGround" && kind != "outpost") continue;
                 Vector2 uv = SiteUv(site);
-                Color color = kind == "outpost" ? Accent : new Color(0.8f, 0.53f, 0.83f);
+                Color color = kind == "outpost" ? OutpostMarkerColor(site) : new Color(0.8f, 0.53f, 0.83f);
                 PreviewMark(ref marks, uv, kind == "outpost" ? 15f : 12f, color);
-                PreviewLabel(ref used, uv, kind == "outpost" ? "Аванпост" : "Угодья", 11, color, -16f);
+                PreviewLabel(ref used, uv, kind == "outpost"
+                    ? "Аванпост · " + RoaPipboy.FactionLabel(site["ownerFaction"]?.ToString())
+                    : "Угодья", 11, color, -16f);
             }
 
             Vector2? player = RoaWorldMapRoute.Id(zone) == CurrentZoneId() ? PlayerPoint(CurrentSelf, out JObject _) : null;

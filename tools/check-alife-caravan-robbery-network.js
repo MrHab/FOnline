@@ -31,8 +31,6 @@ const rewards = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/open-wor
   .caravanRobberyRewards;
 const runtime = createZoneRuntime({ graph, zonesDir: path.join(root, 'data/zones'), normalize: row => row });
 const definition = runtime.ensure({}, zoneId);
-const coreEntry = definition.transitions.find(row => row.type === 'location' && row.to === 'coreZone');
-assert(coreEntry, 'The sector has a stable exterior portal for the caravan fixture');
 
 const economy = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/economy.json'), 'utf8'));
 economy.worldModel.dangerEcology = true;
@@ -88,7 +86,7 @@ async function waitFor(label, probe, timeoutMs = 12000) {
 (async () => {
   await h.bootstrapCharacters(accounts);
   zoneWalk.placeInZone(h, accounts, 'untargeted', zoneId, zoneWalk.world(definition.spawn));
-  zoneWalk.placeInZone(h, accounts, 'trade', zoneId, zoneWalk.world(coreEntry));
+  zoneWalk.placeInZone(h, accounts, 'trade', zoneId, zoneWalk.world(definition.spawn));
   const users = JSON.parse(fs.readFileSync(path.join(h.DATA_DIR, 'users.json'), 'utf8'));
   const savesPath = path.join(h.DATA_DIR, 'saves.json');
   const saves = JSON.parse(fs.readFileSync(savesPath, 'utf8'));
@@ -165,7 +163,17 @@ async function waitFor(label, probe, timeoutMs = 12000) {
     const merchant = [...robbedIds].map(byEnemyId).find(row => row?.role === 'merchant');
     assert(merchant && merchant.canRob === true && merchant.hostileToPlayer === false,
       'A neutral player sees the open-sector caravan merchant as robbable');
-    await waitFor('moving caravan merchant', () => byEnemyId(merchant.id)?.moving, 5000);
+    try {
+      await waitFor('moving caravan merchant', () => byEnemyId(merchant.id)?.moving, 5000);
+    } catch (error) {
+      const current = byEnemyId(merchant.id);
+      console.error('Caravan movement diagnostic:', JSON.stringify({
+        merchant: current && { x: current.x, z: current.z, moving: current.moving, aiState: current.aiState },
+        ecology: (await devGet(`/api/dev/danger-ecology?sx=${zone.col}&sy=${zone.row}&radius=0`))
+          .near.find(row => row.id === 'robbed_caravan')?.actors
+      }));
+      throw error;
+    }
     const merchantNow = () => byEnemyId(merchant.id) || merchant;
     assert([...otherIds, ...patrolIds].every(id => byEnemyId(id)?.hostileToPlayer === false),
       'Both other groups begin neutral to the robber');

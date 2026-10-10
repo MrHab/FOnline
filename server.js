@@ -3251,10 +3251,7 @@ function serverEcologyMaterialize(room, group, options = {}) {
   return spawned;
 }
 
-/**
- * Где путник, идущий через зону: на прямой от ворот, которыми он вошёл, к
- * воротам, куда идёт, — насколько прошло время его перехода.
- */
+/** Где путник, идущий через зону: на дороге между входом и выходом. */
 function serverEcologyTravellerPoint(loc, dims, group, species) {
   const next = ecologyTravellerNextDirection(group);
   const cameFrom = ecologyTravellerCameFrom(group);
@@ -3268,6 +3265,27 @@ function serverEcologyTravellerPoint(loc, dims, group, species) {
   const pace = species.stepSeconds || [300, 300];
   const total = ((pace[0] + pace[1]) / 2) * 1000;
   const progress = clamp(1 - (Number(group.nextStepAt || 0) - Date.now()) / Math.max(1, total), 0.1, 0.9);
+  const from = tileToWorld(Number(start.tx), Number(start.tz), dims);
+  const route = serverEcologyGateRoute(loc, dims, from.x, from.z, next);
+  if (route?.length) {
+    const points = [from, ...route];
+    const length = points.slice(1).reduce((sum, point, index) =>
+      sum + Math.hypot(point.x - points[index].x, point.z - points[index].z), 0);
+    let remaining = length * progress;
+    for (let index = 1; index < points.length; index += 1) {
+      const previous = points[index - 1];
+      const point = points[index];
+      const segment = Math.hypot(point.x - previous.x, point.z - previous.z);
+      if (remaining > segment && index < points.length - 1) {
+        remaining -= segment;
+        continue;
+      }
+      const fraction = segment > 0 ? clamp(remaining / segment, 0, 1) : 0;
+      const tile = worldToTile(previous.x + (point.x - previous.x) * fraction,
+        previous.z + (point.z - previous.z) * fraction, dims);
+      return { tx: tile.tx, tz: tile.tz };
+    }
+  }
   return {
     tx: Math.round(Number(start.tx) + (Number(exit.tx) - Number(start.tx)) * progress),
     tz: Math.round(Number(start.tz) + (Number(exit.tz) - Number(start.tz)) * progress)

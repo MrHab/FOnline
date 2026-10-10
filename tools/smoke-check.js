@@ -393,6 +393,7 @@ function readJsonForTest(file) {
 
 function request(pathname, options = {}) {
   return new Promise((resolve, reject) => {
+    const startedAt = Date.now();
     const method = options.method || 'GET';
     const body = options.json ? JSON.stringify(options.json) : (options.body || '');
     const headers = { ...(options.headers || {}) };
@@ -402,9 +403,11 @@ function request(pathname, options = {}) {
       let body = '';
       res.setEncoding('utf8');
       res.on('data', chunk => { body += chunk; });
-      res.on('end', () => resolve({ statusCode: res.statusCode, headers: res.headers, body }));
+      res.on('end', () => {
+        resolve({ statusCode: res.statusCode, headers: res.headers, body });
+      });
     });
-    req.on('timeout', () => req.destroy(new Error('request timeout')));
+    req.on('timeout', () => req.destroy(new Error(`${method} ${pathname} request timeout after ${Date.now() - startedAt} ms`)));
     req.on('error', reject);
     if (body) req.write(body);
     req.end();

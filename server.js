@@ -9,6 +9,13 @@ const os = require('os');
 const { monitorEventLoopDelay, performance } = require('perf_hooks');
 const nodemailer = require('nodemailer');
 const { version: GAME_VERSION } = require('./package.json');
+const { createDevAccessMiddleware, createDevAccessPolicy } = require('./src/server/dev-access');
+// Reject unsafe developer API settings before loading the world and its terrain catalog.
+const DEV_ACCESS_POLICY = createDevAccessPolicy({
+  mode: process.env.DEV_API_MODE,
+  nodeEnv: process.env.NODE_ENV,
+  token: process.env.DEV_ADMIN_TOKEN
+});
 const { cleanChatText, chatChannel, chatScope, chatRecipients } =
   require('./src/server/player-chat');
 const {
@@ -131,6 +138,11 @@ const {
   locationObjectPosition,
   locationObjectTags
 } = require('./src/server/location-collision');
+const damRoadRiver = require('./src/server/dam-road-river');
+const sectorTerrain = require('./src/server/sector-terrain');
+const sectorStaticBlockers = require('./tools/sector-static-blockers').load(
+  require('./data/kromka/sector-surfaces.json'), sectorTerrain.staticBlockers);
+if (!sectorStaticBlockers.valid) console.warn('Sector static blocker cache unavailable; using strict runtime validation:', sectorStaticBlockers.reason);
 const {
   NPC_PERSONAL_INVENTORY_VERSION,
   NPC_INVENTORY_VERSION,
@@ -284,7 +296,8 @@ const {
   stationRefundValue
 } = require('./src/server/crafting-plots');
 const { entryKeyForDirection: dangerEntryKeyForDirection } = require('./src/server/danger-cells');
-const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
+const { findGridPath, findGridPathWithSegmentValidation,
+  nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
 const { createZoneRuntime } = require('./src/server/zone-runtime');
 const { TILES: CITY_TILES, WALL_HALF: CITY_WALL_HALF } = require('./src/server/city-builder');
 // Город — внутри стены (клетки CENTRE ± WALL_HALF), с запасом на её толщину.
@@ -509,10 +522,6 @@ const {
   normalizeHandEquipment: normalizeServerHandEquipment
 } = require('./src/server/equipment-hands');
 const { sanitizePendingLocationTransition } = require('./src/server/global-arrival-transition');
-const {
-  createDevAccessMiddleware,
-  createDevAccessPolicy
-} = require('./src/server/dev-access');
 const { createCoalescedWriter } = require('./src/server/coalesced-writer');
 const { createKromkaStateStore } = require('./src/server/kromka-state-store');
 const {
@@ -812,11 +821,6 @@ const allowedOrigins = (configuredOrigins || defaultLocalServerOrigins(PORT))
   .split(',')
   .map(v => v.trim())
   .filter(Boolean);
-const DEV_ACCESS_POLICY = createDevAccessPolicy({
-  mode: process.env.DEV_API_MODE,
-  nodeEnv: process.env.NODE_ENV,
-  token: process.env.DEV_ADMIN_TOKEN
-});
 const AUTH_RATE_CONFIG = normalizeAuthRateLimitConfig(process.env);
 const PASSWORD_HASH_CONFIG = normalizePasswordHashConfig(process.env);
 const USER_SESSION_TOUCH_PERSIST_MS = 1000;
@@ -2242,6 +2246,9 @@ function serverGlobalMapPointForLocation(locationId = '') {
  */
 let dangerEcologyState = null;
 let dangerEcologySavedAt = 0;
+// Bounded evidence for the protected developer ecology endpoint. A removed
+// client snapshots can lag behind the actual gate crossing.
+const ecologyRecentExits = [];
 // Сторона, с которой входит группа, идущая в эту сторону света.
 const ECOLOGY_SIDE_FROM = Object.freeze({ north: 'С юга', south: 'С севера', east: 'С запада', west: 'С востока' });
 // Край сцены в сторону света: точка входа с той же стороны.
@@ -2931,9 +2938,13 @@ function serverEcologyStartLeaving(room, group, direction) {
     enemy.ecologyPhaseSince = now;
     enemy.ecologyProgressAt = now;
     enemy.ecologyBestDistance = Infinity;
+    enemy.ecologyNoProgressSeconds = 0;
     enemy.ecologyTargetX = exit.x;
     enemy.ecologyTargetZ = exit.z;
     enemy.ecologyExitDirection = direction;
+    enemy.ecologyWatchersAtFlee = livePlayersInRoom(room).map(player => ({
+      id: String(player.id || ''), x: Number(player.x || 0), z: Number(player.z || 0)
+    }));
     clearEnemyTarget(enemy);
     enemy.factionTargetId = '';
     enemy.stationary = false;
@@ -2943,10 +2954,16 @@ function serverEcologyStartLeaving(room, group, direction) {
   return true;
 }
 
-/** Видит ли особь кто-то из игроков канала: ближе, чем туман клиента прячет существ. */
+/** A survivor is cornered by a player who actually follows it within sight. */
 function serverEcologyActorWatched(room, enemy) {
+  const watchers = Array.isArray(enemy.ecologyWatchersAtFlee) ? enemy.ecologyWatchersAtFlee : [];
   return livePlayersInRoom(room)
-    .some(player => Math.hypot(Number(player.x || 0) - enemy.x, Number(player.z || 0) - enemy.z) < ECOLOGY_LEAVE_SIGHT_M);
+    .some(player => {
+      const distance = Math.hypot(Number(player.x || 0) - enemy.x, Number(player.z || 0) - enemy.z);
+      const origin = watchers.find(row => row.id === String(player.id || ''));
+      return origin && distance < ECOLOGY_LEAVE_SIGHT_M
+        && Math.hypot(Number(player.x || 0) - origin.x, Number(player.z || 0) - origin.z) >= 2;
+    });
 }
 
 /**
@@ -2956,6 +2973,17 @@ function serverEcologyActorWatched(room, enemy) {
 function serverEcologyActorLeft(room, enemy, now = Date.now()) {
   const state = dangerEcologyState;
   const group = state?.groups.get(enemy.ecologyGroupId) || null;
+  if (DEV_ACCESS_POLICY.mode !== 'disabled') {
+    ecologyRecentExits.push({
+      groupId: enemy.ecologyGroupId,
+      roomId: room.id,
+      memberId: enemy.ecologyMemberId,
+      direction: enemy.ecologyExitDirection,
+      x: enemy.x,
+      z: enemy.z
+    });
+    if (ecologyRecentExits.length > 128) ecologyRecentExits.shift();
+  }
   if (!(room.ecologyLeaving instanceof Map)) room.ecologyLeaving = new Map();
   const leaving = room.ecologyLeaving.get(enemy.ecologyGroupId)
     || { direction: String(enemy.ecologyExitDirection || ''), hp: new Map() };
@@ -3035,12 +3063,17 @@ function updateEcologyActorLifecycle(room = null, enemy = null, dt = 0) {
   if (phase === 'leaving') {
     enemy.aiState = 'return';
     enemy.targetId = '';
-    const distance = moveEnemyTowards(room, enemy, tx, tz, Math.max(1.35, Number(enemy.speed || 1.8)), dt, { separationWeight: 0.3 });
-    if (distance < Number(enemy.ecologyBestDistance ?? Infinity) - 1) {
+    const distance = moveEnemyTowards(room, enemy, tx, tz, Math.max(1.35, Number(enemy.speed || 1.8)), dt, { separation: false });
+    if (distance < Number(enemy.ecologyBestDistance ?? Infinity) - 0.4) {
       enemy.ecologyBestDistance = distance;
       enemy.ecologyProgressAt = now;
+      enemy.ecologyNoProgressSeconds = 0;
+    } else {
+      enemy.ecologyNoProgressSeconds = Number(enemy.ecologyNoProgressSeconds || 0) + Math.max(0, dt);
     }
-    const stalled = now - Number(enemy.ecologyProgressAt || enemy.ecologyPhaseSince) > ECOLOGY_LEAVE_STALL_MS;
+    // Heavy pathfinding can delay wall-clock ticks without the actor spending
+    // any game time stuck. Count simulated seconds without forward progress.
+    const stalled = enemy.ecologyNoProgressSeconds > ECOLOGY_LEAVE_STALL_MS / 1000;
     // Особь исчезает только в воротах, у края зоны. Ворота бывают на непроходимой
     // клетке: застрявшая у самых ворот тоже ушла.
     const stuckAtGate = distance <= 6 && (stalled
@@ -3264,7 +3297,7 @@ function cachedWastelandPublicResponse(now = Date.now()) {
   return { ...wastelandPublicCache, hit: false };
 }
 
-app.get('/api/wasteland', (_, res) => {
+app.get('/api/wasteland', (req, res) => {
   const snapshot = cachedWastelandPublicResponse();
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Realm-Wasteland-Cache', snapshot.hit ? 'HIT' : 'MISS');
@@ -3307,6 +3340,7 @@ app.get('/api/dev/danger-ecology', (req, res) => {
     active: true,
     file: path.relative(__dirname, DANGER_ECOLOGY_STATE_FILE).replace(/\\/g, '/'),
     summary: ecologySummary(state, DANGER_ECOLOGY),
+    recentExits: ecologyRecentExits,
     near
   });
 });
@@ -11148,14 +11182,26 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
   let angle = Number.isFinite(Number(data.angle)) ? Number(data.angle) : previousAngle;
   const hullBefore = hull ? serverVehicleHullPenalty(room, player, hull, fromX, fromZ, previousAngle) : 0;
   const poseAllowed = (toX, toZ, poseAngle) => {
+    const locationId = roomLocation(room)?.id;
+    if (sectorTerrain.find(locationId)) {
+      const turn = Math.atan2(Math.sin(poseAngle - previousAngle), Math.cos(poseAngle - previousAngle));
+      const steps = Math.max(1, Math.ceil(Math.max(Math.hypot(toX - fromX, toZ - fromZ),
+        Math.abs(turn) * Number(hull.length || 0) / 2) / .4));
+      for (let i = 1; i <= steps; i++) for (const circle of vehicleHullCircles(hull,
+        fromX + (toX - fromX) * i / steps, fromZ + (toZ - fromZ) * i / steps,
+        previousAngle + turn * i / steps, PLAYER_COLLISION_RADIUS))
+        if (sectorTerrain.isWaterAt(locationId, circle.x, circle.z, circle.r)) return false;
+    }
     const next = serverVehicleHullPenalty(room, player, hull, toX, toZ, poseAngle);
     return next <= 0.001 || (hullBefore > 0.001 && next < hullBefore - 0.0005);
   };
   const moveAllowed = (toX, toZ) => {
     if (!room) return true;
+    if (sectorTerrain.crossesWater(roomLocation(room)?.id, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS)) return false;
     if (hull) return poseAllowed(toX, toZ, angle);
     return (!closedBounds || serverPointInsideClosedLocationBounds(toX, toZ, closedBounds))
       && isRoomTerrainWalkableWorld(room, toX, toZ, PLAYER_COLLISION_RADIUS)
+      && !sectorTerrain.steepUphill(roomLocation(room)?.id, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS)
       && roomStaticCollisionMoveAllowed(room, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS)
       && roomEnemyCollisionMoveAllowed(room, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS);
   };
@@ -13806,18 +13852,20 @@ function isRoomWalkableTile(room, tx, tz) {
   const bounds = normalizedLocationPlayableBounds(roomLocation(room));
   return tx >= bounds.minX && tx <= bounds.maxX && tz >= bounds.minZ && tz <= bounds.maxZ && !solidTileValue(room.map[tz][tx]);
 }
-function isRoomTerrainWalkableTile(room, tx, tz) {
+function isRoomTerrainWalkableTile(room, tx, tz, exactSurface = false) {
   if (!inBounds(tx, tz, roomTileDims(room)) || !Array.isArray(room?.map?.[tz])) return false;
   const bounds = normalizedLocationPlayableBounds(roomLocation(room));
   if (tx < bounds.minX || tx > bounds.maxX || tz < bounds.minZ || tz > bounds.maxZ) return false;
   const type = room.map[tz][tx];
-  if (type === TILE_TYPES.WATER) return false;
+  if (type === TILE_TYPES.WATER && !(exactSurface && room.sectorWaterTiles?.has(tz * roomTileDims(room).w + tx))) return false;
   const locationId = String(roomLocation(room)?.id || room?.locationId || '');
   return !(locationId === 'settlement' && type === TILE_TYPES.TREE);
 }
 function isRoomTerrainWalkableWorld(room, x, z, radius = 0.35) {
+  const projected = sectorTerrain.find(roomLocation(room)?.id);
+  if (projected && sectorTerrain.isWaterAt(projected.locationId, x, z, radius)) return false;
   const samples = [[x - radius, z - radius], [x + radius, z - radius], [x - radius, z + radius], [x + radius, z + radius], [x, z]];
-  return samples.every(([sx, sz]) => { const t = worldToTile(sx, sz, roomTileDims(room)); return isRoomTerrainWalkableTile(room, t.tx, t.tz); });
+  return samples.every(([sx, sz]) => { const t = worldToTile(sx, sz, roomTileDims(room)); return isRoomTerrainWalkableTile(room, t.tx, t.tz, !!projected); });
 }
 function isRoomWalkableWorld(room, x, z, radius = 0.35) {
   return isRoomTerrainWalkableWorld(room, x, z, radius) && !roomStaticCollisionBlocksCircle(room, x, z, radius);
@@ -13870,7 +13918,9 @@ function isRoomSpawnSafeTile(room, tx, tz, opts = {}) {
   tz = Math.round(Number(tz || 0));
   if (!isRoomWalkableTile(room, tx, tz)) return false;
   const pos = tileToWorld(tx, tz, roomTileDims(room));
+  if (typeof opts.acceptPosition === 'function' && !opts.acceptPosition(pos)) return false;
   if (!isRoomWalkableWorld(room, pos.x, pos.z, Number(opts.radius ?? 0.42))) return false;
+  if (opts.requireShortExit && !roomHasShortWalkableExit(room, pos.x, pos.z, Number(opts.radius ?? 0.42))) return false;
   if (roomTileHasResource(room, tx, tz, Number(opts.resourceClearance ?? 0))) return false;
   if (roomTileHasContainer(room, tx, tz, Number(opts.containerClearance ?? 0))) return false;
   if (roomTileHasEnemyNear(room, tx, tz, Number(opts.minEnemyDistance ?? 0), opts.ignoreEnemyId || '')) return false;
@@ -13878,10 +13928,45 @@ function isRoomSpawnSafeTile(room, tx, tz, opts = {}) {
   return true;
 }
 
+function roomHasShortWalkableExit(room, x, z, radius = PLAYER_COLLISION_RADIUS) {
+  const id = roomLocation(room)?.id;
+  const directions = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
+  for (const [dx, dz] of directions) {
+    const length = Math.hypot(dx, dz);
+    let previous = { x, z }, clear = true;
+    for (let i = 1; i <= 5; i++) {
+      const next = { x: x + dx / length * i * .5, z: z + dz / length * i * .5 };
+      if (!isRoomWalkableWorld(room, next.x, next.z, radius)
+        || sectorTerrain.crossesWater(id, previous.x, previous.z, next.x, next.z, radius)
+        || sectorTerrain.steepUphill(id, previous.x, previous.z, next.x, next.z, radius)
+        || !roomStaticCollisionMoveAllowed(room, previous.x, previous.z, next.x, next.z, radius)) {
+        clear = false;
+        break;
+      }
+      previous = next;
+    }
+    if (clear) return true;
+  }
+  return false;
+}
+
 function findRoomSafeSpawnTile(room, preferredTx, preferredTz, opts = {}) {
   const maxRadius = Math.max(0, Math.floor(Number(opts.maxRadius ?? 10)));
   const startTx = Math.round(Number(preferredTx || 0));
   const startTz = Math.round(Number(preferredTz || 0));
+  if (opts.nearestFirst) {
+    const candidates = [];
+    for (let dz = -maxRadius; dz <= maxRadius; dz++) {
+      for (let dx = -maxRadius; dx <= maxRadius; dx++) {
+        const tx = startTx + dx;
+        const tz = startTz + dz;
+        if (inBounds(tx, tz, roomTileDims(room))) candidates.push({ tx, tz, d: Math.hypot(dx, dz) });
+      }
+    }
+    candidates.sort((a, b) => a.d - b.d || a.tz - b.tz || a.tx - b.tx);
+    for (const c of candidates) if (isRoomSpawnSafeTile(room, c.tx, c.tz, opts)) return { tx: c.tx, tz: c.tz };
+    return null;
+  }
   for (let radius = 0; radius <= maxRadius; radius++) {
     const candidates = [];
     for (let dz = -radius; dz <= radius; dz++) {
@@ -13901,7 +13986,10 @@ function findRoomSafeSpawnTile(room, preferredTx, preferredTz, opts = {}) {
 
 function findRoomSafeSpawnWorld(room, x, z, opts = {}) {
   const tile = worldToTile(Number(x || 0), Number(z || 0), roomTileDims(room));
-  const safe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, opts);
+  const safe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, {
+    ...opts,
+    requireShortExit: opts.requireShortExit ?? !!sectorTerrain.find(roomLocation(room)?.id)
+  });
   return safe ? tileToWorld(safe.tx, safe.tz, roomTileDims(room)) : null;
 }
 
@@ -15009,10 +15097,27 @@ function findNearestWalkablePathTile(room, tx, tz, maxRadius = 8) {
 }
 function findEnemyGridPath(room, startTx, startTz, goalTx, goalTz) {
   const dims = roomTileDims(room);
-  return findGridPath({
+  const projected = sectorTerrain.find(roomLocation(room)?.id);
+  const toWorld = (x, z) => tileToWorld(x, z, dims);
+  const options = {
     isOpen: (x, z) => isEnemyPathTileOpen(room, x, z),
-    toWorld: (x, z) => tileToWorld(x, z, dims),
+    toWorld,
     startTx, startTz, goalTx, goalTz
+  };
+  if (!projected) return findGridPath(options);
+  // Tile centres can both be open while a thin collider or shoreline cuts
+  // their connecting step. Validate the chosen route, then replan only where
+  // a real segment fails; sampling every A* candidate is too expensive.
+  return findGridPathWithSegmentValidation(options, (ax, az, bx, bz) => {
+    const from = toWorld(ax, az), to = toWorld(bx, bz);
+    const distance = Math.hypot(to.x - from.x, to.z - from.z);
+    const samples = Math.ceil(distance / 0.4);
+    for (let i = 1; i < samples; i++) {
+      const t = i / samples;
+      if (!isRoomWalkableWorld(room, from.x + (to.x - from.x) * t,
+        from.z + (to.z - from.z) * t, 0.32)) return false;
+    }
+    return true;
   });
 }
 const ROOM_ENEMY_SPATIAL_CELL_SIZE = 8;
@@ -15806,7 +15911,9 @@ function moveEnemyTowards(room, enemy, tx, tz, speed, dt, opts = {}) {
     enemy.path = findEnemyGridPath(room, startTile.tx, startTile.tz, goalTile.tx, goalTile.tz) || [];
     enemy.pathIndex = 0;
     enemy.pathGoalKey = goalKey;
-    enemy.nextPathAt = now + 520 + Math.floor(Math.random() * 90);
+    enemy.nextPathAt = opts.staticGoal === true && enemy.path.length > 0
+      ? Number.MAX_SAFE_INTEGER
+      : now + 520 + Math.floor(Math.random() * 90);
     enemy.pathStuckSince = 0;
   }
 
@@ -17579,6 +17686,7 @@ function roomStaticCollisionObjects(room) {
     return room.staticCollisionObjects;
   }
   const blockers = [];
+  blockers.push(...sectorStaticBlockers.get(loc?.id));
   blockers.push(...roomStaticCollisionBlockersFromTrader(loc));
   if (Array.isArray(loc?.objects)) {
     loc.objects.forEach(row => {
@@ -17927,7 +18035,7 @@ function serverResourceKeepClearTiles(room, loc = {}) {
  * в городе за стеной узел поставить нельзя. Большие зоны — открытая местность,
  * там обход дорог и не нужен: null.
  */
-function serverReachableTiles(room, loc = {}, starts = []) {
+function serverReachableTiles(room, loc = {}, starts = [], opts = {}) {
   const dims = roomTileDims(room);
   if (dims.w * dims.h > 10000) return null;
   const walkable = new Map();
@@ -17935,7 +18043,9 @@ function serverReachableTiles(room, loc = {}, starts = []) {
     const key = tz * dims.w + tx;
     if (!walkable.has(key)) {
       const pos = tileToWorld(tx, tz, dims);
-      walkable.set(key, isRoomWalkableTile(room, tx, tz) && isRoomWalkableWorld(room, pos.x, pos.z, 0.45));
+      walkable.set(key, isRoomWalkableTile(room, tx, tz) && (opts.tileOnly
+        ? !roomStaticCollisionBlocksCircle(room, pos.x, pos.z, 0.45)
+        : isRoomWalkableWorld(room, pos.x, pos.z, 0.45)));
     }
     return walkable.get(key);
   };
@@ -18117,11 +18227,11 @@ function ensureTierResourceNodes(room, loc = roomLocation(room)) {
 }
 
 /** Клетки, до которых доходят от точки появления и входов (не от выходов: они у края, за стеной). */
-function serverReachableTilesFromEntries(room, loc = {}) {
+function serverReachableTilesFromEntries(room, loc = {}, opts = {}) {
   const starts = [loc.spawn, loc.respawn, ...Object.keys(loc).filter(key => key.startsWith('entry')).map(key => loc[key])]
     .filter(point => point && Number.isFinite(Number(point.tx)) && Number.isFinite(Number(point.tz)))
     .map(point => ({ tx: Number(point.tx), tz: Number(point.tz) }));
-  return serverReachableTiles(room, loc, starts);
+  return serverReachableTiles(room, loc, starts, opts);
 }
 
 // --- городская живность ------------------------------------------------------
@@ -18138,7 +18248,7 @@ function serverRoomHostsCityCritters(room, loc = roomLocation(room)) {
 function serverCityCritterCandidates(room, loc = roomLocation(room)) {
   const dims = roomTileDims(room);
   const keepClear = serverResourceKeepClearTiles(room, loc);
-  const reachable = serverReachableTilesFromEntries(room, loc);
+  const reachable = serverReachableTilesFromEntries(room, loc, { tileOnly: true });
   const last = CITY_TILES - 1 - CITY_INNER_TILE_MARGIN;
   const tiles = [];
   for (let tz = CITY_INNER_TILE_MARGIN; tz <= last; tz++) {
@@ -18148,8 +18258,6 @@ function serverCityCritterCandidates(room, loc = roomLocation(room)) {
       if (reachable && !reachable.has(tz * dims.w + tx)) continue;
       if (roomTileHasResource(room, tx, tz, 2) || roomTileHasContainer(room, tx, tz, 2)) continue;
       if (keepClear.some(point => Math.hypot(point.tx - tx, point.tz - tz) < CITY_CRITTERS.keepClearTiles)) continue;
-      const pos = tileToWorld(tx, tz, dims);
-      if (!isRoomWalkableWorld(room, pos.x, pos.z, 0.9)) continue;
       tiles.push({ tx, tz });
     }
   }
@@ -18166,7 +18274,10 @@ function updateCityCritterSlots(room, loc = roomLocation(room), now = Date.now()
   if (room.cityCritterMap !== room.map || !Array.isArray(room.cityCritterSlots)) {
     room.cityCritterMap = room.map;
     room.cityCritterSlots = cityCritters.planSlots(CITY_CRITTERS, String(loc?.id || room.locationId || ''),
-      serverCityCritterCandidates(room, loc));
+      serverCityCritterCandidates(room, loc), tile => {
+        const pos = tileToWorld(tile.tx, tile.tz, roomTileDims(room));
+        return isRoomWalkableWorld(room, pos.x, pos.z, 0.9);
+      });
   }
   const due = cityCritters.dueSlots(CITY_CRITTERS, room.cityCritterSlots, enemyId => {
     const enemy = room.enemies.get(enemyId);
@@ -20090,12 +20201,15 @@ function buildAuthoredRoomWorld(room, loc) {
     ...(Array.isArray(loc.transitions) ? loc.transitions : [])
   ];
   specialPoints.forEach(p => clearSpawnArea(room, p));
+  room.sectorWaterTiles = sectorTerrain.paintWaterTiles(room.map, loc.id, TILE, TILE_TYPES.WATER);
+  room.sectorSurfaceVersion = sectorTerrain.find(loc.id) ? sectorTerrain.version : '';
   spawnRoomWorldContainers(room, { silent: true });
   ensureWastelandSiteResourceNodes(room, loc);
   ensureTierResourceNodes(room, loc);
   room.environmentVersion = WORLD_ENVIRONMENT_VERSION;
   room.worldReady = true;
   room.worldSiteTemplateSignature = String(loc.worldSiteTemplateSignature || '');
+  if (loc.id === damRoadRiver.profile.locationId) room.damRoadRiverVersion = damRoadRiver.profile.schema;
   room.locationOccupantKey = wastelandLocationOccupantKey(loc, room);
   if (wastelandLocationHasHostileOwner(loc, room)) {
     spawnWastelandHostileOccupants(room, loc);
@@ -20133,6 +20247,7 @@ function generateRoomWorld(room) {
   };
   if (buildAuthoredRoomWorld(room, loc)) {
     applyWorldExitEdges();
+    room.sectorWaterTiles = sectorTerrain.paintWaterTiles(room.map, loc.id, TILE, TILE_TYPES.WATER);
     return;
   }
   const genDims = roomTileDims(room);
@@ -20371,9 +20486,14 @@ function ensureRoomWorld(room) {
   const expectedLocation = roomLocation(room);
   const worldSiteDefinitionChanged = (expectedLocation.worldSiteInstance === true || expectedLocation.runtimeMode === 'worldSiteInstance')
     && String(room.worldSiteTemplateSignature || '') !== String(expectedLocation.worldSiteTemplateSignature || '');
-  if (!room.worldReady || room.environmentVersion !== WORLD_ENVIRONMENT_VERSION || worldSiteDefinitionChanged) {
+  const damRoadRiverChanged = expectedLocation.id === damRoadRiver.profile.locationId
+    && room.damRoadRiverVersion !== damRoadRiver.profile.schema;
+  const sectorSurfaceChanged = sectorTerrain.find(expectedLocation.id)
+    && (room.sectorSurfaceVersion !== sectorTerrain.version || !(room.sectorWaterTiles instanceof Set));
+  if (!room.worldReady || room.environmentVersion !== WORLD_ENVIRONMENT_VERSION
+    || worldSiteDefinitionChanged || damRoadRiverChanged || sectorSurfaceChanged) {
     const environmentRebuild = room.worldReady && room.environmentVersion !== WORLD_ENVIRONMENT_VERSION;
-    if (environmentRebuild || worldSiteDefinitionChanged) clearRoomEnemies(room);
+    if (environmentRebuild || worldSiteDefinitionChanged || damRoadRiverChanged || sectorSurfaceChanged) clearRoomEnemies(room);
     generateRoomWorld(room);
     serverWakeZoneRoom(room);
     const loc = roomLocation(room);
@@ -27252,7 +27372,8 @@ function updateOnsitePartyActorLifecycle(room = null, enemy = null, dt = 0) {
       return true;
     }
     const distance = moveEnemyTowards(room, enemy, exitX, exitZ, Math.max(1.35, Number(enemy.speed || 1.8)), dt, {
-      separationWeight: 0.3
+      separationWeight: 0.3,
+      staticGoal: true
     });
     if (distance <= 1.15) {
       rememberExitedOnsiteActor(room, enemy);
@@ -27271,7 +27392,8 @@ function updateOnsitePartyActorLifecycle(room = null, enemy = null, dt = 0) {
     enemy.aiState = 'return';
     enemy.stationary = false;
     const distance = moveEnemyTowards(room, enemy, workX, workZ, Math.max(1.15, Number(enemy.speed || 1.8) * 0.82), dt, {
-      separationWeight: 0.32
+      separationWeight: 0.32,
+      staticGoal: true
     });
     if (distance <= 1.05) enemy.onsitePhase = 'working';
     return true;
@@ -27769,7 +27891,7 @@ function updateServerEnemies(room, dt, opts = {}) {
     const homeDist = Math.hypot(home.x - Number(enemy.x || 0), home.z - Number(enemy.z || 0));
     if (enemy.aiState === 'return' || homeDist > ENEMY_RETURN_HOME_DISTANCE) {
       enemy.aiState = 'return';
-      const d = moveEnemyTowards(room, enemy, home.x, home.z, enemy.speed * 0.62, dt);
+      const d = moveEnemyTowards(room, enemy, home.x, home.z, enemy.speed * 0.62, dt, { staticGoal: true });
       if (d < 1.1) {
         enemy.aiState = 'idle';
         enemy.wanderTimer = 0;
@@ -28238,7 +28360,9 @@ function serverZoneGateFollowers(p, fromRoomId, from, room, entryKey, label = ''
     // Через край товарищ выходит там же, где стоял, — напротив своей точки.
     const arrival = edgeSide ? serverZoneEdgeArrival(roomLocation(room), edgeSide, { x: mate.x, z: mate.z }) : null;
     if (near && serverZoneGatePvpPauseLeft(mate, now) <= 0
-      && transferPlayerToServerRoom(mate, room, { entryKey, ...(arrival || {}), reason: 'zoneGateFollow', message: `Отряд прошёл ворота: ${label}`.slice(0, 160) })) {
+      && transferPlayerToServerRoom(mate, room, { entryKey, ...(arrival || {}), edgeSide,
+        portalFromLocationId: edgeSide ? '' : from.locationId,
+        reason: 'zoneGateFollow', message: `Отряд прошёл ворота: ${label}`.slice(0, 160) })) {
       mate.zoneArrivalShieldUntil = now + ZONE_ARRIVAL_SHIELD_MS;
       continue;
     }
@@ -28653,13 +28777,23 @@ function transferPlayerToServerRoom(p, room, options = {}) {
     const fallback = playerSpawnWorld(room.locationId, spawnKey);
     const preferredX = Number.isFinite(Number(options.x)) ? Number(options.x) : fallback.x;
     const preferredZ = Number.isFinite(Number(options.z)) ? Number(options.z) : fallback.z;
+    const edgeSpawnOptions = options.edgeSide
+      ? serverZoneEdgeSafeSpawnOptions(room, options.edgeSide, { x: preferredX, z: preferredZ })
+      : null;
+    const portalSpawnOptions = options.portalFromLocationId
+      ? serverZonePortalSafeSpawnOptions(room, options.portalFromLocationId, { x: preferredX, z: preferredZ })
+      : null;
+    if (options.portalFromLocationId && !portalSpawnOptions) return false;
     const safePos = findRoomSafeSpawnWorld(room, preferredX, preferredZ, {
       maxRadius: 10,
       radius: 0.48,
       minEnemyDistance: 1.35,
       minPlayerDistance: 1.15,
-      ignorePlayerId: p.id
-    }) || { x: preferredX, z: preferredZ };
+      ignorePlayerId: p.id,
+      ...(edgeSpawnOptions || portalSpawnOptions || {})
+    });
+    if (!safePos && (edgeSpawnOptions || options.portalFromLocationId)) return false;
+    const placedPos = safePos || { x: preferredX, z: preferredZ };
     p.roomId = room.id;
     p.locationId = room.locationId;
     p.onGlobalMap = false;
@@ -28667,8 +28801,8 @@ function transferPlayerToServerRoom(p, room, options = {}) {
     p.vx = 0;
     p.vz = 0;
     p.moving = false;
-    p.x = clamp(Number(safePos.x), -roomWorldExtent(room), roomWorldExtent(room));
-    p.z = clamp(Number(safePos.z), -roomWorldExtent(room), roomWorldExtent(room));
+    p.x = clamp(Number(placedPos.x), -roomWorldExtent(room), roomWorldExtent(room));
+    p.z = clamp(Number(placedPos.z), -roomWorldExtent(room), roomWorldExtent(room));
     p.angle = Number.isFinite(Number(options.angle)) ? Number(options.angle) : p.angle;
     rememberPlayerSettlement(p, room.locationId);
     if (!persistActivePlayerState(p)) {
@@ -29593,6 +29727,43 @@ function serverZoneEdgeArrival(target = {}, side = '', crossedAt = null) {
   if (side === 'west') return { x: halfW - depth, z: along(crossedAt.z, halfH) };
   if (side === 'east') return { x: -halfW + depth, z: along(crossedAt.z, halfH) };
   return null;
+}
+
+/** Keep an edge arrival near the crossing, on walkable ground outside its return strip. */
+function serverZoneEdgeSafeSpawnOptions(room, side, expected) {
+  const loc = roomLocation(room);
+  const reverseSide = { north: 'south', south: 'north', east: 'west', west: 'east' }[side];
+  const flooded = sectorTerrain.isWaterAt(loc.id, expected.x, expected.z, 0.48);
+  const maxOffset = flooded ? 32 : 10;
+  return {
+    maxRadius: 16,
+    nearestFirst: true,
+    acceptPosition: pos => Math.hypot(pos.x - expected.x, pos.z - expected.z) <= maxOffset
+      && !serverPlayerAtZoneEdge({ roomId: room.id, x: pos.x, z: pos.z }, loc, reverseSide)
+  };
+}
+
+/** A city gate arrival must stay near its entry and outside the return portal. */
+function serverZonePortalSafeSpawnOptions(room, fromLocationId, expected) {
+  const loc = roomLocation(room);
+  const reverseCityGate = ZONE_RUNTIME.cityOf(loc.id)
+    ? ZONE_RUNTIME.cityGates(loc.id).find(row => normalizeLocationId(row.to) === fromLocationId)
+    : null;
+  const reverseZoneGate = ZONE_RUNTIME.cityOf(fromLocationId)
+    ? (loc.transitions || []).find(row => row?.type === 'zoneGate'
+      && normalizeLocationId(row.to) === fromLocationId)
+    : null;
+  const reversePortal = reverseCityGate
+    ? serverCityGatePortal(loc, reverseCityGate.side)
+    : reverseZoneGate;
+  if (!reversePortal) return null;
+  const point = tileToWorld(Number(reversePortal.tx), Number(reversePortal.tz), locationTileDims(loc));
+  return {
+    maxRadius: 10,
+    nearestFirst: true,
+    acceptPosition: pos => Math.hypot(pos.x - expected.x, pos.z - expected.z) <= 6
+      && Math.hypot(pos.x - point.x, pos.z - point.z) > Number(reversePortal.radius || CITY_GATE_PORTAL_RADIUS) + 1
+  };
 }
 
 /** Портал выхода из города со стороны `side`: в проёме ворот стены. */
@@ -34625,7 +34796,7 @@ io.on('connection', (socket) => {
         return;
       }
     }
-    const crossedFrom = { roomId: p.roomId, x: Number(p.x || 0), z: Number(p.z || 0) };
+    const crossedFrom = { roomId: p.roomId, locationId: p.locationId, x: Number(p.x || 0), z: Number(p.z || 0) };
     if ((baseLoc.randomTemplate || baseLoc.encounterOnly) && !transitionTicket && !sameLocation) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Временная встреча требует серверного билета.' });
       return;
@@ -34665,18 +34836,54 @@ io.on('connection', (socket) => {
     const canUseRequestedRoom = !!effectiveRoomId
       && effectiveRoomId.startsWith(`${locationId}#`)
       && !sharedRealityLocation;
-    leaveCurrentRoom(socket, 'roomChange', { newLocationId: locationId });
     // PvE-область: личная комната игрока или комната группы из билета;
     // чужую комнату по подделанному roomId получить нельзя.
     const pveResolvedRoomId = baseLoc.pveArea === true
       ? serverResolvePveRoomId(p, locationId, effectiveRoomId || requestedRoomId)
       : '';
-    const room = pveResolvedRoomId
+    // Resolve a zone-gate arrival before leaving the source room. A dry edge
+    // can face deep water in the next sector; failed placement must not commit
+    // the transition or leave the character in the water.
+    const localGateCrossing = localTransition?.type === 'zoneGate'
+      ? (localTransition.crossing || (ZONE_RUNTIME.cityOf(crossedFrom.locationId)
+        ? 'portal' : serverZoneGateCrossing(localTransition)))
+      : '';
+    const localZoneGate = zoneCrossing && localTransition?.type === 'zoneGate'
+      && ['edge', 'portal'].includes(localGateCrossing);
+    const gateRoom = localZoneGate
+      ? chooseRoomForLocation(locationId, { prefer: serverZoneChannelPreference(p, locationId) })
+      : null;
+    const gateEntryKey = gateRoom ? serverEntryKeyForTransition(locationId, {}, localTransition) : '';
+    const gateEntryTile = gateRoom ? localTransition.entryTile : null;
+    const gateEdgeArrival = gateRoom && localGateCrossing === 'edge'
+      ? serverZoneEdgeArrival(LOCATIONS[locationId], localTransition.direction, localTransition.crossedAt)
+      : null;
+    const gateSpawn = gateRoom ? (gateEdgeArrival || (gateEntryTile
+      ? tileToWorld(gateEntryTile.tx, gateEntryTile.tz + 2, locationTileDims(LOCATIONS[locationId]))
+      : playerSpawnWorld(locationId, gateEntryKey))) : null;
+    const gateSpawnOptions = gateEdgeArrival
+      ? serverZoneEdgeSafeSpawnOptions(gateRoom, localTransition.direction, gateEdgeArrival)
+      : gateRoom && localGateCrossing === 'portal'
+        ? serverZonePortalSafeSpawnOptions(gateRoom, crossedFrom.locationId, gateSpawn)
+        : null;
+    const gateSafePos = gateSpawnOptions ? findRoomSafeSpawnWorld(gateRoom, gateSpawn.x, gateSpawn.z, {
+      radius: 0.48,
+      minEnemyDistance: 1.35,
+      minPlayerDistance: 1.15,
+      ignorePlayerId: p.id,
+      ...gateSpawnOptions
+    }) : null;
+    if (gateRoom && !gateSafePos) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'На другой стороне ворот нет безопасного места для перехода.' });
+      return;
+    }
+    leaveCurrentRoom(socket, 'roomChange', { newLocationId: locationId });
+    const room = gateRoom || (pveResolvedRoomId
       ? getOrCreateRoom(pveResolvedRoomId, locationId)
       : canUseRequestedRoom
         ? getOrCreateRoom(effectiveRoomId, locationId)
         : (siteRoomId ? getOrCreateRoom(siteRoomId, locationId)
-          : chooseRoomForLocation(locationId, { prefer: serverZoneChannelPreference(p, locationId) }));
+          : chooseRoomForLocation(locationId, { prefer: serverZoneChannelPreference(p, locationId) })));
     if (pveResolvedRoomId) serverPveRoomEntered(room, p, Date.now());
     const effectiveEncounterId = String(activeTransitionZone?.encounterId || transitionTicket?.encounterId || '').slice(0, 40);
     const hasEncounterPayload = !!effectiveEncounterId;
@@ -34730,10 +34937,10 @@ io.on('connection', (socket) => {
     rememberPlayerSettlement(p, room.locationId);
     const entryKey = serverEntryKeyForTransition(locationId, {}, transitionTicket || localTransition);
     const entryTile = !transitionTicket ? localTransition?.entryTile : null;
-    const edgeArrival = !transitionTicket && localTransition?.crossing === 'edge'
+    const edgeArrival = gateEdgeArrival || (!transitionTicket && localGateCrossing === 'edge'
       ? serverZoneEdgeArrival(LOCATIONS[locationId], localTransition.direction, localTransition.crossedAt)
-      : null;
-    const spawn = edgeArrival || (entryTile
+      : null);
+    const spawn = gateSpawn || edgeArrival || (entryTile
       ? tileToWorld(entryTile.tx, entryTile.tz + 2, locationTileDims(LOCATIONS[locationId]))
       : playerSpawnWorld(locationId, entryKey));
     p.x = spawn.x;
@@ -34764,7 +34971,7 @@ io.on('connection', (socket) => {
       }
     }
     {
-      const safePos = findRoomSafeSpawnWorld(room, p.x, p.z, {
+      const safePos = gateSafePos || findRoomSafeSpawnWorld(room, p.x, p.z, {
         maxRadius: 10,
         radius: 0.48,
         minEnemyDistance: 1.35,
@@ -34793,7 +35000,7 @@ io.on('connection', (socket) => {
     emitServerArtifactState(p, 'locationChanged');
     if (zoneCrossing && localTransition?.type === 'zoneGate') {
       serverZoneGateFollowers(p, crossedFrom.roomId, crossedFrom, room, entryKey, String(localTransition.label || room.locationId),
-        localTransition.crossing === 'edge' ? localTransition.direction : '');
+        localGateCrossing === 'edge' ? localTransition.direction : '');
     }
     if (serverShowZoneFirstHints(p)) persistActivePlayerState(p);
   };
@@ -35145,7 +35352,9 @@ setInterval(() => {
       const closedBounds = serverClosedLocationMovementBounds(p, room, PLAYER_COLLISION_RADIUS);
       if (!room || (
         (!closedBounds || serverPointInsideClosedLocationBounds(nextX, nextZ, closedBounds))
+        && !sectorTerrain.crossesWater(roomLocation(room)?.id, p.x, p.z, nextX, nextZ, PLAYER_COLLISION_RADIUS)
         && isRoomTerrainWalkableWorld(room, nextX, nextZ, PLAYER_COLLISION_RADIUS)
+        && !sectorTerrain.steepUphill(roomLocation(room)?.id, p.x, p.z, nextX, nextZ, PLAYER_COLLISION_RADIUS)
         && roomStaticCollisionMoveAllowed(room, p.x, p.z, nextX, nextZ, PLAYER_COLLISION_RADIUS)
         && roomEnemyCollisionMoveAllowed(room, p.x, p.z, nextX, nextZ, PLAYER_COLLISION_RADIUS)
       )) {

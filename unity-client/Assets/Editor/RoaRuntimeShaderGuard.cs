@@ -30,6 +30,40 @@ namespace RealmOfAshes.EditorTools
             "Sprites/Default"
         };
 
+        private static Shader ResolveShader(string shaderName)
+        {
+            Shader shader = Shader.Find(shaderName);
+            if (shader != null || !shaderName.StartsWith("Shader Graphs/glTF-", System.StringComparison.Ordinal))
+                return shader;
+
+            string path = PackageShaderPath(shaderName);
+            shader = AssetDatabase.LoadAssetAtPath<Shader>(path);
+            return shader != null && shader.name == shaderName ? shader : null;
+        }
+
+        private static string PackageShaderPath(string shaderName)
+        {
+            string fileName = shaderName.Substring("Shader Graphs/".Length) + ".shadergraph";
+            string folder = fileName.EndsWith("-Clearcoat.shadergraph", System.StringComparison.Ordinal)
+                ? "Runtime/Shader/URP/"
+                : "Runtime/Shader/";
+            return "Packages/com.unity.cloud.gltfast/" + folder + fileName;
+        }
+
+        public static void PreparePackageShaders()
+        {
+            // Import the package graphs before BuildPipeline starts its Bee DAG.
+            // A clean Library does not always resolve them through Shader.Find.
+            foreach (string shaderName in RequiredShaders)
+            {
+                if (!shaderName.StartsWith("Shader Graphs/glTF-", System.StringComparison.Ordinal)) continue;
+                AssetDatabase.ImportAsset(PackageShaderPath(shaderName), ImportAssetOptions.ForceSynchronousImport);
+                if (ResolveShader(shaderName) == null)
+                    throw new System.InvalidOperationException("Shader not found: " + shaderName);
+            }
+            EnsureIncluded(false, true);
+        }
+
         public int callbackOrder => -1000;
 
         private static void CheckAfterEditorLoad()
@@ -37,7 +71,7 @@ namespace RealmOfAshes.EditorTools
             EditorApplication.delayCall -= CheckAfterEditorLoad;
             try
             {
-                EnsureIncluded(false);
+                EnsureIncluded(false, true);
             }
             catch (System.Exception error)
             {
@@ -49,7 +83,7 @@ namespace RealmOfAshes.EditorTools
         {
             try
             {
-                EnsureIncluded(true);
+                EnsureIncluded(true, false);
             }
             catch (System.Exception error)
             {
@@ -57,7 +91,7 @@ namespace RealmOfAshes.EditorTools
             }
         }
 
-        private static void EnsureIncluded(bool logWhenUnchanged)
+        private static void EnsureIncluded(bool logWhenUnchanged, bool addMissing)
         {
             Object[] settingsAssets = AssetDatabase.LoadAllAssetsAtPath(GraphicsSettingsPath);
             if (settingsAssets == null || settingsAssets.Length == 0)
@@ -71,10 +105,12 @@ namespace RealmOfAshes.EditorTools
             bool changed = false;
             foreach (string shaderName in RequiredShaders)
             {
-                Shader shader = Shader.Find(shaderName);
+                Shader shader = ResolveShader(shaderName);
                 if (shader == null)
                     throw new System.InvalidOperationException("Shader not found: " + shaderName);
                 if (Contains(list, shader)) continue;
+                if (!addMissing)
+                    throw new System.InvalidOperationException("Shader is absent from Always Included Shaders: " + shaderName);
 
                 int index = list.arraySize;
                 list.InsertArrayElementAtIndex(index);

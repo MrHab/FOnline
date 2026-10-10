@@ -51,7 +51,7 @@ function canUseDiagonalStep(isOpen, tx, tz, nx, nz) {
  * @param {(tx:number, tz:number) => boolean} options.isOpen проходим ли тайл
  * @param {(tx:number, tz:number) => {x:number, z:number}} options.toWorld центр тайла в мире этой комнаты
  */
-function findGridPath({ isOpen, toWorld, startTx, startTz, goalTx, goalTz, maxIterations = DEFAULT_MAX_ITERATIONS, startSnapRadius = 3, goalSnapRadius = 8 }) {
+function findGridPath({ isOpen, toWorld, canStep = null, startTx, startTz, goalTx, goalTz, maxIterations = DEFAULT_MAX_ITERATIONS, startSnapRadius = 3, goalSnapRadius = 8 }) {
   const start = nearestOpenTile(isOpen, startTx, startTz, startSnapRadius);
   const goal = nearestOpenTile(isOpen, goalTx, goalTz, goalSnapRadius);
   if (!start || !goal) return null;
@@ -86,6 +86,7 @@ function findGridPath({ isOpen, toWorld, startTx, startTz, goalTx, goalTz, maxIt
       const nz = current.tz + dz;
       if (!isOpen(nx, nz)) continue;
       if (!canUseDiagonalStep(isOpen, current.tx, current.tz, nx, nz)) continue;
+      if (canStep && !canStep(current.tx, current.tz, nx, nz)) continue;
       const key = pathKey(nx, nz);
       if (closed.has(key)) continue;
       const nextG = baseG + cost;
@@ -98,10 +99,38 @@ function findGridPath({ isOpen, toWorld, startTx, startTz, goalTx, goalTz, maxIt
   return null;
 }
 
+/** Validate only the chosen route's segments, then replan around failed edges. */
+function findGridPathWithSegmentValidation(options, isSegmentOpen, maxRetries = 64) {
+  const start = nearestOpenTile(options.isOpen, options.startTx, options.startTz, options.startSnapRadius ?? 3);
+  if (!start) return null;
+  const blockedEdges = new Set();
+  const edgeKey = (ax, az, bx, bz) => {
+    const a = pathKey(ax, az), b = pathKey(bx, bz);
+    return a < b ? `${a}|${b}` : `${b}|${a}`;
+  };
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const path = findGridPath({ ...options, canStep: (ax, az, bx, bz) => !blockedEdges.has(edgeKey(ax, az, bx, bz)) });
+    if (!path) return null;
+    let previous = start;
+    let failed = false;
+    for (const point of path) {
+      if (!isSegmentOpen(previous.tx, previous.tz, point.tx, point.tz)) {
+        blockedEdges.add(edgeKey(previous.tx, previous.tz, point.tx, point.tz));
+        failed = true;
+        break;
+      }
+      previous = point;
+    }
+    if (!failed) return path;
+  }
+  return null;
+}
+
 module.exports = {
   DEFAULT_MAX_ITERATIONS,
   canUseDiagonalStep,
   findGridPath,
+  findGridPathWithSegmentValidation,
   nearestOpenTile,
   pathKey
 };

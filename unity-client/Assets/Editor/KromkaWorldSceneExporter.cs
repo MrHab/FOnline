@@ -256,7 +256,8 @@ namespace Kromka.EditorTools
             JObject row = previous != null ? (JObject)previous.DeepClone() : new JObject();
             Transform transform = marker.transform;
             Vector3 euler = transform.eulerAngles * Mathf.Deg2Rad;
-            List<KromkaWalkCollision.GroundShape> shapes = KromkaWalkCollision.Shapes(marker.gameObject);
+            List<KromkaWalkCollision.GroundShape> shapes = KromkaWalkCollision.Shapes(marker.gameObject,
+                WalkingGroundY(marker.gameObject));
 
             row["id"] = marker.StableObjectId;
             if (!string.IsNullOrWhiteSpace(marker.ServerArchetypeId))
@@ -370,7 +371,16 @@ namespace Kromka.EditorTools
         /// тела, сервер — только collision из этого экспорта. Триггеры движению не мешают,
         /// и то, что целиком выше головы (настил моста на 2,5 м), тоже.
         /// </summary>
-        internal static bool HasPhysicalCollider(GameObject root) => KromkaWalkCollision.BlocksWalking(root);
+        internal static bool HasPhysicalCollider(GameObject root) =>
+            KromkaWalkCollision.Shapes(root, WalkingGroundY(root)).Count > 0;
+
+        private static double WalkingGroundY(GameObject root)
+        {
+            RoaUnityLocationScene location = root.GetComponentInParent<RoaUnityLocationScene>();
+            return location?.GroundRenderer != null
+                && location.GroundRenderer.GetComponent<RoaSectorSurface>() != null
+                    ? root.transform.position.y : 0;
+        }
 
         // Флаг без коллайдера дал бы серверу невидимую преграду, коллайдер без флага —
         // стену, сквозь которую сервер ведёт игрока и противников. 319 маркеров прежнего

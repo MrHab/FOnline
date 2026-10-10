@@ -55,7 +55,7 @@ function hash01(text) {
  * ближе spacingTiles друг к другу. Порядок перебора задаёт хеш города и
  * клетки, поэтому тот же город всегда получает те же места.
  */
-function planSlots(config, cityId, candidates = []) {
+function planSlots(config, cityId, candidates = [], isValid = () => true) {
   const ordered = candidates
     .filter(tile => Number.isFinite(Number(tile?.tx)) && Number.isFinite(Number(tile?.tz)))
     .map(tile => ({ tx: Number(tile.tx), tz: Number(tile.tz), order: hash01(`${cityId}:${tile.tx}:${tile.tz}`) }))
@@ -64,6 +64,7 @@ function planSlots(config, cityId, candidates = []) {
   for (const tile of ordered) {
     if (slots.length >= config.perCity) break;
     if (slots.some(slot => Math.hypot(slot.tx - tile.tx, slot.tz - tile.tz) < config.spacingTiles)) continue;
+    if (!isValid(tile)) continue;
     slots.push({ id: `critter_${slots.length + 1}`, tx: tile.tx, tz: tile.tz, enemyId: '', respawnAt: 0 });
   }
   return slots;

@@ -1,0 +1,1756 @@
+{
+  "schema": "roa.roomSurfaces.v1",
+  "profiles": [
+    {
+      "locationId": "antHive",
+      "theme": "Обрушенные земляные гнёзда над кабельными тоннелями",
+      "width": 76,
+      "depth": 76,
+      "features": [
+        {
+          "x": -17,
+          "z": 4,
+          "halfX": 12,
+          "halfZ": 18,
+          "height": 3,
+          "flat": 0.12
+        },
+        {
+          "x": 17,
+          "z": 11,
+          "halfX": 11,
+          "halfZ": 17,
+          "height": 2.7,
+          "flat": 0.1
+        },
+        {
+          "x": 0,
+          "z": 9,
+          "halfX": 12,
+          "halfZ": 19,
+          "height": -1.3,
+          "flat": 0.28
+        },
+        {
+          "x": -18,
+          "z": 20.6,
+          "halfX": 6,
+          "halfZ": 5,
+          "height": 4.4,
+          "flat": 0.12
+        },
+        {
+          "x": 18,
+          "z": 20.6,
+          "halfX": 6,
+          "halfZ": 5,
+          "height": 4.4,
+          "flat": 0.12
+        },
+        {
+          "id": "raid_nest_antHive-elder-den",
+          "x": 0,
+          "z": 22,
+          "halfX": 4.6,
+          "halfZ": 3.6,
+          "height": -1.3,
+          "flat": 0.2
+        },
+        {
+          "id": "raid_nest_antHive-main-nest",
+          "x": 0,
+          "z": 9,
+          "halfX": 4.6,
+          "halfZ": 3.6,
+          "height": -1.3,
+          "flat": 0.2
+        }
+      ],
+      "foundations": [
+        {
+          "id": "room_antHive_cable_portal_-18",
+          "x": -18,
+          "z": 17,
+          "halfX": 2.8,
+          "halfZ": 1.05,
+          "blend": 0.3,
+          "height": 0.686967865173345,
+          "rotationY": 0
+        },
+        {
+          "id": "room_antHive_cable_portal_18",
+          "x": 18,
+          "z": 17,
+          "halfX": 2.8,
+          "halfZ": 1.05,
+          "blend": 0.3,
+          "height": 2.137612842991401,
+          "rotationY": 0
+        }
+      ],
+      "surfaceStyle": "nest",
+      "routes": [],
+      "terrainSegments": 256
+    },
+    {
+      "locationId": "geckoCanyon",
+      "theme": "Низкое русло между двумя эродированными склонами",
+      "width": 76,
+      "depth": 76,
+      "features": [
+        {
+          "x": -26,
+          "z": 3,
+          "halfX": 12,
+          "halfZ": 35,
+          "height": 7,
+          "flat": 0.25
+        },
+        {
+          "x": 26,
+          "z": 3,
+          "halfX": 12,
+          "halfZ": 35,
+          "height": 7,
+          "flat": 0.25
+        },
+        {
+          "x": 0,
+          "z": 6,
+          "halfX": 13,
+          "halfZ": 29,
+          "height": -1.8,
+          "flat": 0.3
+        },
+        {
+          "x": -20.935124829136235,
+          "z": 26.94894735944037,
+          "halfX": 6,
+          "halfZ": 5,
+          "height": 4.4,
+          "flat": 0.12
+        },
+        {
+          "id": "raid_nest_geckoCanyon-elder-den",
+          "x": 0,
+          "z": 22,
+          "halfX": 3.7,
+          "halfZ": 6,
+          "height": -1.8,
+          "flat": 0.14
+        },
+        {
+          "id": "raid_nest_geckoCanyon-main-nest",
+          "x": 0,
+          "z": 9,
+          "halfX": 3.7,
+          "halfZ": 6,
+          "height": -1.8,
+          "flat": 0.14
+        }
+      ],
+      "foundations": [
+        {
+          "id": "room_geckoCanyon_exposed_karst_-1_0",
+          "x": -24,
+          "z": -20,
+          "halfX": 5.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 2.7636436434975344,
+          "rotationY": -1.710422666954443
+        },
+        {
+          "id": "room_geckoCanyon_exposed_karst_-1_1",
+          "x": -26,
+          "z": -2,
+          "halfX": 3.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 7,
+          "rotationY": -1.5707963267948966
+        },
+        {
+          "id": "room_geckoCanyon_exposed_karst_-1_2",
+          "x": -24,
+          "z": 16,
+          "halfX": 5.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 6.207192077090217,
+          "rotationY": -1.43116998663535
+        },
+        {
+          "id": "room_geckoCanyon_exposed_karst_1_0",
+          "x": 24,
+          "z": -20,
+          "halfX": 5.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 2.7636436434975344,
+          "rotationY": 1.43116998663535
+        },
+        {
+          "id": "room_geckoCanyon_exposed_karst_1_1",
+          "x": 26,
+          "z": -2,
+          "halfX": 3.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 7,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_geckoCanyon_exposed_karst_1_2",
+          "x": 24,
+          "z": 16,
+          "halfX": 5.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 6.207192077090217,
+          "rotationY": 1.710422666954443
+        },
+        {
+          "id": "room_geckoCanyon_eroded_cable_portal",
+          "x": -23,
+          "z": 24,
+          "halfX": 2.8,
+          "halfZ": 1.05,
+          "blend": 0.3,
+          "height": 3.150518518518519,
+          "rotationY": 0.6108652381980153
+        }
+      ],
+      "surfaceStyle": "chalk",
+      "routes": [],
+      "terrainSegments": 256
+    },
+    {
+      "locationId": "mutantCrater",
+      "theme": "Медицинский лагерь в чаше старой воронки",
+      "width": 76,
+      "depth": 76,
+      "features": [
+        {
+          "x": 0,
+          "z": 8,
+          "halfX": 29,
+          "halfZ": 29,
+          "height": -2.8,
+          "flat": 0.38
+        },
+        {
+          "x": -28,
+          "z": 12,
+          "halfX": 10,
+          "halfZ": 25,
+          "height": 2,
+          "flat": 0.12
+        },
+        {
+          "x": 28,
+          "z": 10,
+          "halfX": 10,
+          "halfZ": 25,
+          "height": 2,
+          "flat": 0.12
+        },
+        {
+          "id": "raid_nest_mutantCrater-elder-den",
+          "x": 0,
+          "z": 22,
+          "halfX": 5.2,
+          "halfZ": 4.4,
+          "height": -1.45,
+          "flat": 0.18
+        },
+        {
+          "id": "raid_nest_mutantCrater-main-nest",
+          "x": 0,
+          "z": 9,
+          "halfX": 5.2,
+          "halfZ": 4.4,
+          "height": -1.45,
+          "flat": 0.18
+        }
+      ],
+      "foundations": [
+        {
+          "id": "room_mutantCrater_medical_ruin",
+          "x": -20,
+          "z": 8,
+          "halfX": 6.1,
+          "halfZ": 5.7,
+          "blend": 3,
+          "height": -1.1762329853775781,
+          "rotationY": 0
+        },
+        {
+          "id": "room_mutantCrater_sample_ruin",
+          "x": 21,
+          "z": 15,
+          "halfX": 5.6,
+          "halfZ": 5.2,
+          "blend": 3,
+          "height": -0.4575793562073577,
+          "rotationY": 0
+        },
+        {
+          "id": "room_mutantCrater_medical_freight",
+          "x": 20,
+          "z": -9,
+          "halfX": 3.2,
+          "halfZ": 3.2,
+          "blend": 3,
+          "height": -0.1766091023955318,
+          "rotationY": 0
+        }
+      ],
+      "surfaceStyle": "crater",
+      "routes": [],
+      "terrainSegments": 256
+    },
+    {
+      "locationId": "radscorpionNest",
+      "theme": "Руины отстойника в сухой осадочной чаше",
+      "width": 76,
+      "depth": 76,
+      "features": [
+        {
+          "x": -10,
+          "z": 7,
+          "halfX": 19,
+          "halfZ": 23,
+          "height": -2.2,
+          "flat": 0.28
+        },
+        {
+          "x": 23,
+          "z": 11,
+          "halfX": 13,
+          "halfZ": 24,
+          "height": 3.3,
+          "flat": 0.12
+        },
+        {
+          "x": -27,
+          "z": 8,
+          "halfX": 9,
+          "halfZ": 27,
+          "height": 2,
+          "flat": 0.1
+        },
+        {
+          "id": "raid_nest_radscorpionNest-elder-den",
+          "x": 0,
+          "z": 22,
+          "halfX": 4.8,
+          "halfZ": 3.6,
+          "height": -1.1,
+          "flat": 0.25
+        },
+        {
+          "id": "raid_nest_radscorpionNest-main-nest",
+          "x": 0,
+          "z": 9,
+          "halfX": 4.8,
+          "halfZ": 3.6,
+          "height": -1.1,
+          "flat": 0.25
+        }
+      ],
+      "foundations": [],
+      "surfaceStyle": "settling",
+      "routes": [],
+      "terrainSegments": 256
+    },
+    {
+      "locationId": "wasteland",
+      "theme": "Выгоревший узел над подземным очагом",
+      "width": 76,
+      "depth": 76,
+      "features": [
+        {
+          "x": -25,
+          "z": 7,
+          "halfX": 13,
+          "halfZ": 27,
+          "height": 4,
+          "flat": 0.12
+        },
+        {
+          "x": 25,
+          "z": 8,
+          "halfX": 13,
+          "halfZ": 27,
+          "height": 3.4,
+          "flat": 0.12
+        },
+        {
+          "x": 0,
+          "z": 9,
+          "halfX": 15,
+          "halfZ": 26,
+          "height": -2.2,
+          "flat": 0.2
+        },
+        {
+          "x": -3,
+          "z": 5,
+          "halfX": 1.4,
+          "halfZ": 10,
+          "height": -0.85,
+          "flat": 0.1
+        },
+        {
+          "x": 4,
+          "z": 21,
+          "halfX": 1.6,
+          "halfZ": 8,
+          "height": -0.85,
+          "flat": 0.1
+        }
+      ],
+      "foundations": [
+        {
+          "id": "room_wasteland_melted_support_0",
+          "x": -8,
+          "z": 3,
+          "halfX": 1.6,
+          "halfZ": 1.5,
+          "blend": 3,
+          "height": -1.1778277324653403,
+          "rotationY": 0
+        },
+        {
+          "id": "room_wasteland_melted_support_1",
+          "x": 9,
+          "z": 14,
+          "halfX": 1.6,
+          "halfZ": 1.5,
+          "blend": 3,
+          "height": -0.9762142970483814,
+          "rotationY": 0.6457718232379019
+        },
+        {
+          "id": "room_wasteland_melted_support_2",
+          "x": -7,
+          "z": 24,
+          "halfX": 1.6,
+          "halfZ": 1.5,
+          "blend": 3,
+          "height": -0.5387251695902269,
+          "rotationY": 1.2915436464758039
+        }
+      ],
+      "surfaceStyle": "burnt",
+      "routes": []
+    },
+    {
+      "locationId": "randomAshGrove",
+      "theme": "Пологие зольные гряды с сухими проходами",
+      "width": 76,
+      "depth": 76,
+      "features": [
+        {
+          "x": -24,
+          "z": 7,
+          "halfX": 14,
+          "halfZ": 27,
+          "height": 3.1,
+          "flat": 0.1
+        },
+        {
+          "x": 24,
+          "z": -3,
+          "halfX": 13,
+          "halfZ": 25,
+          "height": 2.4,
+          "flat": 0.1
+        },
+        {
+          "x": 0,
+          "z": 7,
+          "halfX": 14,
+          "halfZ": 24,
+          "height": -0.7,
+          "flat": 0
+        }
+      ],
+      "foundations": [
+        {
+          "id": "room_randomAshGrove_abandoned_dacha",
+          "x": -18,
+          "z": 25,
+          "halfX": 3.2,
+          "halfZ": 3.2,
+          "blend": 3,
+          "height": 0.4182235606506608,
+          "rotationY": 0
+        },
+        {
+          "id": "room_randomAshGrove_dacha_store",
+          "x": 18,
+          "z": 26,
+          "halfX": 3.2,
+          "halfZ": 3.2,
+          "blend": 3,
+          "height": 0,
+          "rotationY": 0
+        }
+      ],
+      "surfaceStyle": "woodland",
+      "routes": [
+        {
+          "id": "dacha_approach",
+          "type": "track",
+          "halfWidth": 1.1,
+          "points": [
+            {
+              "x": 0,
+              "z": -38
+            },
+            {
+              "x": 0,
+              "z": 15
+            },
+            {
+              "x": -18,
+              "z": 15
+            },
+            {
+              "x": -18,
+              "z": 25
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "locationId": "randomDryBasin",
+      "theme": "Высохшая низина с осадочными берегами",
+      "width": 76,
+      "depth": 76,
+      "features": [
+        {
+          "x": 0,
+          "z": 5,
+          "halfX": 30,
+          "halfZ": 28,
+          "height": -2.6,
+          "flat": 0.32
+        },
+        {
+          "x": -27,
+          "z": 14,
+          "halfX": 12,
+          "halfZ": 21,
+          "height": 1.5,
+          "flat": 0.1
+        },
+        {
+          "x": 27,
+          "z": 6,
+          "halfX": 12,
+          "halfZ": 25,
+          "height": 1.9,
+          "flat": 0.1
+        }
+      ],
+      "foundations": [
+        {
+          "id": "room_randomDryBasin_exposed_karst_-1_0",
+          "x": -24,
+          "z": -20,
+          "halfX": 5.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 0,
+          "rotationY": -1.710422666954443
+        },
+        {
+          "id": "room_randomDryBasin_exposed_karst_-1_1",
+          "x": -26,
+          "z": -2,
+          "halfX": 3.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 0.10418078184776913,
+          "rotationY": -1.5707963267948966
+        },
+        {
+          "id": "room_randomDryBasin_exposed_karst_-1_2",
+          "x": -24,
+          "z": 16,
+          "halfX": 5.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 1.185222288357639,
+          "rotationY": -1.43116998663535
+        },
+        {
+          "id": "room_randomDryBasin_exposed_karst_1_0",
+          "x": 24,
+          "z": -20,
+          "halfX": 5.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 0,
+          "rotationY": 1.43116998663535
+        },
+        {
+          "id": "room_randomDryBasin_exposed_karst_1_1",
+          "x": 26,
+          "z": -2,
+          "halfX": 3.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 1.4431111970475472,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_randomDryBasin_exposed_karst_1_2",
+          "x": 24,
+          "z": 16,
+          "halfX": 5.6,
+          "halfZ": 2.7,
+          "blend": 2.5,
+          "height": 1.0172415100632792,
+          "rotationY": 1.710422666954443
+        }
+      ],
+      "surfaceStyle": "chalk",
+      "routes": []
+    },
+    {
+      "locationId": "randomRuinedRoad",
+      "theme": "Разрушенный тракт по приподнятой дорожной насыпи",
+      "width": 76,
+      "depth": 76,
+      "features": [
+        {
+          "x": -25,
+          "z": 4,
+          "halfX": 13,
+          "halfZ": 27,
+          "height": -1.5,
+          "flat": 0.15
+        },
+        {
+          "x": 25,
+          "z": 4,
+          "halfX": 13,
+          "halfZ": 27,
+          "height": -1.9,
+          "flat": 0.15
+        }
+      ],
+      "foundations": [
+        {
+          "id": "room_randomRuinedRoad_road_crew_shelter",
+          "x": -26,
+          "z": 15,
+          "halfX": 3.2,
+          "halfZ": 3.2,
+          "blend": 3,
+          "height": -1.1544157090412344,
+          "rotationY": 0
+        }
+      ],
+      "surfaceStyle": "dust",
+      "routes": [
+        {
+          "id": "broken_tract",
+          "type": "road",
+          "halfWidth": 3.2,
+          "points": [
+            {
+              "x": 0,
+              "z": -38
+            },
+            {
+              "x": 0,
+              "z": 38
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "locationId": "randomEncounter",
+      "theme": "Низкие неровности открытой пустоши",
+      "width": 76,
+      "depth": 76,
+      "features": [
+        {
+          "x": -24,
+          "z": 10,
+          "halfX": 13,
+          "halfZ": 23,
+          "height": 2.1,
+          "flat": 0
+        },
+        {
+          "x": 24,
+          "z": -5,
+          "halfX": 14,
+          "halfZ": 24,
+          "height": 2.5,
+          "flat": 0.1
+        }
+      ],
+      "foundations": [
+        {
+          "id": "room_randomEncounter_abandoned_service",
+          "x": -12,
+          "z": 15,
+          "halfX": 3.2,
+          "halfZ": 3.2,
+          "blend": 3,
+          "height": 0.016240224626944157,
+          "rotationY": 0
+        },
+        {
+          "id": "room_randomEncounter_discarded_freight",
+          "x": 14,
+          "z": 16,
+          "halfX": 3.2,
+          "halfZ": 3.2,
+          "blend": 3,
+          "height": 0,
+          "rotationY": 0
+        }
+      ],
+      "surfaceStyle": "dust",
+      "routes": [
+        {
+          "id": "meeting_approach",
+          "type": "track",
+          "halfWidth": 1.5,
+          "points": [
+            {
+              "x": 0,
+              "z": -38
+            },
+            {
+              "x": 0,
+              "z": 17
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "locationId": "oldDepot",
+      "theme": "Специальное основание существующих железнодорожных путей; неизменные авторские положения объектов",
+      "width": 76,
+      "depth": 76,
+      "surfaceStyle": "dust",
+      "fixedAuthoredPoses": true,
+      "terrainSegments": 128,
+      "features": [],
+      "foundations": [
+        {
+          "id": "room_oldDepot_military_track_-18_trench",
+          "x": -26,
+          "z": -18,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_oldDepot_military_track_-6_trench",
+          "x": -26,
+          "z": -6,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_oldDepot_military_track_6_trench",
+          "x": -26,
+          "z": 6,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_oldDepot_military_track_18_trench",
+          "x": -26,
+          "z": 18,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "military_warehouse_apron",
+          "x": -16.75,
+          "z": 14.5,
+          "halfX": 6.4,
+          "halfZ": 9,
+          "height": 0,
+          "blend": 0.6,
+          "rotationY": 0
+        }
+      ],
+      "routes": []
+    },
+    {
+      "locationId": "clanDepotBypass",
+      "theme": "Специальное основание существующих железнодорожных путей; неизменные авторские положения объектов",
+      "width": 80,
+      "depth": 80,
+      "surfaceStyle": "dust",
+      "fixedAuthoredPoses": true,
+      "terrainSegments": 128,
+      "features": [],
+      "foundations": [
+        {
+          "id": "room_clanDepotBypass_repair_track_-27_0_trench",
+          "x": -27,
+          "z": -12,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_clanDepotBypass_repair_track_-27_1_trench",
+          "x": -27,
+          "z": 0,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_clanDepotBypass_repair_track_-27_2_trench",
+          "x": -27,
+          "z": 12,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_clanDepotBypass_repair_track_27_0_trench",
+          "x": 27,
+          "z": -12,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_clanDepotBypass_repair_track_27_1_trench",
+          "x": 27,
+          "z": 0,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_clanDepotBypass_repair_track_27_2_trench",
+          "x": 27,
+          "z": 12,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_clanDepotBypass_turntable_link_-12_trench",
+          "x": -12,
+          "z": -27,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_clanDepotBypass_turntable_link_12_trench",
+          "x": 12,
+          "z": -27,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_0",
+          "x": -26.996915924780016,
+          "z": -18.23559253477086,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 3.115412714809878
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_1",
+          "x": -26.97225600359815,
+          "z": -18.706131861550602,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 3.0630528372500483
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_2",
+          "x": -26.923003752364295,
+          "z": -19.174735729980465,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 3.0106929596902186
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_3",
+          "x": -26.84929416807559,
+          "z": -19.640119729429326,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.9583330821303884
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_4",
+          "x": -26.75132928357909,
+          "z": -20.101008274703148,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.9059732045705586
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_5",
+          "x": -26.629377613813737,
+          "z": -20.556138102335304,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.853613327010729
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_6",
+          "x": -26.483773419829603,
+          "z": -21.004261733103938,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.8012534494508987
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_7",
+          "x": -26.31491579260158,
+          "z": -21.44415089128581,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.748893571891069
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_8",
+          "x": -26.123267559148744,
+          "z": -21.874599871274658,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.6965336943312392
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_9",
+          "x": -25.90935401395769,
+          "z": -22.294428842336476,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.644173816771409
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_10",
+          "x": -25.67376147918683,
+          "z": -22.70248708244354,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.5918139392115793
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_11",
+          "x": -25.41713569759814,
+          "z": -23.097656132323493,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.5394540616517496
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_12",
+          "x": -25.140180062621116,
+          "z": -23.478852861078487,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.4870941840919194
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_13",
+          "x": -24.843653690400277,
+          "z": -23.845032434971653,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.4347343065320897
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_14",
+          "x": -24.52836933911059,
+          "z": -24.195191181243786,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.38237442897226
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_15",
+          "x": -24.195191181243786,
+          "z": -24.52836933911059,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.3300145514124297
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_16",
+          "x": -23.845032434971653,
+          "z": -24.843653690400277,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.2776546738526
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_17",
+          "x": -23.478852861078487,
+          "z": -25.140180062621116,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.2252947962927703
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_18",
+          "x": -23.097656132323493,
+          "z": -25.41713569759814,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.17293491873294
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_19",
+          "x": -22.70248708244354,
+          "z": -25.67376147918683,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.1205750411731104
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_20",
+          "x": -22.294428842336476,
+          "z": -25.90935401395769,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.0682151636132806
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_21",
+          "x": -21.874599871274658,
+          "z": -26.123267559148744,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 2.0158552860534504
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_22",
+          "x": -21.44415089128581,
+          "z": -26.31491579260158,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.9634954084936207
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_23",
+          "x": -21.004261733103938,
+          "z": -26.483773419829603,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.9111355309337907
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_24",
+          "x": -20.556138102335304,
+          "z": -26.629377613813737,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.858775653373961
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_25",
+          "x": -20.101008274703148,
+          "z": -26.75132928357909,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.806415775814131
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_26",
+          "x": -19.640119729429326,
+          "z": -26.84929416807559,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.754055898254301
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_27",
+          "x": -19.174735729980462,
+          "z": -26.923003752364295,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.7016960206944711
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_28",
+          "x": -18.706131861550606,
+          "z": -26.97225600359815,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.6493361431346414
+        },
+        {
+          "id": "room_clanDepotBypass_west_turnout_trench_29",
+          "x": -18.23559253477086,
+          "z": -26.996915924780016,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.5969762655748114
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_0",
+          "x": 18.23559253477086,
+          "z": -26.996915924780016,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.5446163880149817
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_1",
+          "x": 18.706131861550602,
+          "z": -26.97225600359815,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.4922565104551517
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_2",
+          "x": 19.174735729980465,
+          "z": -26.923003752364295,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.4398966328953218
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_3",
+          "x": 19.640119729429326,
+          "z": -26.84929416807559,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.387536755335492
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_4",
+          "x": 20.101008274703148,
+          "z": -26.75132928357909,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.335176877775662
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_5",
+          "x": 20.556138102335304,
+          "z": -26.629377613813737,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.2828170002158323
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_6",
+          "x": 21.004261733103938,
+          "z": -26.483773419829603,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.2304571226560022
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_7",
+          "x": 21.44415089128581,
+          "z": -26.31491579260158,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.1780972450961724
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_8",
+          "x": 21.874599871274658,
+          "z": -26.123267559148744,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.1257373675363425
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_9",
+          "x": 22.294428842336476,
+          "z": -25.90935401395769,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.0733774899765127
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_10",
+          "x": 22.70248708244354,
+          "z": -25.67376147918683,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.0210176124166828
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_11",
+          "x": 23.097656132323493,
+          "z": -25.41713569759814,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.9686577348568529
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_12",
+          "x": 23.478852861078487,
+          "z": -25.140180062621116,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.916297857297023
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_13",
+          "x": 23.845032434971653,
+          "z": -24.843653690400277,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.8639379797371931
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_14",
+          "x": 24.195191181243786,
+          "z": -24.52836933911059,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.8115781021773631
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_15",
+          "x": 24.52836933911059,
+          "z": -24.195191181243786,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.7592182246175334
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_16",
+          "x": 24.843653690400277,
+          "z": -23.845032434971653,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.7068583470577035
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_17",
+          "x": 25.140180062621116,
+          "z": -23.478852861078487,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.6544984694978736
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_18",
+          "x": 25.41713569759814,
+          "z": -23.097656132323493,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.6021385919380436
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_19",
+          "x": 25.67376147918683,
+          "z": -22.70248708244354,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.5497787143782138
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_20",
+          "x": 25.90935401395769,
+          "z": -22.294428842336476,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.49741883681838406
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_21",
+          "x": 26.123267559148744,
+          "z": -21.874599871274658,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.4450589592585541
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_22",
+          "x": 26.31491579260158,
+          "z": -21.44415089128581,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.39269908169872414
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_23",
+          "x": 26.483773419829603,
+          "z": -21.004261733103938,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.3403392041388942
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_24",
+          "x": 26.629377613813737,
+          "z": -20.556138102335304,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.28797932657906444
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_25",
+          "x": 26.75132928357909,
+          "z": -20.101008274703148,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.23561944901923448
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_26",
+          "x": 26.84929416807559,
+          "z": -19.640119729429326,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.18325957145940452
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_27",
+          "x": 26.923003752364295,
+          "z": -19.174735729980462,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.13089969389957457
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_28",
+          "x": 26.97225600359815,
+          "z": -18.706131861550606,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.07853981633974483
+        },
+        {
+          "id": "room_clanDepotBypass_east_turnout_trench_29",
+          "x": 26.996915924780016,
+          "z": -18.23559253477086,
+          "halfX": 2.1,
+          "halfZ": 0.7,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0.02617993877991487
+        }
+      ],
+      "routes": []
+    },
+    {
+      "locationId": "clanOreExchange",
+      "theme": "Специальное основание существующих железнодорожных путей; неизменные авторские положения объектов",
+      "width": 80,
+      "depth": 80,
+      "surfaceStyle": "dust",
+      "fixedAuthoredPoses": true,
+      "terrainSegments": 128,
+      "features": [],
+      "foundations": [
+        {
+          "id": "room_clanOreExchange_freight_track_0_trench",
+          "x": 27,
+          "z": -12,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_clanOreExchange_freight_track_1_trench",
+          "x": 27,
+          "z": 0,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_clanOreExchange_freight_track_2_trench",
+          "x": 27,
+          "z": 12,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        }
+      ],
+      "routes": []
+    },
+    {
+      "locationId": "coreZone",
+      "theme": "Специальное основание существующих железнодорожных путей; неизменные авторские положения объектов",
+      "width": 320,
+      "depth": 320,
+      "surfaceStyle": "dust",
+      "fixedAuthoredPoses": true,
+      "terrainSegments": 512,
+      "features": [],
+      "foundations": [
+        {
+          "id": "room_coreZone_platform_track_uprava_-12_trench",
+          "x": 0,
+          "z": 129,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_coreZone_platform_track_uprava_0_trench",
+          "x": 0,
+          "z": 141,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_coreZone_platform_track_uprava_12_trench",
+          "x": 0,
+          "z": 153,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_coreZone_platform_track_artels_-12_trench",
+          "x": -153,
+          "z": -7.347880794884119e-16,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_coreZone_platform_track_artels_0_trench",
+          "x": -141,
+          "z": 0,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_coreZone_platform_track_artels_12_trench",
+          "x": -129,
+          "z": 7.347880794884119e-16,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_coreZone_platform_track_contour_-12_trench",
+          "x": 129,
+          "z": -7.347880794884119e-16,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_coreZone_platform_track_contour_0_trench",
+          "x": 141,
+          "z": 0,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_coreZone_platform_track_contour_12_trench",
+          "x": 153,
+          "z": 7.347880794884119e-16,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_coreZone_platform_track_league_-12_trench",
+          "x": 0,
+          "z": -153,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_coreZone_platform_track_league_0_trench",
+          "x": 0,
+          "z": -141,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_coreZone_platform_track_league_12_trench",
+          "x": 0,
+          "z": -129,
+          "halfX": 2.1,
+          "halfZ": 6.4,
+          "height": -0.47,
+          "blend": 3,
+          "rotationY": 0
+        },
+        {
+          "id": "room_coreZone_boarding_platform_uprava_-6_boarding_bank",
+          "x": 3.6,
+          "z": 135,
+          "halfX": 1.5,
+          "halfZ": 6.4,
+          "height": 0,
+          "blend": 0.12,
+          "rotationY": 0
+        },
+        {
+          "id": "room_coreZone_boarding_platform_uprava_6_boarding_bank",
+          "x": 3.6,
+          "z": 147,
+          "halfX": 1.5,
+          "halfZ": 6.4,
+          "height": 0,
+          "blend": 0.12,
+          "rotationY": 0
+        },
+        {
+          "id": "room_coreZone_boarding_platform_artels_-6_boarding_bank",
+          "x": -147,
+          "z": -3.6000000000000005,
+          "halfX": 1.5,
+          "halfZ": 6.4,
+          "height": 0,
+          "blend": 0.12,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_coreZone_boarding_platform_artels_6_boarding_bank",
+          "x": -135,
+          "z": -3.5999999999999996,
+          "halfX": 1.5,
+          "halfZ": 6.4,
+          "height": 0,
+          "blend": 0.12,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_coreZone_boarding_platform_contour_-6_boarding_bank",
+          "x": 135,
+          "z": -3.6000000000000005,
+          "halfX": 1.5,
+          "halfZ": 6.4,
+          "height": 0,
+          "blend": 0.12,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_coreZone_boarding_platform_contour_6_boarding_bank",
+          "x": 147,
+          "z": -3.5999999999999996,
+          "halfX": 1.5,
+          "halfZ": 6.4,
+          "height": 0,
+          "blend": 0.12,
+          "rotationY": 1.5707963267948966
+        },
+        {
+          "id": "room_coreZone_boarding_platform_league_-6_boarding_bank",
+          "x": 3.6,
+          "z": -147,
+          "halfX": 1.5,
+          "halfZ": 6.4,
+          "height": 0,
+          "blend": 0.12,
+          "rotationY": 0
+        },
+        {
+          "id": "room_coreZone_boarding_platform_league_6_boarding_bank",
+          "x": 3.6,
+          "z": -135,
+          "halfX": 1.5,
+          "halfZ": 6.4,
+          "height": 0,
+          "blend": 0.12,
+          "rotationY": 0
+        }
+      ],
+      "routes": []
+    }
+  ]
+}

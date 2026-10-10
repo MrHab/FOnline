@@ -113,8 +113,8 @@
     },
     {
       "id": "roadOutpost",
-      "x": 205,
-      "y": 218,
+      "x": 204.875,
+      "y": 216.625,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "roadOutpost",

@@ -3,11 +3,11 @@
   "inputs": {
     "schema": "roa.sectorStaticBlockers.v1",
     "catalogSHA256": "d47c6a8e5d88720a7557c3447442c500b0aa30fb8de1beee9c194c4811b83a5c",
-    "groundLatticeCodeHash": "5a59a979ae48e5237ac0eaf5c9a69c728ef80035200a2582463061110eda3e88",
+    "groundLatticeCodeHash": "e3aab4a299fc7dc13a4985310583751df23c01936088c54b02e7e413e10199e1",
     "sectorTerrainSHA256": "9302f7eff323cae5ce7016b624042f4c0db78b542937ea252a5dee0b726615c3",
     "loaderSHA256": "b82572c0ed8c25a6847a945e6b85467051712ec30d64d35aebb9e1db2110d76f"
   },
-  "inputFingerprint": "38bbe9eeca5479a983727eb1377f0c83f68ad4b4fe555271468209fc6ea3790a",
+  "inputFingerprint": "ba6a325fa42b2920029ebf25d8422cb9173060e0c85b4be5bfca98a6c98939b8",
   "profiles": [
     {
       "locationId": "caravanCamp",

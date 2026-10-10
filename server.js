@@ -349,7 +349,6 @@ const {
   travellerNextDirection: ecologyTravellerNextDirection,
   travellerCameFrom: ecologyTravellerCameFrom,
   travellerStep: ecologyTravellerStep,
-  travellerTurnBack: ecologyTravellerTurnBack,
   followTraveller: ecologyFollowTraveller,
   retireFollowers: ecologyRetireFollowers,
   aftermathAt: ecologyAftermathAt,
@@ -2317,17 +2316,10 @@ const ecologyRecentExits = [];
 const ECOLOGY_SIDE_FROM = Object.freeze({ north: 'С юга', south: 'С севера', east: 'С запада', west: 'С востока' });
 // Край сцены в сторону света: точка входа с той же стороны.
 const ECOLOGY_EXIT_KEYS = Object.freeze({ north: 'entryFromNorth', south: 'entryFromSouth', west: 'entryFromWest', east: 'entryFromEast' });
-const ECOLOGY_SIDE_TO = Object.freeze({ north: 'На север', south: 'На юг', east: 'На восток', west: 'На запад' });
-// Ближе этого к игроку особь у него на виду: туман клиента прячет существ
-// дальше 9 клеток (18 м), здесь — с запасом.
-const ECOLOGY_LEAVE_SIGHT_M = 24;
-// Беглец уходит, дойдя до ворот (их круг перехода — 5 м).
+// Путник завершает маршрут, дойдя до ворот (их круг перехода — 5 м).
 const ECOLOGY_LEAVE_GATE_M = 3;
-// Столько без продвижения к воротам — застрял.
+// Столько без продвижения к воротам — застрял на маршруте.
 const ECOLOGY_LEAVE_STALL_MS = 8000;
-// Отступающая особь, которую всё ещё видят через столько, загнана и дерётся
-// (проверки ставят срок короче).
-const ECOLOGY_LEAVE_CORNERED_MS = Math.max(1000, Number(process.env.KROMKA_ECOLOGY_CORNERED_MS) || 30000);
 
 function serverEcologyActive() {
   return WORLD_ECONOMY.worldModel.dangerEcology === true && DANGER_ECOLOGY.species.length > 0;
@@ -3173,8 +3165,6 @@ function serverEcologyMaterialize(room, group, options = {}) {
   if (!room || !group || !species || !cell) return 0;
   // Группа стоит в одной зоне; в каждом её занятом канале — свои особи.
   if (group.online && group.online !== cell.zoneId) return 0;
-  // Бегущая группа в новые каналы не встаёт: она уходит из зоны.
-  if (group.state === 'flee') return 0;
   if (room.ecologyGroupIds instanceof Set && room.ecologyGroupIds.has(group.id)) return 0;
   const loc = roomLocation(room);
   const dims = roomTileDims(room);
@@ -3408,7 +3398,7 @@ function serverEcologyReleaseRoom(room, now = Date.now()) {
 
 /**
  * Гибель особи группы — насовсем и во всех каналах сразу: её копии в других
- * каналах исчезают. Большие потери обращают группу в бегство.
+ * каналах исчезают. Уцелевшие продолжают бой или свой обычный маршрут.
  */
 function serverEcologyNoteDeath(room, enemy) {
   if (!enemy?.ecologyGroupId || enemy.ecologyDeathNoted || !dangerEcologyState) return;
@@ -3438,15 +3428,6 @@ function serverEcologyNoteDeath(room, enemy) {
     }
     return;
   }
-  if (result.fleeing) {
-    // Ворота одни на всю группу: их выбирают по игрокам канала, где она понесла
-    // потери. Разбитый путник уходит назад той дорогой, которой пришёл.
-    const species = DANGER_ECOLOGY.speciesById[result.group.speciesId];
-    const direction = species?.kind === 'traveller'
-      ? (ecologyTravellerTurnBack(result.group) ? ecologyTravellerNextDirection(result.group) : '')
-      : serverEcologyPickExit(room || elsewhere[0], result.group);
-    if (direction) for (const where of [room, ...elsewhere]) if (where) serverEcologyStartLeaving(where, result.group, direction);
-  }
 }
 
 /** Куда уходит группа в эту сторону: в ворота зоны, как игрок; без ворот — к краю входа. */
@@ -3456,36 +3437,6 @@ function serverEcologyExitPoint(loc, dims, direction) {
   const point = gate || loc?.[ECOLOGY_EXIT_KEYS[direction]];
   if (!point || !Number.isFinite(Number(point.tx)) || !Number.isFinite(Number(point.tz))) return null;
   return tileToWorld(Number(point.tx), Number(point.tz), dims);
-}
-
-/**
- * Ворота бегства: из тех, которыми группа может уйти по миру, — те, до которых
- * уцелевшие доберутся раньше игроков канала, чтобы не бежать сквозь них. Уйти
- * некуда (кругом города и чужие угодья) — пусто, группа дерётся дальше.
- */
-function serverEcologyPickExit(room, group) {
-  if (!room || !group) return '';
-  const species = DANGER_ECOLOGY.speciesById[group.speciesId];
-  const actors = [...(room.enemies instanceof Map ? room.enemies.values() : [])]
-    .filter(enemy => enemy && !enemy.dead && enemy.ecologyGroupId === group.id);
-  if (!actors.length) return '';
-  const loc = roomLocation(room);
-  const dims = roomTileDims(room);
-  const livePlayers = livePlayersInRoom(room);
-  const fromX = actors.reduce((sum, enemy) => sum + Number(enemy.x || 0), 0) / actors.length;
-  const fromZ = actors.reduce((sum, enemy) => sum + Number(enemy.z || 0), 0) / actors.length;
-  const exits = Object.keys(ECOLOGY_STEPS).map(direction => {
-    if (!serverEcologyCanLeave(group, species, direction)) return null;
-    const world = serverEcologyExitPoint(loc, dims, direction);
-    if (!world) return null;
-    const own = Math.hypot(world.x - fromX, world.z - fromZ);
-    // Запас: насколько группа ближе к воротам, чем ближайший к ним игрок.
-    const lead = livePlayers.length
-      ? Math.min(...livePlayers.map(player => Math.hypot(Number(player.x || 0) - world.x, Number(player.z || 0) - world.z))) - own
-      : -own;
-    return { direction, lead };
-  }).filter(Boolean).sort((a, b) => b.lead - a.lead);
-  return exits.length ? exits[0].direction : '';
 }
 
 /**
@@ -3548,48 +3499,6 @@ function serverEcologyStartTransit(room, enemy, direction, now = Date.now()) {
   return true;
 }
 
-/** Бегство в канале: уцелевшие идут к воротам direction и уходят в них. */
-function serverEcologyStartLeaving(room, group, direction) {
-  if (!room || !group) return false;
-  const actors = [...(room.enemies instanceof Map ? room.enemies.values() : [])]
-    .filter(enemy => enemy && !enemy.dead && enemy.ecologyGroupId === group.id);
-  const exit = actors.length ? serverEcologyExitPoint(roomLocation(room), roomTileDims(room), direction) : null;
-  if (!exit) return false;
-  const now = Date.now();
-  for (const enemy of actors) {
-    enemy.ecologyPhase = 'leaving';
-    enemy.ecologyPhaseSince = now;
-    enemy.ecologyProgressAt = now;
-    enemy.ecologyBestDistance = Infinity;
-    enemy.ecologyWatchedLeavingMs = 0;
-    enemy.ecologyNoProgressSeconds = 0;
-    enemy.ecologyTargetX = exit.x;
-    enemy.ecologyTargetZ = exit.z;
-    enemy.ecologyExitDirection = direction;
-    enemy.ecologyWatchersAtFlee = livePlayersInRoom(room).map(player => ({
-      id: String(player.id || ''), x: Number(player.x || 0), z: Number(player.z || 0)
-    }));
-    clearEnemyTarget(enemy);
-    enemy.factionTargetId = '';
-    enemy.stationary = false;
-  }
-  const species = DANGER_ECOLOGY.speciesById[group.speciesId];
-  if (species?.hostile) serverEcologyNotice(room, `${ECOLOGY_SIDE_TO[direction]} отступает: ${species.name.toLowerCase()}.`);
-  return true;
-}
-
-/** A survivor is cornered by a player who actually follows it within sight. */
-function serverEcologyActorWatched(room, enemy) {
-  const watchers = Array.isArray(enemy.ecologyWatchersAtFlee) ? enemy.ecologyWatchersAtFlee : [];
-  return livePlayersInRoom(room)
-    .some(player => {
-      const distance = Math.hypot(Number(player.x || 0) - enemy.x, Number(player.z || 0) - enemy.z);
-      const origin = watchers.find(row => row.id === String(player.id || ''));
-      return origin && distance < ECOLOGY_LEAVE_SIGHT_M
-        && Math.hypot(Number(player.x || 0) - origin.x, Number(player.z || 0) - origin.z) >= 2;
-    });
-}
-
 /**
  * Особь ушла за край или из виду. Когда уйдут все копии группы во всех каналах,
  * группа — в соседней клетке, вне сцены.
@@ -3620,8 +3529,8 @@ function serverEcologyActorLeft(room, enemy, now = Date.now()) {
   if (stillHere) return;
   room.ecologyLeaving.delete(group.id);
   if (room.ecologyGroupIds instanceof Set) room.ecologyGroupIds.delete(group.id);
-  // Копии в других каналах ещё уходят (на глазах у своих игроков) или дерутся,
-  // загнанные: группа покинет зону с последней из них.
+  // Копии в других каналах ещё следуют маршруту или дерутся: группа покинет
+  // зону с последней из них.
   if (serverEcologyRoomsHolding(group.id).length) {
     emitEnemySnapshot(room, true);
     return;
@@ -3651,7 +3560,7 @@ function serverEcologyOccupiedRooms(sx, sy) {
 
 /**
  * Особи группы в сцене: пришедшая с края идёт к середине, пока не заметит
- * игрока (дальше решает обычный ИИ); отступающая идёт к краю и уходит.
+ * игрока (дальше решает обычный ИИ).
  */
 function updateEcologyActorLifecycle(room = null, enemy = null, dt = 0) {
   if (!room || !enemy?.ecologyGroupId || enemy.dead) return false;
@@ -3694,47 +3603,6 @@ function updateEcologyActorLifecycle(room = null, enemy = null, dt = 0) {
     return true;
   }
   if (phase === 'transit') return updateEcologyTransit(room, enemy, dt, now);
-  if (phase === 'leaving') {
-    enemy.aiState = 'return';
-    enemy.targetId = '';
-    // A throttled room can wait much longer than its clamped movement dt.
-    // Being cornered requires the same duration of actual watched AI motion,
-    // rather than wall time spent waiting for another room's dispatch budget.
-    const watched = serverEcologyActorWatched(room, enemy);
-    enemy.ecologyWatchedLeavingMs = watched
-      ? Number(enemy.ecologyWatchedLeavingMs || 0) + Math.max(0, Number(dt) || 0) * 1000
-      : 0;
-    const distance = moveEnemyTowards(room, enemy, tx, tz, Math.max(1.35, Number(enemy.speed || 1.8)), dt, { separation: false });
-    if (distance < Number(enemy.ecologyBestDistance ?? Infinity) - 0.4) {
-      enemy.ecologyBestDistance = distance;
-      enemy.ecologyProgressAt = now;
-      enemy.ecologyNoProgressSeconds = 0;
-    } else {
-      enemy.ecologyNoProgressSeconds = Number(enemy.ecologyNoProgressSeconds || 0) + Math.max(0, dt);
-    }
-    // Heavy pathfinding can delay wall-clock ticks without the actor spending
-    // any game time stuck. Count simulated seconds without forward progress.
-    const stalled = enemy.ecologyNoProgressSeconds > ECOLOGY_LEAVE_STALL_MS / 1000;
-    // Особь исчезает только в воротах, у края зоны. Ворота бывают на непроходимой
-    // клетке: застрявшая у самых ворот тоже ушла.
-    const stuckAtGate = distance <= 6 && (stalled
-      || (Number(enemy.pathStuckSince || 0) > 0 && now - Number(enemy.pathStuckSince) > 800));
-    if (distance <= ECOLOGY_LEAVE_GATE_M || stuckAtGate) {
-      serverEcologyActorLeft(room, enemy, now);
-      return true;
-    }
-    // Застряла посреди зоны или игрок от неё не отстаёт: бегство кончилось,
-    // особь остаётся и дерётся.
-    if (stalled || enemy.ecologyWatchedLeavingMs > ECOLOGY_LEAVE_CORNERED_MS) {
-      enemy.ecologyPhase = '';
-      enemy.ecologyPhaseSince = 0;
-      enemy.aiState = 'idle';
-      enemy.homeX = enemy.x;
-      enemy.homeZ = enemy.z;
-      invalidateEnemyPath(enemy);
-    }
-    return true;
-  }
   return false;
 }
 
@@ -4099,7 +3967,7 @@ app.get('/api/dev/danger-ecology', (req, res) => {
         // Путник: чей он (город, отряд), куда идёт и как зовётся.
         ...(group.home !== undefined ? { home: group.home, dest: group.dest || '', title: group.title || '', faction: group.faction || '', goal: group.goal || null } : {}),
         members: group.members.map(member => ({ id: member.id, type: member.type, hp: member.hp, maxHp: member.maxHp })),
-        // Особи группы в каналах зоны: канал, фаза (вход, отступление) и место.
+        // Особи группы в каналах зоны: канал, фаза входа или маршрута и место.
         actors: serverEcologyRoomsHolding(group.id).flatMap(room => [...room.enemies.values()]
           .filter(enemy => enemy?.ecologyGroupId === group.id)
           .map(enemy => ({ roomId: room.id, memberId: enemy.ecologyMemberId, phase: enemy.ecologyPhase || '', dead: !!enemy.dead, x: Math.round(enemy.x), z: Math.round(enemy.z) })))
@@ -4116,7 +3984,7 @@ app.get('/api/dev/danger-ecology', (req, res) => {
 });
 
 // Для разработчика: добить особей группы в её сцене обычным путём гибели —
-// проверка потерь и бегства без стрельбы.
+// проверка потерь без стрельбы.
 app.post('/api/dev/danger-ecology/kill', (req, res) => {
   if (!serverEcologyActive()) return res.status(409).json({ ok: false, error: 'A-Life выключен.' });
   const state = serverEcologyState();
@@ -8645,8 +8513,8 @@ function serverNpcAttackRange(enemy = {}, target = null) {
 function serverNpcRangedComfortMin(enemy = {}, target = null) {
   // Стрелки держат позицию: подошедший вплотную враг больше не заставляет их
   // пятиться. Нулевая минимальная дистанция убирает кайтинг по близости —
-  // отступление по низкому HP (updateEnemyCombatRetreat) и доводка на дистанцию
-  // выстрела при выходе из радиуса или потере линии огня сохраняются.
+  // доводка на дистанцию выстрела при выходе из радиуса или потере линии огня
+  // сохраняется.
   return 0;
 }
 
@@ -15872,8 +15740,8 @@ function roomEnemySpatialMovementPadding(room, dt = 0) {
   if (room?.enemies instanceof Map) {
     for (const enemy of room.enemies.values()) {
       if (!enemy || enemy.dead) continue;
-      // Retreat can move at 1.05x authored speed. 1.1 keeps a small safety
-      // margin without turning every dense-room query back into a full scan.
+      // 1.1 keeps a small safety margin for movement without turning every
+      // dense-room query back into a full scan.
       maxMovementSpeed = Math.max(maxMovementSpeed, Math.max(0, Number(enemy.speed || 0)) * 1.1);
     }
   }
@@ -16485,73 +16353,6 @@ function updateRangedNpcTacticalMovement(room, enemy, target, weapon, dt, opts =
   moveEnemyTowards(room, enemy, gx, gz, Math.max(0.65, Number(enemy.speed || 1.4) * Number(opts.speedMul ?? 0.86)), dt, {
     ignoreSeparationIds: opts.ignoreSeparationIds ?? target.id,
     separationWeight: Number.isFinite(Number(opts.separationWeight)) ? Number(opts.separationWeight) : 0.22
-  });
-  return true;
-}
-
-const ENEMY_RETREAT_HP_RATIO = 0.136;
-
-function enemyRetreatHpRatio() {
-  return ENEMY_RETREAT_HP_RATIO;
-}
-
-function updateEnemyCombatRetreat(room, enemy, target, dt, now = Date.now()) {
-  if (!room || !enemy || !target || serverNpcIsNaturalCreature(enemy, enemy)) return false;
-  const role = String(enemy.role || enemy.encounterRole || '').toLowerCase();
-  if (role === 'monster' || role === 'animal') return false;
-  const hpRatio = Math.max(0, Number(enemy.hp || 0)) / Math.max(1, Number(enemy.maxHp || enemy.hp || 1));
-  if (now >= Number(enemy.retreatUntil || 0)) {
-    if (Number(enemy.retreatUntil || 0) > 0) {
-      enemy.retreatUntil = 0;
-      enemy.retreatCooldownUntil = now + 9000;
-      enemy.retreatGoalX = null;
-      enemy.retreatGoalZ = null;
-      return false;
-    }
-    if (hpRatio > enemyRetreatHpRatio(enemy) || now < Number(enemy.retreatCooldownUntil || 0)) return false;
-    enemy.retreatUntil = now + 2300 + Math.floor(stableEnemyUnit(`${enemy.id}:retreat`) * 1500);
-    enemy.nextRetreatGoalAt = 0;
-  }
-  if (now >= Number(enemy.nextRetreatGoalAt || 0)
-    || !Number.isFinite(Number(enemy.retreatGoalX))
-    || !Number.isFinite(Number(enemy.retreatGoalZ))) {
-    const ex = Number(enemy.x || 0);
-    const ez = Number(enemy.z || 0);
-    let awayX = ex - Number(target.x || 0);
-    let awayZ = ez - Number(target.z || 0);
-    let length = Math.hypot(awayX, awayZ);
-    if (length < 0.1) {
-      const angle = stableEnemyUnit(`${enemy.id}:retreat-direction`) * Math.PI * 2;
-      awayX = Math.cos(angle);
-      awayZ = Math.sin(angle);
-      length = 1;
-    }
-    const side = stableEnemyUnit(`${enemy.id}:retreat-side`) < 0.5 ? -1 : 1;
-    const dirX = awayX / length;
-    const dirZ = awayZ / length;
-    let goalX = ex + dirX * 5.2 - dirZ * side * 1.8;
-    let goalZ = ez + dirZ * 5.2 + dirX * side * 1.8;
-    if (!isRoomWalkableWorld(room, goalX, goalZ, 0.3)) {
-      const rawTile = worldToTile(goalX, goalZ, roomTileDims(room));
-      const tile = findNearestWalkablePathTile(room, rawTile.tx, rawTile.tz, 6);
-      if (tile) {
-        const point = tileToWorld(tile.tx, tile.tz, roomTileDims(room));
-        goalX = point.x;
-        goalZ = point.z;
-      }
-    }
-    enemy.retreatGoalX = goalX;
-    enemy.retreatGoalZ = goalZ;
-    enemy.nextRetreatGoalAt = now + 720;
-    invalidateEnemyPath(enemy);
-  }
-  enemy.aiState = 'retreat';
-  cancelEnemyMeleeCommit(room, enemy, now);
-  setEnemyLookAt(enemy, target);
-  clearEnemyTacticalGoal(enemy);
-  moveEnemyTowards(room, enemy, enemy.retreatGoalX, enemy.retreatGoalZ, Math.max(0.9, Number(enemy.speed || 1.6) * 1.05), dt, {
-    ignoreSeparationIds: target.id,
-    separationWeight: 0.15
   });
   return true;
 }
@@ -19047,35 +18848,21 @@ function updateCityCritterSlots(room, loc = roomLocation(room), now = Date.now()
   return spawned;
 }
 
-/**
- * Удар или взрыв: зверёк бежит прочь от обидчика — в первую проходимую точку
- * из нескольких направлений и дальностей, чтобы не упереться в стену дома.
- */
+/** Мирный зверёк вздрагивает от удара, оставаясь на месте. */
 function startleCityCritter(room, enemy, threat, now = Date.now()) {
-  const first = Math.random();
-  const turns = [first, 0.5, 0.15, 0.85, 0, 0.999];
-  let point = null;
-  for (const scale of [1, 0.6]) {
-    for (const turn of turns) {
-      const candidate = cityCritters.fleePoint(enemy, threat, CITY_CRITTERS.fleeDistance * scale, turn);
-      if (isRoomWalkableWorld(room, candidate.x, candidate.z, 0.5)) { point = candidate; break; }
-    }
-    if (point) break;
-  }
-  if (!point) point = cityCritters.fleePoint(enemy, threat, CITY_CRITTERS.fleeDistance, first);
-  enemy.critterFleeX = point.x;
-  enemy.critterFleeZ = point.z;
-  enemy.critterFleeUntil = now + CITY_CRITTERS.fleeMs;
+  enemy.critterStartleUntil = now + CITY_CRITTERS.startleMs;
+  enemy.vx = 0;
+  enemy.vz = 0;
   invalidateEnemyPath(enemy);
 }
 
-/** Зверёк удирает, пока не прошёл испуг; отбежав далеко, возвращается к месту, иначе пасётся. */
+/** После испуга зверёк снова пасётся в своём дворе. */
 function updateCityCritter(room, enemy, dt, now = Date.now(), rng = Math.random) {
   clearEnemyLook(enemy);
-  if (Number(enemy.critterFleeUntil || 0) > now) {
-    enemy.aiState = 'flee';
-    const left = moveEnemyTowards(room, enemy, Number(enemy.critterFleeX), Number(enemy.critterFleeZ), enemy.speed, dt);
-    if (left < 0.8) enemy.critterFleeUntil = 0;
+  if (Number(enemy.critterStartleUntil || 0) > now) {
+    enemy.aiState = 'alarm';
+    enemy.vx = 0;
+    enemy.vz = 0;
     return;
   }
   const home = ensureEnemyHome(enemy);
@@ -20307,7 +20094,7 @@ function npcRoutineCombatActive(room, enemy) {
   if (enemy.kromkaProjection === true) return false;
   if (String(enemy.kromkaNamedNpcId || '') && enemy.hostileToPlayer === false) return false;
   if (enemy.targetId || enemy.factionTargetId) return true;
-  if (['combat', 'attack', 'chase', 'pressure', 'tactical', 'reload', 'retreat', 'stagger']
+  if (['combat', 'attack', 'chase', 'pressure', 'tactical', 'reload', 'stagger']
     .includes(String(enemy.aiState || '').toLowerCase())) return true;
   return npcHasLiveFactionFoes(room, enemy);
 }
@@ -28018,7 +27805,6 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
     actor.lastKnownZ = foe.z;
     setEnemyLookAt(actor, foe);
     const dist = Math.hypot(foe.x - actor.x, foe.z - actor.z);
-    if (updateEnemyCombatRetreat(room, actor, foe, dt, now)) continue;
     const actorRadius = Math.max(0.35, Number(actor.scale || 1) * 0.42);
     const foeRadius = Math.max(0.35, Number(foe.scale || 1) * 0.42);
     const meleeGoalRange = Math.max(1.15, Math.min(2.1, actorRadius + foeRadius + 0.55));
@@ -28368,13 +28154,11 @@ function updateServerEnemies(room, dt, opts = {}) {
     ensureEnemyHome(enemy);
     if (serverNpcArtifactCombatAbility(enemy, now)) continue;
     // Городской зверёк не дерётся и не живёт по расписанию: пасётся у своего
-    // места и удирает от удара.
+    // места и замирает от удара.
     if (enemy.cityCritter === true) {
       updateCityCritter(room, enemy, dt, now, rng);
       continue;
     }
-    // Отступающая группа A-Life уходит за край и из стычки с другими NPC.
-    if (enemy.ecologyPhase === 'leaving' && updateEcologyActorLifecycle(room, enemy, dt)) continue;
     // Стационарные торговцы и служебные NPC просто стоят и торгуют.
     if (serverNpcIsQuietService(enemy)) {
       holdQuietServiceNpc(room, enemy, now);
@@ -28546,7 +28330,6 @@ function updateServerEnemies(room, dt, opts = {}) {
 
     const hasFreshTarget = !!(target && enemy.targetId && now - Number(enemy.lastSenseAt || 0) <= enemyChaseMemoryMs(enemy));
     if (hasFreshTarget && target) {
-      if (visibleTarget && updateEnemyCombatRetreat(room, enemy, visibleTarget, dt, now)) continue;
       const weapon = serverNpcPrepareCombatWeapon(enemy, target);
       const ranged = !!weapon?.ammoType;
       if (visibleTarget && ranged && weapon.damageType !== 'explosive'

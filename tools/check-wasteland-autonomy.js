@@ -227,6 +227,73 @@ function assertSituationalReplanning() {
   assert.strictEqual(patrol.decisionReason, 'friendly_site_attacked', 'patrol decision did not reflect the current world event');
 }
 
+function assertThreatDoesNotRedirectParties() {
+  const { sim, state } = simulation('no-combat-retreat');
+  state.sites.home = site('home', 280, 90, { type: 'settlement', owner: 'tract_league', security: 90 });
+  state.sites.waypoint = site('waypoint', 320, 90, { owner: 'tract_league' });
+  state.sites.attacked = site('attacked', 390, 90, {
+    owner: 'old_klim', security: 18,
+    extra: { activeConflict: { id: 'attack', active: true, status: 'active',
+      attackers: [{ faction: 'raiders', power: 80, count: 6 }] } }
+  });
+  state.sites.patrolHome = site('patrolHome', 280, 130,
+    { type: 'settlement', owner: 'old_klim', security: 90 });
+  state.factions.tract_league = {
+    ...(state.factions.tract_league || {}),
+    relations: { ...(state.factions.tract_league?.relations || {}), raiders: -100 }
+  };
+  state.factions.old_klim = {
+    ...(state.factions.old_klim || {}),
+    relations: { ...(state.factions.old_klim?.relations || {}), raiders: -100 }
+  };
+  state.parties.wanderer = party('wanderer', 'scavenger', 'tract_league', 300, 90, {
+    homeSiteId: 'home', route: ['waypoint'], nextDecisionHour: 0, strength: 30, members: 3
+  });
+  state.parties.patrol = party('patrol', 'patrol', 'old_klim', 300, 130, {
+    homeSiteId: 'patrolHome', route: ['patrolHome'], nextDecisionHour: 0,
+    strength: 30, members: 3
+  });
+  state.parties.threat = party('threat', 'scavenger', 'raiders', 315, 105, {
+    strength: 500, members: 50, nextDecisionHour: 999
+  });
+
+  sim.tick(Date.now() + 1000, { hours: 0.01, force: true });
+  assert.strictEqual(state.parties.wanderer.destinationSiteId, 'waypoint',
+    'a stronger nearby enemy diverted a mobile party from its authored waypoint');
+  assert.strictEqual(state.parties.wanderer.decisionKind, 'roam',
+    'the mobile party still records its route decision after detecting danger');
+  assert.strictEqual(state.parties.patrol.destinationSiteId, 'attacked',
+    'a stronger nearby enemy cancelled the patrol response to an attacked site');
+  assert.strictEqual(state.parties.patrol.decisionKind, 'defend',
+    'the patrol still makes its normal defense decision under threat');
+}
+
+function assertLegacyRetreatRouteIsReplanned() {
+  const { sim, state } = simulation('legacy-retreat');
+  state.sites.home = site('home', 280, 90, { type: 'settlement', owner: 'tract_league' });
+  state.sites.waypoint = site('waypoint', 320, 90, { owner: 'tract_league' });
+  state.parties.wanderer = party('wanderer', 'scavenger', 'tract_league', 300, 90, {
+    homeSiteId: 'home', route: ['waypoint'], destinationSiteId: 'home', nextDecisionHour: 999,
+    extra: { autonomyVersion: 1, decisionKind: 'retreat', decisionReason: 'stronger_hostile_nearby',
+      infrastructureRoutePoints: [{ x: 300, y: 90 }, { x: 280, y: 90 }],
+      infrastructureDestinationSiteId: 'home' }
+  });
+  sim.save(true);
+  const reloaded = createWastelandSimulation({
+    stateFile: path.join(tempRoot, 'legacy-retreat.json'),
+    getGlobalMap: testMap,
+    gameDayRealMs: 60 * 60 * 1000
+  });
+  const restored = reloaded.state().parties.wanderer;
+  assert.strictEqual(restored.decisionKind, '', 'a saved retreat decision survived migration');
+  assert.strictEqual(restored.destinationSiteId, '', 'a saved retreat destination survived migration');
+  assert.deepStrictEqual(restored.infrastructureRoutePoints, [],
+    'a saved path back to the retreat site survived migration');
+  reloaded.tick(Date.now() + 1000, { hours: 0.01, force: true });
+  assert.strictEqual(restored.destinationSiteId, 'waypoint',
+    'the migrated party did not resume its authored route');
+}
+
 function patrolMissionVerticalSliceFixture(name, options = {}) {
   const { sim, state } = simulation(name);
   const conflictId = 'vertical_patrol_conflict';
@@ -804,6 +871,8 @@ try {
   assertCompletedVisitChoosesAnotherLocation();
   assertLootedTransientOnsiteZoneReactivates();
   assertSituationalReplanning();
+  assertThreatDoesNotRedirectParties();
+  assertLegacyRetreatRouteIsReplanned();
   assertPatrolPublicFeedSeparatesNpcStatusFromPlayerParticipation();
   assertPatrolDefenseAssignmentSynchronizesWorldTasks();
   assertPatrolArrivalCompletesMissionOperation();

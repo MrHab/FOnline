@@ -22,7 +22,7 @@ const ECOLOGY_VERSION = 1;
 const LIVING_MODES = Object.freeze(['pve', 'pvp', 'pvpFullDrop', 'pvpBlack']);
 // Люди A-Life: налётчики и путники. Остальные типы особей — твари бестиария.
 const HUMAN_TYPES = Object.freeze(['raider', 'caravaneer', 'caravan_guard', 'porter', 'patrol_guard']);
-const GROUP_STATES = Object.freeze(['rest', 'roam', 'return', 'hunt', 'flee', 'travel']);
+const GROUP_STATES = Object.freeze(['rest', 'roam', 'return', 'hunt', 'travel']);
 
 // Место стычки без игроков (павшие) ждёт игроков столько, не больше стольких на зону и на мир.
 const AFTERMATH_TTL_MS = 40 * 60000;
@@ -54,8 +54,6 @@ const DEFAULT_CONFIG = Object.freeze({
     huntStepSeconds: Object.freeze([35, 70]),
     // Как часто отдыхающая группа прислушивается к сценам с игроками рядом.
     senseSeconds: 30,
-    // Сколько сломленная группа после бегства не идёт на шум.
-    shakenMinutes: 10,
     radius: 2,
     // Как далеко (в зонах от логова) уходит группа в дальний обход.
     migrateRadius: 4,
@@ -154,7 +152,6 @@ function normalizeSpecies(row = {}, roam = DEFAULT_CONFIG.roam) {
     roamRadius: Math.floor(finite(row.roamRadius, roam.radius, 1, 6)),
     perceptionCells: Math.floor(finite(row.perceptionCells, 2, 0, 6)),
     aggression: finite(row.aggression, 0.6, 0, 1),
-    fleeAt: finite(row.fleeAt, 0.5, 0.05, 1),
     stepSeconds: row.stepSeconds ? range(row.stepSeconds, roam.stepSeconds, 1, 3600) : roam.stepSeconds,
     // Дойдя до цели обхода, группа с этой вероятностью идёт дальше, а не домой;
     // после отдыха с вероятностью migrateChance уходит далеко, на migrateRadius зон.
@@ -187,7 +184,6 @@ function normalizeEcologyConfig(input = {}) {
     stepSeconds: range(roamSrc.stepSeconds, DEFAULT_CONFIG.roam.stepSeconds, 1, 3600),
     huntStepSeconds: range(roamSrc.huntStepSeconds, DEFAULT_CONFIG.roam.huntStepSeconds, 1, 3600),
     senseSeconds: finite(roamSrc.senseSeconds, DEFAULT_CONFIG.roam.senseSeconds, 1, 3600),
-    shakenMinutes: finite(roamSrc.shakenMinutes, DEFAULT_CONFIG.roam.shakenMinutes, 0, 1440),
     radius: Math.floor(finite(roamSrc.radius, DEFAULT_CONFIG.roam.radius, 1, 6)),
     migrateRadius: Math.floor(finite(roamSrc.migrateRadius, DEFAULT_CONFIG.roam.migrateRadius, 1, 12)),
     clashPerMinute: finite(roamSrc.clashPerMinute, DEFAULT_CONFIG.roam.clashPerMinute, 0, 60),
@@ -313,7 +309,6 @@ function normalizeEcologyState(input = {}, config = normalizeEcologyConfig()) {
         : null,
       restUntil: Math.max(0, Number(row.restUntil) || 0),
       nextStepAt: Math.max(0, Number(row.nextStepAt) || 0),
-      shakenUntil: Math.max(0, Number(row.shakenUntil) || 0),
       // После перезапуска сцен нет: все группы снова вне сети.
       online: '',
       size0: Math.max(members.length, Math.floor(finite(row.size0, members.length, 1, 100))),
@@ -324,6 +319,12 @@ function normalizeEcologyState(input = {}, config = normalizeEcologyConfig()) {
         .map(([memberId, readyAt]) => [safeId(memberId, 24), Math.max(0, Number(readyAt) || 0)])
         .filter(([memberId, readyAt]) => members.some(member => member.id === memberId) && readyAt > 0))
     };
+    // Old saves can contain a casualty flight. Resume ordinary activity in place.
+    if (row.state === 'flee') {
+      group.state = 'rest';
+      group.target = null;
+      group.nextStepAt = 0;
+    }
     if (species.kind === 'traveller') {
       const route = (Array.isArray(row.route) ? row.route : [])
         .filter(cell => Number.isFinite(Number(cell?.sx)) && Number.isFinite(Number(cell?.sy)))
@@ -338,7 +339,14 @@ function normalizeEcologyState(input = {}, config = normalizeEcologyConfig()) {
       group.goalKey = String(row.goalKey || '').slice(0, 128);
       group.route = route.length >= 2 ? route : null;
       group.routeIndex = group.route ? Math.max(0, Math.min(route.length - 1, Math.floor(Number(row.routeIndex) || 0))) : 0;
-      group.fleeing = !!row.fleeing && !!group.route;
+      if (row.state === 'flee' || row.fleeing) {
+        // A fleeing save holds the reversed road home. Plan a fresh trip from
+        // the current cell instead of continuing that retreat after restart.
+        group.route = null;
+        group.routeIndex = 0;
+        group.state = 'rest';
+        group.nextStepAt = 0;
+      }
       if (!group.route && group.state === 'travel') group.state = 'rest';
     }
     state.groups.set(id, group);
@@ -380,7 +388,6 @@ function serializeEcologyState(state) {
       target: group.target ? { ...group.target } : null,
       restUntil: group.restUntil,
       nextStepAt: group.nextStepAt,
-      shakenUntil: group.shakenUntil || 0,
       size0: group.size0,
       bornAt: group.bornAt,
       ...(group.clashReadyAt ? { clashReadyAt: group.clashReadyAt } : {}),
@@ -392,7 +399,6 @@ function serializeEcologyState(state) {
         dest: group.dest || '',
         route: group.route ? group.route.map(cell => ({ sx: cell.sx, sy: cell.sy })) : null,
         routeIndex: group.routeIndex || 0,
-        fleeing: !!group.fleeing,
         ...(group.faction ? { faction: group.faction } : {}),
         ...(group.title ? { title: group.title } : {}),
         ...(group.goal ? { goal: { ...group.goal }, goalKey: group.goalKey || '' } : {})
@@ -698,29 +704,13 @@ function travellerStep(state, config, group, now = Date.now(), random = Math.ran
     group.state = 'rest';
     group.route = null;
     group.routeIndex = 0;
-    group.fleeing = false;
     group.restUntil = now + between(random, species.travel.restMinutes) * 60000;
     group.nextStepAt = group.restUntil;
   } else {
-    group.nextStepAt = now + between(random, group.fleeing ? config.roam.huntStepSeconds : species.stepSeconds) * 1000;
+    group.nextStepAt = now + between(random, species.stepSeconds) * 1000;
   }
   state.dirty = true;
   return { from, to: next, direction, arrived };
-}
-
-/** Разбитый путник поворачивает назад, в город, откуда вышел, — той же дорогой. */
-function travellerTurnBack(group, now = Date.now()) {
-  if (!Array.isArray(group.route) || group.routeIndex <= 0) {
-    // Ещё в городе или только вышел: возвращаться некуда, путь заново после отдыха.
-    group.fleeing = false;
-    return false;
-  }
-  group.route = group.route.slice(0, group.routeIndex + 1).reverse();
-  group.routeIndex = 0;
-  group.fleeing = true;
-  group.state = 'travel';
-  group.nextStepAt = Math.min(group.nextStepAt || now, now);
-  return true;
 }
 
 /**
@@ -780,7 +770,6 @@ function travellerPlan(state, config, group, species, ctx, now, random) {
   }
   group.route = path.map(cell => ({ sx: cell.sx, sy: cell.sy }));
   group.routeIndex = 0;
-  group.fleeing = false;
   group.state = 'travel';
   group.nextStepAt = now;
   state.dirty = true;
@@ -807,7 +796,6 @@ function replanFollower(state, group, ctx, now = Date.now(), random = Math.rando
   }
   group.route = path.map(cell => ({ sx: cell.sx, sy: cell.sy }));
   group.routeIndex = 0;
-  group.fleeing = false;
   group.state = 'travel';
   group.nextStepAt = now;
   state.dirty = true;
@@ -887,8 +875,7 @@ function spawnTraveller(state, config, species, city, now, random = Math.random,
     home: safeId(city.id, 64),
     dest: '',
     route: null,
-    routeIndex: 0,
-    fleeing: false
+    routeIndex: 0
   };
   group.nextStepAt = group.restUntil;
   state.groups.set(group.id, group);
@@ -983,25 +970,21 @@ function woundGroup(group, damage, random, casualties) {
 }
 
 /**
- * Стычка двух групп в одной зоне без игроков: несколько обменов ударами, пока
- * одна из сторон не сломается (потеряла fleeAt своего состава) или не кончатся
- * раунды. Проигравший уходит (путник — назад по своей дороге), победитель
- * задерживается на месте боя. Павшие — насовсем.
+ * Стычка двух групп в одной зоне без игроков: до шести обменов ударами или
+ * до гибели одной стороны. Выжившие остаются на своих обычных маршрутах;
+ * павшие — насовсем.
  */
 function clashGroups(state, config, a, b, now = Date.now(), random = Math.random) {
   const species = new Map([[a, config.speciesById[a.speciesId]], [b, config.speciesById[b.speciesId]]]);
-  const start = new Map([[a, a.members.length], [b, b.members.length]]);
-  const broken = group => !group.members.length
-    || 1 - group.members.length / Math.max(1, start.get(group)) >= (species.get(group)?.fleeAt ?? 0.5);
   const casualties = [];
-  for (let round = 0; round < 6 && !broken(a) && !broken(b); round += 1) {
+  for (let round = 0; round < 6 && a.members.length && b.members.length; round += 1) {
     const hitA = groupPower(b, species.get(b)) * 0.16 * (0.7 + random() * 0.6);
     const hitB = groupPower(a, species.get(a)) * 0.16 * (0.7 + random() * 0.6);
     woundGroup(a, hitA, random, casualties);
     woundGroup(b, hitB, random, casualties);
   }
-  const loser = broken(a) !== broken(b)
-    ? (broken(a) ? a : b)
+  const loser = !a.members.length !== !b.members.length
+    ? (!a.members.length ? a : b)
     : (groupPower(a, species.get(a)) < groupPower(b, species.get(b)) ? a : b);
   const winner = loser === a ? b : a;
   const destroyed = [];
@@ -1011,17 +994,6 @@ function clashGroups(state, config, a, b, now = Date.now(), random = Math.random
       indexRemove(state, group);
       state.groups.delete(group.id);
       destroyed.push(group.id);
-    }
-  }
-  if (loser.members.length) {
-    if (species.get(loser)?.kind === 'traveller') {
-      travellerTurnBack(loser, now);
-    } else {
-      const lair = state.lairs.get(loser.lairId) || null;
-      loser.state = 'return';
-      loser.target = lair ? { sx: lair.sx, sy: lair.sy } : null;
-      loser.shakenUntil = now + config.roam.shakenMinutes * 60000;
-      loser.nextStepAt = now;
     }
   }
   // Победитель задерживается у места боя.
@@ -1196,8 +1168,8 @@ function tickEcology(state, config, ctx = {}, now = Date.now(), random = Math.ra
     const lair = state.lairs.get(group.lairId) || null;
     const home = lair ? { sx: lair.sx, sy: lair.sy } : null;
 
-    // Чутьё: игроки в сценах рядом привлекают группу — кроме сломленной.
-    if (group.state !== 'hunt' && group.state !== 'flee' && now >= Number(group.shakenUntil || 0)) {
+    // Чутьё: игроки в сценах рядом привлекают группу.
+    if (group.state !== 'hunt') {
       const prey = sensePrey(group, species, occupiedCells);
       if (prey && random() < species.aggression) {
         group.state = 'hunt';
@@ -1221,7 +1193,7 @@ function tickEcology(state, config, ctx = {}, now = Date.now(), random = Math.ra
         ? pickRoamTarget(group, species, lair, ctx, random, config.roam.migrateRadius)
         : pickRoamTarget(group, species, lair, ctx, random);
     }
-    if ((group.state === 'return' || group.state === 'flee') && !group.target) group.target = home;
+    if (group.state === 'return' && !group.target) group.target = home;
     if (!group.target || (group.target.sx === group.sx && group.target.sy === group.sy)) {
       // Цель достигнута: обход → дальше (с вероятностью wander) или домой, домой → отдых.
       if (group.state === 'roam' && random() < species.wander) {
@@ -1247,7 +1219,7 @@ function tickEcology(state, config, ctx = {}, now = Date.now(), random = Math.ra
       }
     }
     const direction = stepToward(group, group.target, species, ctx, random);
-    const pace = group.state === 'hunt' || group.state === 'flee' ? config.roam.huntStepSeconds : species.stepSeconds;
+    const pace = group.state === 'hunt' ? config.roam.huntStepSeconds : species.stepSeconds;
     group.nextStepAt = now + between(random, pace) * 1000;
     if (!direction) {
       group.state = 'rest';
@@ -1305,21 +1277,12 @@ function setGroupOffline(state, group, hpByMember = new Map(), now = Date.now(),
   for (const member of group.members) {
     if (hpByMember.has(member.id)) member.hp = Math.max(1, Math.min(member.maxHp, Math.round(Number(hpByMember.get(member.id)) || member.hp)));
   }
-  // Бежавшая группа идёт домой и какое-то время не лезет обратно на шум;
-  // разбитый путник поворачивает назад своей дорогой.
-  if (group.state === 'flee' && group.home !== undefined) {
-    if (!travellerTurnBack(group, now)) group.state = 'rest';
-  } else if (group.state === 'flee') {
-    group.state = 'return';
-    group.target = null;
-    group.shakenUntil = now + (config?.roam?.shakenMinutes ?? DEFAULT_CONFIG.roam.shakenMinutes) * 60000;
-  }
   group.online = '';
   if (group.nextStepAt < now) group.nextStepAt = now;
   state.dirty = true;
 }
 
-/** Гибель особи: насовсем. Группа без особей исчезает; большие потери — бегство. */
+/** Гибель особи: насовсем. Группа без особей исчезает; выжившие остаются. */
 function memberKilled(state, config, groupId = '', memberId = '', now = Date.now()) {
   const group = state.groups.get(String(groupId || ''));
   if (!group) return { ok: false };
@@ -1341,14 +1304,7 @@ function memberKilled(state, config, groupId = '', memberId = '', now = Date.now
     }
     return { ok: true, destroyed: true, group };
   }
-  const species = config.speciesById[group.speciesId];
-  const lost = 1 - group.members.length / Math.max(1, group.size0);
-  const fleeing = !config.stationaryLairs && !!species && lost >= species.fleeAt && group.state !== 'flee';
-  if (fleeing) {
-    group.state = 'flee';
-    group.target = null;
-  }
-  return { ok: true, destroyed: false, fleeing, group };
+  return { ok: true, destroyed: false, group };
 }
 
 function groupStrength(group) {
@@ -1428,7 +1384,6 @@ module.exports = {
   travellerNextDirection,
   travellerCameFrom,
   travellerStep,
-  travellerTurnBack,
   followTraveller,
   retireFollowers,
   groupSpecies,

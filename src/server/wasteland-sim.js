@@ -2061,7 +2061,9 @@ function normalizeState(input, globalMap = {}) {
     }
     party.routeIndex = Math.max(0, Math.floor(Number(party.routeIndex || 0)));
     const autonomyVersion = Math.max(0, Math.floor(Number(party.autonomyVersion || 0)));
-    const refreshAutonomy = autonomyVersion < WORLD_PARTY_AUTONOMY_VERSION;
+    const legacyRetreat = String(party.decisionKind || '') === 'retreat';
+    const refreshAutonomy = autonomyVersion < WORLD_PARTY_AUTONOMY_VERSION || legacyRetreat;
+    if (legacyRetreat) party.destinationSiteId = '';
     party.targetPartyId = refreshAutonomy ? '' : safeId(party.targetPartyId || '', '');
     party.decisionKind = refreshAutonomy ? '' : safeId(party.decisionKind || '', '');
     party.decisionReason = refreshAutonomy ? '' : safeId(party.decisionReason || '', '');
@@ -2077,7 +2079,7 @@ function normalizeState(input, globalMap = {}) {
       .sort((left, right) => right[1] - left[1])
       .slice(0, 24));
     const infrastructureLayoutVersion = Math.max(0, Math.floor(Number(party.infrastructureLayoutVersion || 0)));
-    const refreshInfrastructureRoute = infrastructureLayoutVersion < WORLD_INFRASTRUCTURE_LAYOUT_VERSION;
+    const refreshInfrastructureRoute = infrastructureLayoutVersion < WORLD_INFRASTRUCTURE_LAYOUT_VERSION || legacyRetreat;
     party.infrastructureRoutePoints = (refreshInfrastructureRoute ? [] : (Array.isArray(party.infrastructureRoutePoints) ? party.infrastructureRoutePoints : []))
       .slice(0, 160)
       .map(point => ({ x: Number(point?.x), y: Number(point?.y) }))
@@ -5948,24 +5950,6 @@ function createWastelandSimulation(options = {}) {
       .sort((left, right) => Number(right.score || 0) - Number(left.score || 0))[0] || null;
   }
 
-  function partyRetreatDecision(party = {}, threat = null) {
-    const info = threat || partyThreatInfo(party);
-    if (!info?.threatPartyId || Number(info.threatDistanceKm || Infinity) > 30) return null;
-    if (Number(info.riskLevel || 0) < 62 || Number(info.threatPower || 0) <= partyPower(party) * 1.03) return null;
-    const home = state.sites[party.homeSiteId || ''];
-    const candidates = Object.values(state.sites || {})
-      .filter(site => site && site.locationId && isSettlementServiceSite(site) && partySiteRelationScore(party, site) >= 1)
-      .map(site => ({
-        site,
-        kind: 'retreat',
-        reason: 'stronger_hostile_nearby',
-        score: 400 + Number(site.security || 0) * 1.4 - pointDistanceKm(party, site, getGlobalMap()) * 2
-          + (home && site.id === home.id ? 45 : 0)
-      }));
-    const fallback = bestPartyDecision(candidates)?.site || home || null;
-    return fallback ? { site: fallback, kind: 'retreat', reason: 'stronger_hostile_nearby', score: 400 } : null;
-  }
-
   function patrolAutonomyDecisions(party = {}) {
     const globalMap = getGlobalMap();
     const rows = [];
@@ -6091,23 +6075,7 @@ function createWastelandSimulation(options = {}) {
         score: 1000
       });
     }
-    const retreat = partyRetreatDecision(party);
     const kind = String(party.kind || '').toLowerCase();
-    if (retreat) {
-      if (kind === 'patrol') {
-        const currentPatrolMission = patrolWorldOperationForParty(party, true);
-        if (currentPatrolMission) {
-          settlePatrolWorldOperation(
-            currentPatrolMission.task,
-            currentPatrolMission.operation,
-            'cancelled',
-            'patrol_retreat',
-            { siteId: party.lastSiteId || '' }
-          );
-        }
-      }
-      return applyPartyDecision(party, retreat);
-    }
     let rows = [];
     if (kind === 'patrol') rows = patrolAutonomyDecisions(party);
     else if (kind === 'raider' || kind === 'monster' || partyIsHostileEncounterParty(party)) rows = hostileAutonomyDecisions(party);
@@ -6816,7 +6784,6 @@ function createWastelandSimulation(options = {}) {
   function ensurePatrolWorldOperation(party = {}, decision = {}, selectedTarget = null) {
     if (!party || party.destroyed || party.state === 'destroyed'
       || String(party.kind || '').toLowerCase() !== 'patrol') return null;
-    if (String(decision.kind || '') === 'retreat') return null;
     const targetParty = decision.targetParty && partyTargetIsAvailable(decision.targetParty)
       ? decision.targetParty
       : (selectedTarget?.kind && state.parties[selectedTarget.id] ? selectedTarget : null);

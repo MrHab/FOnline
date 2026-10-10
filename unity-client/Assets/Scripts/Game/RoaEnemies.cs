@@ -334,7 +334,6 @@ namespace RealmOfAshes.Game
                 case "combat":
                 case "factioncombat":
                 case "reload":
-                case "retreat":
                 case "stagger":
                     return true;
                 default:
@@ -350,13 +349,11 @@ namespace RealmOfAshes.Game
             {
                 case "pressure": return "ИЩЕТ МОМЕНТ";
                 case "reload": return "ПЕРЕЗАРЯЖАЕТСЯ";
-                case "retreat": return "ОТСТУПАЕТ";
                 case "chase": return "СБЛИЖАЕТСЯ";
                 case "investigate": return "ИЩЕТ";
                 case "stagger": return "ОГЛУШЁН";
                 case "alarm": return "ТРЕВОГА";
                 case "attack": return "АТАКУЕТ";
-                case "flee": return "УДИРАЕТ";
                 case "combat":
                 case "factioncombat":
                 case "tactical": return "В БОЮ";
@@ -2070,7 +2067,7 @@ namespace RealmOfAshes.Game
                 if (!hostile) plateEntry.Name = RoaInteraction.DisplayNpcName(enemy.Snapshot);
                 // Городская живность не враг, но её можно бить: табличка так и говорит.
                 if (ReadBoolean(enemy.Snapshot["prey"]))
-                    plateEntry.Faction = (enemy.Snapshot["aiState"]?.ToString() == "flee" ? "УДИРАЕТ" : "ДОБЫЧА")
+                    plateEntry.Faction = (enemy.Snapshot["aiState"]?.ToString() == "alarm" ? "ТРЕВОГА" : "ДОБЫЧА")
                         + " · Городская живность";
                 rows.Add(plateEntry);
             }

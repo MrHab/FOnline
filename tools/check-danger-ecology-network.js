@@ -8,11 +8,9 @@
 //  - группа, живущая в зоне, стоит в каждом её канале с игроками;
 //  - группа из соседней зоны чует игроков и входит воротами с той стороны,
 //    откуда шла, — в оба канала, игроки видят предупреждение;
-//  - погибшая особь исчезает во всех каналах сразу, большие потери уводят
-//    группу воротами в соседнюю зону — не в город и не сквозь игрока; беглец
-//    исчезает только в воротах, группа уходит с последней копией и не
-//    возвращается;
-//  - синяя зона тоже живая; беглец, от которого игрок не отстаёт, загнан и остаётся;
+//  - погибшая особь исчезает во всех каналах сразу, а выжившие после больших
+//    потерь остаются в зоне и не прекращают обычное поведение;
+//  - синяя зона тоже живая;
 //  - опустевшая зона отпускает группы в мир с ранами.
 
 const fs = require('node:fs');
@@ -25,7 +23,6 @@ const DEV_TOKEN = 'danger-ecology-network-check-0123456789abcdef';
 process.env.DEV_API_MODE = 'token';
 process.env.DEV_ADMIN_TOKEN = DEV_TOKEN;
 process.env.KROMKA_ZONE_CHANNEL_CAP = '1';
-process.env.KROMKA_ECOLOGY_CORNERED_MS = '8000';
 const h = require('./check-combat-runtime');
 const { zoneOfPlace, zoneById } = require('../src/server/zone-graph');
 const { normalizeRecipe } = require('../src/server/zone-builder');
@@ -56,10 +53,10 @@ fs.writeFileSync(path.join(scratch, 'danger-ecology.json'), JSON.stringify({
     // проверка смотрит на жизнь групп, а не на исход боя.
     { id: 'test_gari', name: 'Стая гари', kind: 'monster', faction: 'gari', hostile: false,
       members: [{ type: 'gari', name: 'Гарь', min: 3, max: 3 }],
-      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1, pvpBlack: 1 }, perceptionCells: 0, aggression: 0, fleeAt: 0.6 },
+      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1, pvpBlack: 1 }, perceptionCells: 0, aggression: 0 },
     { id: 'test_scouts', name: 'Стая гари', kind: 'monster', faction: 'gari', hostile: false,
       members: [{ type: 'gari', name: 'Гарь-разведчик', min: 3, max: 3 }],
-      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1, pvpBlack: 1 }, perceptionCells: 1, aggression: 1, fleeAt: 0.6 }
+      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1, pvpBlack: 1 }, perceptionCells: 1, aggression: 1 }
   ]
 }));
 process.env.KROMKA_DANGER_ECOLOGY_FILE = path.join(scratch, 'danger-ecology.json');
@@ -203,61 +200,23 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
     });
     console.log(`PASS a group from ${north.title} senses the players, walks in by the north gate and stands in both channels`);
 
-    // --- гибель во всех каналах, бегство в соседнюю зону ---------------------------------------
-    // Потери — в канале наблюдателя: ворота бегства выбирают по его игрокам.
+    // --- гибель во всех каналах без бегства ----------------------------------------------------
     const killed = await devPost('/api/dev/danger-ecology/kill', { groupId: 'resident', roomId: channels[1], count: 2 });
     assert.equal(killed.killed, 2);
     assert.equal(killed.members, 1, 'the dead do not come back');
-    assert.equal(killed.state, 'flee', 'two of three dead: the group flees');
+    assert.notEqual(killed.state, 'flee', 'two of three dead: the group stays');
     const after = await group('resident', home, 0);
-    const watcher = { x: Number(accounts.harvest.join.self.x), z: Number(accounts.harvest.join.self.z) };
-    const [runner] = actorsIn(after, channels[1]);
     assert.equal(actorsIn(after, channels[0]).length, 1, 'a creature killed in one channel is gone from the other too');
-    assert.equal(actorsIn(after, channels[1]).length, 1, 'one survivor runs');
-    const startDistance = Math.hypot(runner.x - watcher.x, runner.z - watcher.z);
-    assert(startDistance < 22, `the watcher stands by the group: ${Math.round(startDistance)} m`);
-    // Беглец в каждом канале бежит до самых ворот и исчезает только в них; всё это
-    // время группа в зоне, а наблюдателя он обходит стороной.
-    const gates = (homeDef.transitions || []).filter(row => row.type === 'zoneGate').map(row => ({ direction: row.direction, ...world(row) }));
-    let closest = startDistance;
-    await waitFor('every copy of the survivor walks out through a gate', async () => {
-      const row = await group('resident', home, 1);
-      const running = channels.map(roomId => actorsIn(row, roomId)[0]).filter(Boolean);
-      if (!running.length) return true;
-      assert(row.sx === home.col && row.sy === home.row, 'the group stays in the zone while a copy is still running');
-      for (const actor of running) {
-        assert.equal(actor.phase, 'leaving', 'the survivor keeps running');
-        if (actor.roomId === channels[1]) closest = Math.min(closest, Math.hypot(actor.x - watcher.x, actor.z - watcher.z));
-      }
-      return null;
-    }, 150000);
-    const exitEvents = (await devGet(`/api/dev/danger-ecology?sx=${home.col}&sy=${home.row}&radius=1`))
-      .recentExits.filter(event => event.groupId === 'resident');
-    assert.deepEqual(exitEvents.map(event => event.roomId).sort(), [...channels].sort(),
-      'each channel records one authoritative survivor exit');
-    const exits = exitEvents.map(event => {
-      const gate = gates.find(row => row.direction === event.direction);
-      assert(gate, `the ${event.roomId} survivor chose an authored gate`);
-      return { direction: event.direction, distance: Math.hypot(event.x - gate.x, event.z - gate.z) };
-    });
-    for (const exit of exits) assert(exit.distance <= 8,
-      `a survivor vanishes only in a zone gate: actual exit ${exit.distance.toFixed(1)} m from the ${exit.direction} gate`);
-    assert.equal(exits[0].direction, exits[1].direction, 'every copy leaves by the same gate');
-    assert(closest >= startDistance - 3, `the survivor runs away from the watcher, not past them: ${Math.round(startDistance)} → ${Math.round(closest)} m`);
-    const fled = await waitFor('the broken group leaves through a gate', async () => {
-      const row = await group('resident', home, 1);
-      return row && (row.sx !== home.col || row.sy !== home.row) ? row : null;
-    }, 5000);
-    const direction = Object.entries(home.edges).find(([, edge]) => edge.to === zoneById(graph, graph.zones.find(z => z.col === fled.sx && z.row === fled.sy).id)?.id);
-    assert(direction && direction[1].open !== false, 'the group left through an open gate');
-    assert.equal(direction[0], exits[0].direction, 'the group is beyond the gate its survivors walked out of');
-    assert(!zoneById(graph, direction[1].to).city, 'a broken group does not run into a city');
-    assert.equal(fled.online, '', 'the group left the scenes');
-    for (let probe = 0; probe < 6; probe += 1) {
-      assert(!((await group('resident', home, 1)).actors || []).length, 'the fled group does not come back into the zone');
-      await delay(500);
+    assert.equal(actorsIn(after, channels[1]).length, 1, 'the survivor stays in the second channel too');
+    await delay(2500);
+    const stayed = await group('resident', home, 0);
+    assert.equal(stayed.sx, home.col);
+    assert.equal(stayed.sy, home.row);
+    for (const roomId of channels) {
+      const [survivor] = actorsIn(stayed, roomId);
+      assert(survivor && survivor.phase !== 'leaving', `the survivor stays in ${roomId}`);
     }
-    console.log(`PASS a creature dies in every channel at once; the survivor runs away from the watcher (${Math.round(startDistance)} → ${Math.round(closest)} m closest) all the way out through the ${direction[0]} gate, in both channels, and the group does not come back`);
+    console.log('PASS a creature dies in every channel at once; survivors stay in both channels');
 
     // --- синяя зона живая ------------------------------------------------------------------------
     await h.connectAndJoin(accounts.trade);
@@ -265,27 +224,13 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
     await waitFor('the blue zone group stands in its scene', async () => actorsIn(await group('bluebirds', blue, 0), blue.id).length === 3);
     console.log(`PASS the blue zone ${blue.title} is alive too`);
 
-    // --- загнанный беглец ---------------------------------------------------------------------------
-    // Игрок не отстаёт от беглеца: тот не исчезает у него на глазах, а, загнанный,
-    // перестаёт бежать и остаётся в сцене.
-    assert.equal((await devPost('/api/dev/danger-ecology/kill', { groupId: 'bluebirds', roomId: blue.id, count: 2 })).state, 'flee');
-    const chaser = { x: Number(accounts.trade.join.self.x), z: Number(accounts.trade.join.self.z) };
-    const chaseStart = Date.now();
-    let cornered = null;
-    // Busy rooms advance escape by simulated AI time, so allow wall-clock slack.
-    while (!cornered && Date.now() - chaseStart < 45000) {
-      const [actor] = actorsIn(await group('bluebirds', blue, 0), blue.id);
-      assert(actor, `a chased survivor does not vanish before the chaser (${((Date.now() - chaseStart) / 1000).toFixed(1)} s)`);
-      if (!actor.phase) cornered = actor;
-      else await zoneWalk.driveTo(h, accounts.trade, chaser, actor.x, actor.z, 4);
-    }
-    assert(cornered, `a survivor the player keeps up with is cornered; chaser moved `
-      + `${Math.hypot(chaser.x - accounts.trade.join.self.x, chaser.z - accounts.trade.join.self.z).toFixed(1)} m`);
-    const chaseSeconds = (Date.now() - chaseStart) / 1000;
-    assert(chaseSeconds >= 7, `it runs for the whole flight first: ${chaseSeconds.toFixed(1)} s`);
+    // --- синяя зона тоже удерживает выживших --------------------------------------------------
+    assert.notEqual((await devPost('/api/dev/danger-ecology/kill', { groupId: 'bluebirds', roomId: blue.id, count: 2 })).state, 'flee');
     await delay(1500);
-    assert.equal(actorsIn(await group('bluebirds', blue, 0), blue.id).length, 1, 'the cornered survivor stays in the scene');
-    console.log(`PASS a survivor the player keeps up with is cornered after ${chaseSeconds.toFixed(1)} s and stays`);
+    const blueSurvivor = await group('bluebirds', blue, 0);
+    assert.equal(actorsIn(blueSurvivor, blue.id).length, 1, 'the blue-zone survivor stays in the scene');
+    assert.notEqual(actorsIn(blueSurvivor, blue.id)[0].phase, 'leaving');
+    console.log('PASS a blue-zone survivor also stays after heavy losses');
 
     // --- опустевшая зона отпускает группы ------------------------------------------------------------
     const woundedBefore = await group('hunter', home, 1);
@@ -304,7 +249,7 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
     h.cleanupSync();
     fs.rmSync(scratch, { recursive: true, force: true });
   }
-  console.log('Danger ecology network OK: groups live on the zone grid, stand in every channel, hunt through open gates, die in every channel at once, walk out through gates and never into cities, fight when cornered, live in blue zones and are released with their wounds.');
+  console.log('Danger ecology network OK: groups live on the zone grid, stand in every channel, hunt through open gates, die in every channel at once, keep survivors in battle, live in blue zones and are released with their wounds.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

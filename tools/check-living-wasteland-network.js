@@ -50,16 +50,16 @@ fs.writeFileSync(path.join(scratch, 'danger-ecology.json'), JSON.stringify({
   species: [
     { id: 'test_raiders', name: 'Банда налётчиков', kind: 'raider', faction: 'raiders',
       members: [{ type: 'raider', name: 'Налётчик', min: 4, max: 4, equipment: { weapon: 'pistol', armor: 'leather' } }],
-      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, perceptionCells: 0, aggression: 1, fleeAt: 0.9 },
+      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, perceptionCells: 0, aggression: 1 },
     { id: 'test_gari', name: 'Стая гари', kind: 'monster', faction: 'gari',
       members: [{ type: 'gari', name: 'Гарь', min: 3, max: 3 }],
-      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, perceptionCells: 0, aggression: 1, fleeAt: 0.9 },
+      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, perceptionCells: 0, aggression: 1 },
     { id: 'test_caravan', name: 'Караван', kind: 'traveller', faction: 'tract_league',
       members: [
         { type: 'caravan_guard', role: 'guard', name: 'Охранник каравана', min: 3, max: 3, equipment: { weapon: 'rifle', armor: 'ballisticVest' } },
         { type: 'porter', role: 'civilian', name: 'Носильщик', min: 1, max: 1, equipment: { backpack: 'backpack' } }
       ],
-      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, aggression: 0, fleeAt: 0.9, stepSeconds: [390, 390],
+      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, aggression: 0, stepSeconds: [390, 390],
       travel: { mode: 'caravan', count: 0, restMinutes: [60, 60] } },
     { id: 'test_patrol', name: 'Дозор тракта', kind: 'traveller', faction: 'tract_league',
       members: [{ type: 'patrol_guard', role: 'guard', name: 'Дозорный', min: 3, max: 3 }],
@@ -145,7 +145,7 @@ function watch(account) {
       { id: 'm4', type: 'porter', spec: 1, name: 'Носильщик', hp: 55, maxHp: 55 }
     ],
     restUntil: 0, nextStepAt: now + 20000, shakenUntil: 0, size0: 4, bornAt: 0,
-    home: 'settlement', dest: '', routeIndex: 1, fleeing: false,
+    home: 'settlement', dest: '', routeIndex: 1,
     route: [keys, road, next, beyond].map(zone => ({ sx: zone.col, sy: zone.row }))
   };
   fs.writeFileSync(path.join(h.DATA_DIR, 'danger-ecology.json'), JSON.stringify({

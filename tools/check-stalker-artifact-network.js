@@ -47,7 +47,7 @@ fs.writeFileSync(path.join(h.DATA_DIR, 'danger-ecology.json'), JSON.stringify({
       { id: 'm2', type: 'patrol_guard', spec: 0, name: 'Сталкер Б', hp: 80, maxHp: 80 }
     ], state: 'rest', target: null, restUntil: now + 60000, nextStepAt: now + 60000,
     shakenUntil: 0, size0: 2, bornAt: now, home: zone.id, dest: zone.id,
-    route: null, routeIndex: 0, fleeing: false }]
+    route: null, routeIndex: 0 }]
 }));
 
 const health = () => new Promise((resolve, reject) => {

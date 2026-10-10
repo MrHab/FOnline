@@ -35,8 +35,7 @@
       ],
       "habitat": { "pve": 1, "pvp": 3, "pvpFullDrop": 2 },
       "perceptionCells": 1,
-      "aggression": 0.7,
-      "fleeAt": 0.5
+      "aggression": 0.7
     },
     {
       "id": "gari_pack",
@@ -47,7 +46,6 @@
       "habitat": { "pve": 1, "pvp": 2, "pvpFullDrop": 2, "pvpBlack": 1 },
       "perceptionCells": 1,
       "aggression": 0.8,
-      "fleeAt": 0.6,
       "stepSeconds": [180, 400]
     },
     {
@@ -58,8 +56,7 @@
       "members": [{ "type": "dustling", "name": "Пыльник", "min": 4, "max": 6 }],
       "habitat": { "pve": 2, "pvp": 2, "pvpFullDrop": 1 },
       "perceptionCells": 0,
-      "aggression": 0.5,
-      "fleeAt": 0.7
+      "aggression": 0.5
     },
     {
       "id": "listener_pack",
@@ -69,8 +66,7 @@
       "members": [{ "type": "listener", "name": "Слухач", "min": 2, "max": 4 }],
       "habitat": { "pvp": 1, "pvpFullDrop": 2, "pvpBlack": 1 },
       "perceptionCells": 1,
-      "aggression": 0.9,
-      "fleeAt": 0.5
+      "aggression": 0.9
     },
     {
       "id": "rykhlyak_herd",
@@ -81,7 +77,6 @@
       "habitat": { "pvpFullDrop": 3, "pvpBlack": 1 },
       "perceptionCells": 0,
       "aggression": 0.5,
-      "fleeAt": 0.67,
       "stepSeconds": [400, 800]
     },
     {
@@ -93,7 +88,6 @@
       "habitat": { "pvpFullDrop": 2, "pvpBlack": 2 },
       "perceptionCells": 1,
       "aggression": 0.7,
-      "fleeAt": 0.5,
       "stepSeconds": [160, 360]
     },
     {
@@ -105,7 +99,6 @@
       "habitat": { "pvpFullDrop": 1, "pvpBlack": 3 },
       "perceptionCells": 0,
       "aggression": 0.4,
-      "fleeAt": 1,
       "stepSeconds": [480, 960]
     },
     {
@@ -116,8 +109,7 @@
       "members": [{ "type": "burned", "name": "Выжженный", "min": 3, "max": 5 }],
       "habitat": { "pvpFullDrop": 1, "pvpBlack": 2 },
       "perceptionCells": 0,
-      "aggression": 0.3,
-      "fleeAt": 0.6
+      "aggression": 0.3
     },
     {
       "id": "lantern_herd",
@@ -127,8 +119,7 @@
       "members": [{ "type": "lantern", "name": "Фонарник", "min": 2, "max": 4 }],
       "habitat": { "pve": 2, "pvp": 1, "pvpFullDrop": 1 },
       "perceptionCells": 0,
-      "aggression": 0,
-      "fleeAt": 0.3
+      "aggression": 0
     },
     {
       "id": "city_caravan",
@@ -142,7 +133,6 @@
       ],
       "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
       "aggression": 0.3,
-      "fleeAt": 0.5,
       "stepSeconds": [300, 480],
       "travel": { "mode": "caravan", "count": 8, "restMinutes": [15, 45], "respawnMinutes": 40 }
     },
@@ -156,7 +146,6 @@
       ],
       "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
       "aggression": 0.8,
-      "fleeAt": 0.6,
       "stepSeconds": [240, 420],
       "travel": { "mode": "patrol", "count": 1, "restMinutes": [20, 40], "respawnMinutes": 60, "patrolRadius": 2, "patrolStops": 3 }
     },
@@ -170,7 +159,6 @@
       ],
       "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
       "aggression": 0.7,
-      "fleeAt": 0.6,
       "stepSeconds": [240, 420],
       "travel": { "mode": "follow", "count": 0, "restMinutes": [5, 10] }
     },
@@ -186,7 +174,6 @@
       ],
       "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
       "aggression": 0.9,
-      "fleeAt": 0.4,
       "stepSeconds": [180, 300],
       "travel": { "mode": "poi", "count": 5, "restMinutes": [4, 10], "respawnMinutes": 30 }
     },
@@ -199,7 +186,6 @@
       "members": [{ "type": "gari", "name": "Бродячая гарь", "min": 3, "max": 5 }],
       "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
       "aggression": 1,
-      "fleeAt": 0.8,
       "stepSeconds": [180, 320],
       "travel": { "mode": "road", "count": 4, "restMinutes": [2, 7], "respawnMinutes": 25 }
     },
@@ -213,7 +199,6 @@
       ],
       "habitat": { "pve": 1, "pvp": 1, "pvpFullDrop": 1 },
       "aggression": 0,
-      "fleeAt": 0.5,
       "stepSeconds": [240, 420],
       "travel": { "mode": "anomaly", "count": 2, "restMinutes": [10, 20], "respawnMinutes": 45, "artifactSearchSeconds": 60 }
     }

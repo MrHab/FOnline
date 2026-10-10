@@ -214,7 +214,7 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// A-Life опасных клеток: группа подходит к сцене с края или отступает.
+        /// A-Life опасных клеток: группа подходит к сцене с края или следует маршруту.
         /// Строка — в журнал HUD и надписью над персонажем (на телефоне журнала нет).
         /// </summary>
         private void HandleDangerCellNotice(JObject payload)

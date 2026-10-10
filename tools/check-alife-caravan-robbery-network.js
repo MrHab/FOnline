@@ -53,11 +53,11 @@ fs.writeFileSync(path.join(scratch, 'danger-ecology.json'), JSON.stringify({
         { type: 'caravan_guard', role: 'guard', name: 'Охранник каравана', min: 2, max: 2,
           equipment: { weapon: 'rifle', armor: 'ballisticVest' } }
       ],
-      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, aggression: 0, fleeAt: 0.9,
+      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, aggression: 0,
       travel: { mode: 'caravan', count: 0, restMinutes: [60, 60] } },
     { id: 'robbery_patrol', name: 'Дозор', kind: 'traveller', faction: 'tract_league',
       members: [{ type: 'patrol_guard', role: 'guard', name: 'Дозорный', min: 2, max: 2 }],
-      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, aggression: 0, fleeAt: 0.9,
+      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1 }, aggression: 0,
       travel: { mode: 'patrol', count: 0, restMinutes: [60, 60] } }
   ]
 }));

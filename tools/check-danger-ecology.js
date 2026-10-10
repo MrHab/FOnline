@@ -31,7 +31,7 @@ const config = eco.normalizeEcologyConfig({
   roam: { restMinutes: [1, 2], stepSeconds: [60, 60], huntStepSeconds: [30, 30], radius: 2, migrateRadius: 4 },
   species: [
     { id: 'pack', name: 'Стая', kind: 'monster', members: [{ type: 'beast', min: 3, max: 4 }],
-      habitat: { pvpFullDrop: 2, pvpBlack: 3 }, perceptionCells: 2, aggression: 1, fleeAt: 0.5 },
+      habitat: { pvpFullDrop: 2, pvpBlack: 3 }, perceptionCells: 2, aggression: 1 },
     { id: 'gang', name: 'Банда', kind: 'raider', members: [{ type: 'raider', min: 2, max: 3 }],
       habitat: { pvp: 2, pvpFullDrop: 1 }, perceptionCells: 1, aggression: 0 },
     { id: 'broken', members: [], habitat: { pvp: 1 } }
@@ -149,21 +149,30 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
   assert(result.ok && !result.destroyed);
   assert(!hunter.members.some(member => member.id === firstId), 'a dead member is gone for good');
   while (hunter.members.length / hunter.size0 > 0.5) result = eco.memberKilled(state, config, hunter.id, hunter.members[0].id);
-  assert.equal(hunter.state, 'flee', 'heavy losses break the group');
+  assert.equal(Object.hasOwn(result, 'fleeing'), false, 'kills have no flight result');
+  assert.notEqual(hunter.state, 'flee', 'the surviving group stays on its routine');
   const survivor = hunter.members[0];
   eco.setGroupOffline(state, hunter, new Map([[survivor.id, 7]]), now, config);
   assert.equal(survivor.hp, 7, 'survivors keep their wounds after the scene');
   assert.equal(hunter.online, '');
-  assert.equal(hunter.state, 'return', 'a broken group heads home');
-  assert(hunter.shakenUntil > now, 'and does not answer noise for a while');
-  const shakenCtx = { ...ctx, occupiedCells: [{ sx: hunter.sx + 1, sy: hunter.sy }], occupied: (sx, sy) => sx === hunter.sx + 1 && sy === hunter.sy };
+  assert.notEqual(hunter.state, 'return', 'casualties do not send the group home');
+  assert.equal(Object.hasOwn(hunter, 'shakenUntil'), false, 'casualties have no fear cooldown');
+  const legacySave = eco.serializeEcologyState(state);
+  const legacyHunter = legacySave.groups.find(group => group.id === hunter.id);
+  legacyHunter.state = 'flee';
+  legacyHunter.shakenUntil = now + 600000;
+  const restoredHunter = eco.normalizeEcologyState(legacySave, config).groups.get(hunter.id);
+  assert.equal(restoredHunter.state, 'rest', 'an old fleeing save resumes ordinary activity');
+  assert.equal(Object.hasOwn(restoredHunter, 'shakenUntil'), false, 'an old fleeing save loses its fear cooldown');
+  assert.deepEqual([restoredHunter.sx, restoredHunter.sy], [hunter.sx, hunter.sy], 'migration keeps the group in place');
+  const nearbyCtx = { ...ctx, occupiedCells: [{ sx: hunter.sx + 1, sy: hunter.sy }], occupied: (sx, sy) => sx === hunter.sx + 1 && sy === hunter.sy };
   hunter.nextStepAt = now;
-  eco.tickEcology(state, config, shakenCtx, now + 1000, random);
-  assert.notEqual(hunter.state, 'hunt', 'a shaken group ignores players next door');
+  eco.tickEcology(state, config, nearbyCtx, now + 1000, random);
+  assert.equal(Object.hasOwn(hunter, 'shakenUntil'), false, 'survivors have no casualty fear cooldown');
   while (hunter.members.length) result = eco.memberKilled(state, config, hunter.id, hunter.members[0].id);
   assert(result.destroyed && !state.groups.has(hunter.id), `a group with no members is gone (${size} killed)`);
   assert(!eco.groupsAt(state, frozen.sx, frozen.sy).some(group => group.id === hunter.id));
-  console.log('PASS deaths are permanent, heavy losses make a group flee, survivors keep their wounds');
+  console.log('PASS deaths are permanent, survivors stay and keep their wounds');
 }
 
 // --- отдыхающая группа прислушивается ------------------------------------------------------------
@@ -329,8 +338,8 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
   const fight = eco.normalizeEcologyConfig({
     roam: { restMinutes: [240, 240], stepSeconds: [600, 600], radius: 1, clashPerMinute: 0.5, clashCooldownMinutes: 10 },
     species: [
-      { id: 'raiders', kind: 'raider', faction: 'raiders', members: [{ type: 'raider', min: 4, max: 4 }], habitat: { pvp: 1 }, aggression: 0.7, fleeAt: 0.5 },
-      { id: 'beasts', kind: 'monster', faction: 'gari', members: [{ type: 'beast', min: 3, max: 3 }], habitat: { pvp: 1 }, aggression: 0.8, fleeAt: 0.6 },
+      { id: 'raiders', kind: 'raider', faction: 'raiders', members: [{ type: 'raider', min: 4, max: 4 }], habitat: { pvp: 1 }, aggression: 0.7 },
+      { id: 'beasts', kind: 'monster', faction: 'gari', members: [{ type: 'beast', min: 3, max: 3 }], habitat: { pvp: 1 }, aggression: 0.8 },
       { id: 'lanterns', kind: 'fauna', faction: 'fonari', members: [{ type: 'deer', min: 3, max: 3 }], habitat: { pvp: 1 }, aggression: 0 }
     ]
   });
@@ -357,8 +366,8 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
   assert.equal(clash.winner, raiders.id, 'the stronger band wins');
   const beasts = [...world.groups.values()].find(group => group.speciesId === 'beasts');
   if (beasts) {
-    assert.equal(beasts.state, 'return', 'the beaten pack leaves');
-    assert(beasts.shakenUntil > t, 'and keeps away for a while');
+    assert.notEqual(beasts.state, 'return', 'the beaten pack is not sent home');
+    assert.equal(Object.hasOwn(beasts, 'shakenUntil'), false, 'battle losses have no fear cooldown');
   }
   const dead = clash.casualties.filter(row => row.speciesId === 'beasts').length;
   assert.equal((beasts?.members.length || 0) + dead, 3, 'the fallen do not come back');
@@ -373,6 +382,38 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
   t += 60000;
   assert.equal(eco.tickEcology(world, fight, quietFight, t, seeded(24)).filter(event => event.type === 'clash').length, 0, 'a clash is followed by a lull');
   console.log(`PASS hostile groups in a zone without players clash (${clash.casualties.length} fallen), the stronger wins, the fauna stays out, a zone with players is left to the scene`);
+}
+
+// Выжившие после офлайн-стычки продолжают обычное дело, даже когда одна
+// сторона формально проиграла по силе. Проверяем обе стороны без смертей.
+{
+  const state = eco.emptyEcologyState('no-flight');
+  const member = id => ({ id, type: 'gari', spec: 0, name: id, hp: 100, maxHp: 100 });
+  const caravan = {
+    id: 'caravan', speciesId: 'caravan', sx: 4, sy: 4, members: [member('c')],
+    state: 'travel', route: [{ sx: 3, sy: 4 }, { sx: 4, sy: 4 }, { sx: 5, sy: 4 }],
+    routeIndex: 1, nextStepAt: 900000
+  };
+  const pack = {
+    id: 'pack', speciesId: 'pack', sx: 4, sy: 4, members: [member('p')],
+    state: 'roam', target: { sx: 5, sy: 5 }, nextStepAt: 900000
+  };
+  state.groups.set(caravan.id, caravan);
+  state.groups.set(pack.id, pack);
+  const config = {
+    speciesById: { caravan: { kind: 'traveller', combat: 0.1 }, pack: { kind: 'monster', combat: 0.1 } },
+    roam: { clashCooldownMinutes: 2 }
+  };
+  const route = JSON.parse(JSON.stringify(caravan.route));
+  const clash = eco.clashGroups(state, config, caravan, pack, 100000, () => 0);
+  assert.equal(clash.destroyed.length, 0, 'both groups survive the exchange');
+  assert(caravan.members[0].hp < 100 && pack.members[0].hp < 100, 'both groups take damage');
+  assert.equal(caravan.state, 'travel', 'the caravan continues its original trip');
+  assert.deepEqual(caravan.route, route, 'combat does not reverse the caravan route');
+  assert.equal(Object.hasOwn(caravan, 'fleeing'), false);
+  assert.equal(pack.state, 'roam', 'the pack keeps roaming after combat');
+  assert.deepEqual(pack.target, { sx: 5, sy: 5 }, 'combat does not send the pack home');
+  console.log('PASS surviving offscreen groups keep their routes and targets after combat');
 }
 
 // --- путники ----------------------------------------------------------------------------------
@@ -403,10 +444,10 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
     roam: { restMinutes: [30, 30], stepSeconds: [60, 60], huntStepSeconds: [30, 30], radius: 1, clashPerMinute: 2 },
     species: [
       { id: 'caravan', kind: 'traveller', faction: 'wayfarers', members: [{ type: 'guard', min: 3, max: 3 }, { type: 'porter', min: 2, max: 2 }],
-        habitat: { pvp: 1 }, aggression: 0.2, fleeAt: 0.4, stepSeconds: [60, 60], travel: { mode: 'caravan', count: 2, restMinutes: [1, 2], respawnMinutes: 30 } },
+        habitat: { pvp: 1 }, aggression: 0.2, stepSeconds: [60, 60], travel: { mode: 'caravan', count: 2, restMinutes: [1, 2], respawnMinutes: 30 } },
       { id: 'patrol', kind: 'traveller', faction: 'wayfarers', members: [{ type: 'guard', min: 3, max: 3 }],
         habitat: { pvp: 1 }, aggression: 0.8, stepSeconds: [60, 60], travel: { mode: 'patrol', count: 1, restMinutes: [1, 2], patrolRadius: 2, patrolStops: 2 } },
-      { id: 'raiders', kind: 'raider', faction: 'raiders', members: [{ type: 'raider', min: 5, max: 5 }], habitat: { pvp: 1 }, aggression: 1, fleeAt: 0.8 }
+      { id: 'raiders', kind: 'raider', faction: 'raiders', members: [{ type: 'raider', min: 5, max: 5 }], habitat: { pvp: 1 }, aggression: 1 }
     ]
   });
   const human = () => ({ maxHp: 55 });
@@ -450,7 +491,15 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
     caravan = caravans().find(group => group.state === 'travel' && group.routeIndex >= 1 && eco.travellerNextCell(group));
   }
   assert(caravan, 'a caravan is on the road');
-  const cameFrom = { ...caravan.route[caravan.routeIndex - 1] };
+  const legacyTravellerSave = eco.serializeEcologyState(world);
+  const legacyTraveller = legacyTravellerSave.groups.find(group => group.id === caravan.id);
+  legacyTraveller.state = 'flee';
+  legacyTraveller.fleeing = true;
+  const restoredTraveller = eco.normalizeEcologyState(legacyTravellerSave, travel).groups.get(caravan.id);
+  assert.equal(restoredTraveller.state, 'rest', 'a saved fleeing traveller replans its next trip');
+  assert.equal(restoredTraveller.route, null, 'the old reversed route is discarded');
+  assert.deepEqual([restoredTraveller.sx, restoredTraveller.sy], [caravan.sx, caravan.sy], 'the traveller stays in its current cell');
+  const nextOnRoute = { ...eco.travellerNextCell(caravan) };
   caravan.nextStepAt = t + 3600000;
   world.lairs.set('lair_r', { id: 'lair_r', speciesId: 'raiders', sx: caravan.sx, sy: caravan.sy, mode: 'pvp', region: '', slot: 0, refillAt: 0 });
   let met = null;
@@ -462,8 +511,8 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
   assert(met.casualties.some(row => row.groupId === caravan.id), 'the caravan loses people');
   assert.equal(met.loser, caravan.id, 'five raiders beat a caravan of five');
   if (world.groups.has(caravan.id)) {
-    assert(caravan.fleeing, 'a beaten caravan turns back');
-    assert.deepEqual(eco.travellerNextCell(caravan), cameFrom, 'the way it came');
+    assert.equal(Object.hasOwn(caravan, 'fleeing'), false, 'a beaten caravan has no flight state');
+    assert.deepEqual(eco.travellerNextCell(caravan), nextOnRoute, 'the caravan keeps its forward route');
   }
   // Сохранение переживают и путь каравана, и его дом.
   const copy = eco.normalizeEcologyState(JSON.parse(JSON.stringify(eco.serializeEcologyState(world))), travel);
@@ -473,7 +522,7 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
     assert.equal(saved.home, group.home);
     assert.equal(saved.routeIndex, group.routeIndex);
   }
-  console.log(`PASS caravans take ${routes.size} different ways between two cities and travel on, patrols walk around their city, raiders fall on caravans and a beaten one turns back`);
+  console.log(`PASS caravans take ${routes.size} different ways between two cities and travel on, patrols walk around their city, raiders fall on caravans and survivors keep their routes`);
 }
 
 // --- путник за отрядом мира симуляции -----------------------------------------------------------

@@ -219,7 +219,6 @@ const serverSource = fs.readFileSync(path.resolve(__dirname, '..', 'server.js'),
   // вызов принимает третьим аргументом опции, а не только оружие.
   'const telegraph = npcAttackTelegraph(e, serverNpcWeaponDef(e), telegraphOptions);',
   'frame.attackTargetId = telegraph.targetId;',
-  'updateEnemyCombatRetreat(room, enemy, visibleTarget, dt, now)',
   'room.enemyAiPlayers = roomPlayers;',
   'roomPlayerCollisionMoveAllowed(room, enemy, x, z)',
   'actorCircleMoveAllowed(',

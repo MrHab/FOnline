@@ -553,7 +553,7 @@ namespace RealmOfAshes.Net
                 if (payload != null) OnPveAreaState?.Invoke(payload);
             }));
 
-            // A-Life опасных клеток: группа подходит к сцене или отступает —
+            // A-Life опасных клеток: группа подходит к сцене или следует маршруту —
             // строка приходит всей комнате.
             _connection.On("dangerCellNotice", args => _mainThread.Enqueue(() =>
             {

@@ -1,0 +1,221 @@
+{
+  "theme": "Контур: довоенная диспетчерская, радиобашня, закрытые служебные двери, приборы и чистые рабочие зоны.",
+  "color": [
+    0.31,
+    0.4,
+    0.37
+  ],
+  "schema": "roa.cityAppearance.v1",
+  "id": "relayStation",
+  "replacements": [
+    {
+      "id": "plaza_landmark",
+      "prefab": "SM_Bld_RadioTower_01",
+      "x": 1,
+      "z": 9
+    },
+    {
+      "id": "home_0",
+      "prefab": "SM_Bld_House_03"
+    },
+    {
+      "id": "home_1",
+      "prefab": "SM_Bld_House_03"
+    },
+    {
+      "id": "home_2",
+      "prefab": "SM_Bld_Quarantine_Tent_01"
+    },
+    {
+      "id": "home_3",
+      "prefab": "SM_Bld_House_03"
+    },
+    {
+      "id": "market_awning_0",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "market_awning_1",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "market_awning_2",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "market_awning_3",
+      "prefab": "SM_Bld_Tarp_Generic_04",
+      "type": "marketStall",
+      "y": 2.4
+    },
+    {
+      "id": "plaza_dispatch_post",
+      "prefab": "SM_Bld_Industrial_Small_01"
+    },
+    {
+      "id": "market_crate_0",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -25.8,
+      "z": 29.5,
+      "y": 0
+    },
+    {
+      "id": "market_crate_1",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -41.8,
+      "z": 29.5,
+      "y": 0
+    },
+    {
+      "id": "market_crate_2",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -25.8,
+      "z": 45.5,
+      "y": 0
+    },
+    {
+      "id": "market_crate_3",
+      "prefab": "SM_Prop_Crate_01",
+      "x": -57.8,
+      "z": 29.5,
+      "y": 0
+    }
+  ],
+  "additions": [
+    {
+      "id": "city_detail_instrument_generator",
+      "prefab": "SM_Prop_Generator_01",
+      "x": -12,
+      "z": 19,
+      "rotY": 0
+    },
+    {
+      "id": "city_detail_instrument_valves",
+      "prefab": "SM_Prop_Pipes_Valves_01",
+      "x": -8,
+      "z": 19,
+      "rotY": 0
+    },
+    {
+      "id": "city_detail_bank_service_canopy",
+      "x": 31,
+      "y": 0,
+      "z": 47,
+      "rotY": 0,
+      "name": "Приём банка и аукциона",
+      "type": "civicCanopy",
+      "civicCaption": [
+        "БАНК",
+        "АУКЦИОН"
+      ],
+      "tags": [
+        "bank",
+        "city-public-service",
+        "camera-cutaway",
+        "camera-cutaway-renderer:CivicCanopyRoof"
+      ]
+    },
+    {
+      "id": "city_detail_bank_registry_a",
+      "prefab": "SM_Prop_Study_Desk_01",
+      "x": 36,
+      "z": 47,
+      "rotY": 0,
+      "name": "Регистрация вкладов",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_registry_b",
+      "prefab": "SM_Prop_Desk_02",
+      "x": 39,
+      "z": 47,
+      "rotY": 0,
+      "name": "Регистрация аукционных заявок",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_archive_a",
+      "prefab": "SM_Prop_Shelf_01_Combined",
+      "x": 43,
+      "z": 48,
+      "rotY": 0,
+      "name": "Картотека реестра вкладов",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_archive_b",
+      "prefab": "SM_Prop_Shelf_01_Combined",
+      "x": 46,
+      "z": 48,
+      "rotY": 0,
+      "name": "Картотека реестра аукциона",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_storage",
+      "prefab": "SM_Prop_Shipping_Container_02",
+      "x": 47,
+      "z": 39,
+      "rotY": 0,
+      "name": "Закрытый архив вкладов",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_waiting_a",
+      "prefab": "SM_Prop_Plank_Bench_01",
+      "x": 35,
+      "z": 41,
+      "rotY": 90,
+      "name": "Лавка ожидания банка",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_waiting_b",
+      "prefab": "SM_Prop_Plank_Bench_01",
+      "x": 40,
+      "z": 41,
+      "rotY": 90,
+      "name": "Лавка ожидания банка",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    },
+    {
+      "id": "city_detail_bank_notice",
+      "prefab": "SM_Prop_Blackboard_01",
+      "x": 30,
+      "z": 43,
+      "rotY": 0,
+      "name": "Правила банка и аукциона",
+      "tags": [
+        "bank",
+        "city-public-service"
+      ]
+    }
+  ]
+}

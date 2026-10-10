@@ -144,6 +144,9 @@ namespace RealmOfAshes.World
             _visualWidth = location != null ? location.WorldWidth : 76f;
             _visualDepth = location != null ? location.WorldDepth : 76f;
             _textureSize = AlbedoResolution(Application.isMobilePlatform);
+            if (RoaZoneReliefProjection.Supports(location?.Id))
+                RoaZoneReliefProjection.Project(target, _visualWidth, _visualDepth);
+            else RoaSectorSurface.Project(location?.Id, target);
             GroundUvMirror(target, out _mirrorAlbedoX, out _mirrorAlbedoZ);
 
             // Материал — копия авторского: сохраняются шейдер и его настройки, а
@@ -167,6 +170,7 @@ namespace RealmOfAshes.World
             if (_material.HasProperty("_Glossiness")) _material.SetFloat("_Glossiness", 0.015f);
             target.sharedMaterial = _material;
             GroundRenderer = target;
+            RoaSectorRailInfrastructure.BindTerrainMaterial(target.transform.root, _material, target);
 
             ApplyMicroDetail(_material, location != null ? location.Seed : 1L);
             ApplyMap(stateMap, true);

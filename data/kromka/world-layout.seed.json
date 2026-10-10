@@ -420,8 +420,8 @@
     },
     {
       "id": "roadOutpost",
-      "x": 205,
-      "z": 218
+      "x": 204.875,
+      "z": 216.625
     },
     {
       "id": "resourceDryWaterPump",
@@ -445,8 +445,8 @@
     },
     {
       "id": "scrapOutpost",
-      "x": 133,
-      "z": 205
+      "x": 133.5,
+      "z": 207
     },
     {
       "id": "scrapFoundry",
@@ -526,7 +526,7 @@
     {
       "id": "relayOutpost",
       "x": 270,
-      "z": 200
+      "z": 202.375
     },
     {
       "id": "relayWorkshop",

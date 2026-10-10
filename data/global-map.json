@@ -81,7 +81,7 @@
       "capital": false,
       "capitalFaction": "",
       "hidden": false,
-      "danger": 2,
+      "danger": 1,
       "model": "watchPost",
       "modelScale": 1,
       "rotationY": 0,
@@ -89,7 +89,7 @@
       "macroRegion": "middle_vein",
       "visualProfile": "clan-hydro-node-two-v1",
       "worldRevision": "kromka-1",
-      "roadAccess": false
+      "roadAccess": true
     },
     {
       "id": "settlement",
@@ -113,8 +113,8 @@
     },
     {
       "id": "roadOutpost",
-      "x": 205,
-      "y": 218,
+      "x": 204.875,
+      "y": 216.625,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "roadOutpost",
@@ -213,8 +213,8 @@
     },
     {
       "id": "scrapOutpost",
-      "x": 133,
-      "y": 205,
+      "x": 133.5,
+      "y": 207,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "scrapOutpost",
@@ -289,7 +289,7 @@
       "macroRegion": "ore_arc",
       "visualProfile": "sorted-scrap-fields-v1",
       "worldRevision": "kromka-1",
-      "roadAccess": true
+      "roadAccess": false
     },
     {
       "id": "antHive",
@@ -321,7 +321,7 @@
       "capital": false,
       "capitalFaction": "",
       "hidden": false,
-      "danger": 2,
+      "danger": 1,
       "model": "watchPost",
       "modelScale": 1,
       "rotationY": 0,
@@ -329,7 +329,7 @@
       "macroRegion": "middle_vein",
       "visualProfile": "clan-ore-transfer-v1",
       "worldRevision": "kromka-1",
-      "roadAccess": false
+      "roadAccess": true
     },
     {
       "id": "clanFactoryCycle",
@@ -341,7 +341,7 @@
       "capital": false,
       "capitalFaction": "",
       "hidden": false,
-      "danger": 2,
+      "danger": 1,
       "model": "watchPost",
       "modelScale": 1,
       "rotationY": 0,
@@ -349,7 +349,7 @@
       "macroRegion": "middle_vein",
       "visualProfile": "clan-reagent-cycle-v1",
       "worldRevision": "kromka-1",
-      "roadAccess": false
+      "roadAccess": true
     },
     {
       "id": "caravanCamp",
@@ -361,7 +361,7 @@
       "capital": true,
       "capitalFaction": "tract_league",
       "hidden": false,
-      "danger": 1,
+      "danger": 5,
       "model": "wastelandShack",
       "modelScale": 1,
       "rotationY": 0,
@@ -534,7 +534,7 @@
     {
       "id": "relayOutpost",
       "x": 270,
-      "y": 200,
+      "y": 202.375,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "relayOutpost",
@@ -649,7 +649,7 @@
       "macroRegion": "glasslands",
       "visualProfile": "clan-relay-v9-v1",
       "worldRevision": "kromka-1",
-      "roadAccess": false
+      "roadAccess": true
     },
     {
       "id": "resourceChemSpring",

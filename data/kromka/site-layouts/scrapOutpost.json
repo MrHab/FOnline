@@ -4,6 +4,10 @@
   "site": {
     "id": "scrapOutpost",
     "zone": "z_06_10",
+    "entrance": {
+      "x": 60,
+      "z": 24
+    },
     "name": "Сторожевая артель",
     "kind": "outpost",
     "safe": false,

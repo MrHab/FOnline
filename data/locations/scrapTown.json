@@ -46,20 +46,32 @@
     "rotationY": 0
   },
   "entryFromEast": {
-    "tx": 68,
-    "tz": 40
+    "tx": 70,
+    "tz": 39,
+    "x": 61,
+    "y": 0.1,
+    "z": -2
   },
   "entryFromNorth": {
-    "tx": 40,
-    "tz": 68
+    "tx": 39,
+    "tz": 70,
+    "x": -2,
+    "y": 0.1,
+    "z": 61
   },
   "entryFromSouth": {
-    "tx": 40,
-    "tz": 12
+    "tx": 42,
+    "tz": 9,
+    "x": 4,
+    "y": 0.1,
+    "z": -61
   },
   "entryFromWest": {
-    "tx": 12,
-    "tz": 40
+    "tx": 9,
+    "tz": 39,
+    "x": -61,
+    "y": 0.1,
+    "z": -2
   },
   "transitions": [],
   "worldZones": [],
@@ -104,6 +116,11 @@
         "traderProfile": "artifactOutfitter",
         "tradeProfile": "artifactOutfitter",
         "dialogueProfile": "scrap"
+      },
+      "surfaceSourcePosition": {
+        "x": 15,
+        "y": 0,
+        "z": 47
       }
     },
     {
@@ -143,6 +160,11 @@
         "scenePlaced": false,
         "service": "registrar",
         "territoryFactionId": "free_artels"
+      },
+      "surfaceSourcePosition": {
+        "x": 21,
+        "y": 0,
+        "z": 47
       }
     },
     {
@@ -225,7 +247,12 @@
         "mode": "none"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -5,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "auctioneer",
@@ -280,14 +307,19 @@
         "territoryFactionId": "free_artels"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 27,
+        "y": 0,
+        "z": 47
+      }
     },
     {
       "id": "medic",
       "model": "wastelandSettler",
       "name": "Медик поселения",
       "position": {
-        "x": -13,
+        "x": -9,
         "y": 0,
         "z": 15
       },
@@ -335,7 +367,12 @@
         "territoryFactionId": "free_artels"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -13,
+        "y": 0,
+        "z": 15
+      }
     },
     {
       "id": "repairman",
@@ -390,7 +427,78 @@
         "territoryFactionId": "free_artels"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 19,
+        "y": 0,
+        "z": -27
+      }
+    },
+    {
+      "id": "nika_reznik",
+      "model": "wastelandSettler",
+      "name": "Ника Резник",
+      "position": {
+        "x": 3,
+        "y": 0,
+        "z": 17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 5.498,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "named",
+        "npcId": "nika_reznik",
+        "role": "civilian",
+        "faction": "free_artels",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "hairId": "short_crop",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_06"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 7,
+        "y": 0,
+        "z": 17
+      }
     },
     {
       "id": "bank_counter",
@@ -439,7 +547,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 31,
+        "y": 0,
+        "z": 47
+      }
     },
     {
       "id": "bank_crates",
@@ -487,7 +600,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 37,
+        "y": 0,
+        "z": 37
+      }
     },
     {
       "id": "bank_ground",
@@ -524,7 +642,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 37,
+        "y": 0,
+        "z": 37
+      }
     },
     {
       "id": "bank_vault",
@@ -573,7 +696,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 47,
+        "y": 0,
+        "z": 27
+      }
     },
     {
       "id": "bank_w0",
@@ -622,7 +750,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 27,
+        "y": 0,
+        "z": 51
+      }
     },
     {
       "id": "bank_w1",
@@ -671,7 +804,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 27,
+        "y": 0,
+        "z": 23
+      }
     },
     {
       "id": "bank_w10",
@@ -720,7 +858,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 51,
+        "y": 0,
+        "z": 41
+      }
     },
     {
       "id": "bank_w11",
@@ -769,7 +912,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 51,
+        "y": 0,
+        "z": 33
+      }
     },
     {
       "id": "bank_w12",
@@ -818,7 +966,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 23,
+        "y": 0,
+        "z": 27
+      }
     },
     {
       "id": "bank_w13",
@@ -867,7 +1020,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 51,
+        "y": 0,
+        "z": 27
+      }
     },
     {
       "id": "bank_w2",
@@ -916,7 +1074,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 33,
+        "y": 0,
+        "z": 51
+      }
     },
     {
       "id": "bank_w3",
@@ -965,7 +1128,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 33,
+        "y": 0,
+        "z": 23
+      }
     },
     {
       "id": "bank_w4",
@@ -1014,7 +1182,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 41,
+        "y": 0,
+        "z": 51
+      }
     },
     {
       "id": "bank_w5",
@@ -1063,7 +1236,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 41,
+        "y": 0,
+        "z": 23
+      }
     },
     {
       "id": "bank_w6",
@@ -1112,7 +1290,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 47,
+        "y": 0,
+        "z": 51
+      }
     },
     {
       "id": "bank_w7",
@@ -1161,7 +1344,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 47,
+        "y": 0,
+        "z": 23
+      }
     },
     {
       "id": "bank_w8",
@@ -1210,7 +1398,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 23,
+        "y": 0,
+        "z": 47
+      }
     },
     {
       "id": "bank_w9",
@@ -1259,16 +1452,21 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 51,
+        "y": 0,
+        "z": 47
+      }
     },
     {
       "id": "capital_storage_scrap_union",
       "model": "storageChest",
       "name": "Хранилище Вольных артелей",
       "position": {
-        "x": 47,
+        "x": 43,
         "y": 0,
-        "z": 27
+        "z": 20.072
       },
       "rotation": {
         "x": 0,
@@ -1306,7 +1504,12 @@
       "role": "scenery",
       "unityAuthored": true,
       "worldRevision": "kromka-1",
-      "prefab": "storage_chest"
+      "prefab": "storage_chest",
+      "surfaceSourcePosition": {
+        "x": 47,
+        "y": 0,
+        "z": 27
+      }
     },
     {
       "id": "gate_tower_east_a",
@@ -1355,7 +1558,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": 9
+      }
     },
     {
       "id": "gate_tower_east_b",
@@ -1404,7 +1612,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": -7
+      }
     },
     {
       "id": "gate_tower_north_a",
@@ -1453,7 +1666,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -7,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "gate_tower_north_b",
@@ -1502,7 +1720,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 9,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "gate_tower_south_a",
@@ -1551,7 +1774,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -7,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "gate_tower_south_b",
@@ -1600,7 +1828,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 9,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "gate_tower_west_a",
@@ -1649,7 +1882,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 9
+      }
     },
     {
       "id": "gate_tower_west_b",
@@ -1698,7 +1936,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": -7
+      }
     },
     {
       "id": "home_0",
@@ -1746,7 +1989,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "home_1",
@@ -1794,7 +2042,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "home_2",
@@ -1842,7 +2095,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "home_3",
@@ -1890,7 +2148,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "homes_fire",
@@ -1927,7 +2190,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -21,
+        "y": 0,
+        "z": -31
+      }
     },
     {
       "id": "market_awning_0",
@@ -1964,7 +2232,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "market_awning_1",
@@ -2001,7 +2274,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "market_awning_2",
@@ -2038,7 +2316,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "market_awning_3",
@@ -2075,7 +2358,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "market_crate_0",
@@ -2123,7 +2411,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -25,
+        "y": 0,
+        "z": 27
+      }
     },
     {
       "id": "market_crate_1",
@@ -2171,7 +2464,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -41,
+        "y": 0,
+        "z": 27
+      }
     },
     {
       "id": "market_crate_2",
@@ -2219,7 +2517,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -25,
+        "y": 0,
+        "z": 43
+      }
     },
     {
       "id": "market_crate_3",
@@ -2267,7 +2570,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -57,
+        "y": 0,
+        "z": 27
+      }
     },
     {
       "id": "plaza_board",
@@ -2316,7 +2624,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -9,
+        "y": 0,
+        "z": -7
+      }
     },
     {
       "id": "plaza_dispatch_post",
@@ -2353,7 +2666,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 13,
+        "y": 0,
+        "z": 9
+      }
     },
     {
       "id": "plaza_landmark",
@@ -2402,7 +2720,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": 9
+      }
     },
     {
       "id": "plaza_medic_post",
@@ -2439,7 +2762,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -11,
+        "y": 0,
+        "z": 9
+      }
     },
     {
       "id": "plaza_well",
@@ -2475,7 +2803,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 11,
+        "y": 0,
+        "z": -5
+      }
     },
     {
       "id": "plot_0_board",
@@ -2530,7 +2863,12 @@
         "plotId": "plot_0"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 57,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_0_edge-10",
@@ -2580,7 +2918,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 55,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_0_edge0-1",
@@ -2630,7 +2973,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": 35
+      }
     },
     {
       "id": "plot_0_edge01",
@@ -2680,7 +3028,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": 23
+      }
     },
     {
       "id": "plot_0_edge10",
@@ -2730,7 +3083,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 67,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_0_ground",
@@ -2768,7 +3126,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_10_board",
@@ -2823,7 +3186,12 @@
         "plotId": "plot_10"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 57
+      }
     },
     {
       "id": "plot_10_edge-10",
@@ -2873,7 +3241,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -33,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_10_edge0-1",
@@ -2923,7 +3296,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 67
+      }
     },
     {
       "id": "plot_10_edge01",
@@ -2973,7 +3351,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 55
+      }
     },
     {
       "id": "plot_10_edge10",
@@ -3023,7 +3406,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -21,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_10_ground",
@@ -3061,7 +3449,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_11_board",
@@ -3116,7 +3509,12 @@
         "plotId": "plot_11"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -55,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_11_edge-10",
@@ -3166,7 +3564,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -65,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_11_edge0-1",
@@ -3216,7 +3619,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 51
+      }
     },
     {
       "id": "plot_11_edge01",
@@ -3266,7 +3674,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 39
+      }
     },
     {
       "id": "plot_11_edge10",
@@ -3316,7 +3729,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -53,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_11_ground",
@@ -3354,7 +3772,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_12_board",
@@ -3409,7 +3832,12 @@
         "plotId": "plot_12"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 57
+      }
     },
     {
       "id": "plot_12_edge-10",
@@ -3459,7 +3887,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -49,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_12_edge0-1",
@@ -3509,7 +3942,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 67
+      }
     },
     {
       "id": "plot_12_edge01",
@@ -3559,7 +3997,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 55
+      }
     },
     {
       "id": "plot_12_edge10",
@@ -3609,7 +4052,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -37,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_12_ground",
@@ -3647,7 +4095,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_13_board",
@@ -3702,7 +4155,12 @@
         "plotId": "plot_13"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 57
+      }
     },
     {
       "id": "plot_13_edge-10",
@@ -3752,7 +4210,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -65,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_13_edge0-1",
@@ -3802,7 +4265,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 67
+      }
     },
     {
       "id": "plot_13_edge01",
@@ -3852,7 +4320,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 55
+      }
     },
     {
       "id": "plot_13_edge10",
@@ -3902,7 +4375,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -53,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_13_ground",
@@ -3940,7 +4418,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_14_board",
@@ -3995,7 +4478,12 @@
         "plotId": "plot_14"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -23
+      }
     },
     {
       "id": "plot_14_edge-10",
@@ -4045,7 +4533,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 23,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_14_edge0-1",
@@ -4095,7 +4588,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -21
+      }
     },
     {
       "id": "plot_14_edge01",
@@ -4145,7 +4643,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -33
+      }
     },
     {
       "id": "plot_14_edge10",
@@ -4195,7 +4698,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 35,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_14_ground",
@@ -4233,7 +4741,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_15_board",
@@ -4288,7 +4801,12 @@
         "plotId": "plot_15"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 41,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_15_edge-10",
@@ -4338,7 +4856,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 39,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_15_edge0-1",
@@ -4388,7 +4911,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": -21
+      }
     },
     {
       "id": "plot_15_edge01",
@@ -4438,7 +4966,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": -33
+      }
     },
     {
       "id": "plot_15_edge10",
@@ -4488,7 +5021,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 51,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_15_ground",
@@ -4526,7 +5064,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_16_board",
@@ -4581,7 +5124,12 @@
         "plotId": "plot_16"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -39
+      }
     },
     {
       "id": "plot_16_edge-10",
@@ -4631,7 +5179,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 23,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_16_edge0-1",
@@ -4681,7 +5234,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -37
+      }
     },
     {
       "id": "plot_16_edge01",
@@ -4731,7 +5289,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -49
+      }
     },
     {
       "id": "plot_16_edge10",
@@ -4781,7 +5344,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 35,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_16_ground",
@@ -4819,7 +5387,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_17_board",
@@ -4874,7 +5447,12 @@
         "plotId": "plot_17"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 57,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_17_edge-10",
@@ -4924,7 +5502,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 55,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_17_edge0-1",
@@ -4974,7 +5557,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": -21
+      }
     },
     {
       "id": "plot_17_edge01",
@@ -5024,7 +5612,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": -33
+      }
     },
     {
       "id": "plot_17_edge10",
@@ -5074,7 +5667,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 67,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_17_ground",
@@ -5112,7 +5710,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_18_board",
@@ -5167,7 +5770,12 @@
         "plotId": "plot_18"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": -39
+      }
     },
     {
       "id": "plot_18_edge-10",
@@ -5217,7 +5825,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 39,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_18_edge0-1",
@@ -5267,7 +5880,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": -37
+      }
     },
     {
       "id": "plot_18_edge01",
@@ -5317,7 +5935,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": -49
+      }
     },
     {
       "id": "plot_18_edge10",
@@ -5367,7 +5990,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 51,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_18_ground",
@@ -5405,7 +6033,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_19_board",
@@ -5460,7 +6093,12 @@
         "plotId": "plot_19"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -55
+      }
     },
     {
       "id": "plot_19_edge-10",
@@ -5510,7 +6148,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 23,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_19_edge0-1",
@@ -5560,7 +6203,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -53
+      }
     },
     {
       "id": "plot_19_edge01",
@@ -5610,7 +6258,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -65
+      }
     },
     {
       "id": "plot_19_edge10",
@@ -5660,7 +6313,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 35,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_19_ground",
@@ -5698,7 +6356,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_1_board",
@@ -5753,7 +6416,12 @@
         "plotId": "plot_1"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 57,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_1_edge-10",
@@ -5803,7 +6471,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 55,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_1_edge0-1",
@@ -5853,7 +6526,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": 51
+      }
     },
     {
       "id": "plot_1_edge01",
@@ -5903,7 +6581,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": 39
+      }
     },
     {
       "id": "plot_1_edge10",
@@ -5953,7 +6636,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 67,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_1_ground",
@@ -5991,7 +6679,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_20_board",
@@ -6046,7 +6739,12 @@
         "plotId": "plot_20"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 57,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_20_edge-10",
@@ -6096,7 +6794,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 55,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_20_edge0-1",
@@ -6146,7 +6849,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": -37
+      }
     },
     {
       "id": "plot_20_edge01",
@@ -6196,7 +6904,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": -49
+      }
     },
     {
       "id": "plot_20_edge10",
@@ -6246,7 +6959,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 67,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_20_ground",
@@ -6284,7 +7002,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_21_board",
@@ -6339,7 +7062,12 @@
         "plotId": "plot_21"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": -55
+      }
     },
     {
       "id": "plot_21_edge-10",
@@ -6389,7 +7117,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 39,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_21_edge0-1",
@@ -6439,7 +7172,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": -53
+      }
     },
     {
       "id": "plot_21_edge01",
@@ -6489,7 +7227,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": -65
+      }
     },
     {
       "id": "plot_21_edge10",
@@ -6539,7 +7282,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 51,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_21_ground",
@@ -6577,7 +7325,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_22_board",
@@ -6632,7 +7385,12 @@
         "plotId": "plot_22"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": -55
+      }
     },
     {
       "id": "plot_22_edge-10",
@@ -6682,7 +7440,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 55,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_22_edge0-1",
@@ -6732,7 +7495,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": -53
+      }
     },
     {
       "id": "plot_22_edge01",
@@ -6782,7 +7550,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": -65
+      }
     },
     {
       "id": "plot_22_edge10",
@@ -6832,7 +7605,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 67,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_22_ground",
@@ -6870,7 +7648,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_23_edge-10",
@@ -6920,7 +7703,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -33,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_23_edge0-1",
@@ -6970,7 +7758,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -21
+      }
     },
     {
       "id": "plot_23_edge01",
@@ -7020,7 +7813,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -33
+      }
     },
     {
       "id": "plot_23_edge10",
@@ -7070,7 +7868,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -21,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_23_ground",
@@ -7108,7 +7911,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_24_edge-10",
@@ -7158,7 +7966,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -49,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_24_edge0-1",
@@ -7208,7 +8021,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -21
+      }
     },
     {
       "id": "plot_24_edge01",
@@ -7258,7 +8076,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -33
+      }
     },
     {
       "id": "plot_24_edge10",
@@ -7308,7 +8131,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -37,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_24_ground",
@@ -7346,7 +8174,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_25_edge-10",
@@ -7396,7 +8229,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -33,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_25_edge0-1",
@@ -7446,7 +8284,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -37
+      }
     },
     {
       "id": "plot_25_edge01",
@@ -7496,7 +8339,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -49
+      }
     },
     {
       "id": "plot_25_edge10",
@@ -7546,7 +8394,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -21,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_25_ground",
@@ -7584,7 +8437,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_26_edge-10",
@@ -7634,7 +8492,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -65,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_26_edge0-1",
@@ -7684,7 +8547,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -21
+      }
     },
     {
       "id": "plot_26_edge01",
@@ -7734,7 +8602,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -33
+      }
     },
     {
       "id": "plot_26_edge10",
@@ -7784,7 +8657,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -53,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_26_ground",
@@ -7822,7 +8700,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "plot_27_board",
@@ -7877,7 +8760,12 @@
         "plotId": "plot_27"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -39
+      }
     },
     {
       "id": "plot_27_edge-10",
@@ -7927,7 +8815,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -49,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_27_edge0-1",
@@ -7977,7 +8870,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -37
+      }
     },
     {
       "id": "plot_27_edge01",
@@ -8027,7 +8925,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -49
+      }
     },
     {
       "id": "plot_27_edge10",
@@ -8077,7 +8980,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -37,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_27_ground",
@@ -8115,7 +9023,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_28_board",
@@ -8170,7 +9083,12 @@
         "plotId": "plot_28"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -55
+      }
     },
     {
       "id": "plot_28_edge-10",
@@ -8220,7 +9138,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -33,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_28_edge0-1",
@@ -8270,7 +9193,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -53
+      }
     },
     {
       "id": "plot_28_edge01",
@@ -8320,7 +9248,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -65
+      }
     },
     {
       "id": "plot_28_edge10",
@@ -8370,7 +9303,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -21,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_28_ground",
@@ -8408,7 +9346,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_29_board",
@@ -8463,7 +9406,12 @@
         "plotId": "plot_29"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -55,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_29_edge-10",
@@ -8513,7 +9461,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -65,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_29_edge0-1",
@@ -8563,7 +9516,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -37
+      }
     },
     {
       "id": "plot_29_edge01",
@@ -8613,7 +9571,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -49
+      }
     },
     {
       "id": "plot_29_edge10",
@@ -8663,7 +9626,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -53,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_29_ground",
@@ -8701,7 +9669,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "plot_2_board",
@@ -8756,7 +9729,12 @@
         "plotId": "plot_2"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": 57
+      }
     },
     {
       "id": "plot_2_edge-10",
@@ -8806,7 +9784,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 23,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_2_edge0-1",
@@ -8856,7 +9839,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": 67
+      }
     },
     {
       "id": "plot_2_edge01",
@@ -8906,7 +9894,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": 55
+      }
     },
     {
       "id": "plot_2_edge10",
@@ -8956,7 +9949,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 35,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_2_ground",
@@ -8994,7 +9992,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_30_board",
@@ -9049,7 +10052,12 @@
         "plotId": "plot_30"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -55
+      }
     },
     {
       "id": "plot_30_edge-10",
@@ -9099,7 +10107,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -49,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_30_edge0-1",
@@ -9149,7 +10162,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -53
+      }
     },
     {
       "id": "plot_30_edge01",
@@ -9199,7 +10217,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -65
+      }
     },
     {
       "id": "plot_30_edge10",
@@ -9249,7 +10272,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -37,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_30_ground",
@@ -9287,7 +10315,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_31_board",
@@ -9342,7 +10375,12 @@
         "plotId": "plot_31"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -55
+      }
     },
     {
       "id": "plot_31_edge-10",
@@ -9392,7 +10430,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -65,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_31_edge0-1",
@@ -9442,7 +10485,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -53
+      }
     },
     {
       "id": "plot_31_edge01",
@@ -9492,7 +10540,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -65
+      }
     },
     {
       "id": "plot_31_edge10",
@@ -9542,7 +10595,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -53,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_31_ground",
@@ -9580,7 +10638,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "plot_3_board",
@@ -9635,7 +10698,12 @@
         "plotId": "plot_3"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": 57
+      }
     },
     {
       "id": "plot_3_edge-10",
@@ -9685,7 +10753,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 39,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_3_edge0-1",
@@ -9735,7 +10808,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": 67
+      }
     },
     {
       "id": "plot_3_edge01",
@@ -9785,7 +10863,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": 55
+      }
     },
     {
       "id": "plot_3_edge10",
@@ -9835,7 +10918,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 51,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_3_ground",
@@ -9873,7 +10961,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_4_board",
@@ -9928,7 +11021,12 @@
         "plotId": "plot_4"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": 57
+      }
     },
     {
       "id": "plot_4_edge-10",
@@ -9978,7 +11076,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 55,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_4_edge0-1",
@@ -10028,7 +11131,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": 67
+      }
     },
     {
       "id": "plot_4_edge01",
@@ -10078,7 +11186,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": 55
+      }
     },
     {
       "id": "plot_4_edge10",
@@ -10128,7 +11241,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 67,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_4_ground",
@@ -10166,7 +11284,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "plot_5_edge-10",
@@ -10216,7 +11339,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -33,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_5_edge0-1",
@@ -10266,7 +11394,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 35
+      }
     },
     {
       "id": "plot_5_edge01",
@@ -10316,7 +11449,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 23
+      }
     },
     {
       "id": "plot_5_edge10",
@@ -10366,7 +11504,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -21,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_5_ground",
@@ -10404,7 +11547,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_6_edge-10",
@@ -10454,7 +11602,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -49,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_6_edge0-1",
@@ -10504,7 +11657,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 35
+      }
     },
     {
       "id": "plot_6_edge01",
@@ -10554,7 +11712,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 23
+      }
     },
     {
       "id": "plot_6_edge10",
@@ -10604,7 +11767,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -37,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_6_ground",
@@ -10642,7 +11810,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_7_edge-10",
@@ -10692,7 +11865,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -33,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_7_edge0-1",
@@ -10742,7 +11920,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 51
+      }
     },
     {
       "id": "plot_7_edge01",
@@ -10792,7 +11975,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 39
+      }
     },
     {
       "id": "plot_7_edge10",
@@ -10842,7 +12030,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -21,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_7_ground",
@@ -10880,7 +12073,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_8_edge-10",
@@ -10930,7 +12128,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -65,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_8_edge0-1",
@@ -10980,7 +12183,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 35
+      }
     },
     {
       "id": "plot_8_edge01",
@@ -11030,7 +12238,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 23
+      }
     },
     {
       "id": "plot_8_edge10",
@@ -11080,7 +12293,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -53,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_8_ground",
@@ -11118,7 +12336,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "plot_9_board",
@@ -11173,7 +12396,12 @@
         "plotId": "plot_9"
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 41
+      }
     },
     {
       "id": "plot_9_edge-10",
@@ -11223,7 +12451,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -49,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_9_edge0-1",
@@ -11273,7 +12506,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 51
+      }
     },
     {
       "id": "plot_9_edge01",
@@ -11323,7 +12561,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 39
+      }
     },
     {
       "id": "plot_9_edge10",
@@ -11373,7 +12616,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -37,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "plot_9_ground",
@@ -11411,7 +12659,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "ring_28",
@@ -11448,7 +12701,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -19,
+        "y": 0,
+        "z": 21
+      }
     },
     {
       "id": "ring_29",
@@ -11485,7 +12743,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -19,
+        "y": 0,
+        "z": 21
+      }
     },
     {
       "id": "ring_30",
@@ -11522,7 +12785,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -19,
+        "y": 0,
+        "z": -19
+      }
     },
     {
       "id": "ring_31",
@@ -11559,7 +12827,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21,
+        "y": 0,
+        "z": 21
+      }
     },
     {
       "id": "ring_32",
@@ -11596,7 +12869,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -11,
+        "y": 0,
+        "z": 21
+      }
     },
     {
       "id": "ring_33",
@@ -11633,7 +12911,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -19,
+        "y": 0,
+        "z": 13
+      }
     },
     {
       "id": "ring_34",
@@ -11670,7 +12953,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -11,
+        "y": 0,
+        "z": -19
+      }
     },
     {
       "id": "ring_35",
@@ -11707,7 +12995,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21,
+        "y": 0,
+        "z": 13
+      }
     },
     {
       "id": "ring_36",
@@ -11744,7 +13037,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -3,
+        "y": 0,
+        "z": 21
+      }
     },
     {
       "id": "ring_37",
@@ -11781,7 +13079,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -19,
+        "y": 0,
+        "z": 5
+      }
     },
     {
       "id": "ring_38",
@@ -11818,7 +13121,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -3,
+        "y": 0,
+        "z": -19
+      }
     },
     {
       "id": "ring_39",
@@ -11855,7 +13163,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21,
+        "y": 0,
+        "z": 5
+      }
     },
     {
       "id": "ring_40",
@@ -11892,7 +13205,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 5,
+        "y": 0,
+        "z": 21
+      }
     },
     {
       "id": "ring_41",
@@ -11929,7 +13247,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -19,
+        "y": 0,
+        "z": -3
+      }
     },
     {
       "id": "ring_42",
@@ -11966,7 +13289,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 5,
+        "y": 0,
+        "z": -19
+      }
     },
     {
       "id": "ring_43",
@@ -12003,7 +13331,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21,
+        "y": 0,
+        "z": -3
+      }
     },
     {
       "id": "ring_44",
@@ -12040,7 +13373,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 13,
+        "y": 0,
+        "z": 21
+      }
     },
     {
       "id": "ring_45",
@@ -12077,7 +13415,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -19,
+        "y": 0,
+        "z": -11
+      }
     },
     {
       "id": "ring_46",
@@ -12114,7 +13457,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 13,
+        "y": 0,
+        "z": -19
+      }
     },
     {
       "id": "ring_47",
@@ -12151,7 +13499,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21,
+        "y": 0,
+        "z": -11
+      }
     },
     {
       "id": "ring_48",
@@ -12188,7 +13541,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21,
+        "y": 0,
+        "z": 21
+      }
     },
     {
       "id": "ring_49",
@@ -12225,7 +13583,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -19,
+        "y": 0,
+        "z": -19
+      }
     },
     {
       "id": "ring_50",
@@ -12262,7 +13625,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21,
+        "y": 0,
+        "z": -19
+      }
     },
     {
       "id": "ring_51",
@@ -12299,7 +13667,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21,
+        "y": 0,
+        "z": -19
+      }
     },
     {
       "id": "street_0",
@@ -12336,7 +13709,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 21,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_1",
@@ -12373,7 +13751,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 29,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_10",
@@ -12410,7 +13793,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": 45
+      }
     },
     {
       "id": "street_11",
@@ -12447,7 +13835,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": 53
+      }
     },
     {
       "id": "street_12",
@@ -12484,7 +13877,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "street_13",
@@ -12521,7 +13919,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "street_14",
@@ -12558,7 +13961,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": -19
+      }
     },
     {
       "id": "street_15",
@@ -12595,7 +14003,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": -27
+      }
     },
     {
       "id": "street_16",
@@ -12632,7 +14045,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": -35
+      }
     },
     {
       "id": "street_17",
@@ -12669,7 +14087,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": -43
+      }
     },
     {
       "id": "street_18",
@@ -12706,7 +14129,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": -51
+      }
     },
     {
       "id": "street_19",
@@ -12743,7 +14171,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": -59
+      }
     },
     {
       "id": "street_2",
@@ -12780,7 +14213,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 37,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_20",
@@ -12817,7 +14255,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "street_21",
@@ -12854,7 +14297,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -19,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_22",
@@ -12891,7 +14339,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -27,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_23",
@@ -12928,7 +14381,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -35,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_24",
@@ -12965,7 +14423,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -43,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_25",
@@ -13002,7 +14465,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -51,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_26",
@@ -13039,7 +14507,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_27",
@@ -13076,7 +14549,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_3",
@@ -13113,7 +14591,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 45,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_4",
@@ -13150,7 +14633,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 53,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_5",
@@ -13187,7 +14675,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 61,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_6",
@@ -13224,7 +14717,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": 1
+      }
     },
     {
       "id": "street_7",
@@ -13261,7 +14759,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": 21
+      }
     },
     {
       "id": "street_8",
@@ -13298,7 +14801,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": 29
+      }
     },
     {
       "id": "street_9",
@@ -13335,7 +14843,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 1,
+        "y": 0,
+        "z": 37
+      }
     },
     {
       "id": "wall_0",
@@ -13384,7 +14897,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_1",
@@ -13433,7 +14951,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_10",
@@ -13482,7 +15005,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 19,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_11",
@@ -13531,7 +15059,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 27,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_12",
@@ -13580,7 +15113,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 33,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_13",
@@ -13629,7 +15167,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 41,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_14",
@@ -13678,7 +15221,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 49,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_15",
@@ -13727,7 +15275,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 55,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_16",
@@ -13776,7 +15329,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 63,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_17",
@@ -13825,7 +15383,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_18",
@@ -13874,7 +15437,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -59,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_19",
@@ -13923,7 +15491,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -53,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_2",
@@ -13972,7 +15545,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -53,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_20",
@@ -14021,7 +15599,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -45,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_21",
@@ -14070,7 +15653,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -39,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_22",
@@ -14119,7 +15707,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -31,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_23",
@@ -14168,7 +15761,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -23,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_24",
@@ -14217,7 +15815,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -17,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_25",
@@ -14266,7 +15869,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -9,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_26",
@@ -14315,7 +15923,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 13,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_27",
@@ -14364,7 +15977,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 19,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_28",
@@ -14413,7 +16031,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 27,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_29",
@@ -14462,7 +16085,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 33,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_3",
@@ -14511,7 +16139,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -45,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_30",
@@ -14560,7 +16193,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 41,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_31",
@@ -14609,7 +16247,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 49,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_32",
@@ -14658,7 +16301,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 55,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_33",
@@ -14707,7 +16355,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 63,
+        "y": 0,
+        "z": -67
+      }
     },
     {
       "id": "wall_34",
@@ -14756,7 +16409,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_35",
@@ -14805,7 +16463,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "wall_36",
@@ -14854,7 +16517,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 55
+      }
     },
     {
       "id": "wall_37",
@@ -14903,7 +16571,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 47
+      }
     },
     {
       "id": "wall_38",
@@ -14952,7 +16625,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 41
+      }
     },
     {
       "id": "wall_39",
@@ -15001,7 +16679,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 33
+      }
     },
     {
       "id": "wall_4",
@@ -15050,7 +16733,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -39,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_40",
@@ -15099,7 +16787,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 25
+      }
     },
     {
       "id": "wall_41",
@@ -15148,7 +16841,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 19
+      }
     },
     {
       "id": "wall_42",
@@ -15197,7 +16895,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": 11
+      }
     },
     {
       "id": "wall_43",
@@ -15246,7 +16949,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": -11
+      }
     },
     {
       "id": "wall_44",
@@ -15295,7 +17003,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": -17
+      }
     },
     {
       "id": "wall_45",
@@ -15344,7 +17057,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": -25
+      }
     },
     {
       "id": "wall_46",
@@ -15393,7 +17111,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": -31
+      }
     },
     {
       "id": "wall_47",
@@ -15442,7 +17165,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": -39
+      }
     },
     {
       "id": "wall_48",
@@ -15491,7 +17219,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": -47
+      }
     },
     {
       "id": "wall_49",
@@ -15540,7 +17273,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": -53
+      }
     },
     {
       "id": "wall_5",
@@ -15589,7 +17327,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -31,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_50",
@@ -15638,7 +17381,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -67,
+        "y": 0,
+        "z": -61
+      }
     },
     {
       "id": "wall_51",
@@ -15687,7 +17435,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_52",
@@ -15736,7 +17489,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": 61
+      }
     },
     {
       "id": "wall_53",
@@ -15785,7 +17543,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": 55
+      }
     },
     {
       "id": "wall_54",
@@ -15834,7 +17597,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": 47
+      }
     },
     {
       "id": "wall_55",
@@ -15883,7 +17651,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": 41
+      }
     },
     {
       "id": "wall_56",
@@ -15932,7 +17705,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": 33
+      }
     },
     {
       "id": "wall_57",
@@ -15981,7 +17759,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": 25
+      }
     },
     {
       "id": "wall_58",
@@ -16030,7 +17813,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": 19
+      }
     },
     {
       "id": "wall_59",
@@ -16079,7 +17867,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": 11
+      }
     },
     {
       "id": "wall_6",
@@ -16128,7 +17921,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -23,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_60",
@@ -16177,7 +17975,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": -11
+      }
     },
     {
       "id": "wall_61",
@@ -16226,7 +18029,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": -17
+      }
     },
     {
       "id": "wall_62",
@@ -16275,7 +18083,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": -25
+      }
     },
     {
       "id": "wall_63",
@@ -16324,7 +18137,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": -31
+      }
     },
     {
       "id": "wall_64",
@@ -16373,7 +18191,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": -39
+      }
     },
     {
       "id": "wall_65",
@@ -16422,7 +18245,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": -47
+      }
     },
     {
       "id": "wall_66",
@@ -16471,7 +18299,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": -53
+      }
     },
     {
       "id": "wall_67",
@@ -16520,7 +18353,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 69,
+        "y": 0,
+        "z": -61
+      }
     },
     {
       "id": "wall_7",
@@ -16569,7 +18407,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -17,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_8",
@@ -16618,7 +18461,12 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": -9,
+        "y": 0,
+        "z": 69
+      }
     },
     {
       "id": "wall_9",
@@ -16667,76 +18515,20 @@
         "city-kit"
       ],
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "nika_reznik",
-      "model": "wastelandSettler",
-      "name": "Ника Резник",
-      "position": {
-        "x": 7,
+      "worldRevision": "kromka-1",
+      "surfaceSourcePosition": {
+        "x": 13,
         "y": 0,
-        "z": 17
-      },
-      "rotation": {
-        "x": 0,
-        "y": 5.498,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "npc",
-        "living",
-        "friendly",
-        "unique",
-        "quest_giver"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "entity": {
-        "kind": "npc",
-        "spawnedBy": "named",
-        "npcId": "nika_reznik",
-        "role": "civilian",
-        "faction": "free_artels",
-        "hostileToPlayer": false,
-        "canDialogue": true,
-        "stationary": true,
-        "appearance": {
-          "schema": "realm.character-appearance.v1",
-          "sex": "male",
-          "hairId": "short_crop",
-          "skinToneId": "skin_03",
-          "hairColorId": "hair_06"
-        },
-        "equipment": {
-          "weapon": "fists",
-          "armor": "leather",
-          "helmet": "",
-          "boots": "boots",
-          "backpack": ""
-        }
-      },
-      "vision": {
-        "mode": "none"
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
+        "z": 69
+      }
     }
   ],
   "containers": [],
   "anomalyFields": [],
   "zone": {
     "col": 3,
-    "row": 10,
-    "n": 142,
+    "row": 8,
+    "n": 109,
     "region": "ore_arc",
     "mode": "peaceful",
     "city": "scrapTown",
@@ -17151,27 +18943,75 @@
   "ambientProfile": "working-foundry-town",
   "anomalyDensity": 0.08,
   "migrationArrival": {
-    "tx": 39,
-    "tz": 51,
-    "x": -2,
+    "tx": 40,
+    "tz": 52,
+    "x": 0,
     "y": 0.1,
-    "z": 23,
+    "z": 24,
     "rotationY": 0
   },
   "worldRevision": "kromka-1",
   "unityScene": "Assets/Scenes/Kromka/Locations/scrapTown.unity",
   "unitySpawns": [
     {
+      "id": "auctioneer",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.5,
+      "position": {
+        "x": 27,
+        "y": 0,
+        "z": 47
+      },
+      "rotationY": 6.283
+    },
+    {
+      "id": "medic",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.5,
+      "position": {
+        "x": -9,
+        "y": 0,
+        "z": 15
+      },
+      "rotationY": 6.283
+    },
+    {
+      "id": "nika_reznik",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.5,
+      "position": {
+        "x": 3,
+        "y": 0,
+        "z": 17
+      },
+      "rotationY": 5.498
+    },
+    {
       "id": "razdolye-gate",
       "kind": "MigrationArrival",
       "targetLocationId": "",
       "radius": 3,
       "position": {
-        "x": -2,
+        "x": 0,
         "y": 0.1,
-        "z": 23
+        "z": 24
       },
       "rotationY": 0
+    },
+    {
+      "id": "repairman",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.5,
+      "position": {
+        "x": 19,
+        "y": 0,
+        "z": -27
+      },
+      "rotationY": 6.283
     },
     {
       "id": "scrapTown-arrival",
@@ -17217,5 +19057,373 @@
   },
   "updatedAt": "2026-07-12T01:43:36.127Z",
   "cityAuthored": true,
-  "compassNorth": "+z"
+  "compassNorth": "+z",
+  "surfaceSource": {
+    "spawn": {
+      "tx": 40,
+      "tz": 52,
+      "x": 0,
+      "y": 0.1,
+      "z": 24,
+      "rotationY": 0
+    },
+    "objectOrder": [
+      "scrap_gratch",
+      "auctioneer",
+      "medic",
+      "repairman",
+      "bank_counter",
+      "bank_crates",
+      "bank_ground",
+      "bank_vault",
+      "bank_w0",
+      "bank_w1",
+      "bank_w10",
+      "bank_w11",
+      "bank_w12",
+      "bank_w13",
+      "bank_w2",
+      "bank_w3",
+      "bank_w4",
+      "bank_w5",
+      "bank_w6",
+      "bank_w7",
+      "bank_w8",
+      "bank_w9",
+      "capital_storage_scrap_union",
+      "gate_tower_east_a",
+      "gate_tower_east_b",
+      "gate_tower_north_a",
+      "gate_tower_north_b",
+      "gate_tower_south_a",
+      "gate_tower_south_b",
+      "gate_tower_west_a",
+      "gate_tower_west_b",
+      "home_0",
+      "home_1",
+      "home_2",
+      "home_3",
+      "homes_fire",
+      "market_awning_0",
+      "market_awning_1",
+      "market_awning_2",
+      "market_awning_3",
+      "market_crate_0",
+      "market_crate_1",
+      "market_crate_2",
+      "market_crate_3",
+      "plaza_board",
+      "plaza_dispatch_post",
+      "plaza_landmark",
+      "plaza_medic_post",
+      "plaza_well",
+      "plot_0_board",
+      "plot_0_edge-10",
+      "plot_0_edge0-1",
+      "plot_0_edge01",
+      "plot_0_edge10",
+      "plot_0_ground",
+      "plot_10_board",
+      "plot_10_edge-10",
+      "plot_10_edge0-1",
+      "plot_10_edge01",
+      "plot_10_edge10",
+      "plot_10_ground",
+      "plot_11_board",
+      "plot_11_edge-10",
+      "plot_11_edge0-1",
+      "plot_11_edge01",
+      "plot_11_edge10",
+      "plot_11_ground",
+      "plot_12_board",
+      "plot_12_edge-10",
+      "plot_12_edge0-1",
+      "plot_12_edge01",
+      "plot_12_edge10",
+      "plot_12_ground",
+      "plot_13_board",
+      "plot_13_edge-10",
+      "plot_13_edge0-1",
+      "plot_13_edge01",
+      "plot_13_edge10",
+      "plot_13_ground",
+      "plot_14_board",
+      "plot_14_edge-10",
+      "plot_14_edge0-1",
+      "plot_14_edge01",
+      "plot_14_edge10",
+      "plot_14_ground",
+      "plot_15_board",
+      "plot_15_edge-10",
+      "plot_15_edge0-1",
+      "plot_15_edge01",
+      "plot_15_edge10",
+      "plot_15_ground",
+      "plot_16_board",
+      "plot_16_edge-10",
+      "plot_16_edge0-1",
+      "plot_16_edge01",
+      "plot_16_edge10",
+      "plot_16_ground",
+      "plot_17_board",
+      "plot_17_edge-10",
+      "plot_17_edge0-1",
+      "plot_17_edge01",
+      "plot_17_edge10",
+      "plot_17_ground",
+      "plot_18_board",
+      "plot_18_edge-10",
+      "plot_18_edge0-1",
+      "plot_18_edge01",
+      "plot_18_edge10",
+      "plot_18_ground",
+      "plot_19_board",
+      "plot_19_edge-10",
+      "plot_19_edge0-1",
+      "plot_19_edge01",
+      "plot_19_edge10",
+      "plot_19_ground",
+      "plot_1_board",
+      "plot_1_edge-10",
+      "plot_1_edge0-1",
+      "plot_1_edge01",
+      "plot_1_edge10",
+      "plot_1_ground",
+      "plot_20_board",
+      "plot_20_edge-10",
+      "plot_20_edge0-1",
+      "plot_20_edge01",
+      "plot_20_edge10",
+      "plot_20_ground",
+      "plot_21_board",
+      "plot_21_edge-10",
+      "plot_21_edge0-1",
+      "plot_21_edge01",
+      "plot_21_edge10",
+      "plot_21_ground",
+      "plot_22_board",
+      "plot_22_edge-10",
+      "plot_22_edge0-1",
+      "plot_22_edge01",
+      "plot_22_edge10",
+      "plot_22_ground",
+      "plot_23_edge-10",
+      "plot_23_edge0-1",
+      "plot_23_edge01",
+      "plot_23_edge10",
+      "plot_23_ground",
+      "plot_24_edge-10",
+      "plot_24_edge0-1",
+      "plot_24_edge01",
+      "plot_24_edge10",
+      "plot_24_ground",
+      "plot_25_edge-10",
+      "plot_25_edge0-1",
+      "plot_25_edge01",
+      "plot_25_edge10",
+      "plot_25_ground",
+      "plot_26_edge-10",
+      "plot_26_edge0-1",
+      "plot_26_edge01",
+      "plot_26_edge10",
+      "plot_26_ground",
+      "plot_27_board",
+      "plot_27_edge-10",
+      "plot_27_edge0-1",
+      "plot_27_edge01",
+      "plot_27_edge10",
+      "plot_27_ground",
+      "plot_28_board",
+      "plot_28_edge-10",
+      "plot_28_edge0-1",
+      "plot_28_edge01",
+      "plot_28_edge10",
+      "plot_28_ground",
+      "plot_29_board",
+      "plot_29_edge-10",
+      "plot_29_edge0-1",
+      "plot_29_edge01",
+      "plot_29_edge10",
+      "plot_29_ground",
+      "plot_2_board",
+      "plot_2_edge-10",
+      "plot_2_edge0-1",
+      "plot_2_edge01",
+      "plot_2_edge10",
+      "plot_2_ground",
+      "plot_30_board",
+      "plot_30_edge-10",
+      "plot_30_edge0-1",
+      "plot_30_edge01",
+      "plot_30_edge10",
+      "plot_30_ground",
+      "plot_31_board",
+      "plot_31_edge-10",
+      "plot_31_edge0-1",
+      "plot_31_edge01",
+      "plot_31_edge10",
+      "plot_31_ground",
+      "plot_3_board",
+      "plot_3_edge-10",
+      "plot_3_edge0-1",
+      "plot_3_edge01",
+      "plot_3_edge10",
+      "plot_3_ground",
+      "plot_4_board",
+      "plot_4_edge-10",
+      "plot_4_edge0-1",
+      "plot_4_edge01",
+      "plot_4_edge10",
+      "plot_4_ground",
+      "plot_5_edge-10",
+      "plot_5_edge0-1",
+      "plot_5_edge01",
+      "plot_5_edge10",
+      "plot_5_ground",
+      "plot_6_edge-10",
+      "plot_6_edge0-1",
+      "plot_6_edge01",
+      "plot_6_edge10",
+      "plot_6_ground",
+      "plot_7_edge-10",
+      "plot_7_edge0-1",
+      "plot_7_edge01",
+      "plot_7_edge10",
+      "plot_7_ground",
+      "plot_8_edge-10",
+      "plot_8_edge0-1",
+      "plot_8_edge01",
+      "plot_8_edge10",
+      "plot_8_ground",
+      "plot_9_board",
+      "plot_9_edge-10",
+      "plot_9_edge0-1",
+      "plot_9_edge01",
+      "plot_9_edge10",
+      "plot_9_ground",
+      "ring_28",
+      "ring_29",
+      "ring_30",
+      "ring_31",
+      "ring_32",
+      "ring_33",
+      "ring_34",
+      "ring_35",
+      "ring_36",
+      "ring_37",
+      "ring_38",
+      "ring_39",
+      "ring_40",
+      "ring_41",
+      "ring_42",
+      "ring_43",
+      "ring_44",
+      "ring_45",
+      "ring_46",
+      "ring_47",
+      "ring_48",
+      "ring_49",
+      "ring_50",
+      "ring_51",
+      "street_0",
+      "street_1",
+      "street_10",
+      "street_11",
+      "street_12",
+      "street_13",
+      "street_14",
+      "street_15",
+      "street_16",
+      "street_17",
+      "street_18",
+      "street_19",
+      "street_2",
+      "street_20",
+      "street_21",
+      "street_22",
+      "street_23",
+      "street_24",
+      "street_25",
+      "street_26",
+      "street_27",
+      "street_3",
+      "street_4",
+      "street_5",
+      "street_6",
+      "street_7",
+      "street_8",
+      "street_9",
+      "wall_0",
+      "wall_1",
+      "wall_10",
+      "wall_11",
+      "wall_12",
+      "wall_13",
+      "wall_14",
+      "wall_15",
+      "wall_16",
+      "wall_17",
+      "wall_18",
+      "wall_19",
+      "wall_2",
+      "wall_20",
+      "wall_21",
+      "wall_22",
+      "wall_23",
+      "wall_24",
+      "wall_25",
+      "wall_26",
+      "wall_27",
+      "wall_28",
+      "wall_29",
+      "wall_3",
+      "wall_30",
+      "wall_31",
+      "wall_32",
+      "wall_33",
+      "wall_34",
+      "wall_35",
+      "wall_36",
+      "wall_37",
+      "wall_38",
+      "wall_39",
+      "wall_4",
+      "wall_40",
+      "wall_41",
+      "wall_42",
+      "wall_43",
+      "wall_44",
+      "wall_45",
+      "wall_46",
+      "wall_47",
+      "wall_48",
+      "wall_49",
+      "wall_5",
+      "wall_50",
+      "wall_51",
+      "wall_52",
+      "wall_53",
+      "wall_54",
+      "wall_55",
+      "wall_56",
+      "wall_57",
+      "wall_58",
+      "wall_59",
+      "wall_6",
+      "wall_60",
+      "wall_61",
+      "wall_62",
+      "wall_63",
+      "wall_64",
+      "wall_65",
+      "wall_66",
+      "wall_67",
+      "wall_7",
+      "wall_8",
+      "wall_9",
+      "nika_reznik"
+    ],
+    "removedObjects": []
+  },
+  "sectorSurfaceVersion": "d8502b337dad34a5af8091033f8a88156a5dbbf847e759cdbb4b010d5c39cbea"
 }

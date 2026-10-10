@@ -4,9 +4,9 @@
 // Все переходы мира на настоящем сервере. Игрока ставит тестовый qaTravel, а
 // переходит он обычным changeLocation — с проверками сервера и его коллизией.
 //
-// - Зона в зону: каждая открытая сторона в трёх точках полосы ведёт к соседу
-//   этой стороны, игрок выходит напротив точки пересечения, не в полосе соседа
-//   (иначе его вынесло бы обратно) и может шагнуть дальше.
+// - Зона в зону: каждый авторский проход ведёт к соседу этой стороны; полный
+//   режим дополнительно проверяет три точки открытой полосы. Игрок выходит
+//   напротив пересечения на сухой земле вне обратной полосы и может идти дальше.
 // - Зона и город: портал у края зоны ведёт в город к воротам той же стороны,
 //   портал в проёме этих ворот — обратно к порталу зоны; прибытие не в портале.
 // - Места: портал зоны ведёт в место, край места — обратно к порталу; скрытые
@@ -20,22 +20,58 @@ process.env.KROMKA_TEST_TRAVEL = '1';
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
+const childProcess = require('node:child_process');
+const root = path.resolve(__dirname, '..');
+const graph = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
+
+// A single QA process visiting every room also leaves every visited room in
+// memory. Split the network sweep into independent server runs without dropping
+// any zone, gate or portal assertion. KROMKA_ZONES still permits a focused run.
+if (!process.env.KROMKA_ZONES && process.env.KROMKA_TRANSITIONS_CHILD !== '1') {
+  const groupSize = 24;
+  const zones = graph.zones.map(zone => zone.id);
+  for (let start = 0; start < zones.length; start += groupSize) {
+    const group = zones.slice(start, start + groupSize);
+    const run = childProcess.spawnSync(process.execPath, [__filename], {
+      cwd: root,
+      env: { ...process.env, KROMKA_ZONES: group.join(','), KROMKA_TRANSITIONS_CHILD: '1' },
+      encoding: 'utf8',
+      maxBuffer: 10 * 1024 * 1024
+    });
+    if (run.stdout) process.stdout.write(run.stdout);
+    if (run.stderr) process.stderr.write(run.stderr);
+    if (run.error) throw run.error;
+    if (run.status !== 0) process.exit(run.status || 1);
+  }
+  console.log(`Zone transitions network: all ${zones.length} zones passed in ${Math.ceil(zones.length / groupSize)} isolated server runs.`);
+  process.exit(0);
+}
+
 const h = require('./check-combat-runtime');
 const zoneWalk = require('./lib/zone-walk');
 const { SIDES, zoneById, zoneLocationId } = require('../src/server/zone-graph');
+const sectorTerrain = require('../src/server/sector-terrain');
 
-const root = path.resolve(__dirname, '..');
-const graph = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
 const accounts = {};
 const problems = [];
-const stats = { edges: 0, bandBlocked: 0, cityPortals: 0, places: 0, gated: 0, hidden: 0 };
-// Полный обход (KROMKA_FULL=1): три точки каждой стороны и шаг после каждого
-// прибытия. Обычный — середина стороны, шаг только после порталов.
+const stats = { edges: 0, authoredEdges: 0, floodedEdges: 0, refusedFloodedEdges: 0, waterBlocked: 0, bandBlocked: 0, cityPortals: 0, places: 0, gated: 0, hidden: 0 };
+// Полный обход (KROMKA_FULL=1): три дополнительные точки каждой стороны и шаг
+// после каждого прибытия. Обычный — каждый авторский проход и затопленные
+// зеркальные точки, для которых включается terrain-aware перенос.
 const FULL = process.env.KROMKA_FULL === '1';
-const ALONG = FULL ? [0.15, 0.5, 0.85] : [0.5];
+const diagnosticSamples = String(process.env.KROMKA_EDGE_SAMPLES || '').split(',')
+  .map(value => Number(value)).filter(value => Number.isFinite(value) && value > 0 && value < 1);
+const ALONG = diagnosticSamples.length ? diagnosticSamples : FULL ? [0.15, 0.5, 0.85] : [];
+const TERRAIN_EDGE_REGRESSIONS = {
+  'z_11_03:south': [0.56],
+  'z_09_08:south': [0.996],
+  'z_10_09:west': [0.996],
+  'z_09_11:east': [0.96, 0.98, 0.996]
+};
 const BAND = 2;
 const INSET_M = 9;
 const NUDGE_M = 10;
+const FLOODED_NUDGE_M = 32;
 
 const getJson = route => new Promise((resolve, reject) => {
   http.get(h.baseUrl() + route, res => {
@@ -88,14 +124,33 @@ function expectedArrival(def, side, crossedAt) {
   return { x: -halfW + INSET_M, z: clampAlong(crossedAt.z, halfH) };
 }
 
+/** Closest dry tile outside the reverse strip, independently of the server spawn search. */
+function nearestDryArrivalDistance(def, expected, reverseSide) {
+  const origin = tileOf(def, expected);
+  const dims = tiles(def);
+  let nearest = Infinity;
+  for (let dz = -FLOODED_NUDGE_M / 2; dz <= FLOODED_NUDGE_M / 2; dz++) {
+    for (let dx = -FLOODED_NUDGE_M / 2; dx <= FLOODED_NUDGE_M / 2; dx++) {
+      const tx = origin.tx + dx, tz = origin.tz + dz;
+      if (tx < 0 || tz < 0 || tx >= dims.w || tz >= dims.h) continue;
+      const point = worldOf(def, { tx, tz });
+      const offset = distance(point, expected);
+      if (offset > FLOODED_NUDGE_M || offset >= nearest || inBand(def, point, reverseSide)
+        || sectorTerrain.isWaterAt(def.id, point.x, point.z, 0.48)) continue;
+      nearest = offset;
+    }
+  }
+  return nearest;
+}
+
 let walker = null;
 const timing = { place: 0, change: 0, step: 0 };
 const timed = async (key, work) => { const t = Date.now(); try { return await work(); } finally { timing[key] += Date.now() - t; } };
 const place = (to, point = {}) => timed('place', async () => {
-  const ack = await h.socketAck(walker.socket, 'qaTravel', { to, ...point });
-  return ack?.ok ? { x: Number(ack.x), z: Number(ack.z) } : null;
+  const ack = await h.socketAck(walker.socket, 'qaTravel', { to, ...point }, 12000);
+  return ack?.ok ? { x: Number(ack.x), z: Number(ack.z), roomId: ack.roomId, self: ack.self } : null;
 });
-const change = to => timed('change', () => h.socketAck(walker.socket, 'changeLocation', { locationId: to }));
+const change = to => timed('change', () => h.socketAck(walker.socket, 'changeLocation', { locationId: to }, 12000));
 const fail = (where, text) => problems.push(`${where}: ${text}`);
 
 // Номер пакета движения растёт через все шаги: сервер отбрасывает номер не больше
@@ -121,7 +176,7 @@ async function canStepInward(def, from) {
         const ack = await h.socketAck(walker.socket, 'state', {
           seq: movementSeq++, x: target.x, z: target.z, angle: Math.atan2(dx, dz), moving: true, turning: false, crouching: false,
           vx: 5.5 * dx / span, vz: 5.5 * dz / span
-        });
+        }, 12000);
         const self = ack?.self || ack || {};
         if (Number.isFinite(Number(self.x))) state.x = Number(self.x);
         if (Number.isFinite(Number(self.z))) state.z = Number(self.z);
@@ -136,20 +191,67 @@ async function canStepInward(def, from) {
 
 async function checkEdge(zone, def, gate) {
   const target = await definition(gate.to);
-  for (const along of ALONG) {
+  const authoredAlong = Number(zone.edges?.[gate.direction]?.along);
+  if (!Number.isFinite(authoredAlong)) { fail(`${zone.id} ${gate.direction}`, 'missing authored gate position'); return; }
+  const midpoint = bandPoint(def, gate.direction, 0.5);
+  const midpointMirror = expectedArrival(target, gate.direction, midpoint);
+  const floodedMirror = !sectorTerrain.isWaterAt(zone.id, midpoint.x, midpoint.z, 0.48)
+    && sectorTerrain.isWaterAt(target.id, midpointMirror.x, midpointMirror.z, 0.48);
+  const samples = [...new Set([
+    authoredAlong,
+    ...ALONG,
+    ...(!FULL && !diagnosticSamples.length ? (TERRAIN_EDGE_REGRESSIONS[`${zone.id}:${gate.direction}`] || []) : []),
+    ...(!FULL && floodedMirror ? [0.5] : [])
+  ])];
+  for (const along of samples) {
     const where = `${zone.id} ${gate.direction} → ${gate.to} @${along}`;
-    const at = await place(zone.id, bandPoint(def, gate.direction, along));
+    if (process.env.KROMKA_VERBOSE) console.log(`  crossing ${where}`);
+    const crossing = bandPoint(def, gate.direction, along);
+    // A continuous edge is traversable only on dry ground. A forced QA
+    // teleport can otherwise stand in deep water where gameplay cannot walk.
+    if (sectorTerrain.isWaterAt(zone.id, crossing.x, crossing.z, 0.48)) {
+      if (along === authoredAlong) fail(where, 'authored gate is under water');
+      else stats.waterBlocked += 1;
+      continue;
+    }
+    const at = await place(zone.id, crossing);
     if (!at) { fail(where, 'qaTravel refused'); continue; }
     // Точка полосы занята объектом — сервер сдвинул игрока внутрь: здесь край не пройти.
-    if (!inBand(def, at, gate.direction)) { stats.bandBlocked += 1; continue; }
-    const over = await change(gate.to);
-    stats.edges += 1;
-    if (!over?.ok || over.locationId !== gate.to) { fail(where, `crossing refused: ${over?.error || JSON.stringify(over).slice(0, 120)}`); continue; }
-    const arrival = { x: Number(over.x), z: Number(over.z) };
+    if (!inBand(def, at, gate.direction)) {
+      if (along === authoredAlong) fail(where, 'authored gate cannot be reached in its edge strip');
+      else stats.bandBlocked += 1;
+      continue;
+    }
     const expected = expectedArrival(target, gate.direction, at);
-    if (distance(arrival, expected) > NUDGE_M) fail(where, `lands at ${arrival.x.toFixed(1)},${arrival.z.toFixed(1)}, expected ${expected.x.toFixed(1)},${expected.z.toFixed(1)}`);
+    const flooded = sectorTerrain.isWaterAt(target.id, expected.x, expected.z, 0.48);
+    const nearestDry = flooded ? nearestDryArrivalDistance(target, expected, SIDES[gate.direction].opposite) : 0;
+    const over = await change(gate.to);
+    if (!over?.ok && along !== authoredAlong && flooded && !Number.isFinite(nearestDry)
+      && String(over.error || '').includes('нет безопасного места')) {
+      const stayed = await change(zone.id);
+      if (!stayed?.ok || stayed.roomId !== at.roomId || distance({ x: Number(stayed.x), z: Number(stayed.z) }, at) > 0.1
+        || JSON.stringify(stayed.self?.inventory) !== JSON.stringify(at.self?.inventory)) {
+        fail(where, 'refused flooded crossing changed the source room, position or inventory');
+      }
+      stats.refusedFloodedEdges += 1;
+      continue;
+    }
+    if (!over?.ok || over.locationId !== gate.to) { fail(where, `crossing refused: ${over?.error || JSON.stringify(over).slice(0, 120)}`); continue; }
+    stats.edges += 1;
+    if (along === authoredAlong) stats.authoredEdges += 1;
+    const arrival = { x: Number(over.x), z: Number(over.z) };
+    const offset = distance(arrival, expected);
+    if (flooded) {
+      stats.floodedEdges += 1;
+      if (!Number.isFinite(nearestDry)) fail(where, 'no dry arrival within the terrain-aware limit');
+      if (offset > FLOODED_NUDGE_M || offset > nearestDry + 2.01)
+        fail(where, `flooded mirror displaced ${offset.toFixed(1)} m, nearest dry tile ${nearestDry.toFixed(1)} m`);
+      if (sectorTerrain.isWaterAt(target.id, arrival.x, arrival.z, 0.48)) fail(where, 'lands in water');
+    } else if (offset > NUDGE_M) {
+      fail(where, `lands at ${arrival.x.toFixed(1)},${arrival.z.toFixed(1)}, expected ${expected.x.toFixed(1)},${expected.z.toFixed(1)}`);
+    }
     if (inBand(target, arrival, SIDES[gate.direction].opposite)) fail(where, 'lands inside the strip back and would bounce');
-    if (FULL && !(await canStepInward(target, arrival))) fail(where, `stuck on arrival at ${arrival.x.toFixed(1)},${arrival.z.toFixed(1)}`);
+    if ((FULL || flooded) && !(await canStepInward(target, arrival))) fail(where, `stuck on arrival at ${arrival.x.toFixed(1)},${arrival.z.toFixed(1)}`);
   }
 }
 
@@ -326,7 +428,7 @@ async function checkHiddenPlace(zone, placeId) {
     console.error(`Zone transitions: ${problems.length} problem(s) in ${seconds} s:\n${problems.join('\n')}`);
     process.exit(1);
   }
-  console.log(`Zone transitions network OK in ${seconds} s: ${stats.edges} edge crossings land opposite and can walk on (${stats.bandBlocked} strip spots taken by objects), ${stats.cityPortals} city portal trips both ways, ${stats.places} places in by portal and out by the edge, ${stats.gated} contract-gated portal(s), ${stats.hidden} hidden bases out by the edge.`);
+  console.log(`Zone transitions network OK in ${seconds} s: ${stats.edges} edge crossings land opposite and can walk on (${stats.authoredEdges} authored gates, ${stats.floodedEdges} terrain-aware arrivals, ${stats.refusedFloodedEdges} atomic flooded refusals, ${stats.waterBlocked} flooded strip samples, ${stats.bandBlocked} strip spots taken by objects), ${stats.cityPortals} city portal trips both ways, ${stats.places} places in by portal and out by the edge, ${stats.gated} contract-gated portal(s), ${stats.hidden} hidden bases out by the edge.`);
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

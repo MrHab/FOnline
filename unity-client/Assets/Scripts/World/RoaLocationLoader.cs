@@ -227,6 +227,7 @@ namespace RealmOfAshes.World
             _groundSurface = null;
             CurrentGroundRenderer = null;
             _currentRoot = new GameObject("Location:" + definition.Id);
+            RoaSectorSurface.ReleaseRuntimeProfiles();
             Current = definition;
 
             // Зона: сторона, открытая в соседнюю зону, — сплошная полоса перехода,

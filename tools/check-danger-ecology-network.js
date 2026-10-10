@@ -216,7 +216,6 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
     // Беглец в каждом канале бежит до самых ворот и исчезает только в них; всё это
     // время группа в зоне, а наблюдателя он обходит стороной.
     const gates = (homeDef.transitions || []).filter(row => row.type === 'zoneGate').map(row => ({ direction: row.direction, ...world(row) }));
-    const lastSeen = new Map();
     let closest = startDistance;
     await waitFor('every copy of the survivor walks out through a gate', async () => {
       const row = await group('resident', home, 1);
@@ -225,16 +224,21 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
       assert(row.sx === home.col && row.sy === home.row, 'the group stays in the zone while a copy is still running');
       for (const actor of running) {
         assert.equal(actor.phase, 'leaving', 'the survivor keeps running');
-        lastSeen.set(actor.roomId, actor);
         if (actor.roomId === channels[1]) closest = Math.min(closest, Math.hypot(actor.x - watcher.x, actor.z - watcher.z));
       }
       return null;
     }, 150000);
-    const exits = [...lastSeen.values()].map(actor => gates
-      .map(gate => ({ direction: gate.direction, distance: Math.hypot(actor.x - gate.x, actor.z - gate.z) }))
-      .sort((a, b) => a.distance - b.distance)[0]);
-    assert.equal(exits.length, 2, 'the survivor ran in both channels');
-    for (const exit of exits) assert(exit.distance <= 8, `a survivor vanishes only in a zone gate: last seen ${exit.distance.toFixed(1)} m from the ${exit.direction} gate`);
+    const exitEvents = (await devGet(`/api/dev/danger-ecology?sx=${home.col}&sy=${home.row}&radius=1`))
+      .recentExits.filter(event => event.groupId === 'resident');
+    assert.deepEqual(exitEvents.map(event => event.roomId).sort(), [...channels].sort(),
+      'each channel records one authoritative survivor exit');
+    const exits = exitEvents.map(event => {
+      const gate = gates.find(row => row.direction === event.direction);
+      assert(gate, `the ${event.roomId} survivor chose an authored gate`);
+      return { direction: event.direction, distance: Math.hypot(event.x - gate.x, event.z - gate.z) };
+    });
+    for (const exit of exits) assert(exit.distance <= 8,
+      `a survivor vanishes only in a zone gate: actual exit ${exit.distance.toFixed(1)} m from the ${exit.direction} gate`);
     assert.equal(exits[0].direction, exits[1].direction, 'every copy leaves by the same gate');
     assert(closest >= startDistance - 3, `the survivor runs away from the watcher, not past them: ${Math.round(startDistance)} → ${Math.round(closest)} m`);
     const fled = await waitFor('the broken group leaves through a gate', async () => {

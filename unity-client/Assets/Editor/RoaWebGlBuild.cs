@@ -122,7 +122,16 @@ namespace RealmOfAshes.EditorTools
                 target = BuildTarget.WebGL,
                 options = BuildOptions.None
             };
-            BuildReport report = BuildPipeline.BuildPlayer(options);
+            BuildReport report;
+            RoaRuntimeShaderGuard.PreparePackageShaders();
+            RoaWoodMeshBuildGuard.Prepare();
+            using (var sectors = new RoaRuntimeSectorCatalogBuild())
+            {
+                System.GC.Collect();
+                System.GC.WaitForPendingFinalizers();
+                EditorUtility.UnloadUnusedAssetsImmediate();
+                report = BuildPipeline.BuildPlayer(options);
+            }
             BuildSummary summary = report.summary;
             receipt["result"] = summary.result.ToString();
             receipt["finishedAt"] = System.DateTime.UtcNow.ToString("O");

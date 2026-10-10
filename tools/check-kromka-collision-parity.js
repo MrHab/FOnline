@@ -27,6 +27,8 @@ const {
 } = require('./kromka-scene-markers');
 const { colliderFootprint, colliderShapes, MIN_PART_SIZE, walkCollisionParts } = require('./kromka-walk-collision');
 const { createLocationCollision } = require('../src/server/location-collision');
+const sectorCatalog = require('../data/kromka/sector-surfaces.json');
+const sectorProfiles = new Map(sectorCatalog.profiles.map(profile => [profile.locationId, profile]));
 
 const ROOT = path.resolve(__dirname, '..');
 const locationsDir = path.join(ROOT, 'data', 'locations');
@@ -115,6 +117,12 @@ const definitionFiles = [
 for (const definitionFile of definitionFiles) {
   const file = path.basename(definitionFile);
   const definition = JSON.parse(fs.readFileSync(definitionFile, 'utf8'));
+  const surface = definition.sectorSurfaceVersion ? sectorProfiles.get(definition.id) : null;
+  if (definition.sectorSurfaceVersion) {
+    assert(surface && definition.sectorSurfaceVersion === sectorCatalog.sourceHash,
+      `${file}: authored surface version has no matching runtime projection`);
+  }
+  const removedBySurface = new Set((surface?.placements || []).filter(change => change.remove).map(change => change.id));
   const scenePath = locationScenePath(definition, ROOT);
   if (!scenePath) continue;
   assert(fs.existsSync(scenePath), `${file}: Unity scene ${definition.unityScene} is missing`);
@@ -134,9 +142,9 @@ for (const definitionFile of definitionFiles) {
   // The floor is a marker of its own, and a body that walks off its edge falls out
   // of the world: a camp's 76 m ground under a 160 m city dropped the player at the
   // gate. The map is the walkable rectangle, so the floor has to cover all of it.
-  const floor = [...markers.values()].filter(marker => marker.role === 'terrain')
-    .flatMap(marker => colliders.get(marker.id) || [])
-    .flatMap(shape => shape.corners || []);
+  const terrainColliders = [...markers.values()].filter(marker => marker.role === 'terrain')
+    .flatMap(marker => colliders.get(marker.id) || []);
+  const floor = terrainColliders.flatMap(shape => shape.corners || []);
   const mapWidth = Number(definition.map?.width) || 0;
   const mapDepth = Number(definition.map?.depth) || 0;
   const npcRows = (Array.isArray(definition.objects) ? definition.objects : []).filter(friendlyNpc);
@@ -149,7 +157,8 @@ for (const definitionFile of definitionFiles) {
       failures.npcs.push(`${file}: ${row.id} has no KromkaNpc in the scene (Кромка → НПС → Расставить НПС во всех сценах)`);
       continue;
     }
-    const moved = Math.hypot(placed.x - Number(row.position?.x || 0), placed.z - Number(row.position?.z || 0));
+    const npcSource = surface ? row.surfaceSourcePosition || row.position : row.position;
+    const moved = Math.hypot(placed.x - Number(npcSource?.x || 0), placed.z - Number(npcSource?.z || 0));
     if (moved > 0.05) failures.npcs.push(`${file}: ${row.id} stands ${moved.toFixed(2)} m from its row — the scene was not exported`);
     if (angleGap(placed.yaw, Number(row.rotation?.y || 0)) > 0.02)
       failures.npcs.push(`${file}: ${row.id} faces another way than its row`);
@@ -167,8 +176,11 @@ for (const definitionFile of definitionFiles) {
   }
 
   if (mapWidth > 0 && mapDepth > 0) {
-    if (!floor.length) failures.ground.push(`${file}: the terrain marker carries no floor collider`);
-    else {
+    if (!floor.length) {
+      if (!(definition.sectorSurfaceVersion
+        && terrainColliders.some(shape => shape.kind === 'mesh' && shape.mesh !== '0')))
+        failures.ground.push(`${file}: the terrain marker carries no floor collider`);
+    } else {
       const reach = (index, sign) => sign * Math.max(...floor.map(corner => sign * corner[index]));
       const covered = reach(0, -1) <= -mapWidth / 2 + 0.5 && reach(0, 1) >= mapWidth / 2 - 0.5
         && reach(2, -1) <= -mapDepth / 2 + 0.5 && reach(2, 1) >= mapDepth / 2 - 0.5;
@@ -183,7 +195,7 @@ for (const definitionFile of definitionFiles) {
     if (marker.role === 'terrain') continue;
     const row = rows.get(marker.id);
     if (!row) {
-      failures.unexported.push(`${file}: ${marker.id}`);
+      if (!removedBySurface.has(marker.id)) failures.unexported.push(`${file}: ${marker.id}`);
       continue;
     }
     pairs += 1;
@@ -197,7 +209,10 @@ for (const definitionFile of definitionFiles) {
       failures.tags.push(`${where} data ${JSON.stringify(row.tags || [])} vs marker ${JSON.stringify(marker.tags)}`);
 
     const solid = colliders.get(marker.id) || [];
-    const shapes = solid.flatMap(colliderShapes)
+    const sourcePosition = surface ? row.surfaceSourcePosition || row.position : row.position;
+    const sourceRow = surface ? {...row, position: sourcePosition} : row;
+    const walkingGroundY = surface ? Number(sourcePosition?.y || 0) : 0;
+    const shapes = solid.flatMap(collider => colliderShapes(collider, walkingGroundY))
       .filter(shape => (shape.radius !== undefined ? shape.radius * 2 : Math.min(shape.sizeX, shape.sizeZ)) >= MIN_PART_SIZE);
     if (marker.blocksMovement !== shapes.length > 0) {
       failures.flag.push(`${where} marker _blocksMovement ${marker.blocksMovement ? 1 : 0} but the scene has `
@@ -214,7 +229,7 @@ for (const definitionFile of definitionFiles) {
       continue;
     }
     blocking += 1;
-    const expected = walkCollisionParts(solid, row);
+    const expected = walkCollisionParts(solid, sourceRow, walkingGroundY);
     const actual = Array.isArray(row.collisionParts) ? row.collisionParts : [];
     partCount += actual.length;
     if (!sameSet(expected, actual, samePart)) {
@@ -223,7 +238,10 @@ for (const definitionFile of definitionFiles) {
       continue;
     }
     const blockers = locationObjectBlockers(row);
-    if (!sameSet(shapes, blockers, sameWorldShape))
+    const dx = Number(row.position?.x || 0) - Number(sourcePosition?.x || 0);
+    const dz = Number(row.position?.z || 0) - Number(sourcePosition?.z || 0);
+    const projectedShapes = surface ? shapes.map(shape => ({...shape, x: shape.x + dx, z: shape.z + dz})) : shapes;
+    if (!sameSet(projectedShapes, blockers, sameWorldShape))
       failures.rebuilt.push(`${where} the server builds ${blockers.length} blockers that do not match the scene's ${shapes.length} shapes`);
   }
 }

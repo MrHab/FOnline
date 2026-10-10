@@ -23,6 +23,7 @@ const {
   weatherShelteredLocation
 } = require('../src/server/weather');
 const { npcAttackHitChance } = require('../src/server/enemy-ai');
+const sectorTerrain = require('../src/server/sector-terrain');
 
 const root = path.resolve(__dirname, '..');
 const graph = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
@@ -188,6 +189,7 @@ const stormEffects = loam.effects;
 const stormRoom = { id: 'storm', weather: loam };
 const clearRoom = { id: 'clear', weather: createWeather({ override: 'clear' }).sampleAt(40, 60, T0) };
 const rooms = new Map([[stormRoom.id, stormRoom], [clearRoom.id, clearRoom]]);
+assert.equal(sectorTerrain.find(stormRoom.id), null, 'the synthetic weather room has no sector surface');
 
 const context = vm.createContext({
   PLAYER_SPEED: 7,
@@ -195,6 +197,8 @@ const context = vm.createContext({
   SERVER_WEAPONS: { fists: { range: 1 } },
   clamp: (value, min, max) => Math.max(min, Math.min(max, Number(value))),
   rooms,
+  roomLocation: room => ({ id: room?.id || '' }),
+  sectorTerrain,
   playerWorldExtent: () => 140,
   isArtifactStunned: () => false,
   serverArtifactEffects: () => ({ speedPct: 0 }),

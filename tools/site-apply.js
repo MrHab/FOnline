@@ -50,6 +50,10 @@ function safeId(value, limit = 96) {
   return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, limit);
 }
 
+function objectId(siteId, row) {
+  return String(row.stableId || safeId(`${siteId}_${row.id}`));
+}
+
 /** Точка макета (оси площадки) в метрах сектора и поворот в градусах. */
 function placer(site) {
   const yaw = Number(site.rotationY || 0) * Math.PI / 180;
@@ -85,6 +89,9 @@ function validate(layout, lootTiers) {
     seen('object', row.id);
     if (!String(row.prefab || '').trim()) problems.push(`object ${row.id}: no prefab`);
     if (row.scale !== undefined) problems.push(`object ${row.id}: models keep their authored size, no scale`);
+    if (row.stableId && safeId(row.stableId) !== row.stableId) problems.push(`object ${row.id}: invalid stableId`);
+    if (row.sourceObjectId && (row.sourceObjectId !== row.stableId || !row.serverMetadata))
+      problems.push(`object ${row.id}: sourceObjectId needs matching stableId and serverMetadata`);
   }
   for (const row of layout.npcs || []) seen('npc', row.id);
   for (const row of layout.containers || []) {
@@ -156,7 +163,7 @@ function main() {
   // если макет теперь дал такому объекту имя, его строка уходит и пишется заново.
   const tagged = row => Array.isArray(row?.tags) && row.tags.includes(`site-${siteId}`);
   const namedIds = new Set((layout.objects || []).filter(row => row.name || row.quest || row.hover)
-    .map(row => safeId(`${siteId}_${row.id}`)));
+    .map(row => objectId(siteId, row)));
   const exported = new Map((zone.objects || []).filter(row => (ownRow(row) || tagged(row)) && row.unityAuthored)
     .map(row => [row.id, row]));
   zone.objects = (zone.objects || []).filter(row => !ownRow(row) && !(tagged(row) && namedIds.has(row.id)));
@@ -247,15 +254,24 @@ function main() {
   // задания. Геометрию, коллизию и теги экспорт Unity допишет к ним сам.
   for (const row of layout.objects || []) {
     if (!row.name && !row.quest && !row.hover) continue;
-    const id = safeId(`${siteId}_${row.id}`);
+    const id = objectId(siteId, row);
     claim(id);
     const point = place(row);
     const previous = exported.get(id);
+    const metadata = row.serverMetadata || {};
+    const tags = row.sourceObjectId
+      ? [...new Set([...(metadata.tags || row.tags || []), 'site', `site-${siteId}`])]
+      : [...new Set(['site', `site-${siteId}`, ...(row.quest ? ['quest-object'] : []), ...(row.tags || [])])];
     const own = {
-      name: String(row.name || row.id).slice(0, 64),
+      ...metadata,
+      name: String(metadata.name || row.name || row.id).slice(0, 64),
       ...(row.quest ? { interactive: { questObjective: String(row.quest) }, questObjective: String(row.quest) } : {}),
       ...(row.hover ? { hover: row.hover } : {}),
-      tags: [...new Set(['site', `site-${siteId}`, ...(row.quest ? ['quest-object'] : []), ...(row.tags || [])])],
+      tags,
+      ...(row.sourceObjectId ? {
+        collision: row.collision || 'none',
+        vision: { blocks: row.vision === 'block' }
+      } : {}),
       site: siteId
     };
     // Место могло сдвинуться в макете: геометрия прошлой сборки годится, только пока оно то же.

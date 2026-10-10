@@ -64,6 +64,9 @@
 
 | Файл | Назначение |
 |---|---|
+| `sector-terrain.js`, `sector-surface.js` | общий каталог поверхности 197 секторов: вода, высота, склоны и серверная проходимость |
+| `sector-ground-lattice.js`, `sector-mesh-patches.js` | проверенные участки native mesh на сложных берегах и соединение с аналитической поверхностью |
+| `sector-utilities.js`, `dam-road-river.js`, `room-surface.js` | инженерные переходы, вода у дамбы и применение поверхности к комнате |
 | `room-lifecycle.js` | жизненный цикл эфемерных комнат встреч и мировых точек |
 | `room-actor-spatial-index.js` | uniform-grid broad phase для коллизий плотной комнаты |
 | `static-collision-spatial-index.js` | индекс authored static blockers для движения, LOS и A* |

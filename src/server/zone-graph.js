@@ -209,9 +209,14 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
         if (hit !== null) { road = candidate.id; along = hit; break; }
       }
       const pair = [zone.id, other.id].sort().join('|');
+      const authoredAlong = overrides.gatePositions?.[pair];
+      if (authoredAlong !== undefined && (!Number.isFinite(authoredAlong) || authoredAlong <= 0 || authoredAlong >= 1))
+        throw new Error('zone graph: invalid authored gate position ' + pair);
+      const sourceAlong = round3(clamp(along ?? 0.25 + (hash32(`edge:${pair}`) % 1000) / 999 * 0.5, ALONG_MIN, ALONG_MAX));
       const edge = {
         open: !closed.has(pair),
-        along: round3(clamp(along ?? 0.25 + (hash32(`edge:${pair}`) % 1000) / 999 * 0.5, ALONG_MIN, ALONG_MAX)),
+        along: authoredAlong ?? sourceAlong,
+        ...(authoredAlong !== undefined ? { sourceAlong } : {}),
         ...(road ? { road } : {})
       };
       zone.edges[side] = { to: other.id, ...edge };

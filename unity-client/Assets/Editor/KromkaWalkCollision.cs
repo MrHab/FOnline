@@ -48,12 +48,12 @@ namespace Kromka.EditorTools
         /// <summary>Останавливает ли объект идущего: есть ли у него хоть что-то на высоте тела.</summary>
         internal static bool BlocksWalking(GameObject root) => Shapes(root).Count > 0;
 
-        internal static List<GroundShape> Shapes(GameObject root)
+        internal static List<GroundShape> Shapes(GameObject root, double groundY = 0)
         {
             var shapes = new List<GroundShape>();
             foreach (Collider collider in SolidColliders(root))
             {
-                GroundShape? shape = ShapeOf(collider);
+                GroundShape? shape = ShapeOf(collider, groundY);
                 if (shape == null) continue;
                 GroundShape value = shape.Value;
                 if (value.Round ? value.Radius * 2 < MinPartSize : Math.Min(value.SizeX, value.SizeZ) < MinPartSize)
@@ -146,17 +146,17 @@ namespace Kromka.EditorTools
             throw Unsupported(collider);
         }
 
-        private static GroundShape? ShapeOf(Collider collider)
+        private static GroundShape? ShapeOf(Collider collider, double groundY)
         {
             Transform transform = collider.transform;
             if (collider is BoxCollider box)
-                return BoxShape(BoxCorners(transform, box.center, box.size * 0.5f), transform);
+                return BoxShape(BoxCorners(transform, box.center, box.size * 0.5f), transform, groundY);
 
             if (collider is SphereCollider sphere)
             {
                 Vector3 center = transform.TransformPoint(sphere.center);
                 double radius = sphere.radius * MaxAbs(transform.lossyScale);
-                double away = DistanceToBand(center.y, center.y);
+                double away = DistanceToBand(center.y, center.y, groundY);
                 if (away >= radius) return null;
                 return new GroundShape { Round = true, X = center.x, Z = center.z, Radius = Math.Sqrt(radius * radius - away * away) };
             }
@@ -166,7 +166,7 @@ namespace Kromka.EditorTools
                 CapsuleWorld(capsule, out Vector3 center, out Vector3 axis, out double radius, out double straight);
                 if (Math.Abs(axis.y) > Upright)
                 {
-                    double away = DistanceToBand(center.y - straight, center.y + straight);
+                    double away = DistanceToBand(center.y - straight, center.y + straight, groundY);
                     if (away >= radius) return null;
                     return new GroundShape { Round = true, X = center.x, Z = center.z, Radius = Math.Sqrt(radius * radius - away * away) };
                 }
@@ -174,7 +174,7 @@ namespace Kromka.EditorTools
                 {
                     // Труба: шириной с хорду круглого сечения на высоте тела, длиной с прямой
                     // участок; скруглённые торцы добавляют сторону вписанного в них квадрата.
-                    double away = DistanceToBand(center.y, center.y);
+                    double away = DistanceToBand(center.y, center.y, groundY);
                     if (away >= radius) return null;
                     double chord = Math.Sqrt(radius * radius - away * away);
                     double length = Math.Sqrt((double)axis.x * axis.x + (double)axis.z * axis.z);
@@ -191,7 +191,7 @@ namespace Kromka.EditorTools
                 // У наклонной капсулы простой фигуры нет; её габаритный ящик ошибается в сторону преграды.
                 Vector3 half = Vector3.one * capsule.radius;
                 half[capsule.direction] = Mathf.Max(capsule.height * 0.5f, capsule.radius);
-                return BoxShape(BoxCorners(transform, capsule.center, half), transform);
+                return BoxShape(BoxCorners(transform, capsule.center, half), transform, groundY);
             }
 
             throw Unsupported(collider);
@@ -221,11 +221,11 @@ namespace Kromka.EditorTools
         }
 
         // Срез ящика полосой высот тела, спроецированный на землю и обведённый прямоугольником.
-        private static GroundShape? BoxShape(Vector3[] corners, Transform transform)
+        private static GroundShape? BoxShape(Vector3[] corners, Transform transform, double groundY)
         {
             var points = new List<double[]>();
             foreach (Vector3 corner in corners)
-                if (corner.y >= BandBottom && corner.y <= BandTop) points.Add(new double[] { corner.x, corner.z });
+                if (corner.y >= groundY + BandBottom && corner.y <= groundY + BandTop) points.Add(new double[] { corner.x, corner.z });
             for (int a = 0; a < 8; a++)
             {
                 foreach (int bit in new[] { 1, 2, 4 })
@@ -233,7 +233,7 @@ namespace Kromka.EditorTools
                     if ((a & bit) != 0) continue;
                     Vector3 from = corners[a];
                     Vector3 to = corners[a | bit];
-                    foreach (double level in new[] { BandBottom, BandTop })
+                    foreach (double level in new[] { groundY + BandBottom, groundY + BandTop })
                     {
                         if ((from.y - level) * (to.y - level) >= 0) continue;
                         double t = (level - from.y) / ((double)to.y - from.y);
@@ -288,10 +288,10 @@ namespace Kromka.EditorTools
             return value;
         }
 
-        private static double DistanceToBand(double low, double high)
+        private static double DistanceToBand(double low, double high, double groundY)
         {
-            if (high < BandBottom) return BandBottom - high;
-            if (low > BandTop) return low - BandTop;
+            if (high < groundY + BandBottom) return groundY + BandBottom - high;
+            if (low > groundY + BandTop) return low - groundY - BandTop;
             return 0;
         }
 

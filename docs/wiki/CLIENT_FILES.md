@@ -63,7 +63,9 @@ WebGL-мост живёт в `Assets/Plugins/WebGL/RoaWebSocket.jslib`; прот
 | `RoaZoneGroundCover.cs` | покров земли зоны: кусты и камни по зерну зоны мимо троп и объектов, на сцене — только слоты 3×3 вокруг камеры |
 | `RoaUnityLocationScene.cs`, `RoaUnityLocationObject.cs` | маркер авторской сцены локации и мост «id серверного объекта → объект сцены» |
 | `RoaSceneEnvironment.cs` | снимок освещения авторской сцены (ambient, туман, небо, солнце), применяемый к активной сцене |
-| `RoaLocalTerrain.cs` | земля из авторитетной `worldState.map`, рельеф, вода, физика тайлов и границы `playableBounds` |
+| `RoaLocalTerrain.cs` | земля из авторитетной `worldState.map`; для секторов применяет общий профиль рельефа, воду, физику и границы `playableBounds` |
+| `RoaSectorSurface.cs`, `RoaRuntimeSectorCatalog.cs` | проекция поверхности секторов и загрузка профиля из общего серверного каталога; WebGL хранит профили по отдельности |
+| `RoaTerrainPlacement.cs`, `RoaSurfaceOverlaySampler.cs` | размещение объектов на поверхности и выборка высоты под объектами |
 | `RoaGroundWater.cs` | где под ногой вода: лужи той же формулой, что в шейдере земли, и вода с карты сервера |
 | `RoaGroundDressing.cs` | процедурная растительность и разбивка однообразия земли |
 | `RoaWorldExitBoundary.cs` | край места: золотая полоса выхода в его зону мира или замкнутый пунктирный периметр |
@@ -275,6 +277,12 @@ Skin** и **Apocalypse HUD Layouts**. Без локально установле
   **Кромка → Проверки**.
 - `RoaClientAuditRunner.cs` — запускает набор проб одним batchmode-процессом и
   завершает Unity с кодом 1 при любой ошибке.
+- `RoaSectorSurfaceBaker.cs` сохраняет спроецированные сцены, меши и коллизии
+  для редакторской проверки; в Git остаются исходные сцены, а игрок получает
+  проекцию из каталога при загрузке сектора;
+  `RoaSectorSurfaceProbe`, `RoaSectorWalkProbe` и
+  `RoaSectorInteractionProbe` проверяют форму поверхности, проходы и доступ к
+  взаимодействиям.
 - `RoaZoneAssemblyProbe.cs` — «Realm of Ashes → Zones → Check zone assembly»:
   собирает зону мира из JSON, сверяет коллайдеры клиента с боксами сервера,
   пулы и покров и снимает кадры сверху и с игровой камеры.
@@ -290,8 +298,12 @@ Skin** и **Apocalypse HUD Layouts**. Без локально установле
   предметов из 3D-моделей).
 - `RoaWebGlBuild.cs` — меню «Кромка → Build WebGL», результат в
   `public/unity/` (в .gitignore); `RoaWebGlTextureBudget.cs` — предел размера
-  текстур художественных паков для WebGL; `RoaRuntimeShaderGuard.cs` держит в
-  сборке шейдеры, которые код находит через `Shader.Find`.
+  текстур художественных паков для WebGL; `RoaRuntimeShaderGuard.cs` заранее
+  импортирует графы glTFast и держит в сборке шейдеры, которые код находит
+  через `Shader.Find`. `RoaWoodMeshBuildGuard.cs` перед сборкой включает
+  Read/Write для двух моделей сухих деревьев: проекция ресурсов читает их
+  вершины в player runtime. Художественный пакет Synty устанавливается
+  локально и не входит в репозиторий.
 - `RoaWebGlStagingBuild.cs` — отдельная игнорируемая сборка для review в
   `unity-client/Builds/WebGlReview/`; она не заменяет игровую сборку в
   `public/unity/`. Проверенная staging-сборка прошла вход, учебный сектор и

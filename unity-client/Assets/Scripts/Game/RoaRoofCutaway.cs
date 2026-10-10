@@ -17,6 +17,13 @@ namespace RealmOfAshes.Game
         public const float CutawayOpacity = 0.24f;
         public const float ReleaseDelay = 0.22f;
 
+        public static bool IsCameraCutawayRenderer(LocationObject entry, Renderer renderer)
+        {
+            return renderer != null && entry?.Tags != null
+                && entry.Tags.Contains("camera-cutaway")
+                && entry.Tags.Contains("camera-cutaway-renderer:" + renderer.name);
+        }
+
         private const float RefreshInterval = 0.12f;
         private const float PlayerEyeHeight = 1.12f;
 

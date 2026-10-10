@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const sectorTerrain = require('../src/server/sector-terrain');
 const { readTieredCatalogs, buildTieredCatalogs } = require('../src/server/kromka-tiers');
 const {
   normalizeVehicleCatalog,
@@ -174,11 +175,14 @@ function functionSource(name) {
 }
 // Комната «wall» — стена по x = 5 (всё, что заходит за неё, упирается).
 const WALL_X = 5;
+assert.equal(sectorTerrain.find('wall'), null, 'the synthetic wall room has no sector surface');
 const context = vm.createContext({
   PLAYER_SPEED: 7,
   PLAYER_COLLISION_RADIUS: 0.48,
   clamp: (value, min, max) => Math.max(min, Math.min(max, Number(value))),
   rooms: new Map([['wall', { id: 'wall' }]]),
+  roomLocation: room => ({ id: room?.id || '' }),
+  sectorTerrain,
   playerWorldExtent: () => 140,
   isArtifactStunned: () => false,
   serverArtifactEffects: () => ({ speedPct: 0 }),

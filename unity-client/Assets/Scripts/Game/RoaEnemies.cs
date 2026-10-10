@@ -353,6 +353,7 @@ namespace RealmOfAshes.Game
                 case "investigate": return "ИЩЕТ";
                 case "stagger": return "ОГЛУШЁН";
                 case "alarm": return "ТРЕВОГА";
+                case "flee": return "УДИРАЕТ";
                 case "attack": return "АТАКУЕТ";
                 case "combat":
                 case "factioncombat":
@@ -2067,7 +2068,7 @@ namespace RealmOfAshes.Game
                 if (!hostile) plateEntry.Name = RoaInteraction.DisplayNpcName(enemy.Snapshot);
                 // Городская живность не враг, но её можно бить: табличка так и говорит.
                 if (ReadBoolean(enemy.Snapshot["prey"]))
-                    plateEntry.Faction = (enemy.Snapshot["aiState"]?.ToString() == "alarm" ? "ТРЕВОГА" : "ДОБЫЧА")
+                    plateEntry.Faction = (enemy.Snapshot["aiState"]?.ToString() == "flee" ? "УДИРАЕТ" : "ДОБЫЧА")
                         + " · Городская живность";
                 rows.Add(plateEntry);
             }

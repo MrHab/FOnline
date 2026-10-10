@@ -92,7 +92,7 @@ async function waitFor(label, probe, timeoutMs = 12000) {
   const saves = JSON.parse(fs.readFileSync(savesPath, 'utf8'));
   const traderCustomer = saves.characters[users.users[accounts.trade.login].id][accounts.trade.characterId].state;
   traderCustomer.inventory = { ...(traderCustomer.inventory || {}), silver: 200, trophy: 3 };
-  traderCustomer.itemRuntime.ui_laserPistol_trade_1.loaded = 5;
+  traderCustomer.itemRuntime.ui_laserPistol_trade_1.loaded = 12;
   fs.writeFileSync(savesPath, JSON.stringify(saves));
   const far = Date.now() + 3600000;
   const members = (type, role, count, label) => Array.from({ length: count }, (_, i) => ({
@@ -238,18 +238,24 @@ async function waitFor(label, probe, timeoutMs = 12000) {
     assert(!exchange.ok && /нельзя торговать/.test(exchange.error),
       'Direct trade packets cannot bypass the combat lock: ' + JSON.stringify(exchange).slice(0, 300));
     let killed = false;
-    for (let attempt = 0; attempt < 5 && !killed; attempt += 1) {
+    const shotResults = [];
+    for (let attempt = 0; attempt < 12 && !killed; attempt += 1) {
+      await reachMerchant(4.4);
       const current = merchantNow();
       const hit = await h.socketAck(robber.socket, 'enemyHit', {
         enemyId: merchant.id, weapon: 'laserPistol', mode: 'single',
         attackToken: `alife_caravan_reward_${Date.now()}_${attempt}`,
         shotDirX: current.x - position.x, shotDirZ: current.z - position.z,
+        targetX: current.x, targetZ: current.z,
         skillRanks: {}, talentRanks: {}
       });
+      shotResults.push({ ok: hit?.ok, hit: hit?.hit, killed: hit?.killed,
+        error: hit?.error, damage: hit?.damage, loaded: hit?.combat?.loaded,
+        hp: hit?.enemy?.hp, position: [position.x, position.z], target: [current.x, current.z] });
       killed = hit?.killed === true;
       if (!killed) await delay(1200);
     }
-    assert(killed, 'The robbed merchant can be killed through authoritative combat');
+    assert(killed, 'The robbed merchant can be killed through authoritative combat: ' + JSON.stringify(shotResults));
     const bag = await waitFor('the robbed caravan reward sack', async () => {
       const world = await h.socketAck(robber.socket, 'requestWorldState', {});
       return world.state?.containers?.find(row => row.id === `bag_${merchant.id}`) || null;

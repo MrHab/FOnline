@@ -174,7 +174,7 @@ async function standStill(account, state) {
     await h.stopServer();
   }
 
-  // 2. Охотники у места зверька: кулак пугает, кирка убивает, туша даёт шкуру Т1.
+  // 2. Охотники у места зверька: рана заставляет бежать, кирка убивает, туша даёт шкуру Т1.
   book = saves();
   seedCitizen(book.state('harvest'), 'fists', { x: slot.x + 0.45, z: slot.z });
   seedCitizen(book.state('trade'), 'pickaxe', { x: slot.x - 0.45, z: slot.z });
@@ -192,7 +192,7 @@ async function standStill(account, state) {
       return row && distance(row, slot) < 4 ? row : null;
     });
 
-    // Кулак: попадание не убивает, зверёк не отвечает и остаётся на месте.
+    // Кулак: промах не пугает, рана заставляет мирного зверька бежать.
     let punch = null;
     for (let attempt = 0; attempt < 10 && !punch?.hit; attempt += 1) {
       const current = view.rows.get(rat.id) || rat;
@@ -200,38 +200,41 @@ async function standStill(account, state) {
       punch = await strike(accounts.harvest, view.rows.get(rat.id) || current, 'fists', scoutSelf);
       if (punch.error === 'Цель слишком далеко.') { await wait(100); continue; }
       assert(punch.ok && !punch.protected, 'a city critter can be hit in the peaceful city: ' + JSON.stringify(punch).slice(0, 300));
-      if (!punch.hit) await wait(1300);
+      if (!punch.hit) {
+        await wait(300);
+        assert.notEqual(view.rows.get(rat.id)?.aiState, 'flee', 'a miss does not make an unharmed rat flee');
+        await wait(1000);
+      }
     }
     assert(punch?.hit && !punch.killed && punch.enemy.hp < punch.enemy.maxHp,
       'a punch wounds the rat: ' + JSON.stringify(punch).slice(0, 300));
     const scoutHp = Number(punch.self?.hp);
-    const hitPoint = view.rows.get(rat.id) || rat;
-    const startled = await until('the struck rat startles', () => {
+    const fled = await until('the wounded rat flees', () => {
       const row = view.rows.get(rat.id);
-      return row && row.aiState === 'alarm' ? row : null;
+      return row && row.aiState === 'flee' ? row : null;
     }, 3000);
-    assert.equal(startled.hostileToPlayer, false, 'a struck rat does not turn hostile');
-    assert(distance(startled, hitPoint) <= 1, 'a startled rat does not flee its position');
-    await wait(700);
-    assert(distance(view.rows.get(rat.id), hitPoint) <= 1, 'the rat stays put while startled');
+    assert.equal(fled.hostileToPlayer, false, 'a wounded rat does not turn hostile');
+    await until('the wounded rat gains distance from the attacker',
+      () => distance(view.rows.get(rat.id), scoutSelf) > 4, 4000,
+      () => `scout ${scoutSelf.x.toFixed(1)},${scoutSelf.z.toFixed(1)}; trail ${trail(view, rat.id)}`);
     await wait(1500);
     const hpAfter = Number((await standStill(accounts.harvest, scoutSelf)).hp);
     assert(Number.isFinite(scoutHp) && hpAfter >= scoutHp, `the rat does not bite back: ${scoutHp} -> ${hpAfter}`);
-    console.log('PASS a punched rat startles in place instead of fleeing or fighting back');
+    console.log('PASS a wounded rat flees without fighting back, while a miss does not trigger flight');
 
-    // Кирка: испуг проходит, зверёк снова пасётся у своего двора, охотник добивает его.
+    // Кирка: зверёк возвращается к своему двору, охотник добивает его.
     await until('the rat calms down near its slot', () => {
       const row = view.rows.get(rat.id);
-      return row && row.aiState !== 'alarm' && row.aiState !== 'return' && distance(row, slot) <= config.wanderRadius * 2 ? row : null;
+      return row && row.aiState !== 'flee' && row.aiState !== 'return' && distance(row, slot) <= config.wanderRadius * 2 ? row : null;
     }, 15000, () => `slot ${slot.x.toFixed(1)},${slot.z.toFixed(1)}; trail ${trail(view, rat.id)}`);
     let blow = null;
-    // Промах тоже пугает крысу. Считаем именно удары, а не циклы ожидания.
+    // Считаем именно удары, а не циклы ожидания.
     let strikes = 0;
     const huntDeadline = Date.now() + 90000;
     while (strikes < 14 && Date.now() < huntDeadline && !blow?.killed) {
       const current = view.rows.get(rat.id);
       assert(current, 'the wounded rat is still in the room');
-      if (current.aiState === 'alarm' || current.aiState === 'return') { await wait(700); continue; }
+      if (current.aiState === 'flee' || current.aiState === 'return') { await wait(700); continue; }
       await approach(accounts.trade, hunterSelf, () => view.rows.get(rat.id) || current, 1.6);
       blow = await strike(accounts.trade, view.rows.get(rat.id) || current, 'pickaxe', hunterSelf);
       if (blow.error === 'Цель слишком далеко.') { await wait(100); continue; }
@@ -285,7 +288,7 @@ async function standStill(account, state) {
     await h.stopServer();
   }
   h.cleanupSync();
-  console.log('City critters network OK: peaceful rats inside the city wall, startle in place instead of fighting, a T1 hide from the carcass, respawn at the slot.');
+  console.log('City critters network OK: peaceful rats inside the city wall flee only after damage, a T1 hide from the carcass, respawn at the slot.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

@@ -15336,7 +15336,7 @@ function weaponNoiseShouldTriggerChase(enemy, sourcePlayer, noiseType) {
 
 function aggroEnemyFromHit(room, enemy, player, now = Date.now()) {
   if (!room || !enemy || !player || enemy.dead || player.dead) return;
-  // Зверёк не отвечает на удар и не поднимает свою сторону против игрока: он удирает.
+  // Мирный зверёк без боевой реакции убегает только после полученного урона.
   if (enemy.cityCritter === true) {
     startleCityCritter(room, enemy, player, now);
     return;
@@ -18866,21 +18866,32 @@ function updateCityCritterSlots(room, loc = roomLocation(room), now = Date.now()
   return spawned;
 }
 
-/** Мирный зверёк вздрагивает от удара, оставаясь на месте. */
+/** Выбирает свободную точку побега от ранившего игрока. */
 function startleCityCritter(room, enemy, threat, now = Date.now()) {
-  enemy.critterStartleUntil = now + CITY_CRITTERS.startleMs;
-  enemy.vx = 0;
-  enemy.vz = 0;
+  const first = Math.random();
+  const turns = [first, 0.5, 0.15, 0.85, 0, 0.999];
+  let point = null;
+  for (const scale of [1, 0.6]) {
+    for (const turn of turns) {
+      const candidate = cityCritters.fleePoint(enemy, threat, CITY_CRITTERS.fleeDistance * scale, turn);
+      if (isRoomWalkableWorld(room, candidate.x, candidate.z, 0.5)) { point = candidate; break; }
+    }
+    if (point) break;
+  }
+  if (!point) point = cityCritters.fleePoint(enemy, threat, CITY_CRITTERS.fleeDistance, first);
+  enemy.critterFleeX = point.x;
+  enemy.critterFleeZ = point.z;
+  enemy.critterFleeUntil = now + CITY_CRITTERS.fleeMs;
   invalidateEnemyPath(enemy);
 }
 
-/** После испуга зверёк снова пасётся в своём дворе. */
+/** После побега зверёк возвращается в свой двор. */
 function updateCityCritter(room, enemy, dt, now = Date.now(), rng = Math.random) {
   clearEnemyLook(enemy);
-  if (Number(enemy.critterStartleUntil || 0) > now) {
-    enemy.aiState = 'alarm';
-    enemy.vx = 0;
-    enemy.vz = 0;
+  if (Number(enemy.critterFleeUntil || 0) > now) {
+    enemy.aiState = 'flee';
+    const left = moveEnemyTowards(room, enemy, Number(enemy.critterFleeX), Number(enemy.critterFleeZ), enemy.speed, dt);
+    if (left < 0.8) enemy.critterFleeUntil = 0;
     return;
   }
   const home = ensureEnemyHome(enemy);
@@ -28172,7 +28183,7 @@ function updateServerEnemies(room, dt, opts = {}) {
     ensureEnemyHome(enemy);
     if (serverNpcArtifactCombatAbility(enemy, now)) continue;
     // Городской зверёк не дерётся и не живёт по расписанию: пасётся у своего
-    // места и замирает от удара.
+    // места и убегает после получения урона.
     if (enemy.cityCritter === true) {
       updateCityCritter(room, enemy, dt, now, rng);
       continue;
@@ -34005,8 +34016,8 @@ io.on('connection', (socket) => {
       dmgInfo.damage = serverLabDamageModifier(room, enemy, dmgInfo.damage);
       enemy.hp = Math.max(0, Number(enemy.hp || 0) - dmgInfo.damage);
       if (enemy.hp > 0) {
-        aggroEnemyFromHit(room, enemy, p, now);
-        applyNpcHitStagger(enemy, dmgInfo.damage, now, {
+        if (enemy.cityCritter !== true || dmgInfo.damage > 0) aggroEnemyFromHit(room, enemy, p, now);
+        if (enemy.cityCritter !== true || dmgInfo.damage > 0) applyNpcHitStagger(enemy, dmgInfo.damage, now, {
           critical: explosionCritical.critical
         });
       }
@@ -34303,8 +34314,8 @@ io.on('connection', (socket) => {
     const rawDamage = hits.reduce((sum, row) => sum + Number(row.rawDamage || 0), 0);
     const absorbed = hits.reduce((sum, row) => sum + Number(row.absorbed || 0), 0);
     if (enemy.hp > 0) {
-      aggroEnemyFromHit(room, enemy, p, now);
-      applyNpcHitStagger(enemy, damage, now, { critical: criticalHits > 0 });
+      if (enemy.cityCritter !== true || damage > 0) aggroEnemyFromHit(room, enemy, p, now);
+      if (enemy.cityCritter !== true || damage > 0) applyNpcHitStagger(enemy, damage, now, { critical: criticalHits > 0 });
     }
     const killed = anyHit ? serverFinishEnemyKilledByPlayer(room, enemy, p, now, {
       sourceX: origin.x,

@@ -19,7 +19,8 @@ namespace RealmOfAshes.EditorTools
 
                 Require(RoaEnemies.NpcIntentLabel("pressure", true, false) == "ИЩЕТ МОМЕНТ"
                     && RoaEnemies.NpcIntentLabel("reload", true, false) == "ПЕРЕЗАРЯЖАЕТСЯ"
-                    && RoaEnemies.NpcIntentLabel("alarm", false, false) == "ТРЕВОГА"
+                    && RoaEnemies.NpcIntentLabel("flee", false, false) == "УДИРАЕТ"
+                    && !RoaEnemies.IsCombatAiState("flee")
                     && RoaEnemies.NpcIntentLabel("chase", true, false) == "СБЛИЖАЕТСЯ",
                     "боевые намерения NPC не различаются в HUD");
                 Require(RoaEnemies.NpcIntentLabel("attack", true, true, false) == "АТАКУЕТ ВАС"

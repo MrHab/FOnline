@@ -13,7 +13,7 @@ const config = critters.normalizeCityCritters(require(path.join('..', 'data', 'k
 assert.equal(config.species, 'rat', 'the city critter is the rat of the catalogue');
 assert(config.perCity >= 1 && config.respawnMs >= 5000, 'every city holds critters that come back: ' + JSON.stringify(config));
 assert(config.hideQty[0] >= 1 && config.hideQty[1] >= config.hideQty[0], 'a critter carcass holds at least one hide');
-assert(config.startleMs >= 500, 'a struck critter has a bounded stationary startle');
+assert(config.fleeMs >= 500 && config.fleeDistance >= 1, 'a wounded critter has a bounded escape');
 assert.throws(() => critters.normalizeCityCritters({ schema: 'other' }), /schema/);
 assert.throws(() => critters.normalizeCityCritters({}), /species/);
 console.log('PASS the city critter config is authored and bounded');
@@ -61,4 +61,6 @@ for (const value of charges) assert(value >= config.hideQty[0] && value <= confi
 assert(charges.has(config.hideQty[0]) && charges.has(config.hideQty[1]), 'both ends of the hide range occur');
 console.log(`PASS a critter carcass holds ${config.hideQty.join('–')} hides`);
 
-console.log('City critters OK: authored config, deterministic spaced slots, respawn after death, stationary startle, hide count.');
+const away = critters.fleePoint({ x: 3, z: 4 }, { x: 1, z: 4 }, config.fleeDistance, 0.5);
+assert(away.x > 3 && Math.abs(away.z - 4) < 0.001, 'escape points away from the attacker');
+console.log('City critters OK: authored config, deterministic spaced slots, respawn after death, escape direction, hide count.');

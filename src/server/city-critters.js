@@ -34,7 +34,8 @@ function normalizeCityCritters(raw = {}) {
     spacingTiles: finite(raw.spacingTiles, 7, 1, 40),
     keepClearTiles: finite(raw.keepClearTiles, 6, 0, 40),
     wanderRadius: finite(raw.wanderRadius, 3.5, 0.5, 20),
-    startleMs: Math.round(finite(raw.startleSeconds, 3.5, 0.5, 30) * 1000),
+    fleeMs: Math.round(finite(raw.fleeSeconds, 3.5, 0.5, 30) * 1000),
+    fleeDistance: finite(raw.fleeDistance, 9, 1, 40),
     minPlayerDistance: finite(raw.minPlayerDistance, 6, 0, 40)
   });
 }
@@ -96,6 +97,26 @@ function dueSlots(config, slots = [], lookup = () => null, now = Date.now()) {
   return due;
 }
 
+/** Точка побега прочь от того, кто ранил зверька, с небольшим отклонением. */
+function fleePoint(from, threat, distance, turn01 = 0.5) {
+  let dx = Number(from.x) - Number(threat.x);
+  let dz = Number(from.z) - Number(threat.z);
+  let length = Math.hypot(dx, dz);
+  if (!(length > 0.001)) {
+    const angle = turn01 * Math.PI * 2;
+    dx = Math.cos(angle);
+    dz = Math.sin(angle);
+    length = 1;
+  }
+  const turn = (turn01 - 0.5) * 1.22;
+  const ux = dx / length, uz = dz / length;
+  const cos = Math.cos(turn), sin = Math.sin(turn);
+  return {
+    x: Number(from.x) + (ux * cos - uz * sin) * distance,
+    z: Number(from.z) + (ux * sin + uz * cos) * distance
+  };
+}
+
 /** Сколько шкур в туше зверька; roll01 — случайное число в [0, 1). */
 function hideCharges(config, roll01) {
   const [min, max] = config.hideQty;
@@ -107,5 +128,6 @@ module.exports = {
   normalizeCityCritters,
   planSlots,
   dueSlots,
+  fleePoint,
   hideCharges
 };

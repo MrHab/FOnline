@@ -711,13 +711,19 @@ async function assertWorldDataApis() {
   // Список мест берётся из авторской карты мира: релиз локаций сверяется с ним.
   const authoredGlobalNodes = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'data', 'global-map.json'), 'utf8')).nodes || [];
   const globalNodeLocationIds = authoredGlobalNodes
+    .filter(node => node?.hidden !== true)
     .map(node => String(node?.locationId || node?.id || ''))
     .filter(Boolean);
   if (releasedLocationIdSet.size !== releasedLocationIds.length
     || releasedLocationIds.join(',') !== globalNodeLocationIds.join(',')
     || worldSites.some(site => !releasedLocationIdSet.has(String(site?.id || ''))
       || !releasedLocationIdSet.has(String(site?.locationId || '')))) {
-    fail('wasteland API did not expose exactly the current Unity location release', wasteland.body);
+    fail('wasteland API did not expose exactly the current Unity location release', JSON.stringify({
+      releasedLocationIds,
+      visibleGlobalLocationIds: globalNodeLocationIds,
+      unlistedSites: worldSites.filter(site => !releasedLocationIdSet.has(String(site?.id || ''))
+        || !releasedLocationIdSet.has(String(site?.locationId || ''))).map(site => site?.id)
+    }));
   }
   const worldLocationIds = worldSites.map(site => String(site?.locationId || '')).filter(Boolean);
   if (new Set(worldLocationIds).size !== worldLocationIds.length) {

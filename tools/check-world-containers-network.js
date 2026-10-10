@@ -26,13 +26,15 @@ const authored = (locationId, containerId) => definitionOf(locationId).container
   .find(row => row.id === containerId);
 // Ящики «Заставы 17»: застава стоит в своей зоне площадкой (zone-sites.js).
 const OUTPOST_ZONE = 'z_10_10';
+const SCRAP_OUTPOST_ZONE = 'z_06_10';
 const outpostBoxes = definitionOf(OUTPOST_ZONE).containers.filter(row => row.site === 'roadOutpost');
 const openBox = outpostBoxes.find(row => !row.locked);
 const lockedBox = outpostBoxes.find(row => row.locked);
+const scrapCache = authored(SCRAP_OUTPOST_ZONE, 'guard_artel_crate');
 // Свободная точка в шаге от ящика: сервер не ставит игрока в преграду, а обыск — только рядом.
-function besideBox(box) {
+function besideBox(locationId, box, avoid = []) {
   const { locationObjectBlockers } = createLocationCollision({ tile: 2 });
-  const blockers = (definitionOf(OUTPOST_ZONE).objects || []).flatMap(row => locationObjectBlockers(row));
+  const blockers = (definitionOf(locationId).objects || []).flatMap(row => locationObjectBlockers(row));
   // Вход ставит персонажа на центр клетки 2 м, поэтому кандидаты — центры клеток у ящика.
   const centre = metres => (Math.floor(metres / 2 + 80) + 0.5 - 80) * 2;
   const spots = [];
@@ -44,6 +46,7 @@ function besideBox(box) {
     }
   }
   for (const { x, z } of spots.sort((a, b) => a.d - b.d)) {
+    if (avoid.some(point => Math.hypot(x - point.x, z - point.z) < 1.4)) continue;
     if (!blockers.every(blocker => circleBlockerPenalty(x, z, 0.6, blocker) <= 0)) continue;
     // И видно ящик: ни одна преграда, кроме модели самого ящика, не лежит на отрезке.
     const others = blockers.filter(blocker => blocker.objectId !== box.visualObjectId);
@@ -73,14 +76,16 @@ const containerOf = (account, defId) => (account.join.worldState?.containers || 
   };
 
   // Путник без перков — у открытого ящика заставы, второй — у запертого.
-  const nearOpen = besideBox(openBox);
-  const nearLocked = besideBox(lockedBox);
+  const nearOpen = besideBox(OUTPOST_ZONE, openBox);
+  const nearLocked = besideBox(OUTPOST_ZONE, lockedBox);
   place(stateFor('harvest'), OUTPOST_ZONE, nearOpen.x, nearOpen.z);
   place(stateFor('untargeted'), OUTPOST_ZONE, nearLocked.x, nearLocked.z);
   // Двое у ящика сторожевой артели: первый без перка, второй с «Нюхом на тайники».
-  place(stateFor('trade'), 'scrapOutpost', 1.5, 9);
+  const nearScrapCache = besideBox(SCRAP_OUTPOST_ZONE, scrapCache);
+  const nearFinder = besideBox(SCRAP_OUTPOST_ZONE, scrapCache, [nearScrapCache]);
+  place(stateFor('trade'), SCRAP_OUTPOST_ZONE, nearScrapCache.x, nearScrapCache.z);
   const finder = stateFor('progression');
-  place(finder, 'scrapOutpost', -1.5, 9);
+  place(finder, SCRAP_OUTPOST_ZONE, nearFinder.x, nearFinder.z);
   finder.player.level = 30;
   finder.characterProfile.special = { str: 5, per: 6, end: 5, cha: 4, int: 5, agi: 5, luck: 10 };
   finder.skillRanks = { ...(finder.skillRanks || {}), lockpick: 60 };
@@ -135,7 +140,7 @@ const containerOf = (account, defId) => (account.join.worldState?.containers || 
     console.log('PASS a locked container keeps its loot');
 
     // --- «Нюх на тайники» -------------------------------------------------------------------
-    const expectedCache = authored('scrapOutpost', 'guard_artel_crate').loot;
+    const expectedCache = scrapCache.loot;
     await h.connectAndJoin(accounts.trade);
     await h.connectAndJoin(accounts.progression);
     assert.equal(accounts.progression.join.roomId, accounts.trade.join.roomId, 'Both visitors stand in the same outpost.');
@@ -144,7 +149,9 @@ const containerOf = (account, defId) => (account.join.worldState?.containers || 
     const cache = containerOf(accounts.trade, 'guard_artel_crate');
     // Первым открывает игрок без перка: он видит авторский список и бонус не тратит.
     const plainView = await h.socketAck(accounts.trade.socket, 'openWorldContainer', { id: cache.id });
-    assert(plainView.ok, JSON.stringify(plainView.error || plainView).slice(0, 300));
+    assert(plainView.ok, JSON.stringify({ error: plainView.error || plainView,
+      player: [accounts.trade.join.self?.x, accounts.trade.join.self?.z],
+      cache: [cache.x, cache.z], finder: [accounts.progression.join.self?.x, accounts.progression.join.self?.z] }).slice(0, 400));
     assert.deepEqual(byId(plainView.container.loot), byId(expectedCache), 'Without the perk the cache is the authored cache.');
     const sensed = await h.socketAck(accounts.progression.socket, 'openWorldContainer', { id: cache.id });
     assert(sensed.ok, JSON.stringify(sensed.error || sensed).slice(0, 300));

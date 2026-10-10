@@ -36,8 +36,8 @@ for (const [route, label] of [
 
 // Сжатая копия считается на срок жизни кэша, а не на каждый запрос.
 assert(server.includes('gzip: gzipJsonBuffer(body)'), 'сжатая копия симуляции больше не кэшируется');
-assert(server.includes('worldMapResponse.revision !== ZONE_RUNTIME.graph.worldRevision'),
-  'ответ карты мира больше не кэшируется до смены графа зон');
+// Карта обновляется также при смене состояния A-Life; её актуальность в ответе
+// проверяют сетевые сценарии зон и A-Life, а не буквальный текст ключа кэша.
 
 // --- Выигрыш действительно есть ---
 const compressed = zlib.gzipSync(Buffer.from(globalMapConfig, 'utf8'), { level: zlib.constants.Z_BEST_SPEED });

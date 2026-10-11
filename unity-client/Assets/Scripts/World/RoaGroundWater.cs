@@ -44,6 +44,7 @@ namespace RealmOfAshes.World
         /// <summary>Под ногой вода: лужа глубже порога или вода с карты сервера.</summary>
         public static bool InWater(Vector3 world)
         {
+            if (RoaDamRoadWaterProjection.InWater(world)) return true;
             if (Terrain != null && Terrain.SurfaceAt(world).b > 0.5f) return true;
             return PuddleDepth(world) > SplashDepth;
         }

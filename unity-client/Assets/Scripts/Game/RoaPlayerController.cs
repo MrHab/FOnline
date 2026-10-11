@@ -403,9 +403,10 @@ namespace RealmOfAshes.Game
         private void RecoverFromFall()
         {
             float standing = _controller.height * 0.5f;
-            if (transform.position.y > standing - FallRecoveryDepth) return;
+            float ground = RoaZoneReliefProjection.GroundHeightAt(transform.position.x, transform.position.z);
+            if (transform.position.y > ground + standing - FallRecoveryDepth) return;
             Vector3 place = transform.position;
-            place.y = standing;
+            place.y = ground + standing;
             TeleportToSafeSpawn(place);
             Debug.LogWarning("[ROA] Тело ушло под пол локации — возвращено на поверхность.");
         }
@@ -929,7 +930,10 @@ namespace RealmOfAshes.Game
             if (xToken == null || zToken == null) return;
 
             Vector3 corrected = RoaCoords.ToUnity(xToken.ToObject<float>(), zToken.ToObject<float>());
-            corrected.y = transform.position.y;
+            if (_controller == null) _controller = GetComponent<CharacterController>();
+            corrected.y += reason == "movementCorrection"
+                ? transform.position.y - RoaZoneReliefProjection.GroundHeightAt(transform.position.x, transform.position.z)
+                : (_controller != null ? _controller.height * 0.5f : 0.9f) + 0.1f;
 
             if (reason == "movementCorrection")
             {
@@ -1043,6 +1047,8 @@ namespace RealmOfAshes.Game
                     float angle = startAngle + index * Mathf.PI * 2f / samples;
                     Vector3 candidate = requested + new Vector3(
                         Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                    candidate.y += RoaZoneReliefProjection.GroundHeightAt(candidate.x, candidate.z)
+                        - RoaZoneReliefProjection.GroundHeightAt(requested.x, requested.z);
                     if (!blocked(candidate)) return candidate;
                 }
             }

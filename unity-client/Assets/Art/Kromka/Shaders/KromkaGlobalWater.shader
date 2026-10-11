@@ -14,6 +14,8 @@ Shader "Realm of Ashes/Kromka Global Water"
         _FresnelPower ("Fresnel Power", Range(1, 8)) = 4.2
         _MineralVeil ("Mineral Veil", Range(0, 0.5)) = 0.10
         _ToxicPulse ("Toxic Pulse", Range(0, 1)) = 0
+        _ShoreBothSides ("Both River Banks", Range(0, 1)) = 0
+        _LocalRiverFlow ("Follow Local River", Range(0, 1)) = 0
     }
 
     SubShader
@@ -55,6 +57,8 @@ Shader "Realm of Ashes/Kromka Global Water"
                 float _FresnelPower;
                 float _MineralVeil;
                 float _ToxicPulse;
+                float _ShoreBothSides;
+                float _LocalRiverFlow;
             CBUFFER_END
 
             struct Attributes
@@ -62,6 +66,7 @@ Shader "Realm of Ashes/Kromka Global Water"
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
+                float3 flowUv : TEXCOORD1;
             };
 
             struct Varyings
@@ -70,6 +75,7 @@ Shader "Realm of Ashes/Kromka Global Water"
                 float3 positionWS : TEXCOORD0;
                 float2 uv : TEXCOORD1;
                 half fogFactor : TEXCOORD2;
+                float3 flowUv : TEXCOORD3;
             };
 
             Varyings Vert(Attributes input)
@@ -79,14 +85,20 @@ Shader "Realm of Ashes/Kromka Global Water"
                 output.positionHCS = positions.positionCS;
                 output.positionWS = positions.positionWS;
                 output.uv = input.uv;
+                output.flowUv = input.flowUv;
                 output.fogFactor = ComputeFogFactor(positions.positionCS.z);
                 return output;
             }
 
             half4 Frag(Varyings input) : SV_Target
             {
-                float2 worldUv = input.positionWS.xz * _NormalTiling;
-                float2 flow = _Time.y * float2(_FlowSpeed, _FlowSpeed * 0.63);
+                float2 riverUv = input.flowUv.xy * _NormalTiling;
+                float2 worldUv = lerp(input.positionWS.xz * _NormalTiling,
+                    riverUv, _LocalRiverFlow);
+                float riverSpeed = _FlowSpeed * lerp(1.0, 1.8,
+                    smoothstep(-72.0, -42.0, input.positionWS.z));
+                float2 flow = _Time.y * lerp(float2(_FlowSpeed,
+                    _FlowSpeed * 0.63), float2(0.0, -riverSpeed), _LocalRiverFlow);
                 half3 rippleA = UnpackNormalScale(SAMPLE_TEXTURE2D(
                     _NormalMap, sampler_NormalMap, worldUv + flow), _NormalScale);
                 float2 crossUv = float2(-worldUv.y, worldUv.x) * 0.73
@@ -114,18 +126,32 @@ Shader "Realm of Ashes/Kromka Global Water"
                 half3 reflected = reflect(-mainLight.direction, normalWS);
                 half specular = pow(saturate(dot(reflected, viewDirection)),
                     lerp(22.0, 96.0, _Smoothness));
-                half shore = pow(1.0 - saturate(input.uv.x), 2.4);
+                half bankDistance = lerp(saturate(input.uv.x),
+                    saturate(min(input.uv.x, 1.0 - input.uv.x) * 2.0),
+                    _ShoreBothSides);
+                half shoreMeters = max(0.0,
+                    input.flowUv.z - abs(input.flowUv.x));
+                half localShore = 1.0 - smoothstep(0.0, 2.4, shoreMeters);
+                half shore = lerp(pow(1.0 - bankDistance, 2.4),
+                    localShore, _LocalRiverFlow);
                 half mineral = saturate(abs(rippleA.x - rippleB.y) * 0.65
-                    + fresnel * 0.22 + shore * 0.72) * _MineralVeil;
+                    + fresnel * 0.22 + shore * lerp(0.72, 1.5, _ShoreBothSides)) * _MineralVeil;
                 half toxicPulse = (sin(_Time.y * 0.42
                     + input.positionWS.x * 0.29 + input.positionWS.z * 0.23)
                     * 0.5 + 0.5) * _ToxicPulse;
                 water = lerp(water, _FoamColor.rgb, mineral + toxicPulse * 0.10);
+                half brokenFoam = saturate(0.48 + rippleA.x * 0.58
+                    + sin(input.flowUv.y * 0.8 - _Time.y * 0.46) * 0.22);
+                water = lerp(water, _FoamColor.rgb,
+                    _LocalRiverFlow * localShore * localShore
+                    * brokenFoam * 0.23);
                 water += mainLight.color * specular * (0.10 + _Smoothness * 0.34);
                 water = MixFog(water, input.fogFactor);
-                half shorePresence = smoothstep(0.0, 0.46, input.uv.x);
+                half shorePresence = lerp(smoothstep(0.0, 0.46, bankDistance),
+                    smoothstep(0.0, 2.4, shoreMeters), _LocalRiverFlow);
                 half alpha = saturate(_Opacity + fresnel * 0.08
-                    + toxicPulse * 0.035) * lerp(0.48, 1.0, shorePresence);
+                    + toxicPulse * 0.035) * lerp(lerp(0.48, 0.72, _ShoreBothSides),
+                    1.0, shorePresence);
                 return half4(water, alpha);
             }
             ENDHLSL

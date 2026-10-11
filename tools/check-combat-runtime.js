@@ -171,6 +171,9 @@ async function startServer() {
       ...process.env,
       // Живая погода меняет скорость и меткость; проверки идут в ясную, если не просят иной.
       KROMKA_WEATHER: process.env.KROMKA_WEATHER || 'clear',
+      // Выброс прерывает сбор уроном. Обычные проверки начинают спокойный
+      // цикл; проверка бури задаёт свою эпоху через тот же параметр.
+      KROMKA_TEST_SHIFT_EPOCH_MS: process.env.KROMKA_TEST_SHIFT_EPOCH_MS || String(Date.now()),
       PORT: String(REQUESTED_PORT),
       DATA_DIR,
       SESSION_LOCK_MS: '500',

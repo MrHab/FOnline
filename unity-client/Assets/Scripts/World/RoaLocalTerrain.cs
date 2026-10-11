@@ -28,10 +28,13 @@ namespace RealmOfAshes.World
         private Texture2D _albedo;
         private Texture2D _microDetail;
         private Texture2D _surfaceMask;
+        private Texture2D _riverBankMask;
+        private Color32[] _riverBankPixels;
         // Маска поверхности на время покраски: R — тропа, G — гарь, B — вода (шейдер земли).
         private Color32[] _maskPixels;
         private static readonly int SurfaceMaskId = Shader.PropertyToID("_SurfaceMask");
         private static readonly int MacroMeanId = Shader.PropertyToID("_MacroMean");
+        private static readonly int RiverBankMaskId = Shader.PropertyToID("_RiverBankMask");
         private int _textureSize;
         private float _visualWidth;
         private float _visualDepth;
@@ -130,10 +133,13 @@ namespace RealmOfAshes.World
         /// вызывался только там, где авторской сцены нет, то есть нигде. Здесь
         /// берётся ровно покраска: запечённое по авторитетной карте альбедо с
         /// тропами, водой и рудой плюс микродеталь. Геометрия, коллизии и
-        /// обстановка остаются авторскими — их сцена уже несёт сама.
+        /// обстановка остаются авторскими — их сцена уже несёт сама. Для
+        /// Дамбового проезда перед покраской проецируется рельеф глобальной
+        /// карты вместе с поверхностью для ходьбы.
         ///
         /// Границы текстуры совпадают с картой без запаса по краям: развёртка
-        /// верхней грани куба идёт 0..1 ровно по площадке, тогда как собственный
+        /// верхней грани или её рельефной сетки идёт 0..1 ровно по площадке,
+        /// тогда как собственный
         /// рельефный меш рисуется с полем вокруг.
         /// </summary>
         public void InitializeAuthoredSurface(LocationDefinition location, JArray stateMap, Renderer target)
@@ -144,6 +150,8 @@ namespace RealmOfAshes.World
             _visualWidth = location != null ? location.WorldWidth : 76f;
             _visualDepth = location != null ? location.WorldDepth : 76f;
             _textureSize = AlbedoResolution(Application.isMobilePlatform);
+            if (RoaZoneReliefProjection.Supports(location?.Id))
+                RoaZoneReliefProjection.Project(target, _visualWidth, _visualDepth);
             GroundUvMirror(target, out _mirrorAlbedoX, out _mirrorAlbedoZ);
 
             // Материал — копия авторского: сохраняются шейдер и его настройки, а
@@ -210,10 +218,14 @@ namespace RealmOfAshes.World
             if (IsSettlement) PaintSettlementLayers(pixels);
             else PaintAuthoritativeTiles(pixels, stateMap, mapWidth, mapDepth);
             PaintAmbientAge(pixels);
+            _riverBankPixels = RoaZoneReliefProjection.Supports(_location?.Id)
+                ? new Color32[pixels.Length] : null;
+            if (_riverBankPixels != null) PaintRiverBanks(pixels);
             if (_mirrorAlbedoX || _mirrorAlbedoZ)
             {
                 MirrorPixels(pixels, _textureSize, _mirrorAlbedoX, _mirrorAlbedoZ);
                 if (_maskPixels != null) MirrorPixels(_maskPixels, _textureSize, _mirrorAlbedoX, _mirrorAlbedoZ);
+                if (_riverBankPixels != null) MirrorPixels(_riverBankPixels, _textureSize, _mirrorAlbedoX, _mirrorAlbedoZ);
             }
 
             _albedo.SetPixels32(pixels);
@@ -228,9 +240,77 @@ namespace RealmOfAshes.World
                     _material.SetTexture(SurfaceMaskId, _surfaceMask);
                     _material.SetColor(MacroMeanId, MeanColor(pixels));
                 }
+                if (_riverBankPixels != null && _material.HasProperty(RiverBankMaskId))
+                {
+                    if (_riverBankMask == null || _riverBankMask.width != _textureSize)
+                    {
+                        DestroyRuntime(_riverBankMask);
+                        _riverBankMask = new Texture2D(_textureSize, _textureSize,
+                            TextureFormat.RGBA32, true, true)
+                        {
+                            name = "RuntimeRiverBankMask:" + _location.Id,
+                            filterMode = FilterMode.Bilinear,
+                            wrapMode = TextureWrapMode.Clamp
+                        };
+                    }
+                    _riverBankMask.SetPixels32(_riverBankPixels);
+                    _riverBankMask.Apply(true, false);
+                    _material.SetTexture(RiverBankMaskId, _riverBankMask);
+                }
             }
             _maskPixels = null;
+            _riverBankPixels = null;
             return true;
+        }
+
+        private void PaintRiverBanks(Color32[] pixels)
+        {
+            const float band = 6f;
+            for (int row = 0; row < _textureSize; row++)
+            {
+                float worldZ = (row / (_textureSize - 1f) - 0.5f) * _visualDepth;
+                if (!RoaDamRoadWaterProjection.TryBanksAt(worldZ,
+                    out float left, out float right)) continue;
+                PaintBank(left, -1f, worldZ, row);
+                PaintBank(right, 1f, worldZ, row);
+            }
+
+            void PaintBank(float edge, float direction, float worldZ, int row)
+            {
+                float first = edge + Mathf.Min(0f, direction * band);
+                float last = edge + Mathf.Max(0f, direction * band);
+                int start = Mathf.Max(0, Mathf.FloorToInt((first / _visualWidth + 0.5f)
+                    * (_textureSize - 1)));
+                int end = Mathf.Min(_textureSize - 1, Mathf.CeilToInt((last / _visualWidth + 0.5f)
+                    * (_textureSize - 1)));
+                for (int column = start; column <= end; column++)
+                {
+                    float worldX = (column / (_textureSize - 1f) - 0.5f) * _visualWidth;
+                    float distance = (worldX - edge) * direction;
+                    if (distance < 0f || distance > band) continue;
+                    float fade = 1f - Mathf.SmoothStep(0f, 1f, distance / band);
+                    float variation = Mathf.PerlinNoise(worldX * 0.23f, worldZ * 0.19f);
+                    float stain = fade * Mathf.Lerp(0.18f, 0.28f, variation);
+                    float silt = (1f - Mathf.SmoothStep(0f, 1f,
+                        distance / Mathf.Lerp(1.3f, 2.1f, variation)))
+                        * Mathf.Lerp(0.18f, 0.30f, variation);
+                    int index = row * _textureSize + column;
+                    // R: permanently wet silt at the actual waterline; G: the
+                    // wider gravel/sand deposit. Uneven widths avoid a painted stripe.
+                    float wetWidth = Mathf.Lerp(1.4f, 2.3f, variation);
+                    float wet = 1f - Mathf.SmoothStep(0f, 1f, distance / wetWidth);
+                    float deposit = (1f - Mathf.SmoothStep(0f, 1f,
+                        distance / Mathf.Lerp(4.2f, 5.8f, variation))) * 0.88f;
+                    _riverBankPixels[index] = new Color32(
+                        (byte)(wet * 255f), (byte)(deposit * 255f), 0, 255);
+                    Color32 baseColor = pixels[index];
+                    pixels[index] = new Color32(
+                        (byte)Mathf.Lerp(baseColor.r * (1f - stain), 139f, silt),
+                        (byte)Mathf.Lerp(baseColor.g * (1f - stain * 0.88f), 132f, silt),
+                        (byte)Mathf.Lerp(baseColor.b * (1f - stain * 0.72f), 111f, silt),
+                        baseColor.a);
+                }
+            }
         }
 
         private void UploadSurfaceMask()
@@ -913,6 +993,7 @@ namespace RealmOfAshes.World
             DestroyRuntime(_albedo);
             DestroyRuntime(_microDetail);
             DestroyRuntime(_surfaceMask);
+            DestroyRuntime(_riverBankMask);
             DestroyRuntime(_material);
             DestroyRuntime(_mesh);
             _albedo = null;

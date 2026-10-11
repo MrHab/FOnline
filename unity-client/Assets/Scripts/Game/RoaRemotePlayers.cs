@@ -685,7 +685,6 @@ namespace RealmOfAshes.Game
             remote.LastSeq = movement.Seq;
 
             Vector3 position = RoaCoords.ToUnity(movement.X, movement.Z);
-            position.y = remote.Root != null ? remote.Root.transform.position.y : 0f;
 
             remote.TargetPosition = position;
             remote.Velocity = movement.Moving

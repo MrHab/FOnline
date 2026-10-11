@@ -19,6 +19,7 @@ Shader "Realm of Ashes/Kromka Ground"
         [MainTexture] _BaseMap ("Zone map (baked)", 2D) = "white" {}
         [MainColor] _BaseColor ("Tint (hour of day)", Color) = (1, 1, 1, 1)
         _SurfaceMask ("Surface mask: R path, G scorch, B water", 2D) = "black" {}
+        _RiverBankMask ("River bank: R wet silt, G gravel deposit", 2D) = "black" {}
         _MacroMean ("Zone map mean colour", Color) = (0.62, 0.5, 0.34, 1)
         _MacroStrength ("Zone map variation", Range(0, 1)) = 0.55
 
@@ -83,6 +84,7 @@ Shader "Realm of Ashes/Kromka Ground"
 
             TEXTURE2D(_BaseMap);      SAMPLER(sampler_BaseMap);
             TEXTURE2D(_SurfaceMask);  SAMPLER(sampler_SurfaceMask);
+            TEXTURE2D(_RiverBankMask); SAMPLER(sampler_RiverBankMask);
             TEXTURE2D(_GroundAlbedo); SAMPLER(sampler_GroundAlbedo);
             TEXTURE2D(_GroundNormal); SAMPLER(sampler_GroundNormal);
             TEXTURE2D(_GroundMask);   SAMPLER(sampler_GroundMask);
@@ -286,6 +288,7 @@ Shader "Realm of Ashes/Kromka Ground"
 
                 half3 macro = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).rgb;
                 half3 surface = SAMPLE_TEXTURE2D(_SurfaceMask, sampler_SurfaceMask, input.uv).rgb;
+                half2 riverBank = SAMPLE_TEXTURE2D(_RiverBankMask, sampler_RiverBankMask, input.uv).rg;
 
                 Layer ground = SampleSet(TEXTURE2D_ARGS(_GroundAlbedo, sampler_GroundAlbedo),
                                          TEXTURE2D_ARGS(_GroundNormal, sampler_GroundNormal),
@@ -299,7 +302,7 @@ Shader "Realm of Ashes/Kromka Ground"
 
                 Layer layer = ground;
                 UNITY_BRANCH
-                if (surface.r > 0.004)
+                if (surface.r > 0.004 || riverBank.g > 0.004)
                 {
                     Layer path = SampleSet(TEXTURE2D_ARGS(_PathAlbedo, sampler_PathAlbedo),
                                            TEXTURE2D_ARGS(_PathNormal, sampler_PathNormal),
@@ -311,6 +314,10 @@ Shader "Realm of Ashes/Kromka Ground"
                         * lerp(half3(1, 1, 1), groundMean / max(pathMean, half3(0.05, 0.05, 0.05)), _PathGroundColour);
                     // По высоте: на краю тропы камни колеи выступают над грунтом, а не тают.
                     half w = saturate((surface.r - 0.5) * 3.0 + (path.height - ground.height) * 1.2 + 0.5);
+                    // Exposed sediment is lighter and coarser than the wet lip.
+                    half3 sediment = path.albedo * 1.15;
+                    path.albedo = lerp(path.albedo, sediment, riverBank.g);
+                    w = max(w, riverBank.g);
                     layer.albedo = lerp(ground.albedo, path.albedo, w);
                     layer.normalXY = lerp(ground.normalXY, path.normalXY, w);
                     layer.height = lerp(ground.height, path.height, w);
@@ -334,7 +341,7 @@ Shader "Realm of Ashes/Kromka Ground"
                 // Грязь после дождя: проступает на тропах и в низинах, бугры гравия остаются сверху.
                 half mudWeight = 0;
                 UNITY_BRANCH
-                if (_Mud > 0.01)
+                if (_Mud > 0.01 || riverBank.r > 0.004)
                 {
                     const float mc = 0.616;
                     const float ms = 0.788;
@@ -345,9 +352,11 @@ Shader "Realm of Ashes/Kromka Ground"
                     // Тропы раскисают целиком, открытый грунт — только в самых низких местах.
                     half affinity = surface.r * 0.6 + (1.0 - basin) * 0.55;
                     mudWeight = saturate((_Mud * affinity - layer.height * 0.35 - 0.2) * 3.5);
+                    mudWeight = max(mudWeight, riverBank.r);
                     half3 mudMean = SAMPLE_TEXTURE2D_LOD(_MudAlbedo, sampler_MudAlbedo, float2(0.5, 0.5), 12).rgb * _MudTint.rgb;
                     half3 mudAlbedo = Saturate(mud.albedo * _MudTint.rgb, _MudSaturation)
                         * lerp(half3(1, 1, 1), groundMean / max(mudMean, half3(0.05, 0.05, 0.05)), _MudGroundColour);
+                    mudAlbedo *= lerp(1.0, 0.84, riverBank.r);
                     albedo = lerp(albedo, mudAlbedo, mudWeight);
                     layer.normalXY = lerp(layer.normalXY, mud.normalXY, mudWeight);
                     layer.height = lerp(layer.height, mud.height * 0.6, mudWeight);
@@ -393,7 +402,7 @@ Shader "Realm of Ashes/Kromka Ground"
 
                 // Мокрая земля: вода сначала во впадинах — они темнеют и блестят раньше бугров,
                 // плёнка сглаживает рельеф.
-                half wet = saturate(_Wetness * (1.35 - layer.height * 0.7));
+                half wet = saturate(max(_Wetness, riverBank.r * 0.88) * (1.35 - layer.height * 0.7));
                 albedo *= 1.0 - wet * (0.4 - 0.12 * layer.height);
                 smoothness = lerp(smoothness, lerp(0.74, 0.46, layer.height), sqrt(wet));
                 normalXY *= 1.0 - wet * 0.45;

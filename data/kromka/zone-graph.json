@@ -6075,8 +6075,8 @@
      "locationId": "roadOutpost",
      "kind": "outpost",
      "name": "Застава 17",
-     "u": 0.25,
-     "v": 0.9,
+     "u": 0.08,
+     "v": 0.85,
      "road": true,
      "site": true,
      "safe": true

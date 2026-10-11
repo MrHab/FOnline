@@ -2023,7 +2023,7 @@ namespace RealmOfAshes.Game
             _controller.ApplySpecial(ack.Self);
 
             Vector3 spawn = RoaCoords.ToUnity(ack.X, ack.Z);
-            spawn.y = PlayerHeight * 0.5f + 0.1f;
+            spawn.y += PlayerHeight * 0.5f + 0.1f;
             bool spawnAdjusted = _controller.TeleportToSafeSpawn(spawn);
             Vector3 placed = _controller.transform.position;
             if (spawnAdjusted)

@@ -70,6 +70,7 @@ Shader "Realm of Ashes/Kromka Global Route"
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
+                half4 color : COLOR;
             };
 
             struct Varyings
@@ -79,6 +80,7 @@ Shader "Realm of Ashes/Kromka Global Route"
                 half3 normalWS : TEXCOORD1;
                 float2 uv : TEXCOORD2;
                 half fogFactor : TEXCOORD3;
+                half4 color : COLOR;
             };
 
             Varyings Vert(Attributes input)
@@ -90,6 +92,7 @@ Shader "Realm of Ashes/Kromka Global Route"
                 output.positionWS = positions.positionWS;
                 output.normalWS = normals.normalWS;
                 output.uv = input.uv;
+                output.color = input.color;
                 output.fogFactor = ComputeFogFactor(positions.positionCS.z);
                 return output;
             }
@@ -141,7 +144,7 @@ Shader "Realm of Ashes/Kromka Global Route"
                 half edge = smoothstep(0.0, _EdgeFade, saturate(input.uv.x));
                 half raggedEdge = lerp(0.76, 1.0, fineBreakup);
                 half opacity = _Opacity * lerp(0.28, 1.0, edge) * raggedEdge;
-                return half4(lit, opacity);
+                return half4(lit, opacity * input.color.a);
             }
             ENDHLSL
         }

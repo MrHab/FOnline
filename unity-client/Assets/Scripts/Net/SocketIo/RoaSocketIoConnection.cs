@@ -65,6 +65,7 @@ namespace RealmOfAshes.Net.SocketIo
 
         public string Sid { get; private set; } = string.Empty;
         public bool IsConnected { get; private set; }
+        public int BufferedBytes { get { return _transport != null ? _transport.BufferedBytes : 0; } }
 
         /// <summary>Socket.IO CONNECT подтверждён — можно слать события.</summary>
         public event Action OnConnected;
